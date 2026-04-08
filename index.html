@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LPGas Show — Booth Guide</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0077D0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LPGas Guide">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════
+   LPGas Brand Tokens — No Gold
+   Blue:   C100 M43 Y0 K18.5  → #0077D0
+   Maroon: C26 M100 Y69 K23   → #8B1538
+   Green:  C75 M32 Y65 K35    → #2D7140
+   Accent: White / Blue-light (replaces gold)
+   Fonts:  Barlow Condensed (Forza alt), Inter (Gotham alt)
+══════════════════════════════════════════════ */
+:root {
+  --blue:        #0077D0;
+  --blue-dark:   #005FA8;
+  --blue-deeper: #00407A;
+  --blue-light:  #E6F2FC;
+  --blue-mid:    #C8E2F8;
+  --maroon:      #8B1538;
+  --maroon-light:#F7E8ED;
+  --green:       #2D7140;
+  --green-light: #EBF5EE;
+  --bg:          #EEF3F9;
+  --surface:     #FFFFFF;
+  --text:        #0D1F33;
+  --text-2:      #4A5E72;
+  --muted:       #8A9BAD;
+  --border:      #D8E4F0;
+  --radius-lg:   16px;
+  --radius-md:   12px;
+  --radius-sm:   8px;
+  --shadow:      0 2px 14px rgba(0,60,130,0.10);
+  --shadow-sm:   0 1px 4px rgba(0,0,0,0.07);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes popIn {
+  0%   { transform: scale(0.85); opacity: 0; }
+  65%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes starPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35) rotate(-10deg); }
+  70%  { transform: scale(0.9) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes toastIn {
+  from { transform: translateX(-50%) translateY(24px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+@keyframes statPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+@keyframes shimmerBar {
+  0%   { background-position: -300% center; }
+  100% { background-position: 300% center; }
+}
+
+/* ── STICKY HEADER ── */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--blue);
+  box-shadow: 0 3px 20px rgba(0,50,120,0.35);
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+}
+
+/* LPGas wordmark */
+.logo-mark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.logo-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+.logo-name span { color: rgba(255,255,255,0.75); font-weight: 600; }
+.logo-tagline {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+  margin-top: 1px;
+}
+
+/* Visited counter pill */
+.header-counter {
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.22);
+  border-radius: 12px;
+  padding: 7px 14px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+.header-counter .count {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.header-counter .count.pop { animation: statPop 0.3s ease; }
+.header-counter .label {
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.65);
+}
+
+/* Search row */
+.header-search {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.search-wrap {
+  flex: 1;
+  position: relative;
+}
+.search-wrap::before {
+  content: "⌕";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.5);
+  pointer-events: none;
+}
+#searchInput {
+  width: 100%;
+  padding: 10px 12px 10px 34px;
+  background: rgba(255,255,255,0.13);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 0.92rem;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+#searchInput::placeholder { color: rgba(255,255,255,0.45); }
+#searchInput:focus {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.45);
+}
+
+.hdr-btn {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.12s, opacity 0.12s;
+  -webkit-user-select: none; user-select: none;
+}
+.hdr-btn:active { transform: scale(0.91); opacity: 0.85; }
+.btn-expand-all {
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  color: #fff;
+}
+.btn-export {
+  background: #fff;
+  color: var(--blue-dark);
+  border: none;
+}
+.btn-export:active { background: var(--blue-light); }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: var(--surface);
+  padding: 10px 12px;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+
+.f-pill {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-2);
+  transition: all 0.18s;
+  -webkit-user-select: none; user-select: none;
+}
+.f-pill:active { transform: scale(0.93); }
+.f-pill.active            { background: var(--blue);   border-color: var(--blue);   color: #fff; }
+.f-pill.active.f-visited  { background: var(--green);  border-color: var(--green);  color: #fff; }
+.f-pill.active.f-novisit  { background: var(--maroon); border-color: var(--maroon); color: #fff; }
+.f-pill.active.f-schedule { background: var(--blue-deeper); border-color: var(--blue-deeper); color: #fff; }
+
+/* ── STAT CHIPS ── */
+.stat-row {
+  display: flex;
+  gap: 7px;
+  padding: 10px 10px 4px;
+  animation: fadeIn 0.4s ease;
+}
+.stat-chip {
+  flex: 1;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+.stat-chip .s-val {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.stat-chip .s-lbl {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: 2px;
+}
+.stat-chip.blue  .s-val { color: var(--blue); }
+.stat-chip.green .s-val { color: var(--green); }
+.stat-chip.blue2 .s-val { color: var(--blue-deeper); }
+.stat-chip .s-val.pop   { animation: statPop 0.28s ease; }
+
+/* ── CONTENT AREA ── */
+#content { padding-bottom: 24px; }
+
+/* ── ROW SECTION ── */
+.row-section {
+  margin: 8px 10px 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  animation: fadeUp 0.38s ease both;
+}
+.row-section:last-child { margin-bottom: 10px; }
+
+.row-header {
+  background: var(--blue);
+  padding: 13px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  -webkit-user-select: none; user-select: none;
+  transition: background 0.18s;
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle shimmer on header press */
+.row-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  background-size: 300% 100%;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.row-header:active::after { opacity: 1; animation: shimmerBar 0.5s ease; }
+.row-header.outdoor  { background: var(--maroon); }
+.row-header.outdoor:active { background: #6e0f2b; }
+.row-header:not(.outdoor):active { background: var(--blue-dark); }
+
+.row-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.08rem;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.row-pill {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  transition: background 0.2s, color 0.2s;
+}
+.row-pill.some  { background: rgba(255,255,255,0.28); color: #fff; }
+.row-pill.done  { background: rgba(45,113,64,0.35); color: #7FD49A; }
+.row-chevron {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.65);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.row-chevron.open { transform: rotate(180deg); }
+
+/* ── SMOOTH COLLAPSE (CSS Grid trick) ── */
+.row-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.32s cubic-bezier(0.4,0,0.2,1);
+  background: var(--surface);
+}
+.row-body.open { grid-template-rows: 1fr; }
+.row-body-inner { overflow: hidden; }
+
+/* ── COMPANY CARD ── */
+.co-card {
+  padding: 12px 14px;
+  border-bottom: 1px solid #EEF3F9;
+  background: var(--surface);
+  transition: background 0.2s;
+  position: relative;
+}
+.co-card:last-child { border-bottom: none; }
+
+/* Left border states */
+.co-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.25s;
+}
+.co-card.visited::before  { background: var(--green); }
+.co-card.starred::before  { background: var(--blue); }
+.co-card.visited.starred::before { background: var(--green); }
+.co-card.visited  { background: #F3FBF6; }
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.co-name {
+  flex: 1;
+  font-size: 0.91rem;
+  font-weight: 600;
+  color: var(--blue-dark);
+  line-height: 1.35;
+}
+.booth-badge {
+  flex-shrink: 0;
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  border: 1.5px solid var(--blue-mid);
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+.booth-badge.outdoor { background: var(--maroon-light); color: var(--maroon); border-color: #e8b8c4; }
+
+/* ── ACTION ROW ── */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+/* Star button */
+.star-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  -webkit-user-select: none; user-select: none;
+  flex-shrink: 0;
+}
+.star-btn:active { transform: scale(0.85); }
+.star-btn.on {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  color: var(--blue);
+  animation: starPop 0.35s ease;
+}
+
+/* Notes button */
+.notes-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none; user-select: none;
+}
+.notes-btn:active { transform: scale(0.93); }
+.notes-btn.on {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-light);
+}
+
+/* Visited toggle */
+.visit-btn {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-user-select: none; user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.visit-btn:active { transform: scale(0.93); }
+.visit-btn.on {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-light);
+}
+.visit-btn .check-icon {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.visit-btn.on .check-icon {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+/* ── NOTES PANEL ── */
+.notes-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s cubic-bezier(0.4,0,0.2,1);
+}
+.notes-panel.open { grid-template-rows: 1fr; }
+.notes-panel-inner { overflow: hidden; }
+.notes-content {
+  padding: 11px 0 2px;
+  border-top: 1px dashed var(--border);
+  margin-top: 10px;
+}
+.note-group { margin-bottom: 9px; }
+.note-label {
+  font-size: 0.67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.note-label.pre  { color: var(--blue); }
+.note-label.post { color: var(--green); }
+
+textarea.nf {
+  width: 100%;
+  min-height: 68px;
+  padding: 9px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  background: #FAFCFF;
+  resize: vertical;
+  line-height: 1.45;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+textarea.nf:focus { outline: none; background: #fff; }
+textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,119,208,0.10); }
+textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
+textarea.nf.pre  { border-left: 3px solid var(--blue); }
+textarea.nf.post { border-left: 3px solid var(--green); }
+
+/* ── EMPTY STATE ── */
+.empty-wrap {
+  padding: 56px 28px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+.empty-icon { font-size: 2.8rem; margin-bottom: 14px; }
+.empty-wrap h3 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.35rem;
+  color: var(--text);
+  margin-bottom: 7px;
+}
+.empty-wrap p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  opacity: 0;
+  background: var(--text);
+  color: #fff;
+  padding: 13px 22px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  z-index: 900;
+  pointer-events: none;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+  white-space: nowrap;
+  transition: transform 0.3s cubic-bezier(0.34,1.4,0.64,1), opacity 0.25s;
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ── FOOTER ── */
+.app-footer {
+  padding: 18px 16px 36px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.69rem;
+  line-height: 1.7;
+}
+</style>
+</head>
+<body>
+
+<!-- ════ HEADER ════ -->
+<div class="app-header">
+  <div class="header-top">
+    <div class="logo-mark">
+      <div class="logo-name">LP<span>Gas</span></div>
+      <div class="logo-tagline">Show — Booth Guide</div>
+    </div>
+    <div class="header-counter">
+      <div class="count" id="hdrVisited">0</div>
+      <div class="label">Visited</div>
+    </div>
+  </div>
+  <div class="header-search">
+    <div class="search-wrap">
+      <input id="searchInput" type="text" placeholder="Search company or booth #…" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <button class="hdr-btn btn-expand-all" id="expandBtn">Expand All</button>
+    <button class="hdr-btn btn-export" id="exportBtn">⬇ CSV</button>
+  </div>
+</div>
+
+<!-- ════ FILTER BAR ════ -->
+<div class="filter-bar">
+  <button class="f-pill active"      data-f="all">All Booths</button>
+  <button class="f-pill f-novisit"   data-f="novisit">Not Visited</button>
+  <button class="f-pill f-visited"   data-f="visited">✓ Visited</button>
+  <button class="f-pill f-schedule"  data-f="schedule">★ My Schedule</button>
+</div>
+
+<!-- ════ STAT CHIPS ════ -->
+<div class="stat-row">
+  <div class="stat-chip blue">
+    <div class="s-val" id="sTot">226</div>
+    <div class="s-lbl">Exhibitors</div>
+  </div>
+  <div class="stat-chip green">
+    <div class="s-val" id="sVis">0</div>
+    <div class="s-lbl">Visited</div>
+  </div>
+  <div class="stat-chip blue2">
+    <div class="s-val" id="sSch">0</div>
+    <div class="s-lbl">Scheduled</div>
+  </div>
+</div>
+
+<!-- ════ MAIN CONTENT ════ -->
+<div id="content"></div>
+
+<div class="app-footer">
+  Notes save automatically · ★ stars companies to My Schedule<br>
+  Export CSV to open all notes in Excel
+</div>
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// DATA — 226 exhibitors
+// ════════════════════════════════════════
+const CO = [
+  {n:"1075 Consulting LLC",b:"351"},
+  {n:"A.R.M. Solutions",b:"402"},
+  {n:"ADD Systems",b:"607"},
+  {n:"Advanced Cylinder & Tank/Shotking",b:"1029"},
+  {n:"Advantage Route, Inc.",b:"420"},
+  {n:"AEGIS General Energy",b:"724"},
+  {n:"Algas-SDI International LLC",b:"800"},
+  {n:"Alliance AutoGas",b:"653"},
+  {n:"Alternate Energy Systems, Inc.",b:"730"},
+  {n:"Ambipar Response PERS",b:"728"},
+  {n:"Ameritrans Equipment Solutions, LLC",b:"1063"},
+  {n:"Amthor International",b:"T1635"},
+  {n:"Angus Energy",b:"321"},
+  {n:"Anova",b:"747"},
+  {n:"Arrow Tank and Engineering",b:"T1337"},
+  {n:"ASM/American Standard Mfg.",b:"943"},
+  {n:"Atlas Propane Industries, LLC",b:"408"},
+  {n:"Aultra Tank and Equipment",b:"810"},
+  {n:"Automated Wireless Environments, Inc.",b:"1053"},
+  {n:"B&A Energy Partners LLC",b:"550"},
+  {n:"BASE Engineering",b:"548"},
+  {n:"Bergquist Inc.",b:"327"},
+  {n:"Bestrane",b:"227"},
+  {n:"Better Containers Mfg. Co. Inc.",b:"504"},
+  {n:"Betts Industries Inc.",b:"1448"},
+  {n:"Beverage Truck Pros",b:"317"},
+  {n:"Bhiwadi Cylinders PVT. LTD.",b:"347"},
+  {n:"Big Way Sales, Co.",b:"222"},
+  {n:"Blackmer, Part of PSG, a Dover Company",b:"701"},
+  {n:"Blue Peak Resources",b:"1150"},
+  {n:"Boyd Service, Inc.",b:"T1600"},
+  {n:"Brindle Products Inc.",b:"T1237"},
+  {n:"Bulk Truck & Transport Service",b:"T1227"},
+  {n:"Butane Propane News",b:"714"},
+  {n:"Cargas",b:"1147"},
+  {n:"Cavagna North America Inc.",b:"415"},
+  {n:"Certified Cylinder",b:"729"},
+  {n:"Cetane Associates, LLC",b:"401"},
+  {n:"CHS Inc.",b:"925"},
+  {n:"Cintas Corporation",b:"448"},
+  {n:"Civista Leasing and Financing",b:"1012"},
+  {n:"Clesse Industries",b:"134"},
+  {n:"Crum & Forster",b:"1008"},
+  {n:"CTP Solutions",b:"405"},
+  {n:"CUI",b:"601"},
+  {n:"Cutco",b:"449"},
+  {n:"D.O.T. Tiedown",b:"1461"},
+  {n:"Degree Day Systems Inc",b:"306"},
+  {n:"Descartes",b:"225"},
+  {n:"Destwin",b:"615"},
+  {n:"DispatchPro",b:"355"},
+  {n:"Droplet Fuel",b:"1253"},
+  {n:"Eco Power Equipment",b:"1257"},
+  {n:"Elaflex Pacific",b:"322"},
+  {n:"Emerson/Fisher LPG Equipment",b:"901"},
+  {n:"Empire Comfort Systems",b:"412"},
+  {n:"Energy Tech Solutions, LLC",b:"506"},
+  {n:"Enolgas USA",b:"406"},
+  {n:"Estland",b:"1255"},
+  {n:"Evas Ev Aletleri San A.S.",b:"213"},
+  {n:"Exosent Engineering",b:"T1536"},
+  {n:"Exosent Engineering",b:"T1552"},
+  {n:"Exosent Engineering",b:"T1636"},
+  {n:"Exosent Engineering",b:"T1652"},
+  {n:"F.W. Webb Company",b:"517"},
+  {n:"Fairview USA Inc.",b:"715"},
+  {n:"Felker Truck and Equipment Inc.",b:"T236"},
+  {n:"Felker Truck and Equipment Inc.",b:"T244"},
+  {n:"Fill-Rite Company",b:"229"},
+  {n:"Fisk Tank Carrier",b:"T1021"},
+  {n:"Flame Engineering, Inc.",b:"1006"},
+  {n:"Flame King",b:"443"},
+  {n:"FleetPanda",b:"1059"},
+  {n:"Flynt Paint Products",b:"1055"},
+  {n:"FordPro",b:"353"},
+  {n:"F-Rams, Inc.",b:"1014"},
+  {n:"Fuel Digital",b:"455"},
+  {n:"FuelMor Propane Software",b:"300"},
+  {n:"Full Circle Inc.",b:"816"},
+  {n:"Gardner Marsh Gas Equipment Co., Inc.",b:"731"},
+  {n:"Gas Equipment Company, Inc.",b:"837"},
+  {n:"Gastite",b:"205"},
+  {n:"Grand Hall/Emerald Isle Distribution",b:"303"},
+  {n:"Gravity Portals",b:"313"},
+  {n:"Gray, Gray & Gray, LLP",b:"508"},
+  {n:"H & H Sales Company Inc.",b:"T1208"},
+  {n:"Hannay Reels Inc.",b:"916"},
+  {n:"HeatStar by Enerco Group Inc.",b:"1463"},
+  {n:"Higginbotham Insurance and Financial Services",b:"554"},
+  {n:"Hiltz Propane Systems",b:"T1163"},
+  {n:"Hubbell Gas Utility Solutions",b:"552"},
+  {n:"Indoor Comfort Marketing",b:"323"},
+  {n:"Industrial Hose Sales & Engineering Inc.",b:"431"},
+  {n:"INGUSA",b:"513"},
+  {n:"IntelliShift",b:"326"},
+  {n:"Intermountain Truck Rebuilders (ITR)",b:"131"},
+  {n:"Intermountain Truck Rebuilders (ITR)",b:"T137"},
+  {n:"IPS Equipment Inc.",b:"545"},
+  {n:"IPS Equipment Inc.",b:"T551"},
+  {n:"iRely",b:"501"},
+  {n:"JMcLean Energy Insurance",b:"1016"},
+  {n:"JOMAC Ltd.",b:"T1426"},
+  {n:"Jomar Valve",b:"722"},
+  {n:"Jones Stephens",b:"1358"},
+  {n:"Keehn Service Corp.",b:"T1301"},
+  {n:"Klinger Paint Company",b:"923"},
+  {n:"Knapheide Truck Equipment Center",b:"228"},
+  {n:"Kozy Operations",b:"410"},
+  {n:"Kurtz Truck Equipment, Inc.",b:"T1437"},
+  {n:"Legacy Energy Consulting",b:"409"},
+  {n:"LevelCon, A Brand of Micro-Design Inc",b:"311"},
+  {n:"LifeGuard Technologies",b:"627"},
+  {n:"Liftmoore Inc.",b:"946"},
+  {n:"Lin's Propane Trucks",b:"T1201"},
+  {n:"Liqua-Tech Corporation",b:"1050"},
+  {n:"Liquid Controls & Corken",b:"1129"},
+  {n:"LMH, Div. of Air Hydro Power Inc.",b:"1247"},
+  {n:"Lock America Inc.",b:"1048"},
+  {n:"LP Gas Magazine",b:"528"},
+  {n:"LPG & NH3 Supply, Inc.",b:"231"},
+  {n:"LPG Energy Services LLC",b:"337"},
+  {n:"LS Industries",b:"1349"},
+  {n:"Lux Industries LLC",b:"T1447"},
+  {n:"Makeen Energy",b:"929"},
+  {n:"Manage Petro",b:"1154"},
+  {n:"Manchester Tank & Equipment Co.",b:"1137"},
+  {n:"MarketPropane.com",b:"503"},
+  {n:"Mauria Udyog Limited, India",b:"502"},
+  {n:"Maxitrol Company",b:"301"},
+  {n:"Metsa Tanks",b:"423"},
+  {n:"Mickey Truck Bodies",b:"862"},
+  {n:"MID:COM/Midwest Meter/FEI",b:"705"},
+  {n:"Mopeka Products",b:"217"},
+  {n:"Morgan Leasing Services",b:"1627"},
+  {n:"MPX",b:"454"},
+  {n:"MSG Payment Systems",b:"602"},
+  {n:"National Energy and Fuels Institute",b:"203"},
+  {n:"National Fire Protection Association",b:"302"},
+  {n:"National Interstate Insurance Company",b:"444"},
+  {n:"National Propane Gas Association",b:"801"},
+  {n:"Navien Inc.",b:"1348"},
+  {n:"New Product Showcase",b:"359"},
+  {n:"Nexio",b:"759"},
+  {n:"Ningbo Fuhua Valve Co., Ltd",b:"216"},
+  {n:"Ningbo Longtime Gas Control System Co. LTD",b:"418"},
+  {n:"Nixon & Lindstrom Insurance",b:"223"},
+  {n:"Norgas Controls, Inc.",b:"309"},
+  {n:"NPGA Benchmarking Council",b:"806"},
+  {n:"NPGA Women in Propane Council",b:"808"},
+  {n:"NPGA Young Professionals Council",b:"804"},
+  {n:"One-Tank",b:"437"},
+  {n:"Optistream",b:"1061"},
+  {n:"OPW Propane Energy Solutions",b:"637"},
+  {n:"Otodata Tank Monitors",b:"1155"},
+  {n:"P3 Propane Safety",b:"404"},
+  {n:"Pacific Truck Tank",b:"T344"},
+  {n:"Paul Akers, Inc.",b:"500"},
+  {n:"PDI Technologies/Blue Cow Software",b:"1128"},
+  {n:"Petroleum Tank Corp",b:"T1401"},
+  {n:"PriMedia, Inc.",b:"1249"},
+  {n:"Pro Image Communications",b:"343"},
+  {n:"Propane Education & Research Council (PERC)",b:"558"},
+  {n:"Propane Resources, LLC",b:"812"},
+  {n:"Propane Vending Corp.",b:"107"},
+  {n:"PropanePro by NIP Group",b:"307"},
+  {n:"PT Risk Management Insurance Services",b:"510"},
+  {n:"Purple Frog Graphics",b:"1152"},
+  {n:"PYPESA/OCHOA",b:"1047"},
+  {n:"Quality Steel Corporation & LP Cylinder Service, Inc.",b:"823"},
+  {n:"Qualpay",b:"400"},
+  {n:"Ransome Manufacturing",b:"527"},
+  {n:"Ray Murray Inc.",b:"1037"},
+  {n:"Razor Tracking",b:"951"},
+  {n:"RE Michel Co/Dealers LP Equipment",b:"629"},
+  {n:"Red Seal Measurement",b:"817"},
+  {n:"Renaldo Sales & Service, Inc.",b:"T336"},
+  {n:"Rinnai America Corporation",b:"507"},
+  {n:"Rochester Sensors, LLC",b:"937"},
+  {n:"Rocky Mountain Propane Association",b:"224"},
+  {n:"ROUSH CleanTech",b:"753"},
+  {n:"Rural Computer Consultants",b:"723"},
+  {n:"Rutherford Equipment",b:"907"},
+  {n:"Saf-T-Cart",b:"1146"},
+  {n:"Service First Processing",b:"407"},
+  {n:"Shovel Barrier",b:"539"},
+  {n:"Silverline Solutions",b:"1148"},
+  {n:"Sky Eye Measurement USA",b:"T145"},
+  {n:"Smart-Hose Technologies",b:"847"},
+  {n:"Smith Pumps",b:"818"},
+  {n:"Software Solutions Integrated",b:"949"},
+  {n:"Solera Fleet Solutions - Roadnet",b:"101"},
+  {n:"Squibb-Taylor, Inc.",b:"917"},
+  {n:"Suburban Software Systems, Inc.",b:"913"},
+  {n:"Sumter Coatings Inc.",b:"719"},
+  {n:"SunStar Heating Products, Inc.",b:"600"},
+  {n:"Superior Energy Systems",b:"541"},
+  {n:"Tank Spotter",b:"1057"},
+  {n:"Tanques de Acero del Bravo S.A. de C.V.",b:"T954"},
+  {n:"Tarantin Industries",b:"647"},
+  {n:"Taurus Systems, Inc.",b:"625"},
+  {n:"TCI Leasing & Rental",b:"T1601"},
+  {n:"Tech Products, Inc.",b:"200"},
+  {n:"Technico Gas LLC",b:"414"},
+  {n:"Tempaco Inc.",b:"537"},
+  {n:"TerraVest Compressed Gas",b:"T1411"},
+  {n:"The Granite Group",b:"416"},
+  {n:"Tiger Payment Solutions LLC",b:"623"},
+  {n:"Total Control Systems",b:"638"},
+  {n:"TPA Metals and Machinery",b:"726"},
+  {n:"TracPipe CounterStrike by Omega Flex",b:"718"},
+  {n:"TransTech Energy",b:"1045"},
+  {n:"Trending in Propane",b:"305"},
+  {n:"TRIARC TANK",b:"1001"},
+  {n:"United Sign",b:"201"},
+  {n:"Utilities & Industries",b:"214"},
+  {n:"Vertrax Inc.",b:"429"},
+  {n:"Victory Advanced Technologies",b:"1156"},
+  {n:"Vivid Image, Inc.",b:"319"},
+  {n:"Warm Front Heat",b:"453"},
+  {n:"Warm Thoughts Communications",b:"617"},
+  {n:"Wehof Forms",b:"915"},
+  {n:"Wellness Consultants LLC",b:"310"},
+  {n:"Westmor Industries",b:"T1209"},
+  {n:"White River Distributors",b:"T1200"},
+  {n:"Worthington Enterprises",b:"1011"},
+  {n:"Zephyr Solutions LLC",b:"446"}
+];
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+const STORE = "lpgas_v3";
+const load  = () => { try { return JSON.parse(localStorage.getItem(STORE)||"{}"); } catch(e){ return {}; } };
+const save  = s  => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch(e){} };
+const key   = i  => "c"+i;
+
+// ════════════════════════════════════════
+// ROW HELPERS
+// ════════════════════════════════════════
+function rowKey(b) {
+  if (typeof b==="string" && b[0]==="T")
+    return "T"+(Math.floor(parseInt(b.slice(1))/100)*100);
+  return String(Math.floor(parseInt(b)/100)*100);
+}
+function rowOrder(rk) {
+  return rk[0]==="T" ? 100000+parseInt(rk.slice(1)) : parseInt(rk);
+}
+function rowLabel(rk) {
+  return rk[0]==="T"
+    ? "🚛 Outdoor / Tank — Row "+rk.slice(1)+"s"
+    : "Row "+rk+"s";
+}
+function isOutdoor(rk){ return rk[0]==="T"; }
+
+// ════════════════════════════════════════
+// ESCAPE
+// ════════════════════════════════════════
+function esc(s){
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+// ════════════════════════════════════════
+// APP STATE
+// ════════════════════════════════════════
+let activeFilter = "all";
+let allOpen = false;
+
+// ════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════
+function render() {
+  const state = load();
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+
+  // Build indexed list, apply search + filter
+  let list = CO.map((c,i)=>({...c,i}));
+  if (q) list = list.filter(c=>c.n.toLowerCase().includes(q)||c.b.toLowerCase().includes(q));
+  if (activeFilter==="visited")  list = list.filter(c=>state[key(c.i)]?.visited);
+  if (activeFilter==="novisit")  list = list.filter(c=>!state[key(c.i)]?.visited);
+  if (activeFilter==="schedule") list = list.filter(c=>state[key(c.i)]?.starred);
+
+  const el = document.getElementById("content");
+
+  if (!list.length) {
+    const msgs = {
+      schedule: ["★","Nothing scheduled yet","Tap ☆ on any company to add it to My Schedule"],
+      visited:  ["✓", "No visited booths yet","Mark booths as visited as you walk the floor"],
+      novisit:  ["🎯","All caught up!","Looks like you've visited every filtered company"],
+    };
+    const [icon, title, sub] = msgs[activeFilter] || ["🔍","No results","Try a different search term"];
+    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">${icon}</div><h3>${title}</h3><p>${sub}</p></div>`;
+    updateStats(state);
+    return;
+  }
+
+  // Group → sort
+  const groups = {};
+  list.forEach(c => {
+    const rk = rowKey(c.b);
+    (groups[rk] = groups[rk]||[]).push(c);
+  });
+  Object.values(groups).forEach(a=>a.sort((a,b)=>a.n.localeCompare(b.n)));
+  const rowKeys = Object.keys(groups).sort((a,b)=>rowOrder(a)-rowOrder(b));
+
+  let html = "";
+  rowKeys.forEach((rk, ri) => {
+    const comps = groups[rk];
+    const outdoor = isOutdoor(rk);
+    const nVisited = comps.filter(c=>state[key(c.i)]?.visited).length;
+    const pillCls  = nVisited===comps.length&&comps.length>0 ? "row-pill done"
+                   : nVisited > 0 ? "row-pill some" : "row-pill";
+    const bodyId = "rb"+rk.replace(/\W/g,"_");
+    const chevId = "ch"+rk.replace(/\W/g,"_");
+
+    html += `
+<div class="row-section" data-rk="${esc(rk)}" style="animation-delay:${Math.min(ri*0.035,0.35)}s">
+  <div class="row-header${outdoor?" outdoor":""}" data-toggle="${bodyId}">
+    <span class="row-title">${esc(rowLabel(rk))}</span>
+    <span class="row-right">
+      <span class="${pillCls}" id="badge_${esc(rk)}">${nVisited}/${comps.length}</span>
+      <span class="row-chevron${allOpen?" open":""}" id="${chevId}">▼</span>
+    </span>
+  </div>
+  <div class="row-body${allOpen?" open":""}" id="${bodyId}"><div class="row-body-inner">`;
+
+    comps.forEach(c => {
+      const s       = state[key(c.i)] || {};
+      const visited = !!s.visited;
+      const starred = !!s.starred;
+      const hasNotes= !!(s.pre||s.post);
+      const npId    = "np"+c.i;
+
+      html += `
+    <div class="co-card${visited?" visited":""}${starred?" starred":""}" id="cc${c.i}" data-i="${c.i}">
+      <div class="card-top">
+        <span class="co-name">${esc(c.n)}</span>
+        <span class="booth-badge${outdoor?" outdoor":""}">${esc(c.b)}</span>
+      </div>
+      <div class="card-actions">
+        <button class="star-btn${starred?" on":""}" data-star="${c.i}" title="My Schedule">${starred?"★":"☆"}</button>
+        <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"📝 Notes":"＋ Notes"}</button>
+        <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
+          <span class="check-icon">${visited?"✓":""}</span>
+          ${visited?"Visited":"Mark Visited"}
+        </button>
+      </div>
+      <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
+        <div class="notes-panel-inner"><div class="notes-content">
+          <div class="note-group">
+            <div class="note-label pre">📋 Pre-Visit Notes</div>
+            <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
+          </div>
+          <div class="note-group">
+            <div class="note-label post">✅ Post-Visit Notes</div>
+            <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
+          </div>
+        </div></div>
+      </div>
+    </div>`;
+    });
+
+    html += `</div></div></div>`;
+  });
+
+  el.innerHTML = html;
+  updateStats(state);
+}
+
+// ════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════
+function updateStats(state) {
+  const vis = Object.values(state).filter(s=>s?.visited).length;
+  const sch = Object.values(state).filter(s=>s?.starred).length;
+  animVal("sTot", CO.length);
+  animVal("sVis", vis);
+  animVal("sSch", sch);
+  const hv = document.getElementById("hdrVisited");
+  if (hv.textContent !== String(vis)) {
+    hv.textContent = vis;
+    hv.classList.remove("pop");
+    void hv.offsetWidth;
+    hv.classList.add("pop");
+  }
+}
+function animVal(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.textContent !== String(val)) {
+    el.textContent = val;
+    el.classList.remove("pop");
+    void el.offsetWidth;
+    el.classList.add("pop");
+  }
+}
+
+// Refresh a row's visit badge without full re-render
+function refreshBadge(rk, state) {
+  const badge = document.getElementById("badge_"+rk);
+  const sec   = document.querySelector(`[data-rk="${CSS.escape(rk)}"]`);
+  if (!badge||!sec) return;
+  const cards = sec.querySelectorAll(".co-card");
+  let vis=0; cards.forEach(c=>{if(state[key(parseInt(c.dataset.i))]?.visited) vis++;});
+  badge.textContent = vis+"/"+cards.length;
+  badge.className = vis===cards.length&&cards.length>0?"row-pill done":vis>0?"row-pill some":"row-pill";
+}
+
+// ════════════════════════════════════════
+// EVENT DELEGATION
+// ════════════════════════════════════════
+let _dt={};
+
+document.getElementById("content").addEventListener("click", e => {
+  const state = load();
+
+  // Row toggle
+  const tog = e.target.closest("[data-toggle]");
+  if (tog) {
+    const bId  = tog.getAttribute("data-toggle");
+    const body = document.getElementById(bId);
+    const rk   = tog.closest(".row-section").dataset.rk;
+    const chev = document.getElementById("ch"+rk.replace(/\W/g,"_"));
+    body?.classList.toggle("open");
+    chev?.classList.toggle("open");
+    return;
+  }
+
+  // Notes panel toggle
+  const npBtn = e.target.closest("[data-np]");
+  if (npBtn) {
+    const panel = document.getElementById(npBtn.dataset.np);
+    if (!panel) return;
+    panel.classList.toggle("open");
+    const on = panel.classList.contains("open");
+    npBtn.classList.toggle("on", on);
+    if (on) panel.querySelector("textarea")?.focus();
+    return;
+  }
+
+  // Star toggle
+  const starBtn = e.target.closest("[data-star]");
+  if (starBtn) {
+    const i = parseInt(starBtn.dataset.star);
+    const k = key(i);
+    if (!state[k]) state[k]={};
+    state[k].starred = !state[k].starred;
+    save(state);
+    const on = state[k].starred;
+    starBtn.textContent = on?"★":"☆";
+    starBtn.classList.toggle("on", on);
+    document.getElementById("cc"+i)?.classList.toggle("starred", on);
+    updateStats(state);
+    toast(on?"★ Added to My Schedule":"Removed from My Schedule");
+    return;
+  }
+
+  // Visit toggle
+  const visBtn = e.target.closest("[data-visit]");
+  if (visBtn) {
+    const i = parseInt(visBtn.dataset.visit);
+    const k = key(i);
+    if (!state[k]) state[k]={};
+    state[k].visited = !state[k].visited;
+    save(state);
+    const on = state[k].visited;
+    visBtn.classList.toggle("on", on);
+    visBtn.innerHTML = `<span class="check-icon">${on?"✓":""}</span>${on?"Visited":"Mark Visited"}`;
+    const card = document.getElementById("cc"+i);
+    card?.classList.toggle("visited", on);
+    const rk = card?.closest("[data-rk]")?.dataset.rk;
+    if (rk) refreshBadge(rk, state);
+    updateStats(state);
+    if (on) toast("✓ Marked as visited!");
+    return;
+  }
+});
+
+// Notes auto-save (debounced)
+document.getElementById("content").addEventListener("input", e => {
+  if (!e.target.classList.contains("nf")) return;
+  const i = parseInt(e.target.dataset.i);
+  const f = e.target.dataset.f;
+  const v = e.target.value;
+  clearTimeout(_dt[i+f]);
+  _dt[i+f] = setTimeout(()=>{
+    const state = load();
+    const k = key(i);
+    if (!state[k]) state[k]={};
+    state[k][f] = v;
+    save(state);
+    const card = document.getElementById("cc"+i);
+    const btn  = card?.querySelector("[data-np]");
+    if (btn && (state[k].pre||state[k].post)) {
+      btn.textContent="📝 Notes"; btn.classList.add("on");
+    }
+  }, 480);
+});
+
+// Filter pills
+document.querySelector(".filter-bar").addEventListener("click", e => {
+  const pill = e.target.closest(".f-pill");
+  if (!pill) return;
+  document.querySelectorAll(".f-pill").forEach(p=>p.classList.remove("active"));
+  pill.classList.add("active");
+  activeFilter = pill.dataset.f;
+  render();
+});
+
+// Search
+let _st;
+document.getElementById("searchInput").addEventListener("input", ()=>{
+  clearTimeout(_st); _st=setTimeout(render,200);
+});
+
+// Expand / Collapse All
+document.getElementById("expandBtn").addEventListener("click", function(){
+  allOpen = !allOpen;
+  document.querySelectorAll(".row-body").forEach(b=>b.classList.toggle("open",allOpen));
+  document.querySelectorAll(".row-chevron").forEach(c=>c.classList.toggle("open",allOpen));
+  this.textContent = allOpen?"Collapse All":"Expand All";
+});
+
+// Export CSV
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const state = load();
+  const rows  = [["Company","Booth","Row","In Schedule","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  [...CO].map((c,i)=>({...c,i}))
+    .sort((a,b)=>a.n.localeCompare(b.n))
+    .forEach(c=>{
+      const s  = state[key(c.i)]||{};
+      const rk = rowKey(c.b);
+      rows.push([
+        c.n, c.b,
+        isOutdoor(rk)?"Outdoor T"+rk.slice(1)+"s":"Row "+rk+"s",
+        s.starred?"Yes":"No",
+        s.visited?"Yes":"No",
+        s.pre||"", s.post||""
+      ]);
+    });
+  const csv  = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement("a"),{href:url,download:"LPGas_BoothNotes.csv"});
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast("✅ CSV downloaded — open in Excel!");
+});
+
+// Toast
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+
+// Service Worker
+if("serviceWorker" in navigator)
+  window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}));
+
+// Boot
+render();
+</script>
+</body>
+</html>
