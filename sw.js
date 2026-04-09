@@ -1,8 +1,8 @@
 // LPGas Booth Guide — Service Worker
-// Caches the app for full offline use
+// Uses relative paths so it works on GitHub Pages subdirectories
 
-const CACHE_NAME = 'lpgas-guide-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE_NAME = 'lpgas-guide-v2';
+const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
