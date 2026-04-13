@@ -1,27 +1,27 @@
 // LPGas Booth Guide — Service Worker
 // Uses relative paths so it works on GitHub Pages subdirectories
 
-const CACHE_NAME = 'lpgas-guide-v2';
+const CACHE_NAME = 'lpgas-guide-v3';
 const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
+    event.waitUntil(
+          caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+        );
+    self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
+    event.waitUntil(
+          caches.keys().then(keys =>
+                  Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+                                 )
+        );
+    self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
-  );
+    event.respondWith(
+          caches.match(event.request).then(cached => cached || fetch(event.request))
+        );
 });
