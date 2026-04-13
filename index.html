@@ -248,6 +248,9 @@ body {
 .f-pill.active.f-visited  { background: var(--green);  border-color: var(--green);  color: #fff; }
 .f-pill.active.f-novisit  { background: var(--maroon); border-color: var(--maroon); color: #fff; }
 .f-pill.active.f-schedule { background: var(--blue-deeper); border-color: var(--blue-deeper); color: #fff; }
+.f-pill.active.f-customer { background: var(--green);  border-color: var(--green);  color: #fff; }
+.f-pill.active.f-noncust  { background: var(--maroon); border-color: var(--maroon); color: #fff; }
+.f-pill.active.f-unknown  { background: var(--muted);  border-color: var(--muted);  color: #fff; }
 
 /* ── STAT CHIPS ── */
 .stat-row {
@@ -507,6 +510,52 @@ body {
   color: #fff;
 }
 
+/* ── CUSTOMER STATUS SEGMENTED CONTROL ── */
+.status-group {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+.status-btn {
+  padding: 5px 9px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 0.67rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  -webkit-user-select: none; user-select: none;
+  white-space: nowrap;
+}
+.status-btn:last-child { border-right: none; }
+.status-btn:active { opacity: 0.75; }
+.status-btn.s-cust.active  { background: var(--green);  color: #fff; }
+.status-btn.s-non.active   { background: var(--maroon); color: #fff; }
+.status-btn.s-unk.active   { background: var(--blue-mid); color: var(--blue-deeper); }
+
+/* Status badge shown in card-top row */
+.status-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: none;
+  align-self: center;
+}
+.status-badge.sb-cust { display: inline-block; background: var(--green-light);  color: var(--green); }
+.status-badge.sb-non  { display: inline-block; background: var(--maroon-light); color: var(--maroon); }
+
+/* Left-border accent for status */
+.co-card.s-customer::before    { background: var(--green); }
+.co-card.s-noncustomer::before { background: var(--maroon); }
+
 /* ── NOTES PANEL ── */
 .notes-panel {
   display: grid;
@@ -632,6 +681,9 @@ textarea.nf.post { border-left: 3px solid var(--green); }
   <button class="f-pill f-novisit"   data-f="novisit">Not Visited</button>
   <button class="f-pill f-visited"   data-f="visited">✓ Visited</button>
   <button class="f-pill f-schedule"  data-f="schedule">★ My Schedule</button>
+  <button class="f-pill f-customer"  data-f="customer">🏢 Customers</button>
+  <button class="f-pill f-noncust"   data-f="noncustomer">✕ Non-Customers</button>
+  <button class="f-pill f-unknown"   data-f="unknown">❓ Unknown</button>
 </div>
 
 <!-- ════ STAT CHIPS ════ -->
@@ -943,17 +995,23 @@ function render() {
   // Build indexed list, apply search + filter
   let list = CO.map((c,i)=>({...c,i}));
   if (q) list = list.filter(c=>c.n.toLowerCase().includes(q)||c.b.toLowerCase().includes(q));
-  if (activeFilter==="visited")  list = list.filter(c=>state[key(c.i)]?.visited);
-  if (activeFilter==="novisit")  list = list.filter(c=>!state[key(c.i)]?.visited);
-  if (activeFilter==="schedule") list = list.filter(c=>state[key(c.i)]?.starred);
+  if (activeFilter==="visited")     list = list.filter(c=>state[key(c.i)]?.visited);
+  if (activeFilter==="novisit")     list = list.filter(c=>!state[key(c.i)]?.visited);
+  if (activeFilter==="schedule")    list = list.filter(c=>state[key(c.i)]?.starred);
+  if (activeFilter==="customer")    list = list.filter(c=>state[key(c.i)]?.status==="customer");
+  if (activeFilter==="noncustomer") list = list.filter(c=>state[key(c.i)]?.status==="noncustomer");
+  if (activeFilter==="unknown")     list = list.filter(c=>!state[key(c.i)]?.status||state[key(c.i)]?.status==="unknown");
 
   const el = document.getElementById("content");
 
   if (!list.length) {
     const msgs = {
-      schedule: ["★","Nothing scheduled yet","Tap ☆ on any company to add it to My Schedule"],
-      visited:  ["✓", "No visited booths yet","Mark booths as visited as you walk the floor"],
-      novisit:  ["🎯","All caught up!","Looks like you've visited every filtered company"],
+      schedule:    ["★","Nothing scheduled yet","Tap ☆ on any company to add it to My Schedule"],
+      visited:     ["✓","No visited booths yet","Mark booths as visited as you walk the floor"],
+      novisit:     ["🎯","All caught up!","Looks like you've visited every filtered company"],
+      customer:    ["🏢","No customers tagged yet","Tap 'Customer' on any company card to tag them"],
+      noncustomer: ["✕","No non-customers tagged yet","Tap 'Non-Cust' on any company card"],
+      unknown:     ["❓","All companies classified!","Every company has a customer status set"],
     };
     const [icon, title, sub] = msgs[activeFilter] || ["🔍","No results","Try a different search term"];
     el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">${icon}</div><h3>${title}</h3><p>${sub}</p></div>`;
@@ -996,12 +1054,17 @@ function render() {
       const visited = !!s.visited;
       const starred = !!s.starred;
       const hasNotes= !!(s.pre||s.post);
+      const status  = s.status || "unknown";
       const npId    = "np"+c.i;
+      const badgeCls = status==="customer"?"sb-cust":status==="noncustomer"?"sb-non":"";
+      const badgeTxt = status==="customer"?"🏢 Customer":status==="noncustomer"?"✕ Non-Customer":"";
+      const statusCardCls = status==="customer"?" s-customer":status==="noncustomer"?" s-noncustomer":"";
 
       html += `
-    <div class="co-card${visited?" visited":""}${starred?" starred":""}" id="cc${c.i}" data-i="${c.i}">
+    <div class="co-card${visited?" visited":""}${starred?" starred":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
       <div class="card-top">
         <span class="co-name">${esc(c.n)}</span>
+        ${badgeTxt?`<span class="status-badge ${badgeCls}">${badgeTxt}</span>`:""}
         <span class="booth-badge${outdoor?" outdoor":""}">${esc(c.b)}</span>
       </div>
       <div class="card-actions">
@@ -1011,6 +1074,11 @@ function render() {
           <span class="check-icon">${visited?"✓":""}</span>
           ${visited?"Visited":"Mark Visited"}
         </button>
+        <div class="status-group">
+          <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
+          <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
+          <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unknown</button>
+        </div>
       </div>
       <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
         <div class="notes-panel-inner"><div class="notes-content">
@@ -1122,6 +1190,39 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  // Status toggle
+  const statBtn = e.target.closest("[data-sval]");
+  if (statBtn) {
+    const i   = parseInt(statBtn.dataset.si);
+    const val = statBtn.dataset.sval;
+    const k   = key(i);
+    if (!state[k]) state[k]={};
+    // Tap active non-unknown → reset to unknown
+    state[k].status = (state[k].status === val && val !== "unknown") ? "unknown" : val;
+    save(state);
+    const ns = state[k].status;
+    // Update buttons
+    const grp = statBtn.closest(".status-group");
+    grp.querySelectorAll(".status-btn").forEach(b => b.classList.toggle("active", b.dataset.sval===ns));
+    // Update card class
+    const card = document.getElementById("cc"+i);
+    card.classList.remove("s-customer","s-noncustomer");
+    if (ns!=="unknown") card.classList.add("s-"+ns);
+    // Update status badge
+    let badge = card.querySelector(".status-badge");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "status-badge";
+      card.querySelector(".card-top .co-name").after(badge);
+    }
+    if (ns==="customer")    { badge.textContent="🏢 Customer";    badge.className="status-badge sb-cust"; }
+    else if (ns==="noncustomer") { badge.textContent="✕ Non-Customer"; badge.className="status-badge sb-non"; }
+    else { badge.textContent=""; badge.className="status-badge"; }
+    const label = ns==="customer"?"🏢 Marked as Customer":ns==="noncustomer"?"✕ Marked as Non-Customer":"Status reset to Unknown";
+    toast(label);
+    return;
+  }
+
   // Visit toggle
   const visBtn = e.target.closest("[data-visit]");
   if (visBtn) {
@@ -1191,15 +1292,17 @@ document.getElementById("expandBtn").addEventListener("click", function(){
 // Export CSV
 document.getElementById("exportBtn").addEventListener("click", ()=>{
   const state = load();
-  const rows  = [["Company","Booth","Row","In Schedule","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  const rows  = [["Company","Booth","Row","Customer Status","In Schedule","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i)=>({...c,i}))
     .sort((a,b)=>a.n.localeCompare(b.n))
     .forEach(c=>{
       const s  = state[key(c.i)]||{};
       const rk = rowKey(c.b);
+      const st = s.status==="customer"?"Existing Customer":s.status==="noncustomer"?"Non-Customer":"Unknown";
       rows.push([
         c.n, c.b,
         isOutdoor(rk)?"Outdoor T"+rk.slice(1)+"s":"Row "+rk+"s",
+        st,
         s.starred?"Yes":"No",
         s.visited?"Yes":"No",
         s.pre||"", s.post||""
