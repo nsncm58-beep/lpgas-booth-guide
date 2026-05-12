@@ -677,42 +677,144 @@ textarea.nf.post { border-left: 3px solid var(--green); }
   padding: 3px 12px;
 }
 
-/* ── TIME BLOCK PICKER (on starred cards) ── */
-.co-card:not(.starred) .tb-group { display: none; }
-.tb-group {
-  display: flex;
+/* ── SCHEDULE SELECT (on cards) ── */
+.sched-sel {
+  padding: 6px 10px;
   border-radius: 8px;
-  overflow: hidden;
   border: 1.5px solid var(--border);
-  flex-shrink: 0;
-}
-.tb-btn {
-  padding: 5px 8px;
-  border: none;
-  border-right: 1px solid var(--border);
   background: var(--bg);
-  font-size: 0.65rem;
+  font-size: 0.74rem;
   font-weight: 600;
   font-family: 'Montserrat', sans-serif;
-  color: var(--muted);
+  color: var(--text-2);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  -webkit-user-select: none; user-select: none;
+  max-width: 170px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.sched-sel.scheduled {
+  border-color: var(--blue);
+  color: var(--blue);
+  background: var(--blue-light);
+}
+
+/* ── SCHEDULE VIEW ── */
+.sched-search-box {
+  margin: 10px 10px 6px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 12px 14px;
+}
+.sched-search-box h3 {
+  font-family: 'Nunito', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.sched-search-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sched-search-input:focus { border-color: var(--blue); background: #fff; }
+.sched-results { margin-top: 8px; }
+.sched-result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sched-result-row:last-child { border-bottom: none; }
+.sched-result-name { flex: 1; font-size: 0.83rem; font-weight: 600; color: var(--text); }
+.sched-result-booth { font-size: 0.7rem; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+.sched-add-sel {
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1.5px solid var(--blue);
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Time slot rows */
+.time-slot { margin: 0 10px 2px; }
+.time-slot-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px 4px;
+}
+.time-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 62px;
+  font-family: 'Montserrat', sans-serif;
   white-space: nowrap;
 }
-.tb-btn:last-child { border-right: none; }
-.tb-btn:active { opacity: 0.75; }
-.tb-btn.tb-morn.active { background: #D97706; color: #fff; }
-.tb-btn.tb-aftn.active { background: var(--blue); color: #fff; }
-.tb-btn.tb-eve.active  { background: var(--blue-deeper); color: #fff; }
-
-/* ── SCHEDULE TIME-BLOCK SECTION COLORS ── */
-.row-header.tb-morning     { background: #D97706; }
-.row-header.tb-morning:active { background: #B45309; }
-.row-header.tb-evening     { background: var(--blue-deeper); }
-.row-header.tb-evening:active { background: #002D57; }
-.row-header.tb-unscheduled { background: var(--muted); }
-.row-header.tb-unscheduled:active { background: #6b7f92; }
+.time-line { flex: 1; height: 1px; background: var(--border); }
+.sched-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  margin-bottom: 5px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--blue);
+  animation: fadeUp 0.22s ease both;
+}
+.sched-card.visited { border-left-color: var(--green); }
+.sched-card-info { flex: 1; min-width: 0; }
+.sched-card-name {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--blue-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sched-card-booth {
+  font-size: 0.69rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 1px;
+}
+.sched-rm-btn {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  -webkit-user-select: none; user-select: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.sched-rm-btn:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
+.sched-empty-day {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  animation: fadeIn 0.3s ease;
+}
 </style>
 </head>
 <body>
@@ -746,7 +848,7 @@ textarea.nf.post { border-left: 3px solid var(--green); }
   <button class="f-pill active"      data-f="all">All Booths</button>
   <button class="f-pill f-novisit"   data-f="novisit">Not Visited</button>
   <button class="f-pill f-visited"   data-f="visited">✓ Visited</button>
-  <button class="f-pill f-schedule"  data-f="schedule">★ My Schedule</button>
+  <button class="f-pill f-schedule"  data-f="schedule">📅 My Schedule</button>
   <button class="f-pill f-customer"  data-f="customer">🏢 Customers</button>
   <button class="f-pill f-noncust"   data-f="noncustomer">✕ Non-Customers</button>
   <button class="f-pill f-unknown"   data-f="unknown">❓ Unknown</button>
@@ -772,7 +874,7 @@ textarea.nf.post { border-left: 3px solid var(--green); }
 <div id="content"></div>
 
 <div class="app-footer">
-  Notes save automatically · ★ stars companies to My Schedule<br>
+  Notes save automatically · Use 📅 My Schedule to plan your day<br>
   Export CSV to open all notes in Excel
 </div>
 <div id="toast"></div>
@@ -1011,6 +1113,20 @@ const CO = [
 ];
 
 // ════════════════════════════════════════
+// TIME SLOTS  7:00 AM – 6:00 PM, 30 min
+// ════════════════════════════════════════
+const TIME_SLOTS = (() => {
+  const out = [];
+  for (let m = 7*60; m <= 18*60; m += 30) {
+    const h = Math.floor(m/60), mn = m%60;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const dh   = h > 12 ? h-12 : h;
+    out.push(`${dh}:${mn===0?"00":"30"} ${ampm}`);
+  }
+  return out;
+})();
+
+// ════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════
 const STORE = "lpgas_v3";
@@ -1048,8 +1164,9 @@ function esc(s){
 // ════════════════════════════════════════
 // APP STATE
 // ════════════════════════════════════════
-let activeFilter = "all";
-let allOpen = false;
+let activeFilter  = "all";
+let allOpen       = false;
+let schedSearchQ  = "";
 
 // ════════════════════════════════════════
 // CARD BUILDER
@@ -1057,24 +1174,23 @@ let allOpen = false;
 function buildCard(c, state) {
   const s          = state[key(c.i)] || {};
   const visited    = !!s.visited;
-  const starred    = !!s.starred;
   const hasNotes   = !!(s.pre||s.post);
   const status     = s.status || "unknown";
-  const timeBlock  = s.timeBlock || null;
+  const schedTime  = s.scheduledTime || null;
   const outdoor    = isOutdoor(rowKey(c.b));
   const npId       = "np"+c.i;
   const badgeCls   = status==="customer"?"sb-cust":status==="noncustomer"?"sb-non":"";
   const badgeTxt   = status==="customer"?"🏢 Customer":status==="noncustomer"?"✕ Non-Customer":"";
   const statusCardCls = status==="customer"?" s-customer":status==="noncustomer"?" s-noncustomer":"";
+  const timeOpts   = TIME_SLOTS.map(t=>`<option value="${esc(t)}"${schedTime===t?" selected":""}>${t}</option>`).join("");
   return `
-    <div class="co-card${visited?" visited":""}${starred?" starred":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
+    <div class="co-card${visited?" visited":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
       <div class="card-top">
         <span class="co-name">${esc(c.n)}</span>
         ${badgeTxt?`<span class="status-badge ${badgeCls}">${badgeTxt}</span>`:""}
         <span class="booth-badge${outdoor?" outdoor":""}">${esc(c.b)}</span>
       </div>
       <div class="card-actions">
-        <button class="star-btn${starred?" on":""}" data-star="${c.i}" title="My Schedule">${starred?"★":"☆"}</button>
         <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"📝 Notes":"＋ Notes"}</button>
         <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
           <span class="check-icon">${visited?"✓":""}</span>
@@ -1085,11 +1201,10 @@ function buildCard(c, state) {
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
           <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unknown</button>
         </div>
-        <div class="tb-group" title="Assign time block">
-          <button class="tb-btn tb-morn${timeBlock==="morning"?" active":""}" data-tb="${c.i}" data-tbval="morning">🌅 AM</button>
-          <button class="tb-btn tb-aftn${timeBlock==="afternoon"?" active":""}" data-tb="${c.i}" data-tbval="afternoon">☀️ PM</button>
-          <button class="tb-btn tb-eve${timeBlock==="evening"?" active":""}" data-tb="${c.i}" data-tbval="evening">🌆 EOD</button>
-        </div>
+        <select class="sched-sel${schedTime?" scheduled":""}" data-sched="${c.i}" title="Add to My Schedule">
+          <option value="">📅 Schedule</option>
+          ${timeOpts}
+        </select>
       </div>
       <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
         <div class="notes-panel-inner"><div class="notes-content">
@@ -1118,7 +1233,7 @@ function render() {
   if (q) list = list.filter(c=>c.n.toLowerCase().includes(q)||c.b.toLowerCase().includes(q));
   if (activeFilter==="visited")     list = list.filter(c=>state[key(c.i)]?.visited);
   if (activeFilter==="novisit")     list = list.filter(c=>!state[key(c.i)]?.visited);
-  if (activeFilter==="schedule")    list = list.filter(c=>state[key(c.i)]?.starred);
+  if (activeFilter==="schedule")    list = list.filter(c=>state[key(c.i)]?.scheduledTime);
   if (activeFilter==="customer")    list = list.filter(c=>state[key(c.i)]?.status==="customer");
   if (activeFilter==="noncustomer") list = list.filter(c=>state[key(c.i)]?.status==="noncustomer");
   if (activeFilter==="unknown")     list = list.filter(c=>!state[key(c.i)]?.status||state[key(c.i)]?.status==="unknown");
@@ -1127,7 +1242,7 @@ function render() {
 
   if (!list.length) {
     const msgs = {
-      schedule:    ["★","Nothing scheduled yet","Tap ☆ on any company to add it to My Schedule"],
+      schedule:    ["📅","Nothing scheduled yet","Use the 📅 Schedule dropdown on any booth card"],
       visited:     ["✓","No visited booths yet","Mark booths as visited as you walk the floor"],
       novisit:     ["🎯","All caught up!","Looks like you've visited every filtered company"],
       customer:    ["🏢","No customers tagged yet","Tap 'Customer' on any company card to tag them"],
@@ -1140,42 +1255,65 @@ function render() {
     return;
   }
 
-  // ── SCHEDULE VIEW: time block grouping ──
+  // ── SCHEDULE VIEW: real time-slot schedule ──
   if (activeFilter === "schedule") {
-    const TB_DEFS = [
-      { val:"morning",   cls:"tb-morning",   emoji:"🌅", label:"Morning"    },
-      { val:"afternoon", cls:"tb-afternoon", emoji:"☀️",  label:"Afternoon"  },
-      { val:"evening",   cls:"tb-evening",   emoji:"🌆", label:"End of Day" },
-      { val:null,        cls:"tb-unscheduled",emoji:"📋",label:"Unscheduled"},
-    ];
-    const tbBuckets = { morning:[], afternoon:[], evening:[], unscheduled:[] };
-    list.forEach(c => {
-      const tb = state[key(c.i)]?.timeBlock || null;
-      const bucket = tb || "unscheduled";
-      tbBuckets[bucket].push(c);
+    const byTime = {};
+    CO.forEach((c,i) => {
+      const t = state[key(i)]?.scheduledTime;
+      if (t) (byTime[t] = byTime[t]||[]).push({...c,i});
     });
-    let html = "";
-    TB_DEFS.forEach((def, ri) => {
-      const bucketKey = def.val || "unscheduled";
-      const comps = (tbBuckets[bucketKey] || []).slice().sort((a,b)=>a.n.localeCompare(b.n));
-      if (!comps.length) return;
-      const nVisited = comps.filter(c=>state[key(c.i)]?.visited).length;
-      const pillCls  = nVisited===comps.length&&comps.length>0?"row-pill done":nVisited>0?"row-pill some":"row-pill";
-      const bodyId   = "tbb_"+bucketKey;
-      html += `
-<div class="row-section" style="animation-delay:${ri*0.06}s">
-  <div class="row-header ${def.cls}" data-toggle="${bodyId}">
-    <span class="row-title">${def.emoji} ${def.label}</span>
-    <span class="row-right">
-      <span class="${pillCls}">${nVisited}/${comps.length}</span>
-      <span class="row-chevron open">▼</span>
-    </span>
-  </div>
-  <div class="row-body open" id="${bodyId}"><div class="row-body-inner">`;
-      comps.forEach(c => { html += buildCard(c, state); });
-      html += `</div></div></div>`;
-    });
+    const searchHtml = (() => {
+      if (!schedSearchQ) return "";
+      const matches = CO.map((c,i)=>({...c,i}))
+        .filter(c => !state[key(c.i)]?.scheduledTime &&
+          (c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ)))
+        .slice(0,8);
+      if (!matches.length)
+        return `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No unscheduled companies match</div>`;
+      return matches.map(c=>`
+        <div class="sched-result-row">
+          <span class="sched-result-name">${esc(c.n)}</span>
+          <span class="sched-result-booth">${esc(c.b)}</span>
+          <select class="sched-add-sel" data-add-i="${c.i}">
+            <option value="">＋ Add time</option>
+            ${TIME_SLOTS.map(t=>`<option value="${esc(t)}">${t}</option>`).join("")}
+          </select>
+        </div>`).join("");
+    })();
+    const hasAny = Object.keys(byTime).length > 0;
+    let html = `
+<div class="sched-search-box">
+  <h3>📅 My Schedule</h3>
+  <input class="sched-search-input" type="text" placeholder="Search companies to add…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
+  <div class="sched-results" id="sched-results">${searchHtml}</div>
+</div>`;
+    if (!hasAny) {
+      html += `<div class="sched-empty-day">
+        <div style="font-size:2.2rem;margin-bottom:10px;">📅</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px;">No booths scheduled yet</div>
+        <div style="color:var(--muted);font-size:0.82rem;line-height:1.5;">Search above to add companies,<br>or use the 📅 Schedule dropdown on any booth card.</div>
+      </div>`;
+    } else {
+      TIME_SLOTS.forEach(t => {
+        const comps = byTime[t] || [];
+        html += `<div class="time-slot">
+          <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
+        comps.forEach(c => {
+          const visited = !!state[key(c.i)]?.visited;
+          html += `<div class="sched-card${visited?" visited":""}">
+            <div class="sched-card-info">
+              <div class="sched-card-name">${esc(c.n)}</div>
+              <div class="sched-card-booth">Booth ${esc(c.b)}</div>
+            </div>
+            <button class="sched-rm-btn" data-rm="${c.i}" title="Remove from schedule">✕</button>
+          </div>`;
+        });
+        html += `</div>`;
+      });
+    }
     el.innerHTML = html;
+    // Re-focus search if was typing
+    if (schedSearchQ) document.querySelector(".sched-search-input")?.focus();
     updateStats(state);
     return;
   }
@@ -1223,7 +1361,7 @@ function render() {
 // ════════════════════════════════════════
 function updateStats(state) {
   const vis = Object.values(state).filter(s=>s?.visited).length;
-  const sch = Object.values(state).filter(s=>s?.starred).length;
+  const sch = Object.values(state).filter(s=>s?.scheduledTime).length;
   animVal("sTot", CO.length);
   animVal("sVis", vis);
   animVal("sSch", sch);
@@ -1287,25 +1425,17 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  // Star toggle
-  const starBtn = e.target.closest("[data-star]");
-  if (starBtn) {
-    const i = parseInt(starBtn.dataset.star);
+  // Remove from schedule (× button in schedule view)
+  const rmBtn = e.target.closest("[data-rm]");
+  if (rmBtn) {
+    const i = parseInt(rmBtn.dataset.rm);
     const k = key(i);
     if (!state[k]) state[k]={};
-    state[k].starred = !state[k].starred;
-    if (!state[k].starred) state[k].timeBlock = null; // clear block when unstarred
+    state[k].scheduledTime = null;
     save(state);
-    const on = state[k].starred;
-    if (activeFilter === "schedule") { render(); return; }
-    starBtn.textContent = on?"★":"☆";
-    starBtn.classList.toggle("on", on);
-    const card = document.getElementById("cc"+i);
-    card?.classList.toggle("starred", on);
-    // Update tb-group buttons to reflect cleared state
-    if (!on) card?.querySelectorAll(".tb-btn").forEach(b=>b.classList.remove("active"));
     updateStats(state);
-    toast(on?"★ Added to My Schedule":"Removed from My Schedule");
+    toast("Removed from schedule");
+    render();
     return;
   }
 
@@ -1342,25 +1472,6 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  // Time block toggle
-  const tbBtn = e.target.closest("[data-tbval]");
-  if (tbBtn) {
-    const i   = parseInt(tbBtn.dataset.tb);
-    const val = tbBtn.dataset.tbval;
-    const k   = key(i);
-    if (!state[k]) state[k]={};
-    // Tap same block again → unset
-    state[k].timeBlock = (state[k].timeBlock === val) ? null : val;
-    save(state);
-    const nb = state[k].timeBlock;
-    // Update button states in this card
-    const tbGrp = tbBtn.closest(".tb-group");
-    tbGrp.querySelectorAll(".tb-btn").forEach(b => b.classList.toggle("active", b.dataset.tbval === nb));
-    const labels = { morning:"🌅 Morning", afternoon:"☀️ Afternoon", evening:"🌆 End of Day" };
-    toast(nb ? `${labels[nb]} block assigned` : "Time block cleared");
-    return;
-  }
-
   // Visit toggle
   const visBtn = e.target.closest("[data-visit]");
   if (visBtn) {
@@ -1384,6 +1495,30 @@ document.getElementById("content").addEventListener("click", e => {
 
 // Notes auto-save (debounced)
 document.getElementById("content").addEventListener("input", e => {
+  // Schedule search
+  if (e.target.classList.contains("sched-search-input")) {
+    schedSearchQ = e.target.value.trim().toLowerCase();
+    const state = load();
+    const matches = schedSearchQ ? CO.map((c,i)=>({...c,i}))
+      .filter(c => !state[key(c.i)]?.scheduledTime &&
+        (c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ)))
+      .slice(0,8) : [];
+    const rEl = document.getElementById("sched-results");
+    if (rEl) {
+      if (!schedSearchQ) { rEl.innerHTML = ""; return; }
+      if (!matches.length) { rEl.innerHTML = `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No unscheduled companies match</div>`; return; }
+      rEl.innerHTML = matches.map(c=>`
+        <div class="sched-result-row">
+          <span class="sched-result-name">${esc(c.n)}</span>
+          <span class="sched-result-booth">${esc(c.b)}</span>
+          <select class="sched-add-sel" data-add-i="${c.i}">
+            <option value="">＋ Add time</option>
+            ${TIME_SLOTS.map(t=>`<option value="${esc(t)}">${t}</option>`).join("")}
+          </select>
+        </div>`).join("");
+    }
+    return;
+  }
   if (!e.target.classList.contains("nf")) return;
   const i = parseInt(e.target.dataset.i);
   const f = e.target.dataset.f;
@@ -1401,6 +1536,42 @@ document.getElementById("content").addEventListener("input", e => {
       btn.textContent="📝 Notes"; btn.classList.add("on");
     }
   }, 480);
+});
+
+// Schedule select changes (card dropdown + search-add dropdown)
+document.getElementById("content").addEventListener("change", e => {
+  // Card schedule select
+  const sel = e.target.closest(".sched-sel");
+  if (sel) {
+    const i = parseInt(sel.dataset.sched);
+    const t = sel.value;
+    const k = key(i);
+    const state = load();
+    if (!state[k]) state[k]={};
+    state[k].scheduledTime = t || null;
+    save(state);
+    sel.classList.toggle("scheduled", !!t);
+    updateStats(state);
+    toast(t ? `📅 Scheduled for ${t}` : "Removed from schedule");
+    return;
+  }
+  // Search-result add select
+  const addSel = e.target.closest(".sched-add-sel");
+  if (addSel) {
+    const t = addSel.value;
+    if (!t) return;
+    const i = parseInt(addSel.dataset.addI);
+    const k = key(i);
+    const state = load();
+    if (!state[k]) state[k]={};
+    state[k].scheduledTime = t;
+    save(state);
+    schedSearchQ = "";
+    updateStats(state);
+    toast(`📅 Added at ${t}`);
+    render();
+    return;
+  }
 });
 
 // Filter pills
@@ -1430,20 +1601,18 @@ document.getElementById("expandBtn").addEventListener("click", function(){
 // Export CSV
 document.getElementById("exportBtn").addEventListener("click", ()=>{
   const state = load();
-  const rows  = [["Company","Booth","Row","Customer Status","In Schedule","Time Block","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  const rows  = [["Company","Booth","Row","Customer Status","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i)=>({...c,i}))
     .sort((a,b)=>a.n.localeCompare(b.n))
     .forEach(c=>{
       const s  = state[key(c.i)]||{};
       const rk = rowKey(c.b);
       const st = s.status==="customer"?"Existing Customer":s.status==="noncustomer"?"Non-Customer":"Unknown";
-      const tbLabel = s.timeBlock==="morning"?"Morning":s.timeBlock==="afternoon"?"Afternoon":s.timeBlock==="evening"?"End of Day":"";
       rows.push([
         c.n, c.b,
         isOutdoor(rk)?"Outdoor T"+rk.slice(1)+"s":"Row "+rk+"s",
         st,
-        s.starred?"Yes":"No",
-        tbLabel,
+        s.scheduledTime||"",
         s.visited?"Yes":"No",
         s.pre||"", s.post||""
       ]);
