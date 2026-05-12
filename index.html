@@ -650,9 +650,75 @@ textarea.nf.post { border-left: 3px solid var(--green); }
   font-size: 0.69rem;
   line-height: 1.7;
 }
+
+/* ── UPDATE BANNER ── */
+#update-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 600;
+  background: var(--blue-deeper);
+  color: #fff;
+  padding: 15px 20px;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  border-top: 2px solid rgba(255,255,255,0.2);
+  display: none;
+  -webkit-user-select: none; user-select: none;
+}
+#update-banner.show { display: block; animation: fadeUp 0.35s ease; }
+#update-banner .ub-action {
+  display: inline-block;
+  margin-left: 10px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 3px 12px;
+}
+
+/* ── TIME BLOCK PICKER (on starred cards) ── */
+.co-card:not(.starred) .tb-group { display: none; }
+.tb-group {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+}
+.tb-btn {
+  padding: 5px 8px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  -webkit-user-select: none; user-select: none;
+  white-space: nowrap;
+}
+.tb-btn:last-child { border-right: none; }
+.tb-btn:active { opacity: 0.75; }
+.tb-btn.tb-morn.active { background: #D97706; color: #fff; }
+.tb-btn.tb-aftn.active { background: var(--blue); color: #fff; }
+.tb-btn.tb-eve.active  { background: var(--blue-deeper); color: #fff; }
+
+/* ── SCHEDULE TIME-BLOCK SECTION COLORS ── */
+.row-header.tb-morning     { background: #D97706; }
+.row-header.tb-morning:active { background: #B45309; }
+.row-header.tb-evening     { background: var(--blue-deeper); }
+.row-header.tb-evening:active { background: #002D57; }
+.row-header.tb-unscheduled { background: var(--muted); }
+.row-header.tb-unscheduled:active { background: #6b7f92; }
 </style>
 </head>
 <body>
+
+<!-- ════ UPDATE BANNER ════ -->
+<div id="update-banner" role="button" tabindex="0">🔄 App update ready!<span class="ub-action">Tap to reload</span></div>
 
 <!-- ════ HEADER ════ -->
 <div class="app-header">
@@ -986,6 +1052,61 @@ let activeFilter = "all";
 let allOpen = false;
 
 // ════════════════════════════════════════
+// CARD BUILDER
+// ════════════════════════════════════════
+function buildCard(c, state) {
+  const s          = state[key(c.i)] || {};
+  const visited    = !!s.visited;
+  const starred    = !!s.starred;
+  const hasNotes   = !!(s.pre||s.post);
+  const status     = s.status || "unknown";
+  const timeBlock  = s.timeBlock || null;
+  const outdoor    = isOutdoor(rowKey(c.b));
+  const npId       = "np"+c.i;
+  const badgeCls   = status==="customer"?"sb-cust":status==="noncustomer"?"sb-non":"";
+  const badgeTxt   = status==="customer"?"🏢 Customer":status==="noncustomer"?"✕ Non-Customer":"";
+  const statusCardCls = status==="customer"?" s-customer":status==="noncustomer"?" s-noncustomer":"";
+  return `
+    <div class="co-card${visited?" visited":""}${starred?" starred":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
+      <div class="card-top">
+        <span class="co-name">${esc(c.n)}</span>
+        ${badgeTxt?`<span class="status-badge ${badgeCls}">${badgeTxt}</span>`:""}
+        <span class="booth-badge${outdoor?" outdoor":""}">${esc(c.b)}</span>
+      </div>
+      <div class="card-actions">
+        <button class="star-btn${starred?" on":""}" data-star="${c.i}" title="My Schedule">${starred?"★":"☆"}</button>
+        <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"📝 Notes":"＋ Notes"}</button>
+        <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
+          <span class="check-icon">${visited?"✓":""}</span>
+          ${visited?"Visited":"Mark Visited"}
+        </button>
+        <div class="status-group">
+          <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
+          <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
+          <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unknown</button>
+        </div>
+        <div class="tb-group" title="Assign time block">
+          <button class="tb-btn tb-morn${timeBlock==="morning"?" active":""}" data-tb="${c.i}" data-tbval="morning">🌅 AM</button>
+          <button class="tb-btn tb-aftn${timeBlock==="afternoon"?" active":""}" data-tb="${c.i}" data-tbval="afternoon">☀️ PM</button>
+          <button class="tb-btn tb-eve${timeBlock==="evening"?" active":""}" data-tb="${c.i}" data-tbval="evening">🌆 EOD</button>
+        </div>
+      </div>
+      <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
+        <div class="notes-panel-inner"><div class="notes-content">
+          <div class="note-group">
+            <div class="note-label pre">📋 Pre-Visit Notes</div>
+            <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
+          </div>
+          <div class="note-group">
+            <div class="note-label post">✅ Post-Visit Notes</div>
+            <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
+          </div>
+        </div></div>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════
 // RENDER
 // ════════════════════════════════════════
 function render() {
@@ -1019,7 +1140,47 @@ function render() {
     return;
   }
 
-  // Group → sort
+  // ── SCHEDULE VIEW: time block grouping ──
+  if (activeFilter === "schedule") {
+    const TB_DEFS = [
+      { val:"morning",   cls:"tb-morning",   emoji:"🌅", label:"Morning"    },
+      { val:"afternoon", cls:"tb-afternoon", emoji:"☀️",  label:"Afternoon"  },
+      { val:"evening",   cls:"tb-evening",   emoji:"🌆", label:"End of Day" },
+      { val:null,        cls:"tb-unscheduled",emoji:"📋",label:"Unscheduled"},
+    ];
+    const tbBuckets = { morning:[], afternoon:[], evening:[], unscheduled:[] };
+    list.forEach(c => {
+      const tb = state[key(c.i)]?.timeBlock || null;
+      const bucket = tb || "unscheduled";
+      tbBuckets[bucket].push(c);
+    });
+    let html = "";
+    TB_DEFS.forEach((def, ri) => {
+      const bucketKey = def.val || "unscheduled";
+      const comps = (tbBuckets[bucketKey] || []).slice().sort((a,b)=>a.n.localeCompare(b.n));
+      if (!comps.length) return;
+      const nVisited = comps.filter(c=>state[key(c.i)]?.visited).length;
+      const pillCls  = nVisited===comps.length&&comps.length>0?"row-pill done":nVisited>0?"row-pill some":"row-pill";
+      const bodyId   = "tbb_"+bucketKey;
+      html += `
+<div class="row-section" style="animation-delay:${ri*0.06}s">
+  <div class="row-header ${def.cls}" data-toggle="${bodyId}">
+    <span class="row-title">${def.emoji} ${def.label}</span>
+    <span class="row-right">
+      <span class="${pillCls}">${nVisited}/${comps.length}</span>
+      <span class="row-chevron open">▼</span>
+    </span>
+  </div>
+  <div class="row-body open" id="${bodyId}"><div class="row-body-inner">`;
+      comps.forEach(c => { html += buildCard(c, state); });
+      html += `</div></div></div>`;
+    });
+    el.innerHTML = html;
+    updateStats(state);
+    return;
+  }
+
+  // Group → sort (normal views)
   const groups = {};
   list.forEach(c => {
     const rk = rowKey(c.b);
@@ -1030,13 +1191,12 @@ function render() {
 
   let html = "";
   rowKeys.forEach((rk, ri) => {
-    const comps = groups[rk];
+    const comps   = groups[rk];
     const outdoor = isOutdoor(rk);
     const nVisited = comps.filter(c=>state[key(c.i)]?.visited).length;
     const pillCls  = nVisited===comps.length&&comps.length>0 ? "row-pill done"
                    : nVisited > 0 ? "row-pill some" : "row-pill";
     const bodyId = "rb"+rk.replace(/\W/g,"_");
-    const chevId = "ch"+rk.replace(/\W/g,"_");
 
     html += `
 <div class="row-section" data-rk="${esc(rk)}" style="animation-delay:${Math.min(ri*0.035,0.35)}s">
@@ -1044,56 +1204,12 @@ function render() {
     <span class="row-title">${esc(rowLabel(rk))}</span>
     <span class="row-right">
       <span class="${pillCls}" id="badge_${esc(rk)}">${nVisited}/${comps.length}</span>
-      <span class="row-chevron${allOpen?" open":""}" id="${chevId}">▼</span>
+      <span class="row-chevron${allOpen?" open":""}">▼</span>
     </span>
   </div>
   <div class="row-body${allOpen?" open":""}" id="${bodyId}"><div class="row-body-inner">`;
 
-    comps.forEach(c => {
-      const s       = state[key(c.i)] || {};
-      const visited = !!s.visited;
-      const starred = !!s.starred;
-      const hasNotes= !!(s.pre||s.post);
-      const status  = s.status || "unknown";
-      const npId    = "np"+c.i;
-      const badgeCls = status==="customer"?"sb-cust":status==="noncustomer"?"sb-non":"";
-      const badgeTxt = status==="customer"?"🏢 Customer":status==="noncustomer"?"✕ Non-Customer":"";
-      const statusCardCls = status==="customer"?" s-customer":status==="noncustomer"?" s-noncustomer":"";
-
-      html += `
-    <div class="co-card${visited?" visited":""}${starred?" starred":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
-      <div class="card-top">
-        <span class="co-name">${esc(c.n)}</span>
-        ${badgeTxt?`<span class="status-badge ${badgeCls}">${badgeTxt}</span>`:""}
-        <span class="booth-badge${outdoor?" outdoor":""}">${esc(c.b)}</span>
-      </div>
-      <div class="card-actions">
-        <button class="star-btn${starred?" on":""}" data-star="${c.i}" title="My Schedule">${starred?"★":"☆"}</button>
-        <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"📝 Notes":"＋ Notes"}</button>
-        <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
-          <span class="check-icon">${visited?"✓":""}</span>
-          ${visited?"Visited":"Mark Visited"}
-        </button>
-        <div class="status-group">
-          <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
-          <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
-          <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unknown</button>
-        </div>
-      </div>
-      <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
-        <div class="notes-panel-inner"><div class="notes-content">
-          <div class="note-group">
-            <div class="note-label pre">📋 Pre-Visit Notes</div>
-            <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
-          </div>
-          <div class="note-group">
-            <div class="note-label post">✅ Post-Visit Notes</div>
-            <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
-          </div>
-        </div></div>
-      </div>
-    </div>`;
-    });
+    comps.forEach(c => { html += buildCard(c, state); });
 
     html += `</div></div></div>`;
   });
@@ -1149,15 +1265,13 @@ let _dt={};
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
 
-  // Row toggle
+  // Row / time-block toggle
   const tog = e.target.closest("[data-toggle]");
   if (tog) {
     const bId  = tog.getAttribute("data-toggle");
     const body = document.getElementById(bId);
-    const rk   = tog.closest(".row-section").dataset.rk;
-    const chev = document.getElementById("ch"+rk.replace(/\W/g,"_"));
     body?.classList.toggle("open");
-    chev?.classList.toggle("open");
+    tog.querySelector(".row-chevron")?.classList.toggle("open");
     return;
   }
 
@@ -1180,11 +1294,16 @@ document.getElementById("content").addEventListener("click", e => {
     const k = key(i);
     if (!state[k]) state[k]={};
     state[k].starred = !state[k].starred;
+    if (!state[k].starred) state[k].timeBlock = null; // clear block when unstarred
     save(state);
     const on = state[k].starred;
+    if (activeFilter === "schedule") { render(); return; }
     starBtn.textContent = on?"★":"☆";
     starBtn.classList.toggle("on", on);
-    document.getElementById("cc"+i)?.classList.toggle("starred", on);
+    const card = document.getElementById("cc"+i);
+    card?.classList.toggle("starred", on);
+    // Update tb-group buttons to reflect cleared state
+    if (!on) card?.querySelectorAll(".tb-btn").forEach(b=>b.classList.remove("active"));
     updateStats(state);
     toast(on?"★ Added to My Schedule":"Removed from My Schedule");
     return;
@@ -1220,6 +1339,25 @@ document.getElementById("content").addEventListener("click", e => {
     else { badge.textContent=""; badge.className="status-badge"; }
     const label = ns==="customer"?"🏢 Marked as Customer":ns==="noncustomer"?"✕ Marked as Non-Customer":"Status reset to Unknown";
     toast(label);
+    return;
+  }
+
+  // Time block toggle
+  const tbBtn = e.target.closest("[data-tbval]");
+  if (tbBtn) {
+    const i   = parseInt(tbBtn.dataset.tb);
+    const val = tbBtn.dataset.tbval;
+    const k   = key(i);
+    if (!state[k]) state[k]={};
+    // Tap same block again → unset
+    state[k].timeBlock = (state[k].timeBlock === val) ? null : val;
+    save(state);
+    const nb = state[k].timeBlock;
+    // Update button states in this card
+    const tbGrp = tbBtn.closest(".tb-group");
+    tbGrp.querySelectorAll(".tb-btn").forEach(b => b.classList.toggle("active", b.dataset.tbval === nb));
+    const labels = { morning:"🌅 Morning", afternoon:"☀️ Afternoon", evening:"🌆 End of Day" };
+    toast(nb ? `${labels[nb]} block assigned` : "Time block cleared");
     return;
   }
 
@@ -1292,18 +1430,20 @@ document.getElementById("expandBtn").addEventListener("click", function(){
 // Export CSV
 document.getElementById("exportBtn").addEventListener("click", ()=>{
   const state = load();
-  const rows  = [["Company","Booth","Row","Customer Status","In Schedule","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  const rows  = [["Company","Booth","Row","Customer Status","In Schedule","Time Block","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i)=>({...c,i}))
     .sort((a,b)=>a.n.localeCompare(b.n))
     .forEach(c=>{
       const s  = state[key(c.i)]||{};
       const rk = rowKey(c.b);
       const st = s.status==="customer"?"Existing Customer":s.status==="noncustomer"?"Non-Customer":"Unknown";
+      const tbLabel = s.timeBlock==="morning"?"Morning":s.timeBlock==="afternoon"?"Afternoon":s.timeBlock==="evening"?"End of Day":"";
       rows.push([
         c.n, c.b,
         isOutdoor(rk)?"Outdoor T"+rk.slice(1)+"s":"Row "+rk+"s",
         st,
         s.starred?"Yes":"No",
+        tbLabel,
         s.visited?"Yes":"No",
         s.pre||"", s.post||""
       ]);
@@ -1326,9 +1466,32 @@ function toast(msg){
   t._timer = setTimeout(()=>t.classList.remove("show"), 2600);
 }
 
-// Service Worker
-if("serviceWorker" in navigator)
-  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+// Service Worker + Update Banner
+if ("serviceWorker" in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+
+  // When a new SW takes over, show the reload banner
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (hadController) {
+      const banner = document.getElementById("update-banner");
+      banner.classList.add("show");
+      banner.addEventListener("click", () => window.location.reload(), {once:true});
+    }
+  });
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").then(reg => {
+      // Also catch the case where a SW is already waiting on page load
+      if (reg.waiting && hadController) {
+        const banner = document.getElementById("update-banner");
+        banner.classList.add("show");
+        banner.addEventListener("click", () => {
+          reg.waiting.postMessage({type:"SKIP_WAITING"});
+        }, {once:true});
+      }
+    }).catch(()=>{});
+  });
+}
 
 // Boot
 render();
