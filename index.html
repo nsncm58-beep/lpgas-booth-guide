@@ -698,6 +698,27 @@ textarea.nf.post { border-left: 3px solid var(--green); }
 }
 
 /* ── SCHEDULE VIEW ── */
+.sched-day-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sched-day-tab {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none; user-select: none;
+}
+.sched-day-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.sched-day-tab:active { opacity: 0.8; }
 .sched-search-box {
   margin: 10px 10px 6px;
   background: var(--surface);
@@ -1167,6 +1188,7 @@ function esc(s){
 let activeFilter  = "all";
 let allOpen       = false;
 let schedSearchQ  = "";
+let schedDay      = 1; // 1, 2, or 3
 
 // ════════════════════════════════════════
 // CARD BUILDER
@@ -1176,13 +1198,13 @@ function buildCard(c, state) {
   const visited    = !!s.visited;
   const hasNotes   = !!(s.pre||s.post);
   const status     = s.status || "unknown";
-  const schedTime  = s.scheduledTime || null;
+  const scheduled  = s.scheduled || null;
   const outdoor    = isOutdoor(rowKey(c.b));
   const npId       = "np"+c.i;
   const badgeCls   = status==="customer"?"sb-cust":status==="noncustomer"?"sb-non":"";
   const badgeTxt   = status==="customer"?"🏢 Customer":status==="noncustomer"?"✕ Non-Customer":"";
   const statusCardCls = status==="customer"?" s-customer":status==="noncustomer"?" s-noncustomer":"";
-  const timeOpts   = TIME_SLOTS.map(t=>`<option value="${esc(t)}"${schedTime===t?" selected":""}>${t}</option>`).join("");
+  const timeOpts   = [1,2,3].map(d=>`<optgroup label="Day ${d}">${TIME_SLOTS.map(t=>`<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${t}</option>`).join("")}</optgroup>`).join("");
   return `
     <div class="co-card${visited?" visited":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
       <div class="card-top">
@@ -1201,7 +1223,7 @@ function buildCard(c, state) {
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
           <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unknown</button>
         </div>
-        <select class="sched-sel${schedTime?" scheduled":""}" data-sched="${c.i}" title="Add to My Schedule">
+        <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" title="Add to My Schedule">
           <option value="">📅 Schedule</option>
           ${timeOpts}
         </select>
@@ -1233,7 +1255,7 @@ function render() {
   if (q) list = list.filter(c=>c.n.toLowerCase().includes(q)||c.b.toLowerCase().includes(q));
   if (activeFilter==="visited")     list = list.filter(c=>state[key(c.i)]?.visited);
   if (activeFilter==="novisit")     list = list.filter(c=>!state[key(c.i)]?.visited);
-  if (activeFilter==="schedule")    list = list.filter(c=>state[key(c.i)]?.scheduledTime);
+  if (activeFilter==="schedule")    list = list.filter(c=>state[key(c.i)]?.scheduled);
   if (activeFilter==="customer")    list = list.filter(c=>state[key(c.i)]?.status==="customer");
   if (activeFilter==="noncustomer") list = list.filter(c=>state[key(c.i)]?.status==="noncustomer");
   if (activeFilter==="unknown")     list = list.filter(c=>!state[key(c.i)]?.status||state[key(c.i)]?.status==="unknown");
@@ -1257,45 +1279,59 @@ function render() {
 
   // ── SCHEDULE VIEW: real time-slot schedule ──
   if (activeFilter === "schedule") {
+    // Companies scheduled on the current day, keyed by time
     const byTime = {};
     CO.forEach((c,i) => {
-      const t = state[key(i)]?.scheduledTime;
-      if (t) (byTime[t] = byTime[t]||[]).push({...c,i});
+      const sv = state[key(i)]?.scheduled;
+      if (!sv) return;
+      const [d, t] = sv.split("|");
+      if (parseInt(d) === schedDay) (byTime[t] = byTime[t]||[]).push({...c,i});
     });
+
+    // Companies NOT yet scheduled on any day matching current search
     const searchHtml = (() => {
       if (!schedSearchQ) return "";
       const matches = CO.map((c,i)=>({...c,i}))
-        .filter(c => !state[key(c.i)]?.scheduledTime &&
-          (c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ)))
+        .filter(c => (c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ)))
         .slice(0,8);
       if (!matches.length)
-        return `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No unscheduled companies match</div>`;
-      return matches.map(c=>`
+        return `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No companies match</div>`;
+      return matches.map(c=>{
+        const curSched = state[key(c.i)]?.scheduled||null;
+        const [curD,curT] = curSched ? curSched.split("|") : [null,null];
+        const alreadyLabel = curSched ? ` · D${curD} ${curT}` : "";
+        return `
         <div class="sched-result-row">
-          <span class="sched-result-name">${esc(c.n)}</span>
+          <span class="sched-result-name">${esc(c.n)}<span style="font-size:0.65rem;color:var(--muted);font-weight:500;">${alreadyLabel}</span></span>
           <span class="sched-result-booth">${esc(c.b)}</span>
           <select class="sched-add-sel" data-add-i="${c.i}">
-            <option value="">＋ Add time</option>
+            <option value="">＋ Time</option>
             ${TIME_SLOTS.map(t=>`<option value="${esc(t)}">${t}</option>`).join("")}
           </select>
-        </div>`).join("");
+        </div>`;
+      }).join("");
     })();
+
+    const dayTabs = [1,2,3].map(d=>`<button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">Day ${d}</button>`).join("");
     const hasAny = Object.keys(byTime).length > 0;
+
     let html = `
 <div class="sched-search-box">
-  <h3>📅 My Schedule</h3>
-  <input class="sched-search-input" type="text" placeholder="Search companies to add…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
+  <div class="sched-day-tabs">${dayTabs}</div>
+  <input class="sched-search-input" type="text" placeholder="Search companies to add to Day ${schedDay}…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
 </div>`;
+
     if (!hasAny) {
       html += `<div class="sched-empty-day">
         <div style="font-size:2.2rem;margin-bottom:10px;">📅</div>
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px;">No booths scheduled yet</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px;">Nothing on Day ${schedDay} yet</div>
         <div style="color:var(--muted);font-size:0.82rem;line-height:1.5;">Search above to add companies,<br>or use the 📅 Schedule dropdown on any booth card.</div>
       </div>`;
     } else {
       TIME_SLOTS.forEach(t => {
         const comps = byTime[t] || [];
+        if (!comps.length) return; // skip empty slots
         html += `<div class="time-slot">
           <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
         comps.forEach(c => {
@@ -1312,7 +1348,6 @@ function render() {
       });
     }
     el.innerHTML = html;
-    // Re-focus search if was typing
     if (schedSearchQ) document.querySelector(".sched-search-input")?.focus();
     updateStats(state);
     return;
@@ -1361,7 +1396,7 @@ function render() {
 // ════════════════════════════════════════
 function updateStats(state) {
   const vis = Object.values(state).filter(s=>s?.visited).length;
-  const sch = Object.values(state).filter(s=>s?.scheduledTime).length;
+  const sch = Object.values(state).filter(s=>s?.scheduled).length;
   animVal("sTot", CO.length);
   animVal("sVis", vis);
   animVal("sSch", sch);
@@ -1422,6 +1457,15 @@ document.getElementById("content").addEventListener("click", e => {
     const on = panel.classList.contains("open");
     npBtn.classList.toggle("on", on);
     if (on) panel.querySelector("textarea")?.focus();
+    return;
+  }
+
+  // Day tab switch
+  const dayTab = e.target.closest("[data-day]");
+  if (dayTab) {
+    schedDay = parseInt(dayTab.dataset.day);
+    schedSearchQ = "";
+    render();
     return;
   }
 
@@ -1500,22 +1544,26 @@ document.getElementById("content").addEventListener("input", e => {
     schedSearchQ = e.target.value.trim().toLowerCase();
     const state = load();
     const matches = schedSearchQ ? CO.map((c,i)=>({...c,i}))
-      .filter(c => !state[key(c.i)]?.scheduledTime &&
-        (c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ)))
+      .filter(c => c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ))
       .slice(0,8) : [];
     const rEl = document.getElementById("sched-results");
     if (rEl) {
       if (!schedSearchQ) { rEl.innerHTML = ""; return; }
       if (!matches.length) { rEl.innerHTML = `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No unscheduled companies match</div>`; return; }
-      rEl.innerHTML = matches.map(c=>`
+      rEl.innerHTML = matches.map(c=>{
+        const curSched = state[key(c.i)]?.scheduled||null;
+        const [curD,curT] = curSched ? curSched.split("|") : [null,null];
+        const alreadyLabel = curSched ? ` · D${curD} ${curT}` : "";
+        return `
         <div class="sched-result-row">
-          <span class="sched-result-name">${esc(c.n)}</span>
+          <span class="sched-result-name">${esc(c.n)}<span style="font-size:0.65rem;color:var(--muted);font-weight:500;">${alreadyLabel}</span></span>
           <span class="sched-result-booth">${esc(c.b)}</span>
           <select class="sched-add-sel" data-add-i="${c.i}">
-            <option value="">＋ Add time</option>
+            <option value="">＋ Time</option>
             ${TIME_SLOTS.map(t=>`<option value="${esc(t)}">${t}</option>`).join("")}
           </select>
-        </div>`).join("");
+        </div>`;
+      }).join("");
     }
     return;
   }
@@ -1540,22 +1588,23 @@ document.getElementById("content").addEventListener("input", e => {
 
 // Schedule select changes (card dropdown + search-add dropdown)
 document.getElementById("content").addEventListener("change", e => {
-  // Card schedule select
+  // Card schedule select  (value = "D|HH:MM XM" or "")
   const sel = e.target.closest(".sched-sel");
   if (sel) {
     const i = parseInt(sel.dataset.sched);
-    const t = sel.value;
+    const v = sel.value; // "1|9:00 AM" or ""
     const k = key(i);
     const state = load();
     if (!state[k]) state[k]={};
-    state[k].scheduledTime = t || null;
+    state[k].scheduled = v || null;
     save(state);
-    sel.classList.toggle("scheduled", !!t);
+    sel.classList.toggle("scheduled", !!v);
     updateStats(state);
-    toast(t ? `📅 Scheduled for ${t}` : "Removed from schedule");
+    if (v) { const [d,t]=v.split("|"); toast(`📅 Day ${d} · ${t}`); }
+    else   { toast("Removed from schedule"); }
     return;
   }
-  // Search-result add select
+  // Search-result add select (value = time string, day comes from schedDay)
   const addSel = e.target.closest(".sched-add-sel");
   if (addSel) {
     const t = addSel.value;
@@ -1564,11 +1613,11 @@ document.getElementById("content").addEventListener("change", e => {
     const k = key(i);
     const state = load();
     if (!state[k]) state[k]={};
-    state[k].scheduledTime = t;
+    state[k].scheduled = `${schedDay}|${t}`;
     save(state);
     schedSearchQ = "";
     updateStats(state);
-    toast(`📅 Added at ${t}`);
+    toast(`📅 Day ${schedDay} · ${t}`);
     render();
     return;
   }
@@ -1601,18 +1650,20 @@ document.getElementById("expandBtn").addEventListener("click", function(){
 // Export CSV
 document.getElementById("exportBtn").addEventListener("click", ()=>{
   const state = load();
-  const rows  = [["Company","Booth","Row","Customer Status","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  const rows  = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i)=>({...c,i}))
     .sort((a,b)=>a.n.localeCompare(b.n))
     .forEach(c=>{
       const s  = state[key(c.i)]||{};
       const rk = rowKey(c.b);
       const st = s.status==="customer"?"Existing Customer":s.status==="noncustomer"?"Non-Customer":"Unknown";
+      const [schedD, schedT] = s.scheduled ? s.scheduled.split("|") : ["",""];
       rows.push([
         c.n, c.b,
         isOutdoor(rk)?"Outdoor T"+rk.slice(1)+"s":"Row "+rk+"s",
         st,
-        s.scheduledTime||"",
+        schedD ? "Day "+schedD : "",
+        schedT||"",
         s.visited?"Yes":"No",
         s.pre||"", s.post||""
       ]);
