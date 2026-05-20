@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <title>LPGas Show — Booth Guide</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0076D0">
+<meta name="theme-color" content="#005C8F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LPGas Guide">
@@ -13,283 +13,229 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <style>
-/* ══════════════════════════════════════════════
-   LPGas Official Brand Tokens
-   Blue:   C100 M43 Y0 K18.5  → #0076D0  (exact)
-   Maroon: C26 M100 Y69 K23   → #8B1538
-   Green:  C75 M32 Y65 K35    → #2D7140
-   Fonts:  Nunito 900 (Forza alt), Montserrat (Gotham alt)
-══════════════════════════════════════════════ */
 :root {
-  --blue:        #0076D0;
-  --blue-dark:   #005FA8;
-  --blue-deeper: #00407A;
-  --blue-light:  #E6F2FC;
-  --blue-mid:    #C8E2F8;
+  --blue:        #005C8F;
+  --blue-dark:   #00466E;
+  --blue-deeper: #00304C;
+  --blue-light:  #E8F1F7;
+  --blue-mid:    #BCD6E5;
   --maroon:      #8B1538;
-  --maroon-light:#F7E8ED;
+  --maroon-light:#F6E6EB;
   --green:       #2D7140;
-  --green-light: #EBF5EE;
-  --bg:          #EEF3F9;
+  --green-light: #E9F4ED;
+  --bg:          #F4F7FB;
   --surface:     #FFFFFF;
-  --text:        #0D1F33;
-  --text-2:      #4A5E72;
-  --muted:       #8A9BAD;
-  --border:      #D8E4F0;
-  --radius-lg:   16px;
-  --radius-md:   12px;
+  --text:        #0E1B2C;
+  --text-2:      #4A5A6E;
+  --muted:       #8A98A8;
+  --border:      #DCE4ED;
+  --border-soft: #ECF1F6;
+  --radius-lg:   14px;
+  --radius-md:   10px;
   --radius-sm:   8px;
-  --shadow:      0 2px 14px rgba(0,60,130,0.10);
-  --shadow-sm:   0 1px 4px rgba(0,0,0,0.07);
+  --shadow:      0 1px 3px rgba(14,27,44,0.06), 0 4px 14px rgba(14,27,44,0.05);
+  --shadow-sm:   0 1px 2px rgba(14,27,44,0.05);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
+html, body { overscroll-behavior: none; }
 body {
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── ANIMATIONS ── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; } to { opacity: 1; }
-}
-@keyframes popIn {
-  0%   { transform: scale(0.85); opacity: 0; }
-  65%  { transform: scale(1.08); }
-  100% { transform: scale(1); opacity: 1; }
-}
-@keyframes starPop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.35) rotate(-10deg); }
-  70%  { transform: scale(0.9) rotate(5deg); }
-  100% { transform: scale(1) rotate(0deg); }
-}
-@keyframes toastIn {
-  from { transform: translateX(-50%) translateY(24px); opacity: 0; }
-  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
-}
-@keyframes statPop {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.18); }
-  100% { transform: scale(1); }
-}
-@keyframes shimmerBar {
-  0%   { background-position: -300% center; }
-  100% { background-position: 300% center; }
-}
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pop     { 0% { transform: scale(1); } 50% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
-/* ── STICKY HEADER ── */
+/* ── HEADER ── */
 .app-header {
   position: sticky;
   top: 0;
   z-index: 200;
   background: var(--blue);
-  box-shadow: 0 3px 20px rgba(0,50,120,0.35);
+  color: #fff;
+  box-shadow: 0 2px 16px rgba(0,40,70,0.22);
+  padding-top: env(safe-area-inset-top, 0);
 }
-
 .header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: 14px 16px 4px;
+  gap: 10px;
 }
-
-/* LPGas wordmark */
-.logo-mark {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  line-height: 1;
-}
+.logo-block { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .logo-img {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
   display: block;
-  object-fit: contain;
+  flex-shrink: 0;
 }
-.logo-tagline {
-  font-size: 0.65rem;
+.logo-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.logo-title {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 1.04rem;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+.logo-sub {
+  font-size: 0.6rem;
   font-weight: 600;
-  letter-spacing: 1.8px;
+  letter-spacing: 1.7px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.65);
-  margin-top: 1px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 2px;
 }
 
-/* Visited counter pill */
-.header-counter {
-  background: rgba(255,255,255,0.12);
-  border: 1.5px solid rgba(255,255,255,0.22);
-  border-radius: 12px;
-  padding: 7px 14px;
-  text-align: center;
-  backdrop-filter: blur(6px);
-}
-.header-counter .count {
+.visit-counter { text-align: right; flex-shrink: 0; }
+.vc-count {
   font-family: 'Nunito', sans-serif;
-  font-size: 1.6rem;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.05rem;
   color: #fff;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   transition: transform 0.2s;
 }
-.header-counter .count.pop { animation: statPop 0.3s ease; }
-.header-counter .label {
+.vc-count.pop { animation: pop 0.3s ease; }
+.vc-label {
   font-size: 0.58rem;
   font-weight: 600;
-  letter-spacing: 1px;
+  letter-spacing: 1.4px;
   text-transform: uppercase;
   color: rgba(255,255,255,0.65);
+  margin-top: 4px;
 }
 
-/* Search row */
 .header-search {
   display: flex;
   gap: 8px;
-  padding: 0 12px 12px;
+  padding: 8px 12px 10px;
 }
-.search-wrap {
-  flex: 1;
-  position: relative;
-}
+.search-wrap { flex: 1; position: relative; }
 .search-wrap::before {
-  content: "⌕";
+  content: "";
   position: absolute;
-  left: 11px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.1rem;
-  color: rgba(255,255,255,0.5);
+  left: 12px; top: 50%;
+  width: 12px; height: 12px;
+  margin-top: -7px;
+  border: 1.8px solid rgba(255,255,255,0.55);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.search-wrap::after {
+  content: "";
+  position: absolute;
+  left: 22px; top: 50%;
+  width: 6px; height: 1.8px;
+  background: rgba(255,255,255,0.55);
+  transform: rotate(45deg);
+  margin-top: 3px;
+  border-radius: 1px;
   pointer-events: none;
 }
 #searchInput {
   width: 100%;
-  padding: 10px 12px 10px 34px;
+  padding: 10px 14px 10px 34px;
   background: rgba(255,255,255,0.13);
-  border: 1.5px solid rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.22);
   border-radius: 10px;
   color: #fff;
   font-size: 0.92rem;
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
   outline: none;
   transition: background 0.2s, border-color 0.2s;
 }
-#searchInput::placeholder { color: rgba(255,255,255,0.45); }
-#searchInput:focus {
-  background: rgba(255,255,255,0.2);
-  border-color: rgba(255,255,255,0.45);
-}
+#searchInput::placeholder { color: rgba(255,255,255,0.55); font-weight: 500; }
+#searchInput:focus { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
 
 .hdr-btn {
-  padding: 10px 12px;
+  padding: 0 14px;
+  height: 40px;
   border: none;
   border-radius: 10px;
   font-size: 0.78rem;
   font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 0.4px;
+  font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: transform 0.12s, opacity 0.12s;
+  transition: transform 0.12s, opacity 0.12s, background 0.18s;
   -webkit-user-select: none; user-select: none;
 }
-.hdr-btn:active { transform: scale(0.91); opacity: 0.85; }
-.btn-expand-all {
+.hdr-btn:active { transform: scale(0.94); opacity: 0.88; }
+.btn-expand {
   background: rgba(255,255,255,0.15);
-  border: 1.5px solid rgba(255,255,255,0.25);
   color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.25);
 }
 .btn-export {
   background: #fff;
   color: var(--blue-dark);
-  border: none;
 }
 .btn-export:active { background: var(--blue-light); }
 
 /* ── FILTER BAR ── */
 .filter-bar {
   background: var(--surface);
-  padding: 10px 12px;
+  padding: 9px 12px;
   display: flex;
   gap: 7px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-soft);
   scrollbar-width: none;
 }
 .filter-bar::-webkit-scrollbar { display: none; }
-
 .f-pill {
   flex-shrink: 0;
-  padding: 7px 15px;
+  padding: 7px 14px;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
+  letter-spacing: 0.1px;
   cursor: pointer;
   border: 1.5px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text-2);
   transition: all 0.18s;
   -webkit-user-select: none; user-select: none;
 }
-.f-pill:active { transform: scale(0.93); }
-.f-pill.active            { background: var(--blue);   border-color: var(--blue);   color: #fff; }
-.f-pill.active.f-visited  { background: var(--green);  border-color: var(--green);  color: #fff; }
-.f-pill.active.f-novisit  { background: var(--maroon); border-color: var(--maroon); color: #fff; }
+.f-pill:active { transform: scale(0.95); }
+.f-pill.active            { background: var(--blue);        border-color: var(--blue);        color: #fff; }
+.f-pill.active.f-visited  { background: var(--green);       border-color: var(--green);       color: #fff; }
+.f-pill.active.f-novisit  { background: var(--blue);        border-color: var(--blue);        color: #fff; }
 .f-pill.active.f-schedule { background: var(--blue-deeper); border-color: var(--blue-deeper); color: #fff; }
-.f-pill.active.f-customer { background: var(--green);  border-color: var(--green);  color: #fff; }
-.f-pill.active.f-noncust  { background: var(--maroon); border-color: var(--maroon); color: #fff; }
-.f-pill.active.f-unknown  { background: var(--muted);  border-color: var(--muted);  color: #fff; }
+.f-pill.active.f-customer { background: var(--green);       border-color: var(--green);       color: #fff; }
+.f-pill.active.f-noncust  { background: var(--maroon);      border-color: var(--maroon);      color: #fff; }
+.f-pill.active.f-unknown  { background: var(--text-2);      border-color: var(--text-2);      color: #fff; }
 
-/* ── STAT CHIPS ── */
-.stat-row {
-  display: flex;
-  gap: 7px;
-  padding: 10px 10px 4px;
-  animation: fadeIn 0.4s ease;
+/* ── PROGRESS STRIP ── */
+.progress-strip {
+  height: 3px;
+  background: var(--border-soft);
+  position: relative;
+  overflow: hidden;
 }
-.stat-chip {
-  flex: 1;
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  padding: 8px 10px;
-  box-shadow: var(--shadow-sm);
-  text-align: center;
+.progress-strip .bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--green);
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
 }
-.stat-chip .s-val {
-  font-family: 'Nunito', sans-serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  line-height: 1;
-  transition: transform 0.2s;
-}
-.stat-chip .s-lbl {
-  font-size: 0.62rem;
-  font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-top: 2px;
-}
-.stat-chip.blue  .s-val { color: var(--blue); }
-.stat-chip.green .s-val { color: var(--green); }
-.stat-chip.blue2 .s-val { color: var(--blue-deeper); }
-.stat-chip .s-val.pop   { animation: statPop 0.28s ease; }
 
-/* ── CONTENT AREA ── */
-#content { padding-bottom: 24px; }
+/* ── CONTENT ── */
+#content { padding: 8px 0 24px; min-height: calc(100vh - 220px); }
 
 /* ── ROW SECTION ── */
 .row-section {
@@ -297,68 +243,50 @@ body {
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow);
-  animation: fadeUp 0.38s ease both;
+  background: var(--surface);
+  animation: fadeUp 0.3s ease both;
 }
 .row-section:last-child { margin-bottom: 10px; }
-
 .row-header {
   background: var(--blue);
-  padding: 13px 16px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
   -webkit-user-select: none; user-select: none;
   transition: background 0.18s;
-  position: relative;
-  overflow: hidden;
 }
-/* Subtle shimmer on header press */
-.row-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-  background-size: 300% 100%;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.row-header:active::after { opacity: 1; animation: shimmerBar 0.5s ease; }
 .row-header.outdoor  { background: var(--maroon); }
 .row-header.outdoor:active { background: #6e0f2b; }
 .row-header:not(.outdoor):active { background: var(--blue-dark); }
-
 .row-title {
   font-family: 'Nunito', sans-serif;
   font-weight: 700;
-  font-size: 1.08rem;
+  font-size: 1rem;
   color: #fff;
   letter-spacing: 0.2px;
 }
-.row-right {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
+.row-right { display: flex; align-items: center; gap: 10px; }
 .row-pill {
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: rgba(255,255,255,0.16);
-  color: #fff;
-  transition: background 0.2s, color 0.2s;
-}
-.row-pill.some  { background: rgba(255,255,255,0.28); color: #fff; }
-.row-pill.done  { background: rgba(45,113,64,0.35); color: #7FD49A; }
-.row-chevron {
   font-size: 0.7rem;
-  color: rgba(255,255,255,0.65);
+  font-weight: 700;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.row-pill.done { background: rgba(255,255,255,0.95); color: var(--blue-dark); }
+.row-header.outdoor .row-pill.done { color: var(--maroon); }
+.row-chevron {
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.7);
   transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  font-family: inherit;
 }
 .row-chevron.open { transform: rotate(180deg); }
 
-/* ── SMOOTH COLLAPSE (CSS Grid trick) ── */
 .row-body {
   display: grid;
   grid-template-rows: 0fr;
@@ -370,192 +298,186 @@ body {
 
 /* ── COMPANY CARD ── */
 .co-card {
-  padding: 12px 14px;
-  border-bottom: 1px solid #EEF3F9;
+  padding: 13px 15px 13px 18px;
+  border-bottom: 1px solid var(--border-soft);
   background: var(--surface);
-  transition: background 0.2s;
+  transition: background 0.18s;
   position: relative;
 }
 .co-card:last-child { border-bottom: none; }
-
-/* Left border states */
 .co-card::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
+  left: 0; top: 8px; bottom: 8px;
   width: 3px;
+  border-radius: 0 2px 2px 0;
   background: transparent;
-  transition: background 0.25s;
+  transition: background 0.22s;
 }
 .co-card.visited::before  { background: var(--green); }
-.co-card.starred::before  { background: var(--blue); }
-.co-card.visited.starred::before { background: var(--green); }
-.co-card.visited  { background: #F3FBF6; }
+.co-card.s-customer::before { background: var(--blue); }
+.co-card.visited.s-customer::before { background: var(--green); }
+.co-card.s-noncustomer::before { background: var(--maroon); }
+.co-card.visited { background: #F6FBF8; }
 
 .card-top {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 9px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 .co-name {
   flex: 1;
-  font-size: 0.91rem;
+  font-size: 0.92rem;
   font-weight: 600;
-  color: var(--blue-dark);
+  color: var(--text);
   line-height: 1.35;
+  min-width: 0;
+  word-break: break-word;
 }
 .booth-badge {
   flex-shrink: 0;
   background: var(--blue-light);
   color: var(--blue-dark);
-  border: 1.5px solid var(--blue-mid);
+  border: 1px solid var(--blue-mid);
   padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 0.69rem;
-  font-weight: 800;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
 }
-.booth-badge.outdoor { background: var(--maroon-light); color: var(--maroon); border-color: #e8b8c4; }
+.booth-badge.outdoor {
+  background: var(--maroon-light);
+  color: var(--maroon);
+  border-color: #E8C0CC;
+}
+.sched-tag {
+  flex-shrink: 0;
+  background: var(--blue-deeper);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ── ACTION ROW ── */
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   flex-wrap: wrap;
 }
-
-/* Star button */
-.star-btn {
-  width: 32px;
+.notes-btn, .visit-btn {
+  padding: 0 12px;
   height: 32px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
-  background: var(--bg);
-  font-size: 0.95rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  -webkit-user-select: none; user-select: none;
-  flex-shrink: 0;
-}
-.star-btn:active { transform: scale(0.85); }
-.star-btn.on {
-  border-color: var(--blue);
-  background: var(--blue-light);
-  color: var(--blue);
-  animation: starPop 0.35s ease;
-}
-
-/* Notes button */
-.notes-btn {
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
   font-size: 0.74rem;
   font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
   color: var(--text-2);
   cursor: pointer;
   transition: all 0.15s;
   -webkit-user-select: none; user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.notes-btn:active { transform: scale(0.93); }
+.notes-btn:active, .visit-btn:active { transform: scale(0.94); }
 .notes-btn.on {
   border-color: var(--blue);
   color: var(--blue);
   background: var(--blue-light);
 }
-
-/* Visited toggle */
-.visit-btn {
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border);
-  background: var(--bg);
-  font-size: 0.74rem;
-  font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-user-select: none; user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.visit-btn:active { transform: scale(0.93); }
 .visit-btn.on {
   border-color: var(--green);
   color: var(--green);
   background: var(--green-light);
 }
-.visit-btn .check-icon {
+.visit-btn .dot {
   width: 14px; height: 14px;
   border-radius: 50%;
   border: 1.5px solid currentColor;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.55rem;
-  transition: background 0.15s;
-  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
 }
-.visit-btn.on .check-icon {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
+.visit-btn.on .dot { background: var(--green); border-color: var(--green); }
+.visit-btn.on .dot::after {
+  content: "";
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 6px; height: 3.5px;
+  border-left: 1.8px solid #fff;
+  border-bottom: 1.8px solid #fff;
+  transform: rotate(-45deg) translate(0,-1px);
 }
 
-/* ── CUSTOMER STATUS SEGMENTED CONTROL ── */
+/* Status segmented */
 .status-group {
-  display: flex;
+  display: inline-flex;
   border-radius: 8px;
   overflow: hidden;
   border: 1.5px solid var(--border);
+  height: 32px;
   flex-shrink: 0;
 }
 .status-btn {
-  padding: 5px 9px;
+  padding: 0 10px;
   border: none;
   border-right: 1px solid var(--border);
-  background: var(--bg);
-  font-size: 0.67rem;
+  background: var(--surface);
+  font-size: 0.7rem;
   font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
   color: var(--muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   -webkit-user-select: none; user-select: none;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
 }
 .status-btn:last-child { border-right: none; }
-.status-btn:active { opacity: 0.75; }
-.status-btn.s-cust.active  { background: var(--green);  color: #fff; }
-.status-btn.s-non.active   { background: var(--maroon); color: #fff; }
-.status-btn.s-unk.active   { background: var(--blue-mid); color: var(--blue-deeper); }
+.status-btn:active { opacity: 0.78; }
+.status-btn.s-cust.active { background: var(--green);  color: #fff; }
+.status-btn.s-non.active  { background: var(--maroon); color: #fff; }
+.status-btn.s-unk.active  { background: var(--blue-mid); color: var(--blue-deeper); }
 
-/* Status badge shown in card-top row */
-.status-badge {
-  font-size: 0.64rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  display: none;
-  align-self: center;
+/* Schedule select */
+.sched-sel {
+  padding: 0 26px 0 10px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background-color: var(--surface);
+  font-size: 0.73rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  max-width: 175px;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234A5A6E' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
 }
-.status-badge.sb-cust { display: inline-block; background: var(--green-light);  color: var(--green); }
-.status-badge.sb-non  { display: inline-block; background: var(--maroon-light); color: var(--maroon); }
-
-/* Left-border accent for status */
-.co-card.s-customer::before    { background: var(--green); }
-.co-card.s-noncustomer::before { background: var(--maroon); }
+.sched-sel.scheduled {
+  border-color: var(--blue);
+  color: var(--blue);
+  background-color: var(--blue-light);
+}
 
 /* ── NOTES PANEL ── */
 .notes-panel {
@@ -566,91 +488,82 @@ body {
 .notes-panel.open { grid-template-rows: 1fr; }
 .notes-panel-inner { overflow: hidden; }
 .notes-content {
-  padding: 11px 0 2px;
+  padding: 12px 0 2px;
   border-top: 1px dashed var(--border);
-  margin-top: 10px;
+  margin-top: 12px;
 }
-.note-group { margin-bottom: 9px; }
+.note-group { margin-bottom: 10px; }
+.note-group:last-child { margin-bottom: 0; }
 .note-label {
-  font-size: 0.67rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
 }
 .note-label.pre  { color: var(--blue); }
 .note-label.post { color: var(--green); }
 
 textarea.nf {
   width: 100%;
-  min-height: 68px;
+  min-height: 64px;
   padding: 9px 11px;
   border: 1.5px solid var(--border);
-  border-radius: 10px;
-  font-size: 0.86rem;
-  font-family: 'Montserrat', sans-serif;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
   color: var(--text);
-  background: #FAFCFF;
+  background: #FBFCFE;
   resize: vertical;
   line-height: 1.45;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 textarea.nf:focus { outline: none; background: #fff; }
-textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,119,208,0.10); }
+textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
-textarea.nf.pre  { border-left: 3px solid var(--blue); }
-textarea.nf.post { border-left: 3px solid var(--green); }
 
 /* ── EMPTY STATE ── */
 .empty-wrap {
-  padding: 56px 28px;
+  padding: 64px 28px 40px;
   text-align: center;
   animation: fadeIn 0.3s ease;
 }
-.empty-icon { font-size: 2.8rem; margin-bottom: 14px; }
 .empty-wrap h3 {
   font-family: 'Nunito', sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.16rem;
   color: var(--text);
-  margin-bottom: 7px;
+  margin-bottom: 6px;
+  font-weight: 800;
 }
-.empty-wrap p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+.empty-wrap p {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 280px;
+  margin: 0 auto;
+}
 
 /* ── TOAST ── */
 #toast {
   position: fixed;
   bottom: 30px;
   left: 50%;
-  transform: translateX(-50%) translateY(80px);
+  transform: translateX(-50%) translateY(60px);
   opacity: 0;
-  background: var(--text);
+  background: var(--blue-deeper);
   color: #fff;
-  padding: 13px 22px;
-  border-radius: 12px;
-  font-size: 0.84rem;
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-size: 0.82rem;
   font-weight: 600;
   z-index: 900;
   pointer-events: none;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+  box-shadow: 0 8px 24px rgba(0,30,52,0.32);
   white-space: nowrap;
   transition: transform 0.3s cubic-bezier(0.34,1.4,0.64,1), opacity 0.25s;
+  max-width: calc(100% - 32px);
 }
-#toast.show {
-  transform: translateX(-50%) translateY(0);
-  opacity: 1;
-}
-
-/* ── FOOTER ── */
-.app-footer {
-  padding: 18px 16px 36px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.69rem;
-  line-height: 1.7;
-}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
 /* ── UPDATE BANNER ── */
 #update-banner {
@@ -659,133 +572,158 @@ textarea.nf.post { border-left: 3px solid var(--green); }
   z-index: 600;
   background: var(--blue-deeper);
   color: #fff;
-  padding: 15px 20px;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0));
   text-align: center;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
   cursor: pointer;
-  border-top: 2px solid rgba(255,255,255,0.2);
+  border-top: 2px solid rgba(255,255,255,0.18);
   display: none;
   -webkit-user-select: none; user-select: none;
 }
 #update-banner.show { display: block; animation: fadeUp 0.35s ease; }
-#update-banner .ub-action {
+.ub-action {
   display: inline-block;
-  margin-left: 10px;
-  background: rgba(255,255,255,0.2);
+  margin-left: 12px;
+  background: rgba(255,255,255,0.22);
   border-radius: 6px;
-  padding: 3px 12px;
+  padding: 3px 11px;
+  font-size: 0.78rem;
 }
 
-/* ── SCHEDULE SELECT (on cards) ── */
-.sched-sel {
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1.5px solid var(--border);
-  background: var(--bg);
-  font-size: 0.74rem;
-  font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
-  color: var(--text-2);
-  cursor: pointer;
-  max-width: 170px;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-}
-.sched-sel.scheduled {
-  border-color: var(--blue);
-  color: var(--blue);
-  background: var(--blue-light);
+/* ── FOOTER ── */
+.app-footer {
+  padding: 18px 16px calc(36px + env(safe-area-inset-bottom, 0));
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.7;
 }
 
 /* ── SCHEDULE VIEW ── */
 .sched-day-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  padding: 10px 10px 4px;
 }
 .sched-day-tab {
   flex: 1;
-  padding: 8px 4px;
-  border-radius: 8px;
+  padding: 9px 4px;
+  border-radius: 10px;
   border: 1.5px solid var(--border);
-  background: var(--bg);
-  font-size: 0.8rem;
-  font-weight: 700;
-  font-family: 'Montserrat', sans-serif;
+  background: var(--surface);
+  font-family: inherit;
   color: var(--text-2);
   cursor: pointer;
   transition: all 0.15s;
   -webkit-user-select: none; user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  box-shadow: var(--shadow-sm);
+}
+.sched-day-tab .stdt-day {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  letter-spacing: 0.2px;
+}
+.sched-day-tab .stdt-count {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 .sched-day-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
-.sched-day-tab:active { opacity: 0.8; }
+.sched-day-tab.active .stdt-count { color: rgba(255,255,255,0.8); }
+.sched-day-tab:active { opacity: 0.85; }
+
 .sched-search-box {
-  margin: 10px 10px 6px;
+  margin: 8px 10px 6px;
   background: var(--surface);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  padding: 12px 14px;
-}
-.sched-search-box h3 {
-  font-family: 'Nunito', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
 }
 .sched-search-input {
   width: 100%;
   padding: 9px 12px;
   border: 1.5px solid var(--border);
-  border-radius: 10px;
-  font-size: 0.88rem;
-  font-family: 'Montserrat', sans-serif;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-family: inherit;
   color: var(--text);
-  background: var(--bg);
+  background: #FBFCFE;
   outline: none;
   transition: border-color 0.15s, background 0.15s;
 }
 .sched-search-input:focus { border-color: var(--blue); background: #fff; }
-.sched-results { margin-top: 8px; }
+.sched-results { margin-top: 6px; }
 .sched-result-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-soft);
 }
 .sched-result-row:last-child { border-bottom: none; }
-.sched-result-name { flex: 1; font-size: 0.83rem; font-weight: 600; color: var(--text); }
-.sched-result-booth { font-size: 0.7rem; color: var(--muted); font-weight: 600; flex-shrink: 0; }
+.sched-result-name {
+  flex: 1;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sched-result-meta { font-size: 0.66rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.sched-result-booth {
+  font-size: 0.68rem;
+  color: var(--muted);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
 .sched-add-sel {
-  padding: 5px 8px;
-  border-radius: 8px;
+  padding: 0 22px 0 9px;
+  height: 30px;
+  border-radius: 7px;
   border: 1.5px solid var(--blue);
-  background: var(--blue-light);
+  background-color: var(--blue-light);
   color: var(--blue-dark);
   font-size: 0.7rem;
   font-weight: 600;
-  font-family: 'Montserrat', sans-serif;
+  font-family: inherit;
   cursor: pointer;
   flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2300466E' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
 }
 
 /* Time slot rows */
-.time-slot { margin: 0 10px 2px; }
+.time-slot { margin: 0 10px 4px; }
 .time-slot-hdr {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 2px 4px;
+  gap: 10px;
+  padding: 8px 2px 6px;
 }
 .time-lbl {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  color: var(--muted);
-  min-width: 62px;
-  font-family: 'Montserrat', sans-serif;
+  color: var(--text-2);
+  min-width: 64px;
+  font-family: 'Nunito', sans-serif;
   white-space: nowrap;
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
 }
 .time-line { flex: 1; height: 1px; background: var(--border); }
 .sched-card {
@@ -794,117 +732,105 @@ textarea.nf.post { border-left: 3px solid var(--green); }
   gap: 10px;
   background: var(--surface);
   border-radius: var(--radius-md);
-  padding: 10px 13px;
+  padding: 11px 13px;
   margin-bottom: 5px;
   box-shadow: var(--shadow-sm);
   border-left: 3px solid var(--blue);
-  animation: fadeUp 0.22s ease both;
+  animation: fadeUp 0.2s ease both;
 }
-.sched-card.visited { border-left-color: var(--green); }
+.sched-card.visited { border-left-color: var(--green); background: #F6FBF8; }
 .sched-card-info { flex: 1; min-width: 0; }
 .sched-card-name {
-  font-size: 0.87rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  color: var(--blue-dark);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .sched-card-booth {
-  font-size: 0.69rem;
+  font-size: 0.7rem;
   color: var(--muted);
   font-weight: 600;
-  margin-top: 1px;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 .sched-rm-btn {
-  width: 28px; height: 28px;
-  border-radius: 7px;
+  width: 30px; height: 30px;
+  border-radius: 8px;
   border: 1.5px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  font-weight: 400;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
   -webkit-user-select: none; user-select: none;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
 }
 .sched-rm-btn:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
-.sched-empty-day {
-  padding: 32px 20px;
+
+.sched-empty {
+  padding: 36px 22px 22px;
   text-align: center;
   color: var(--muted);
-  font-size: 0.82rem;
   animation: fadeIn 0.3s ease;
 }
+.sched-empty h4 { font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 1.02rem; color: var(--text); margin-bottom: 6px; }
+.sched-empty p { font-size: 0.81rem; line-height: 1.55; max-width: 300px; margin: 0 auto; }
 </style>
 </head>
 <body>
 
-<!-- ════ UPDATE BANNER ════ -->
-<div id="update-banner" role="button" tabindex="0">🔄 App update ready!<span class="ub-action">Tap to reload</span></div>
+<div id="update-banner" role="button" tabindex="0">Update available<span class="ub-action">Tap to reload</span></div>
 
-<!-- ════ HEADER ════ -->
-<div class="app-header">
+<header class="app-header">
   <div class="header-top">
-    <div class="logo-mark">
+    <div class="logo-block">
       <img src="data:image/png;base64,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" alt="LPGas" class="logo-img">
-      <div class="logo-tagline">Show — Booth Guide</div>
+      <div class="logo-text">
+        <span class="logo-title">LPGas Show</span>
+        <span class="logo-sub">Booth Guide</span>
+      </div>
     </div>
-    <div class="header-counter">
-      <div class="count" id="hdrVisited">0</div>
-      <div class="label">Visited</div>
+    <div class="visit-counter">
+      <div class="vc-count" id="hdrVisited">0 / 226</div>
+      <div class="vc-label">Visited</div>
     </div>
   </div>
   <div class="header-search">
     <div class="search-wrap">
-      <input id="searchInput" type="text" placeholder="Search company or booth #…" autocomplete="off" autocorrect="off" spellcheck="false">
+      <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
-    <button class="hdr-btn btn-expand-all" id="expandBtn">Expand All</button>
-    <button class="hdr-btn btn-export" id="exportBtn">⬇ CSV</button>
+    <button class="hdr-btn btn-expand" id="expandBtn">Expand</button>
+    <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
-</div>
+  <div class="filter-bar">
+    <button class="f-pill active"     data-f="all">All Booths</button>
+    <button class="f-pill f-novisit"  data-f="novisit">Not Visited</button>
+    <button class="f-pill f-visited"  data-f="visited">Visited</button>
+    <button class="f-pill f-schedule" data-f="schedule">Schedule</button>
+    <button class="f-pill f-customer" data-f="customer">Customers</button>
+    <button class="f-pill f-noncust"  data-f="noncustomer">Non-Customers</button>
+    <button class="f-pill f-unknown"  data-f="unknown">Unclassified</button>
+  </div>
+  <div class="progress-strip"><div class="bar" id="progBar"></div></div>
+</header>
 
-<!-- ════ FILTER BAR ════ -->
-<div class="filter-bar">
-  <button class="f-pill active"      data-f="all">All Booths</button>
-  <button class="f-pill f-novisit"   data-f="novisit">Not Visited</button>
-  <button class="f-pill f-visited"   data-f="visited">✓ Visited</button>
-  <button class="f-pill f-schedule"  data-f="schedule">📅 My Schedule</button>
-  <button class="f-pill f-customer"  data-f="customer">🏢 Customers</button>
-  <button class="f-pill f-noncust"   data-f="noncustomer">✕ Non-Customers</button>
-  <button class="f-pill f-unknown"   data-f="unknown">❓ Unknown</button>
-</div>
-
-<!-- ════ STAT CHIPS ════ -->
-<div class="stat-row">
-  <div class="stat-chip blue">
-    <div class="s-val" id="sTot">226</div>
-    <div class="s-lbl">Exhibitors</div>
-  </div>
-  <div class="stat-chip green">
-    <div class="s-val" id="sVis">0</div>
-    <div class="s-lbl">Visited</div>
-  </div>
-  <div class="stat-chip blue2">
-    <div class="s-val" id="sSch">0</div>
-    <div class="s-lbl">Scheduled</div>
-  </div>
-</div>
-
-<!-- ════ MAIN CONTENT ════ -->
 <div id="content"></div>
 
 <div class="app-footer">
-  Notes save automatically · Use 📅 My Schedule to plan your day<br>
-  Export CSV to open all notes in Excel
+  Notes save automatically. Use Schedule on any booth to plan a meeting.<br>
+  Export to download all notes as CSV.
 </div>
 <div id="toast"></div>
 
 <script>
-// ════════════════════════════════════════
-// DATA — 226 exhibitors
-// ════════════════════════════════════════
 const CO = [
   {n:"1075 Consulting LLC",b:"351"},
   {n:"A.R.M. Solutions",b:"402"},
@@ -1134,109 +1060,90 @@ const CO = [
   {n:"Zephyr Solutions LLC",b:"446"}
 ];
 
-// ════════════════════════════════════════
-// TIME SLOTS  7:00 AM – 6:00 PM, 30 min
-// ════════════════════════════════════════
 const TIME_SLOTS = (() => {
   const out = [];
   for (let m = 7*60; m <= 18*60; m += 30) {
     const h = Math.floor(m/60), mn = m%60;
     const ampm = h >= 12 ? "PM" : "AM";
-    const dh   = h > 12 ? h-12 : h;
+    const dh = h > 12 ? h-12 : h;
     out.push(`${dh}:${mn===0?"00":"30"} ${ampm}`);
   }
   return out;
 })();
 
-// ════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════
+// STATE — key intentionally preserved as lpgas_v3 so existing user data carries forward.
 const STORE = "lpgas_v3";
 const load  = () => { try { return JSON.parse(localStorage.getItem(STORE)||"{}"); } catch(e){ return {}; } };
 const save  = s  => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch(e){} };
 const key   = i  => "c"+i;
 
-// ════════════════════════════════════════
-// ROW HELPERS
-// ════════════════════════════════════════
 function rowKey(b) {
   if (typeof b==="string" && b[0]==="T")
     return "T"+(Math.floor(parseInt(b.slice(1))/100)*100);
   return String(Math.floor(parseInt(b)/100)*100);
 }
-function rowOrder(rk) {
-  return rk[0]==="T" ? 100000+parseInt(rk.slice(1)) : parseInt(rk);
-}
-function rowLabel(rk) {
-  return rk[0]==="T"
-    ? "🚛 Outdoor / Tank — Row "+rk.slice(1)+"s"
-    : "Row "+rk+"s";
-}
+function rowOrder(rk) { return rk[0]==="T" ? 100000+parseInt(rk.slice(1)) : parseInt(rk); }
+function rowLabel(rk) { return rk[0]==="T" ? "Outdoor — Row "+rk.slice(1)+"s" : "Row "+rk+"s"; }
 function isOutdoor(rk){ return rk[0]==="T"; }
 
-// ════════════════════════════════════════
-// ESCAPE
-// ════════════════════════════════════════
 function esc(s){
-  return String(s)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 
-// ════════════════════════════════════════
-// APP STATE
-// ════════════════════════════════════════
-let activeFilter  = "all";
-let allOpen       = false;
-let schedSearchQ  = "";
-let schedDay      = 1; // 1, 2, or 3
+let activeFilter = "all";
+let allOpen      = false;
+let schedSearchQ = "";
+let schedDay     = 1;
 
-// ════════════════════════════════════════
-// CARD BUILDER
-// ════════════════════════════════════════
 function buildCard(c, state) {
-  const s          = state[key(c.i)] || {};
-  const visited    = !!s.visited;
-  const hasNotes   = !!(s.pre||s.post);
-  const status     = s.status || "unknown";
-  const scheduled  = s.scheduled || null;
-  const outdoor    = isOutdoor(rowKey(c.b));
-  const npId       = "np"+c.i;
-  const badgeCls   = status==="customer"?"sb-cust":status==="noncustomer"?"sb-non":"";
-  const badgeTxt   = status==="customer"?"🏢 Customer":status==="noncustomer"?"✕ Non-Customer":"";
-  const statusCardCls = status==="customer"?" s-customer":status==="noncustomer"?" s-noncustomer":"";
-  const timeOpts   = [1,2,3].map(d=>`<optgroup label="Day ${d}">${TIME_SLOTS.map(t=>`<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${t}</option>`).join("")}</optgroup>`).join("");
+  const s = state[key(c.i)] || {};
+  const visited   = !!s.visited;
+  const hasNotes  = !!(s.pre || s.post);
+  const status    = s.status || "unknown";
+  const scheduled = s.scheduled || null;
+  const outdoor   = isOutdoor(rowKey(c.b));
+  const npId      = "np"+c.i;
+  const statusCls = status === "customer" ? " s-customer"
+                  : status === "noncustomer" ? " s-noncustomer" : "";
+  const schedTag = scheduled
+    ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}</span>`
+    : "";
+  const timeOpts = [1,2,3].map(d =>
+    `<optgroup label="Day ${d}">${TIME_SLOTS.map(t =>
+      `<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${t}</option>`
+    ).join("")}</optgroup>`
+  ).join("");
   return `
-    <div class="co-card${visited?" visited":""}${statusCardCls}" id="cc${c.i}" data-i="${c.i}">
+    <div class="co-card${visited?" visited":""}${statusCls}" id="cc${c.i}" data-i="${c.i}">
       <div class="card-top">
         <span class="co-name">${esc(c.n)}</span>
-        ${badgeTxt?`<span class="status-badge ${badgeCls}">${badgeTxt}</span>`:""}
-        <span class="booth-badge${outdoor?" outdoor":""}">${esc(c.b)}</span>
+        ${schedTag}
+        <span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>
       </div>
       <div class="card-actions">
-        <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"📝 Notes":"＋ Notes"}</button>
         <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
-          <span class="check-icon">${visited?"✓":""}</span>
-          ${visited?"Visited":"Mark Visited"}
+          <span class="dot"></span>${visited?"Visited":"Mark Visit"}
         </button>
+        <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"Notes":"Add Notes"}</button>
         <div class="status-group">
           <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
-          <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unknown</button>
+          <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unsure</button>
         </div>
-        <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" title="Add to My Schedule">
-          <option value="">📅 Schedule</option>
+        <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" title="Schedule">
+          <option value="">Schedule…</option>
           ${timeOpts}
         </select>
       </div>
       <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
         <div class="notes-panel-inner"><div class="notes-content">
           <div class="note-group">
-            <div class="note-label pre">📋 Pre-Visit Notes</div>
+            <div class="note-label pre">Pre-Visit</div>
             <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
           </div>
           <div class="note-group">
-            <div class="note-label post">✅ Post-Visit Notes</div>
+            <div class="note-label post">Post-Visit</div>
             <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
           </div>
         </div></div>
@@ -1244,147 +1151,63 @@ function buildCard(c, state) {
     </div>`;
 }
 
-// ════════════════════════════════════════
-// RENDER
-// ════════════════════════════════════════
 function render() {
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
 
-  // Build indexed list, apply search + filter
   let list = CO.map((c,i)=>({...c,i}));
-  if (q) list = list.filter(c=>c.n.toLowerCase().includes(q)||c.b.toLowerCase().includes(q));
-  if (activeFilter==="visited")     list = list.filter(c=>state[key(c.i)]?.visited);
-  if (activeFilter==="novisit")     list = list.filter(c=>!state[key(c.i)]?.visited);
-  if (activeFilter==="schedule")    list = list.filter(c=>state[key(c.i)]?.scheduled);
-  if (activeFilter==="customer")    list = list.filter(c=>state[key(c.i)]?.status==="customer");
-  if (activeFilter==="noncustomer") list = list.filter(c=>state[key(c.i)]?.status==="noncustomer");
-  if (activeFilter==="unknown")     list = list.filter(c=>!state[key(c.i)]?.status||state[key(c.i)]?.status==="unknown");
+  if (q) list = list.filter(c => c.n.toLowerCase().includes(q) || c.b.toLowerCase().includes(q));
+  if (activeFilter==="visited")     list = list.filter(c => state[key(c.i)]?.visited);
+  if (activeFilter==="novisit")     list = list.filter(c => !state[key(c.i)]?.visited);
+  if (activeFilter==="schedule")    list = list.filter(c => state[key(c.i)]?.scheduled);
+  if (activeFilter==="customer")    list = list.filter(c => state[key(c.i)]?.status==="customer");
+  if (activeFilter==="noncustomer") list = list.filter(c => state[key(c.i)]?.status==="noncustomer");
+  if (activeFilter==="unknown")     list = list.filter(c => !state[key(c.i)]?.status || state[key(c.i)]?.status==="unknown");
 
   const el = document.getElementById("content");
 
+  if (activeFilter === "schedule") { renderScheduleView(state); return; }
+
   if (!list.length) {
     const msgs = {
-      schedule:    ["📅","Nothing scheduled yet","Use the 📅 Schedule dropdown on any booth card"],
-      visited:     ["✓","No visited booths yet","Mark booths as visited as you walk the floor"],
-      novisit:     ["🎯","All caught up!","Looks like you've visited every filtered company"],
-      customer:    ["🏢","No customers tagged yet","Tap 'Customer' on any company card to tag them"],
-      noncustomer: ["✕","No non-customers tagged yet","Tap 'Non-Cust' on any company card"],
-      unknown:     ["❓","All companies classified!","Every company has a customer status set"],
+      visited:     ["No visits yet","Mark booths as visited as you walk the floor."],
+      novisit:     ["All caught up","Every company in this view has been visited."],
+      customer:    ["No customers tagged","Tap Customer on a card to flag accounts you own."],
+      noncustomer: ["No non-customers tagged","Tap Non-Cust to mark booths you can skip."],
+      unknown:     ["Every company classified","All booths have a customer status set."],
     };
-    const [icon, title, sub] = msgs[activeFilter] || ["🔍","No results","Try a different search term"];
-    el.innerHTML = `<div class="empty-wrap"><div class="empty-icon">${icon}</div><h3>${title}</h3><p>${sub}</p></div>`;
+    const [title, sub] = msgs[activeFilter] || ["No results","Try a different search term."];
+    el.innerHTML = `<div class="empty-wrap"><h3>${title}</h3><p>${sub}</p></div>`;
     updateStats(state);
     return;
   }
 
-  // ── SCHEDULE VIEW: real time-slot schedule ──
-  if (activeFilter === "schedule") {
-    // Companies scheduled on the current day, keyed by time
-    const byTime = {};
-    CO.forEach((c,i) => {
-      const sv = state[key(i)]?.scheduled;
-      if (!sv) return;
-      const [d, t] = sv.split("|");
-      if (parseInt(d) === schedDay) (byTime[t] = byTime[t]||[]).push({...c,i});
-    });
-
-    // Companies NOT yet scheduled on any day matching current search
-    const searchHtml = (() => {
-      if (!schedSearchQ) return "";
-      const matches = CO.map((c,i)=>({...c,i}))
-        .filter(c => (c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ)))
-        .slice(0,8);
-      if (!matches.length)
-        return `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No companies match</div>`;
-      return matches.map(c=>{
-        const curSched = state[key(c.i)]?.scheduled||null;
-        const [curD,curT] = curSched ? curSched.split("|") : [null,null];
-        const alreadyLabel = curSched ? ` · D${curD} ${curT}` : "";
-        return `
-        <div class="sched-result-row">
-          <span class="sched-result-name">${esc(c.n)}<span style="font-size:0.65rem;color:var(--muted);font-weight:500;">${alreadyLabel}</span></span>
-          <span class="sched-result-booth">${esc(c.b)}</span>
-          <select class="sched-add-sel" data-add-i="${c.i}">
-            <option value="">＋ Time</option>
-            ${TIME_SLOTS.map(t=>`<option value="${esc(t)}">${t}</option>`).join("")}
-          </select>
-        </div>`;
-      }).join("");
-    })();
-
-    const dayTabs = [1,2,3].map(d=>`<button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">Day ${d}</button>`).join("");
-    const hasAny = Object.keys(byTime).length > 0;
-
-    let html = `
-<div class="sched-search-box">
-  <div class="sched-day-tabs">${dayTabs}</div>
-  <input class="sched-search-input" type="text" placeholder="Search companies to add to Day ${schedDay}…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
-  <div class="sched-results" id="sched-results">${searchHtml}</div>
-</div>`;
-
-    if (!hasAny) {
-      html += `<div class="sched-empty-day">
-        <div style="font-size:2.2rem;margin-bottom:10px;">📅</div>
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px;">Nothing on Day ${schedDay} yet</div>
-        <div style="color:var(--muted);font-size:0.82rem;line-height:1.5;">Search above to add companies,<br>or use the 📅 Schedule dropdown on any booth card.</div>
-      </div>`;
-    } else {
-      TIME_SLOTS.forEach(t => {
-        const comps = byTime[t] || [];
-        if (!comps.length) return; // skip empty slots
-        html += `<div class="time-slot">
-          <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
-        comps.forEach(c => {
-          const visited = !!state[key(c.i)]?.visited;
-          html += `<div class="sched-card${visited?" visited":""}">
-            <div class="sched-card-info">
-              <div class="sched-card-name">${esc(c.n)}</div>
-              <div class="sched-card-booth">Booth ${esc(c.b)}</div>
-            </div>
-            <button class="sched-rm-btn" data-rm="${c.i}" title="Remove from schedule">✕</button>
-          </div>`;
-        });
-        html += `</div>`;
-      });
-    }
-    el.innerHTML = html;
-    if (schedSearchQ) document.querySelector(".sched-search-input")?.focus();
-    updateStats(state);
-    return;
-  }
-
-  // Group → sort (normal views)
   const groups = {};
   list.forEach(c => {
     const rk = rowKey(c.b);
     (groups[rk] = groups[rk]||[]).push(c);
   });
-  Object.values(groups).forEach(a=>a.sort((a,b)=>a.n.localeCompare(b.n)));
-  const rowKeys = Object.keys(groups).sort((a,b)=>rowOrder(a)-rowOrder(b));
+  Object.values(groups).forEach(a => a.sort((x,y) => x.n.localeCompare(y.n)));
+  const rowKeys = Object.keys(groups).sort((a,b) => rowOrder(a) - rowOrder(b));
 
   let html = "";
   rowKeys.forEach((rk, ri) => {
-    const comps   = groups[rk];
+    const comps = groups[rk];
     const outdoor = isOutdoor(rk);
-    const nVisited = comps.filter(c=>state[key(c.i)]?.visited).length;
-    const pillCls  = nVisited===comps.length&&comps.length>0 ? "row-pill done"
-                   : nVisited > 0 ? "row-pill some" : "row-pill";
+    const nVisited = comps.filter(c => state[key(c.i)]?.visited).length;
+    const pillCls  = nVisited===comps.length && comps.length>0 ? "row-pill done" : "row-pill";
     const bodyId = "rb"+rk.replace(/\W/g,"_");
-
     html += `
-<div class="row-section" data-rk="${esc(rk)}" style="animation-delay:${Math.min(ri*0.035,0.35)}s">
+<div class="row-section" data-rk="${esc(rk)}" style="animation-delay:${Math.min(ri*0.03,0.3)}s">
   <div class="row-header${outdoor?" outdoor":""}" data-toggle="${bodyId}">
     <span class="row-title">${esc(rowLabel(rk))}</span>
     <span class="row-right">
       <span class="${pillCls}" id="badge_${esc(rk)}">${nVisited}/${comps.length}</span>
-      <span class="row-chevron${allOpen?" open":""}">▼</span>
+      <span class="row-chevron${allOpen?" open":""}">▾</span>
     </span>
   </div>
   <div class="row-body${allOpen?" open":""}" id="${bodyId}"><div class="row-body-inner">`;
-
     comps.forEach(c => { html += buildCard(c, state); });
-
     html += `</div></div></div>`;
   });
 
@@ -1392,64 +1215,128 @@ function render() {
   updateStats(state);
 }
 
-// ════════════════════════════════════════
-// STATS
-// ════════════════════════════════════════
+function renderScheduleView(state) {
+  const el = document.getElementById("content");
+  const dayCount = [0,0,0,0];
+  CO.forEach((c,i) => {
+    const sv = state[key(i)]?.scheduled;
+    if (!sv) return;
+    const d = parseInt(sv.split("|")[0]);
+    if (d>=1 && d<=3) dayCount[d]++;
+  });
+  const dayTabs = [1,2,3].map(d => `
+    <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
+      <span class="stdt-day">Day ${d}</span>
+      <span class="stdt-count">${dayCount[d]} booked</span>
+    </button>`).join("");
+
+  const searchHtml = (() => {
+    if (!schedSearchQ) return "";
+    const matches = CO.map((c,i)=>({...c,i}))
+      .filter(c => c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))
+      .slice(0,8);
+    if (!matches.length)
+      return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
+    return matches.map(c => {
+      const cur = state[key(c.i)]?.scheduled || null;
+      const meta = cur ? `Currently Day ${cur.split("|")[0]} · ${cur.split("|")[1]}` : "";
+      return `
+        <div class="sched-result-row">
+          <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
+          <span class="sched-result-booth">${esc(c.b)}</span>
+          <select class="sched-add-sel" data-add-i="${c.i}">
+            <option value="">+ Time</option>
+            ${TIME_SLOTS.map(t => `<option value="${esc(t)}">${t}</option>`).join("")}
+          </select>
+        </div>`;
+    }).join("");
+  })();
+
+  const byTime = {};
+  CO.forEach((c,i) => {
+    const sv = state[key(i)]?.scheduled;
+    if (!sv) return;
+    const [d,t] = sv.split("|");
+    if (parseInt(d) === schedDay) (byTime[t] = byTime[t]||[]).push({...c,i});
+  });
+  const hasAny = Object.keys(byTime).length > 0;
+
+  let html = `
+<div class="sched-day-tabs">${dayTabs}</div>
+<div class="sched-search-box">
+  <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
+  <div class="sched-results" id="sched-results">${searchHtml}</div>
+</div>`;
+
+  if (!hasAny) {
+    html += `<div class="sched-empty">
+      <h4>Nothing booked on Day ${schedDay}</h4>
+      <p>Search above to add a company, or use the Schedule dropdown on any booth card.</p>
+    </div>`;
+  } else {
+    TIME_SLOTS.forEach(t => {
+      const comps = byTime[t] || [];
+      if (!comps.length) return;
+      html += `<div class="time-slot">
+        <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
+      comps.forEach(c => {
+        const visited = !!state[key(c.i)]?.visited;
+        html += `<div class="sched-card${visited?" visited":""}">
+          <div class="sched-card-info">
+            <div class="sched-card-name">${esc(c.n)}</div>
+            <div class="sched-card-booth">Booth ${esc(c.b)}</div>
+          </div>
+          <button class="sched-rm-btn" data-rm="${c.i}" title="Remove from schedule">×</button>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+  el.innerHTML = html;
+  if (schedSearchQ) document.querySelector(".sched-search-input")?.focus();
+  updateStats(state);
+}
+
 function updateStats(state) {
-  const vis = Object.values(state).filter(s=>s?.visited).length;
-  const sch = Object.values(state).filter(s=>s?.scheduled).length;
-  animVal("sTot", CO.length);
-  animVal("sVis", vis);
-  animVal("sSch", sch);
-  const hv = document.getElementById("hdrVisited");
-  if (hv.textContent !== String(vis)) {
-    hv.textContent = vis;
+  const total = CO.length;
+  const vis = Object.values(state).filter(s => s?.visited).length;
+  const pct = total > 0 ? (vis/total)*100 : 0;
+  const hv  = document.getElementById("hdrVisited");
+  const text = `${vis} / ${total}`;
+  if (hv && hv.textContent !== text) {
+    hv.textContent = text;
     hv.classList.remove("pop");
     void hv.offsetWidth;
     hv.classList.add("pop");
   }
-}
-function animVal(id, val) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.textContent !== String(val)) {
-    el.textContent = val;
-    el.classList.remove("pop");
-    void el.offsetWidth;
-    el.classList.add("pop");
-  }
+  const bar = document.getElementById("progBar");
+  if (bar) bar.style.width = pct + "%";
 }
 
-// Refresh a row's visit badge without full re-render
 function refreshBadge(rk, state) {
   const badge = document.getElementById("badge_"+rk);
   const sec   = document.querySelector(`[data-rk="${CSS.escape(rk)}"]`);
-  if (!badge||!sec) return;
+  if (!badge || !sec) return;
   const cards = sec.querySelectorAll(".co-card");
-  let vis=0; cards.forEach(c=>{if(state[key(parseInt(c.dataset.i))]?.visited) vis++;});
+  let vis = 0;
+  cards.forEach(c => { if (state[key(parseInt(c.dataset.i))]?.visited) vis++; });
   badge.textContent = vis+"/"+cards.length;
-  badge.className = vis===cards.length&&cards.length>0?"row-pill done":vis>0?"row-pill some":"row-pill";
+  badge.className = vis===cards.length && cards.length>0 ? "row-pill done" : "row-pill";
 }
 
-// ════════════════════════════════════════
-// EVENT DELEGATION
-// ════════════════════════════════════════
-let _dt={};
+let _dt = {};
 
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
 
-  // Row / time-block toggle
   const tog = e.target.closest("[data-toggle]");
   if (tog) {
-    const bId  = tog.getAttribute("data-toggle");
-    const body = document.getElementById(bId);
+    const body = document.getElementById(tog.getAttribute("data-toggle"));
     body?.classList.toggle("open");
     tog.querySelector(".row-chevron")?.classList.toggle("open");
     return;
   }
 
-  // Notes panel toggle
   const npBtn = e.target.closest("[data-np]");
   if (npBtn) {
     const panel = document.getElementById(npBtn.dataset.np);
@@ -1461,7 +1348,6 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  // Day tab switch
   const dayTab = e.target.closest("[data-day]");
   if (dayTab) {
     schedDay = parseInt(dayTab.dataset.day);
@@ -1470,102 +1356,82 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  // Remove from schedule (× button in schedule view)
   const rmBtn = e.target.closest("[data-rm]");
   if (rmBtn) {
     const i = parseInt(rmBtn.dataset.rm);
     const k = key(i);
-    if (!state[k]) state[k]={};
-    state[k].scheduledTime = null;
+    if (state[k]) state[k].scheduled = null;
     save(state);
-    updateStats(state);
     toast("Removed from schedule");
     render();
     return;
   }
 
-  // Status toggle
   const statBtn = e.target.closest("[data-sval]");
   if (statBtn) {
-    const i   = parseInt(statBtn.dataset.si);
+    const i = parseInt(statBtn.dataset.si);
     const val = statBtn.dataset.sval;
-    const k   = key(i);
-    if (!state[k]) state[k]={};
-    // Tap active non-unknown → reset to unknown
+    const k = key(i);
+    if (!state[k]) state[k] = {};
     state[k].status = (state[k].status === val && val !== "unknown") ? "unknown" : val;
     save(state);
     const ns = state[k].status;
-    // Update buttons
     const grp = statBtn.closest(".status-group");
     grp.querySelectorAll(".status-btn").forEach(b => b.classList.toggle("active", b.dataset.sval===ns));
-    // Update card class
     const card = document.getElementById("cc"+i);
     card.classList.remove("s-customer","s-noncustomer");
     if (ns!=="unknown") card.classList.add("s-"+ns);
-    // Update status badge
-    let badge = card.querySelector(".status-badge");
-    if (!badge) {
-      badge = document.createElement("span");
-      badge.className = "status-badge";
-      card.querySelector(".card-top .co-name").after(badge);
-    }
-    if (ns==="customer")    { badge.textContent="🏢 Customer";    badge.className="status-badge sb-cust"; }
-    else if (ns==="noncustomer") { badge.textContent="✕ Non-Customer"; badge.className="status-badge sb-non"; }
-    else { badge.textContent=""; badge.className="status-badge"; }
-    const label = ns==="customer"?"🏢 Marked as Customer":ns==="noncustomer"?"✕ Marked as Non-Customer":"Status reset to Unknown";
+    const label = ns==="customer" ? "Marked as Customer"
+                : ns==="noncustomer" ? "Marked as Non-Customer"
+                : "Status cleared";
     toast(label);
     return;
   }
 
-  // Visit toggle
   const visBtn = e.target.closest("[data-visit]");
   if (visBtn) {
     const i = parseInt(visBtn.dataset.visit);
     const k = key(i);
-    if (!state[k]) state[k]={};
+    if (!state[k]) state[k] = {};
     state[k].visited = !state[k].visited;
     save(state);
     const on = state[k].visited;
     visBtn.classList.toggle("on", on);
-    visBtn.innerHTML = `<span class="check-icon">${on?"✓":""}</span>${on?"Visited":"Mark Visited"}`;
+    visBtn.innerHTML = `<span class="dot"></span>${on?"Visited":"Mark Visit"}`;
     const card = document.getElementById("cc"+i);
     card?.classList.toggle("visited", on);
     const rk = card?.closest("[data-rk]")?.dataset.rk;
     if (rk) refreshBadge(rk, state);
     updateStats(state);
-    if (on) toast("✓ Marked as visited!");
+    if (on) toast("Marked as visited");
     return;
   }
 });
 
-// Notes auto-save (debounced)
 document.getElementById("content").addEventListener("input", e => {
-  // Schedule search
   if (e.target.classList.contains("sched-search-input")) {
     schedSearchQ = e.target.value.trim().toLowerCase();
     const state = load();
-    const matches = schedSearchQ ? CO.map((c,i)=>({...c,i}))
-      .filter(c => c.n.toLowerCase().includes(schedSearchQ)||c.b.toLowerCase().includes(schedSearchQ))
-      .slice(0,8) : [];
+    const matches = schedSearchQ
+      ? CO.map((c,i)=>({...c,i})).filter(c => c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ)).slice(0,8)
+      : [];
     const rEl = document.getElementById("sched-results");
-    if (rEl) {
-      if (!schedSearchQ) { rEl.innerHTML = ""; return; }
-      if (!matches.length) { rEl.innerHTML = `<div style="padding:6px 0 2px;color:var(--muted);font-size:0.81rem;">No unscheduled companies match</div>`; return; }
-      rEl.innerHTML = matches.map(c=>{
-        const curSched = state[key(c.i)]?.scheduled||null;
-        const [curD,curT] = curSched ? curSched.split("|") : [null,null];
-        const alreadyLabel = curSched ? ` · D${curD} ${curT}` : "";
-        return `
+    if (!rEl) return;
+    if (!schedSearchQ) { rEl.innerHTML = ""; return; }
+    if (!matches.length) { rEl.innerHTML = `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`; return; }
+    rEl.innerHTML = matches.map(c => {
+      const cur = state[key(c.i)]?.scheduled || null;
+      const meta = cur ? `Currently Day ${cur.split("|")[0]} · ${cur.split("|")[1]}` : "";
+      return `
         <div class="sched-result-row">
-          <span class="sched-result-name">${esc(c.n)}<span style="font-size:0.65rem;color:var(--muted);font-weight:500;">${alreadyLabel}</span></span>
+          <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
           <span class="sched-result-booth">${esc(c.b)}</span>
           <select class="sched-add-sel" data-add-i="${c.i}">
-            <option value="">＋ Time</option>
-            ${TIME_SLOTS.map(t=>`<option value="${esc(t)}">${t}</option>`).join("")}
+            <option value="">+ Time</option>
+            ${TIME_SLOTS.map(t => `<option value="${esc(t)}">${t}</option>`).join("")}
           </select>
         </div>`;
-      }).join("");
-    }
+    }).join("");
     return;
   }
   if (!e.target.classList.contains("nf")) return;
@@ -1573,39 +1439,37 @@ document.getElementById("content").addEventListener("input", e => {
   const f = e.target.dataset.f;
   const v = e.target.value;
   clearTimeout(_dt[i+f]);
-  _dt[i+f] = setTimeout(()=>{
+  _dt[i+f] = setTimeout(() => {
     const state = load();
     const k = key(i);
-    if (!state[k]) state[k]={};
+    if (!state[k]) state[k] = {};
     state[k][f] = v;
     save(state);
     const card = document.getElementById("cc"+i);
     const btn  = card?.querySelector("[data-np]");
-    if (btn && (state[k].pre||state[k].post)) {
-      btn.textContent="📝 Notes"; btn.classList.add("on");
+    if (btn && (state[k].pre || state[k].post)) {
+      btn.textContent = "Notes";
+      btn.classList.add("on");
     }
   }, 480);
 });
 
-// Schedule select changes (card dropdown + search-add dropdown)
 document.getElementById("content").addEventListener("change", e => {
-  // Card schedule select  (value = "D|HH:MM XM" or "")
   const sel = e.target.closest(".sched-sel");
   if (sel) {
     const i = parseInt(sel.dataset.sched);
-    const v = sel.value; // "1|9:00 AM" or ""
+    const v = sel.value;
     const k = key(i);
     const state = load();
-    if (!state[k]) state[k]={};
+    if (!state[k]) state[k] = {};
     state[k].scheduled = v || null;
     save(state);
     sel.classList.toggle("scheduled", !!v);
-    updateStats(state);
-    if (v) { const [d,t]=v.split("|"); toast(`📅 Day ${d} · ${t}`); }
-    else   { toast("Removed from schedule"); }
+    if (v) { const [d,t] = v.split("|"); toast(`Day ${d} · ${t}`); }
+    else toast("Removed from schedule");
+    render();
     return;
   }
-  // Search-result add select (value = time string, day comes from schedDay)
   const addSel = e.target.closest(".sched-add-sel");
   if (addSel) {
     const t = addSel.value;
@@ -1613,85 +1477,73 @@ document.getElementById("content").addEventListener("change", e => {
     const i = parseInt(addSel.dataset.addI);
     const k = key(i);
     const state = load();
-    if (!state[k]) state[k]={};
+    if (!state[k]) state[k] = {};
     state[k].scheduled = `${schedDay}|${t}`;
     save(state);
     schedSearchQ = "";
-    updateStats(state);
-    toast(`📅 Day ${schedDay} · ${t}`);
+    toast(`Day ${schedDay} · ${t}`);
     render();
     return;
   }
 });
 
-// Filter pills
 document.querySelector(".filter-bar").addEventListener("click", e => {
   const pill = e.target.closest(".f-pill");
   if (!pill) return;
-  document.querySelectorAll(".f-pill").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".f-pill").forEach(p => p.classList.remove("active"));
   pill.classList.add("active");
   activeFilter = pill.dataset.f;
   render();
 });
 
-// Search
 let _st;
-document.getElementById("searchInput").addEventListener("input", ()=>{
-  clearTimeout(_st); _st=setTimeout(render,200);
+document.getElementById("searchInput").addEventListener("input", () => {
+  clearTimeout(_st);
+  _st = setTimeout(render, 180);
 });
 
-// Expand / Collapse All
-document.getElementById("expandBtn").addEventListener("click", function(){
+document.getElementById("expandBtn").addEventListener("click", function () {
   allOpen = !allOpen;
-  document.querySelectorAll(".row-body").forEach(b=>b.classList.toggle("open",allOpen));
-  document.querySelectorAll(".row-chevron").forEach(c=>c.classList.toggle("open",allOpen));
-  this.textContent = allOpen?"Collapse All":"Expand All";
+  document.querySelectorAll(".row-body").forEach(b => b.classList.toggle("open", allOpen));
+  document.querySelectorAll(".row-chevron").forEach(c => c.classList.toggle("open", allOpen));
+  this.textContent = allOpen ? "Collapse" : "Expand";
 });
 
-// Export CSV
-document.getElementById("exportBtn").addEventListener("click", ()=>{
+document.getElementById("exportBtn").addEventListener("click", () => {
   const state = load();
-  const rows  = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
-  [...CO].map((c,i)=>({...c,i}))
-    .sort((a,b)=>a.n.localeCompare(b.n))
-    .forEach(c=>{
-      const s  = state[key(c.i)]||{};
+  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  [...CO].map((c,i) => ({...c,i}))
+    .sort((a,b) => a.n.localeCompare(b.n))
+    .forEach(c => {
+      const s = state[key(c.i)] || {};
       const rk = rowKey(c.b);
-      const st = s.status==="customer"?"Existing Customer":s.status==="noncustomer"?"Non-Customer":"Unknown";
+      const st = s.status==="customer" ? "Existing Customer"
+               : s.status==="noncustomer" ? "Non-Customer" : "Unknown";
       const [schedD, schedT] = s.scheduled ? s.scheduled.split("|") : ["",""];
-      rows.push([
-        c.n, c.b,
-        isOutdoor(rk)?"Outdoor T"+rk.slice(1)+"s":"Row "+rk+"s",
-        st,
-        schedD ? "Day "+schedD : "",
-        schedT||"",
-        s.visited?"Yes":"No",
-        s.pre||"", s.post||""
-      ]);
+      rows.push([c.n, c.b,
+        isOutdoor(rk) ? "Outdoor T"+rk.slice(1)+"s" : "Row "+rk+"s",
+        st, schedD ? "Day "+schedD : "", schedT||"",
+        s.visited ? "Yes" : "No", s.pre||"", s.post||""]);
     });
-  const csv  = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
-  const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement("a"),{href:url,download:"LPGas_BoothNotes.csv"});
+  const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), {href:url, download:"LPGas_BoothNotes.csv"});
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
-  toast("✅ CSV downloaded — open in Excel!");
+  toast("CSV downloaded");
 });
 
-// Toast
-function toast(msg){
+function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(t._timer);
-  t._timer = setTimeout(()=>t.classList.remove("show"), 2600);
+  t._timer = setTimeout(() => t.classList.remove("show"), 2400);
 }
 
-// Service Worker + Update Banner
 if ("serviceWorker" in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
-
-  // When a new SW takes over, show the reload banner
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (hadController) {
       const banner = document.getElementById("update-banner");
@@ -1699,10 +1551,8 @@ if ("serviceWorker" in navigator) {
       banner.addEventListener("click", () => window.location.reload(), {once:true});
     }
   });
-
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then(reg => {
-      // Also catch the case where a SW is already waiting on page load
       if (reg.waiting && hadController) {
         const banner = document.getElementById("update-banner");
         banner.classList.add("show");
@@ -1710,12 +1560,12 @@ if ("serviceWorker" in navigator) {
           reg.waiting.postMessage({type:"SKIP_WAITING"});
         }, {once:true});
       }
-    }).catch(()=>{});
+    }).catch(() => {});
   });
 }
 
-// Boot
 render();
+
 </script>
 </body>
 </html>

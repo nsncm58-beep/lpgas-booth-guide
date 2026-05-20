@@ -1,7 +1,8 @@
-// LPGas Booth Guide — Service Worker v4
-// HTML is network-first so updates deploy immediately without bumping this file.
+// LPGas Booth Guide — Service Worker v5
+// HTML is network-first so updates deploy immediately.
+// User state lives in localStorage (key: lpgas_v3) — never touched by the cache.
 
-const CACHE_NAME = 'lpgas-guide-v4';
+const CACHE_NAME = 'lpgas-guide-v5';
 const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -20,9 +21,12 @@ self.addEventListener('activate', event => {
     self.clients.claim();
 });
 
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', event => {
     const req = event.request;
-    // Network-first for HTML — ensures new pushes are picked up immediately
     if (req.destination === 'document' || req.url.endsWith('.html')) {
         event.respondWith(
             fetch(req).then(res => {
@@ -32,7 +36,6 @@ self.addEventListener('fetch', event => {
             }).catch(() => caches.match(req))
         );
     } else {
-        // Cache-first for fonts, icons, manifest
         event.respondWith(
             caches.match(req).then(cached => cached || fetch(req).then(res => {
                 const clone = res.clone();
