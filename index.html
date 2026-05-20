@@ -1513,7 +1513,24 @@ document.getElementById("content").addEventListener("input", e => {
     const k = key(i);
     if (!state[k]) state[k] = {};
     state[k][f] = v;
+    let autoVisited = false;
+    if (f === "post" && v.trim() && !state[k].visited) {
+      state[k].visited = true;
+      autoVisited = true;
+    }
     save(state);
+    if (autoVisited) {
+      const card = document.getElementById("cc"+i);
+      card?.classList.add("visited");
+      const vb = card?.querySelector("[data-visit]");
+      if (vb) {
+        vb.classList.add("on");
+        vb.innerHTML = '<span class="dot"></span>Visited';
+      }
+      updateStats(state);
+      refreshBadge(rowKey(CO[i].b), state);
+      toast("Marked as visited");
+    }
   }, 480);
 });
 
