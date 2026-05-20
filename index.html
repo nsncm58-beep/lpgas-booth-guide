@@ -183,6 +183,38 @@ body {
 }
 .btn-export:active { background: var(--blue-light); }
 
+/* ── VIEW TABS (primary) ── */
+.view-tabs {
+  background: var(--surface);
+  padding: 10px 12px 2px;
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.view-tabs.no-border { border-bottom-color: transparent; }
+.v-tab {
+  flex: 1;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  transition: background 0.18s, color 0.18s, border-color 0.18s, box-shadow 0.18s;
+  -webkit-user-select: none; user-select: none;
+}
+.v-tab:active { transform: scale(0.98); }
+.v-tab.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,92,143,0.22);
+}
+
 /* ── FILTER BAR ── */
 .filter-bar {
   background: var(--surface);
@@ -194,6 +226,7 @@ body {
   border-bottom: 1px solid var(--border-soft);
   scrollbar-width: none;
 }
+.filter-bar.hidden { display: none; }
 .filter-bar::-webkit-scrollbar { display: none; }
 .f-pill {
   flex-shrink: 0;
@@ -214,7 +247,6 @@ body {
 .f-pill.active            { background: var(--blue);        border-color: var(--blue);        color: #fff; }
 .f-pill.active.f-visited  { background: var(--green);       border-color: var(--green);       color: #fff; }
 .f-pill.active.f-novisit  { background: var(--blue);        border-color: var(--blue);        color: #fff; }
-.f-pill.active.f-schedule { background: var(--blue-deeper); border-color: var(--blue-deeper); color: #fff; }
 .f-pill.active.f-customer { background: var(--green);       border-color: var(--green);       color: #fff; }
 .f-pill.active.f-noncust  { background: var(--maroon);      border-color: var(--maroon);      color: #fff; }
 .f-pill.active.f-unknown  { background: var(--text-2);      border-color: var(--text-2);      color: #fff; }
@@ -775,6 +807,28 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .sched-rm-btn:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
 
+/* Full card embedded in a schedule time slot */
+.sched-slot-card {
+  margin: 0 0 10px;
+  animation: fadeUp 0.2s ease both;
+}
+.sched-slot-card .co-card { margin-bottom: 0; }
+.sched-rm-link {
+  display: block;
+  margin: 4px auto 0;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  color: var(--maroon);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sched-rm-link:active { color: var(--text); }
+
 .sched-empty {
   padding: 36px 22px 22px;
   text-align: center;
@@ -810,11 +864,14 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
     <button class="hdr-btn btn-expand" id="expandBtn">Expand</button>
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
+  <div class="view-tabs">
+    <button class="v-tab active" data-v="booths">Booths</button>
+    <button class="v-tab"        data-v="schedule">My Schedule</button>
+  </div>
   <div class="filter-bar">
     <button class="f-pill active"     data-f="all">All Booths</button>
     <button class="f-pill f-novisit"  data-f="novisit">Not Visited</button>
     <button class="f-pill f-visited"  data-f="visited">Visited</button>
-    <button class="f-pill f-schedule" data-f="schedule">Schedule</button>
     <button class="f-pill f-customer" data-f="customer">Customers</button>
     <button class="f-pill f-noncust"  data-f="noncustomer">Non-Customers</button>
     <button class="f-pill f-unknown"  data-f="unknown">Unclassified</button>
@@ -1091,6 +1148,7 @@ function esc(s){
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 
+let activeView   = "booths";   // "booths" | "schedule"
 let activeFilter = "all";
 let allOpen      = false;
 let schedSearchQ = "";
@@ -1159,14 +1217,19 @@ function render() {
   if (q) list = list.filter(c => c.n.toLowerCase().includes(q) || c.b.toLowerCase().includes(q));
   if (activeFilter==="visited")     list = list.filter(c => state[key(c.i)]?.visited);
   if (activeFilter==="novisit")     list = list.filter(c => !state[key(c.i)]?.visited);
-  if (activeFilter==="schedule")    list = list.filter(c => state[key(c.i)]?.scheduled);
   if (activeFilter==="customer")    list = list.filter(c => state[key(c.i)]?.status==="customer");
   if (activeFilter==="noncustomer") list = list.filter(c => state[key(c.i)]?.status==="noncustomer");
   if (activeFilter==="unknown")     list = list.filter(c => !state[key(c.i)]?.status || state[key(c.i)]?.status==="unknown");
 
   const el = document.getElementById("content");
+  const filterBar = document.querySelector(".filter-bar");
 
-  if (activeFilter === "schedule") { renderScheduleView(state); return; }
+  if (activeView === "schedule") {
+    filterBar?.classList.add("hidden");
+    renderScheduleView(state);
+    return;
+  }
+  filterBar?.classList.remove("hidden");
 
   if (!list.length) {
     const msgs = {
@@ -1280,14 +1343,7 @@ function renderScheduleView(state) {
       html += `<div class="time-slot">
         <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
       comps.forEach(c => {
-        const visited = !!state[key(c.i)]?.visited;
-        html += `<div class="sched-card${visited?" visited":""}">
-          <div class="sched-card-info">
-            <div class="sched-card-name">${esc(c.n)}</div>
-            <div class="sched-card-booth">Booth ${esc(c.b)}</div>
-          </div>
-          <button class="sched-rm-btn" data-rm="${c.i}" title="Remove from schedule">×</button>
-        </div>`;
+        html += `<div class="sched-slot-card">${buildCard(c, state)}<button class="sched-rm-link" data-rm="${c.i}">Remove from Day ${schedDay}</button></div>`;
       });
       html += `</div>`;
     });
@@ -1485,6 +1541,15 @@ document.getElementById("content").addEventListener("change", e => {
     render();
     return;
   }
+});
+
+document.querySelector(".view-tabs").addEventListener("click", e => {
+  const tab = e.target.closest(".v-tab");
+  if (!tab) return;
+  document.querySelectorAll(".v-tab").forEach(t => t.classList.remove("active"));
+  tab.classList.add("active");
+  activeView = tab.dataset.v;
+  render();
 });
 
 document.querySelector(".filter-bar").addEventListener("click", e => {
