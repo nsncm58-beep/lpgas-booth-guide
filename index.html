@@ -444,7 +444,7 @@ body {
   gap: 6px;
   flex-wrap: wrap;
 }
-.notes-btn, .visit-btn {
+.visit-btn {
   padding: 0 12px;
   height: 32px;
   border-radius: 8px;
@@ -461,12 +461,7 @@ body {
   align-items: center;
   gap: 6px;
 }
-.notes-btn:active, .visit-btn:active { transform: scale(0.94); }
-.notes-btn.on {
-  border-color: var(--blue);
-  color: var(--blue);
-  background: var(--blue-light);
-}
+.visit-btn:active { transform: scale(0.94); }
 .visit-btn.on {
   border-color: var(--green);
   color: var(--green);
@@ -552,13 +547,6 @@ body {
 }
 
 /* ── NOTES PANEL ── */
-.notes-panel {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.28s cubic-bezier(0.4,0,0.2,1);
-}
-.notes-panel.open { grid-template-rows: 1fr; }
-.notes-panel-inner { overflow: hidden; }
 .notes-content {
   padding: 12px 0 2px;
   border-top: 1px dashed var(--border);
@@ -1197,7 +1185,6 @@ let schedDay     = 1;
 function buildCard(c, state) {
   const s = state[key(c.i)] || {};
   const visited   = !!s.visited;
-  const hasNotes  = !!(s.pre || s.post);
   const status    = s.status || "unknown";
   const scheduled = s.scheduled || null;
   const outdoor   = isOutdoor(rowKey(c.b));
@@ -1223,7 +1210,6 @@ function buildCard(c, state) {
         <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
           <span class="dot"></span>${visited?"Visited":"Mark Visit"}
         </button>
-        <button class="notes-btn${hasNotes?" on":""}" data-np="${npId}">${hasNotes?"Notes":"Add Notes"}</button>
         <div class="status-group">
           <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
@@ -1234,17 +1220,15 @@ function buildCard(c, state) {
           ${timeOpts}
         </select>
       </div>
-      <div class="notes-panel${hasNotes?" open":""}" id="${npId}">
-        <div class="notes-panel-inner"><div class="notes-content">
-          <div class="note-group">
-            <div class="note-label pre">Pre-Visit</div>
-            <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
-          </div>
-          <div class="note-group">
-            <div class="note-label post">Post-Visit</div>
-            <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
-          </div>
-        </div></div>
+      <div class="notes-content" id="${npId}">
+        <div class="note-group">
+          <div class="note-label pre">Pre-Visit</div>
+          <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
+        </div>
+        <div class="note-group">
+          <div class="note-label post">Post-Visit</div>
+          <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
+        </div>
       </div>
     </div>`;
 }
@@ -1433,17 +1417,6 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  const npBtn = e.target.closest("[data-np]");
-  if (npBtn) {
-    const panel = document.getElementById(npBtn.dataset.np);
-    if (!panel) return;
-    panel.classList.toggle("open");
-    const on = panel.classList.contains("open");
-    npBtn.classList.toggle("on", on);
-    if (on) panel.querySelector("textarea")?.focus();
-    return;
-  }
-
   const dayTab = e.target.closest("[data-day]");
   if (dayTab) {
     schedDay = parseInt(dayTab.dataset.day);
@@ -1541,12 +1514,6 @@ document.getElementById("content").addEventListener("input", e => {
     if (!state[k]) state[k] = {};
     state[k][f] = v;
     save(state);
-    const card = document.getElementById("cc"+i);
-    const btn  = card?.querySelector("[data-np]");
-    if (btn && (state[k].pre || state[k].post)) {
-      btn.textContent = "Notes";
-      btn.classList.add("on");
-    }
   }, 480);
 });
 
