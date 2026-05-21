@@ -865,6 +865,193 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .sched-empty h4 { font-family: 'Forza', sans-serif; font-weight: 800; font-size: 1.02rem; color: var(--text); margin-bottom: 6px; }
 .sched-empty p { font-size: 0.81rem; line-height: 1.55; max-width: 300px; margin: 0 auto; }
+
+/* ── MEALS ── */
+.meal-add-row {
+  display: flex;
+  justify-content: center;
+  margin: 8px 12px 14px;
+}
+.meal-add-btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--maroon);
+  background: var(--surface);
+  color: var(--maroon);
+  font-family: 'Forza', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.meal-add-btn:active { background: var(--maroon-light); }
+.meal-form {
+  margin: 0 12px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--maroon);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  animation: fadeUp 0.2s ease both;
+}
+.meal-form-title {
+  font-family: 'Forza', sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--maroon);
+  margin-bottom: 10px;
+}
+.meal-type-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.mt-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: 'Gotham', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mt-btn.active { background: var(--maroon); border-color: var(--maroon); color: #fff; }
+.meal-field { margin-bottom: 9px; }
+.meal-field-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.meal-form input.meal-input,
+.meal-form select.meal-input {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  font-family: 'Gotham', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.meal-form input.meal-input:focus,
+.meal-form select.meal-input:focus {
+  outline: none;
+  border-color: var(--maroon);
+}
+.meal-form select.meal-input {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238B1538' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+.meal-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.meal-btn-primary, .meal-btn-secondary {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'Forza', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1.5px solid;
+}
+.meal-btn-primary   { background: var(--maroon); border-color: var(--maroon); color: #fff; }
+.meal-btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text-2); }
+.meal-btn-primary:active   { background: #6F0F2C; }
+.meal-btn-secondary:active { background: var(--blue-light); }
+
+.meal-card {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: 0 0 8px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--maroon);
+  animation: fadeUp 0.2s ease both;
+}
+.meal-card-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--maroon-light);
+  color: var(--maroon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Forza', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.meal-card-body { flex: 1; min-width: 0; }
+.meal-card-title {
+  font-family: 'Forza', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+.meal-card-with {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  margin-top: 3px;
+  font-weight: 500;
+}
+.meal-card-with strong { font-weight: 700; color: var(--text); }
+.meal-card-notes {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.meal-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+  justify-content: center;
+}
+.meal-act-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-family: 'Gotham', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.meal-act-btn:active { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
+.meal-act-btn.del:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
 </style>
 </head>
 <body>
@@ -908,6 +1095,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 </header>
 
 <div id="content"></div>
+
+<datalist id="co-datalist"></datalist>
 
 <div class="app-footer">
   Notes save automatically. Use Schedule on any booth to plan a meeting.<br>
@@ -1156,11 +1345,39 @@ const TIME_SLOTS = (() => {
   return out;
 })();
 
+// Broader time range for meals (early breakfast through late dinner)
+const MEAL_TIME_SLOTS = (() => {
+  const out = [];
+  for (let m = 6*60; m <= 22*60; m += 30) {
+    const h = Math.floor(m/60), mn = m%60;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const dh = h > 12 ? h-12 : (h === 0 ? 12 : h);
+    out.push(`${dh}:${mn===0?"00":"30"} ${ampm}`);
+  }
+  return out;
+})();
+const MEAL_DEFAULT_TIME = { breakfast: "7:30 AM", lunch: "12:30 PM", dinner: "7:00 PM" };
+const MEAL_LABEL = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" };
+function timeToMin(t) {
+  const parts = t.split(" ");
+  const hm = parts[0], ampm = parts[1];
+  let [h, m] = hm.split(":").map(Number);
+  if (ampm === "PM" && h !== 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+  return h * 60 + m;
+}
+
 // STATE — key intentionally preserved as lpgas_v3 so existing user data carries forward.
 const STORE = "lpgas_v3";
 const load  = () => { try { return JSON.parse(localStorage.getItem(STORE)||"{}"); } catch(e){ return {}; } };
 const save  = s  => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch(e){} };
 const key   = i  => "c"+i;
+
+// Meals live under the reserved "_meals" array key — booth state uses c<i> keys,
+// so no collision. Each meal: { id, type, day, time, company, notes }.
+const loadMeals  = () => { const s = load(); return Array.isArray(s._meals) ? s._meals : []; };
+const saveMeals  = arr => { const s = load(); s._meals = arr; save(s); };
+const mealId     = () => "m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 function rowKey(b) {
   if (typeof b==="string" && b[0]==="T")
@@ -1181,6 +1398,12 @@ let activeFilter = "all";
 let allOpen      = false;
 let schedSearchQ = "";
 let schedDay     = 1;
+let mealFormOpen   = false;
+let mealFormType   = "lunch";
+let mealFormTime   = MEAL_DEFAULT_TIME.lunch;
+let mealFormCompany= "";
+let mealFormNotes  = "";
+let mealEditingId  = null;     // when set, the form edits an existing meal
 
 function buildCard(c, state) {
   const s = state[key(c.i)] || {};
@@ -1302,8 +1525,41 @@ function render() {
   updateStats(state);
 }
 
+function buildMealForm() {
+  const types = ["breakfast","lunch","dinner"];
+  const typeBtns = types.map(t =>
+    `<button class="mt-btn${mealFormType===t?" active":""}" data-mtype="${t}">${MEAL_LABEL[t]}</button>`
+  ).join("");
+  const timeOpts = MEAL_TIME_SLOTS.map(t =>
+    `<option value="${esc(t)}"${t===mealFormTime?" selected":""}>${t}</option>`
+  ).join("");
+  return `
+    <div class="meal-form">
+      <div class="meal-form-title">${mealEditingId ? "Edit Meal" : "Add Meal to Day "+schedDay}</div>
+      <div class="meal-type-row">${typeBtns}</div>
+      <div class="meal-field">
+        <div class="meal-field-label">Time</div>
+        <select class="meal-input" id="mealTimeSel">${timeOpts}</select>
+      </div>
+      <div class="meal-field">
+        <div class="meal-field-label">With (Company or Guest)</div>
+        <input class="meal-input" id="mealCompanyInp" list="co-datalist" placeholder="Type a name or pick a company…" value="${esc(mealFormCompany)}">
+      </div>
+      <div class="meal-field">
+        <div class="meal-field-label">Location / Notes (optional)</div>
+        <input class="meal-input" id="mealNotesInp" placeholder="Restaurant, agenda, room…" value="${esc(mealFormNotes)}">
+      </div>
+      <div class="meal-form-actions">
+        <button class="meal-btn-secondary" data-meal-cancel>Cancel</button>
+        <button class="meal-btn-primary"   data-meal-save>${mealEditingId ? "Save" : "Add to Day "+schedDay}</button>
+      </div>
+    </div>`;
+}
+
 function renderScheduleView(state) {
   const el = document.getElementById("content");
+  const meals = loadMeals();
+
   const dayCount = [0,0,0,0];
   CO.forEach((c,i) => {
     const sv = state[key(i)]?.scheduled;
@@ -1311,6 +1567,8 @@ function renderScheduleView(state) {
     const d = parseInt(sv.split("|")[0]);
     if (d>=1 && d<=3) dayCount[d]++;
   });
+  meals.forEach(m => { if (m.day>=1 && m.day<=3) dayCount[m.day]++; });
+
   const dayTabs = [1,2,3].map(d => `
     <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
       <span class="stdt-day">Day ${d}</span>
@@ -1339,40 +1597,74 @@ function renderScheduleView(state) {
     }).join("");
   })();
 
+  // Interleave booth meetings + meals into one time-sorted agenda for the active day.
   const byTime = {};
   CO.forEach((c,i) => {
     const sv = state[key(i)]?.scheduled;
     if (!sv) return;
     const [d,t] = sv.split("|");
-    if (parseInt(d) === schedDay) (byTime[t] = byTime[t]||[]).push({...c,i});
+    if (parseInt(d) === schedDay)
+      (byTime[t] = byTime[t]||[]).push({ kind: "booth", c: {...c, i} });
   });
-  const hasAny = Object.keys(byTime).length > 0;
+  meals.filter(m => m.day === schedDay).forEach(m => {
+    (byTime[m.time] = byTime[m.time]||[]).push({ kind: "meal", meal: m });
+  });
+  const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
+  const hasAny = slotTimes.length > 0;
 
   let html = `
 <div class="sched-day-tabs">${dayTabs}</div>
 <div class="sched-search-box">
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
-</div>`;
+</div>
+<div class="meal-add-row">
+  ${mealFormOpen
+    ? ""
+    : `<button class="meal-add-btn" data-meal-open>+ Add Breakfast / Lunch / Dinner</button>`}
+</div>
+${mealFormOpen ? buildMealForm() : ""}`;
 
   if (!hasAny) {
     html += `<div class="sched-empty">
       <h4>Nothing booked on Day ${schedDay}</h4>
-      <p>Search above to add a company, or use the Schedule dropdown on any booth card.</p>
+      <p>Search above to add a company, tap a booth card's Schedule dropdown, or add a meal block.</p>
     </div>`;
   } else {
-    TIME_SLOTS.forEach(t => {
-      const comps = byTime[t] || [];
-      if (!comps.length) return;
+    slotTimes.forEach(t => {
+      const entries = byTime[t] || [];
+      if (!entries.length) return;
       html += `<div class="time-slot">
         <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
-      comps.forEach(c => {
-        html += `<div class="sched-slot-card">${buildCard(c, state)}<button class="sched-rm-link" data-rm="${c.i}">Remove from Day ${schedDay}</button></div>`;
+      entries.forEach(entry => {
+        if (entry.kind === "booth") {
+          const c = entry.c;
+          html += `<div class="sched-slot-card">${buildCard(c, state)}<button class="sched-rm-link" data-rm="${c.i}">Remove from Day ${schedDay}</button></div>`;
+        } else {
+          const m = entry.meal;
+          html += `<div class="meal-card">
+            <div class="meal-card-icon">${esc(MEAL_LABEL[m.type].charAt(0))}</div>
+            <div class="meal-card-body">
+              <div class="meal-card-title">${esc(MEAL_LABEL[m.type])}</div>
+              ${m.company ? `<div class="meal-card-with">With <strong>${esc(m.company)}</strong></div>` : `<div class="meal-card-with">No guest set</div>`}
+              ${m.notes   ? `<div class="meal-card-notes">${esc(m.notes)}</div>` : ""}
+            </div>
+            <div class="meal-card-actions">
+              <button class="meal-act-btn" data-meal-edit="${esc(m.id)}">Edit</button>
+              <button class="meal-act-btn del" data-meal-del="${esc(m.id)}">Del</button>
+            </div>
+          </div>`;
+        }
       });
       html += `</div>`;
     });
   }
   el.innerHTML = html;
+  // Refresh the company autocomplete options (cheap; only when this view renders).
+  const dl = document.getElementById("co-datalist");
+  if (dl && !dl.childElementCount) {
+    dl.innerHTML = CO.map(c => `<option value="${esc(c.n)}">`).join("");
+  }
   if (schedSearchQ) document.querySelector(".sched-search-input")?.focus();
   updateStats(state);
 }
@@ -1436,6 +1728,75 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  if (e.target.closest("[data-meal-open]")) {
+    mealFormOpen = true;
+    mealEditingId = null;
+    mealFormType = "lunch";
+    mealFormTime = MEAL_DEFAULT_TIME.lunch;
+    mealFormCompany = "";
+    mealFormNotes = "";
+    render();
+    return;
+  }
+  if (e.target.closest("[data-meal-cancel]")) {
+    mealFormOpen = false;
+    mealEditingId = null;
+    render();
+    return;
+  }
+  const mTypeBtn = e.target.closest("[data-mtype]");
+  if (mTypeBtn) {
+    mealFormType = mTypeBtn.dataset.mtype;
+    // Sync the live form fields so user edits aren't lost when re-rendering type buttons.
+    mealFormCompany = document.getElementById("mealCompanyInp")?.value || mealFormCompany;
+    mealFormNotes   = document.getElementById("mealNotesInp")?.value   || mealFormNotes;
+    mealFormTime    = MEAL_DEFAULT_TIME[mealFormType];
+    render();
+    return;
+  }
+  if (e.target.closest("[data-meal-save]")) {
+    const time    = document.getElementById("mealTimeSel")?.value || mealFormTime;
+    const company = (document.getElementById("mealCompanyInp")?.value || "").trim();
+    const notes   = (document.getElementById("mealNotesInp")?.value   || "").trim();
+    const meals = loadMeals();
+    if (mealEditingId) {
+      const idx = meals.findIndex(m => m.id === mealEditingId);
+      if (idx >= 0) meals[idx] = { ...meals[idx], type: mealFormType, day: schedDay, time, company, notes };
+    } else {
+      meals.push({ id: mealId(), type: mealFormType, day: schedDay, time, company, notes });
+    }
+    saveMeals(meals);
+    mealFormOpen = false;
+    mealEditingId = null;
+    toast(`${MEAL_LABEL[mealFormType]} added to Day ${schedDay}`);
+    render();
+    return;
+  }
+  const mEditBtn = e.target.closest("[data-meal-edit]");
+  if (mEditBtn) {
+    const id = mEditBtn.dataset.mealEdit;
+    const m = loadMeals().find(x => x.id === id);
+    if (m) {
+      mealEditingId    = id;
+      mealFormOpen     = true;
+      mealFormType     = m.type;
+      mealFormTime     = m.time;
+      mealFormCompany  = m.company || "";
+      mealFormNotes    = m.notes   || "";
+      schedDay         = m.day;
+    }
+    render();
+    return;
+  }
+  const mDelBtn = e.target.closest("[data-meal-del]");
+  if (mDelBtn) {
+    const id = mDelBtn.dataset.mealDel;
+    saveMeals(loadMeals().filter(m => m.id !== id));
+    toast("Meal removed");
+    render();
+    return;
+  }
+
   const statBtn = e.target.closest("[data-sval]");
   if (statBtn) {
     const i = parseInt(statBtn.dataset.si);
@@ -1478,6 +1839,8 @@ document.getElementById("content").addEventListener("click", e => {
 });
 
 document.getElementById("content").addEventListener("input", e => {
+  if (e.target.id === "mealCompanyInp") { mealFormCompany = e.target.value; return; }
+  if (e.target.id === "mealNotesInp")   { mealFormNotes   = e.target.value; return; }
   if (e.target.classList.contains("sched-search-input")) {
     schedSearchQ = e.target.value.trim().toLowerCase();
     const state = load();
@@ -1535,6 +1898,7 @@ document.getElementById("content").addEventListener("input", e => {
 });
 
 document.getElementById("content").addEventListener("change", e => {
+  if (e.target.id === "mealTimeSel") { mealFormTime = e.target.value; return; }
   const sel = e.target.closest(".sched-sel");
   if (sel) {
     const i = parseInt(sel.dataset.sched);
@@ -1614,6 +1978,12 @@ document.getElementById("exportBtn").addEventListener("click", () => {
         st, schedD ? "Day "+schedD : "", schedT||"",
         s.visited ? "Yes" : "No", s.pre||"", s.post||""]);
     });
+  const meals = loadMeals().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
+  if (meals.length) {
+    rows.push([]);
+    rows.push(["Meal","Day","Time","With","Notes"]);
+    meals.forEach(m => rows.push([MEAL_LABEL[m.type], "Day "+m.day, m.time, m.company||"", m.notes||""]));
+  }
   const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
   const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
