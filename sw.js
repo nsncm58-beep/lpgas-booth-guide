@@ -2,7 +2,7 @@
 // HTML is network-first so updates deploy immediately.
 // User state lives in localStorage (key: lpgas_v3) — never touched by the cache.
 
-const CACHE_NAME = 'lpgas-guide-v7';
+const CACHE_NAME = 'lpgas-guide-v8';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png',
     './Forza-Medium.woff2', './Forza-Bold.woff2', './Forza-Black.woff2',

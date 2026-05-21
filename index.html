@@ -633,6 +633,60 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .scan-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .scan-thumb:hover  { border-color: var(--blue); }
 .scan-thumb:active { transform: scale(0.96); }
+.scan-thumb-spin, .scan-thumb-check {
+  position: absolute; right: 2px; bottom: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800;
+  color: #fff;
+}
+.scan-thumb-check { background: #2D7140; }
+.scan-thumb-spin {
+  background: var(--blue);
+  border: 2px solid #fff;
+  border-top-color: transparent;
+  animation: scanSpin 0.7s linear infinite;
+  box-sizing: border-box;
+}
+@keyframes scanSpin { to { transform: rotate(360deg); } }
+
+.scan-contacts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.scan-contact {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #FBFCFE;
+}
+.sc-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--blue);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.sc-status.err { color: var(--maroon); }
+.scan-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.sce {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--text);
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sce:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
+.sce-wide { grid-column: 1 / -1; }
+@media (max-width: 420px) {
+  .scan-contact-grid { grid-template-columns: 1fr; }
+}
 
 #scanLightbox {
   position: fixed;
@@ -1506,15 +1560,133 @@ function compressImageFile(file, maxW = 1280, quality = 0.72) {
 }
 function scanStripHtml(scans) {
   if (!scans || !scans.length) return "";
-  return scans.map((sc, idx) =>
-    `<button class="scan-thumb" type="button" data-scan-view="${sc.id}" title="View scan"><img src="${sc.data}" alt="Scan ${idx+1}" loading="lazy"></button>`
-  ).join("");
+  return scans.map((sc, idx) => {
+    const st = sc.ocrStatus || "";
+    const overlay = st === "pending" ? `<span class="scan-thumb-spin" aria-label="Recognizing"></span>`
+                  : st === "done"    ? `<span class="scan-thumb-check" aria-label="Recognized">✓</span>`
+                  : "";
+    return `<button class="scan-thumb" type="button" data-scan-view="${sc.id}" title="View scan"><img src="${sc.data}" alt="Scan ${idx+1}" loading="lazy">${overlay}</button>`;
+  }).join("");
+}
+function contactBlockHtml(i, scans) {
+  if (!scans || !scans.length) return "";
+  return scans.map(sc => {
+    const c = sc.contact || {};
+    const st = sc.ocrStatus || "";
+    const statusLine = st === "pending" ? `<div class="sc-status">Recognizing card…</div>`
+                     : st === "error"   ? `<div class="sc-status err">OCR unavailable</div>`
+                     : "";
+    return `
+      <div class="scan-contact" data-sc-i="${i}" data-sc-id="${esc(sc.id)}">
+        ${statusLine}
+        <div class="scan-contact-grid">
+          <input class="sce" data-scf="name"    placeholder="Name"    value="${esc(c.name||"")}">
+          <input class="sce" data-scf="title"   placeholder="Title"   value="${esc(c.title||"")}">
+          <input class="sce" data-scf="email"   placeholder="Email"   value="${esc(c.email||"")}" type="email">
+          <input class="sce" data-scf="phone"   placeholder="Phone"   value="${esc(c.phone||"")}" type="tel">
+          <input class="sce sce-wide" data-scf="website" placeholder="Website" value="${esc(c.website||"")}">
+        </div>
+      </div>`;
+  }).join("");
 }
 function refreshScans(i, state) {
-  const wrap = document.querySelector(`#cc${i} .scan-thumbs`);
-  if (!wrap) return;
+  const stripWrap = document.querySelector(`#cc${i} .scan-thumbs`);
+  const contactWrap = document.querySelector(`#cc${i} .scan-contacts`);
   const scans = (state[key(i)]?.scans) || [];
-  wrap.innerHTML = scanStripHtml(scans);
+  if (stripWrap)   stripWrap.innerHTML = scanStripHtml(scans);
+  if (contactWrap) contactWrap.innerHTML = contactBlockHtml(i, scans);
+}
+
+// ── OCR (Tesseract.js, loaded lazily on first scan) ──────────────────────
+let _tessReady   = null;   // promise that resolves to window.Tesseract
+let _tessWorker  = null;   // single worker reused across recognitions
+const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+function ensureTesseract() {
+  if (_tessReady) return _tessReady;
+  _tessReady = new Promise((resolve, reject) => {
+    if (window.Tesseract) return resolve(window.Tesseract);
+    const s = document.createElement("script");
+    s.src = TESSERACT_CDN;
+    s.onload  = () => resolve(window.Tesseract);
+    s.onerror = () => { _tessReady = null; reject(new Error("Could not load OCR engine")); };
+    document.head.appendChild(s);
+  });
+  return _tessReady;
+}
+async function getTessWorker() {
+  if (_tessWorker) return _tessWorker;
+  const T = await ensureTesseract();
+  _tessWorker = await T.createWorker("eng");
+  return _tessWorker;
+}
+async function ocrImage(dataUrl) {
+  const w = await getTessWorker();
+  const { data } = await w.recognize(dataUrl);
+  return data.text || "";
+}
+// Parse name / title / email / phone / website from raw OCR text.
+function parseContactFromOcr(text) {
+  const out = { name:"", title:"", email:"", phone:"", website:"" };
+  if (!text) return out;
+  // Email
+  const emailM = text.match(/\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/);
+  if (emailM) out.email = emailM[0];
+  // Phone — north-american style first
+  const phoneM = text.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/);
+  if (phoneM) out.phone = phoneM[0];
+  // Website — prefer http(s)://, then www., then bare domain
+  const webM = text.match(/https?:\/\/[^\s]+/i)
+            || text.match(/\bwww\.[A-Za-z0-9.\-]+\.[A-Za-z]{2,}(?:\/[^\s]*)?/i)
+            || text.match(/\b[A-Za-z0-9\-]{2,}\.(?:com|net|org|io|co|us|biz|info)\b/i);
+  if (webM) out.website = webM[0];
+  // Name / Title — line-based heuristics
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const titleRx   = /\b(VP|SVP|EVP|Vice\s+President|President|CEO|CFO|COO|CTO|CMO|Director|Manager|Sales|Account|Engineer|Engineering|Owner|Founder|Co\-?Founder|Principal|Lead|Specialist|Coordinator|Representative|Rep\.?|Executive|Consultant|Marketing|Operations|Operator|Partner|Associate|Analyst|Advisor|Chief|Head\s+of)\b/i;
+  const companyRx = /\b(Inc\.?|LLC|L\.L\.C\.?|Corp\.?|Corporation|Co\.?|Company|Group|Holdings|Industries|Solutions|Systems|Services|Technologies|Technology|Partners|Associates|International|Global|Ltd\.?|Limited|GmbH|S\.A\.)\b/i;
+  const looksLikeName = (l) => {
+    if (!l) return false;
+    if (/@|http|www\.|\.com\b|\.net\b|\.org\b|\d{3}/i.test(l)) return false;
+    if (titleRx.test(l))   return false;   // smells like a job title
+    if (companyRx.test(l)) return false;   // smells like a company name
+    const w = l.split(/\s+/);
+    if (w.length < 2 || w.length > 4) return false;
+    // Each word must start with a capital followed by a lowercase letter
+    // (so all-caps tokens like "VP" or "USA" are rejected).
+    return w.every(x => /^[A-Z][a-z][A-Za-z'\-]*$/.test(x));
+  };
+  for (let i = 0; i < Math.min(lines.length, 12); i++) {
+    const l = lines[i];
+    if (!out.name  && looksLikeName(l))                            { out.name  = l; continue; }
+    if (!out.title && titleRx.test(l) && !looksLikeName(l))        { out.title = l; }
+  }
+  return out;
+}
+async function runOcrForScan(boothI, scanIdVal) {
+  try {
+    const stateNow = load();
+    const scans = stateNow[key(boothI)]?.scans || [];
+    const sc = scans.find(s => s.id === scanIdVal);
+    if (!sc) return;
+    const text = await ocrImage(sc.data);
+    const contact = parseContactFromOcr(text);
+    const state2 = load();
+    const scans2 = state2[key(boothI)]?.scans || [];
+    const sc2 = scans2.find(s => s.id === scanIdVal);
+    if (!sc2) return;
+    sc2.ocrText = text;
+    sc2.contact = contact;
+    sc2.ocrStatus = "done";
+    save(state2);
+    refreshScans(boothI, state2);
+    const summary = contact.name || contact.email || "Card recognized";
+    toast(summary === "Card recognized" ? summary : `Found ${summary}`);
+  } catch (e) {
+    const state3 = load();
+    const scans3 = state3[key(boothI)]?.scans || [];
+    const sc3 = scans3.find(s => s.id === scanIdVal);
+    if (sc3) { sc3.ocrStatus = "error"; save(state3); refreshScans(boothI, state3); }
+    toast("OCR unavailable — image saved");
+  }
 }
 
 let scanTargetI   = null;   // booth index awaiting a file from #scanFileInput
@@ -1605,6 +1777,7 @@ function buildCard(c, state) {
         </button>
         <div class="scan-thumbs" data-scan-strip="${c.i}">${scanStripHtml(s.scans)}</div>
       </div>
+      <div class="scan-contacts">${contactBlockHtml(c.i, s.scans)}</div>
     </div>`;
 }
 
@@ -2152,7 +2325,8 @@ document.getElementById("scanFileInput").addEventListener("change", async e => {
     const k = key(i);
     if (!state[k]) state[k] = {};
     if (!Array.isArray(state[k].scans)) state[k].scans = [];
-    state[k].scans.push({ id: scanId(), data: dataUrl, ts: Date.now() });
+    const newId = scanId();
+    state[k].scans.push({ id: newId, data: dataUrl, ts: Date.now(), ocrStatus: "pending", contact: {} });
     let autoVisited = false;
     if (!state[k].visited) { state[k].visited = true; autoVisited = true; }
     try { save(state); }
@@ -2166,13 +2340,35 @@ document.getElementById("scanFileInput").addEventListener("change", async e => {
       updateStats(state);
       refreshBadge(rowKey(CO[i].b), state);
     }
-    toast(autoVisited ? "Scan saved · marked as visited" : "Scan saved");
+    toast(autoVisited ? "Scan saved · marked as visited · recognizing…" : "Scan saved · recognizing…");
+    // Run OCR in the background — UI already updated, user can keep working.
+    runOcrForScan(i, newId);
   } catch (err) {
     toast("Could not read image");
   } finally {
     btn?.classList.remove("busy");
     e.target.value = "";
   }
+});
+
+// Persist edits to contact fields (name/title/email/phone/website) as user types.
+document.getElementById("content").addEventListener("input", e => {
+  const inp = e.target.closest(".sce");
+  if (!inp) return;
+  const block = inp.closest("[data-sc-id]");
+  if (!block) return;
+  const i = parseInt(block.dataset.scI);
+  const id = block.dataset.scId;
+  const field = inp.dataset.scf;
+  clearTimeout(_dt["sce"+id+field]);
+  _dt["sce"+id+field] = setTimeout(() => {
+    const state = load();
+    const sc = (state[key(i)]?.scans || []).find(s => s.id === id);
+    if (!sc) return;
+    if (!sc.contact) sc.contact = {};
+    sc.contact[field] = inp.value;
+    save(state);
+  }, 350);
 });
 
 (() => {
@@ -2205,7 +2401,12 @@ document.getElementById("scanFileInput").addEventListener("change", async e => {
 
 document.getElementById("exportBtn").addEventListener("click", () => {
   const state = load();
-  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes","Card Scans"]];
+  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes","Card Scans","Contact Name(s)","Contact Title(s)","Contact Email(s)","Contact Phone(s)","Contact Website(s)"]];
+  const joinField = (scans, f) =>
+    (scans || [])
+      .map(sc => (sc.contact && sc.contact[f]) ? String(sc.contact[f]).trim() : "")
+      .filter(Boolean)
+      .join("; ");
   [...CO].map((c,i) => ({...c,i}))
     .sort((a,b) => a.n.localeCompare(b.n))
     .forEach(c => {
@@ -2218,7 +2419,12 @@ document.getElementById("exportBtn").addEventListener("click", () => {
         isOutdoor(rk) ? "Outdoor T"+rk.slice(1)+"s" : "Row "+rk+"s",
         st, schedD ? "Day "+schedD : "", schedT||"",
         s.visited ? "Yes" : "No", s.pre||"", s.post||"",
-        (s.scans?.length || 0)]);
+        (s.scans?.length || 0),
+        joinField(s.scans, "name"),
+        joinField(s.scans, "title"),
+        joinField(s.scans, "email"),
+        joinField(s.scans, "phone"),
+        joinField(s.scans, "website")]);
     });
   const meals = loadMeals().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (meals.length) {
