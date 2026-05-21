@@ -582,6 +582,99 @@ textarea.nf:focus { outline: none; background: #fff; }
 textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
 
+/* ── CARD SCANS ── */
+.scan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1.5px solid var(--blue);
+  background: #fff;
+  color: var(--blue);
+  border-radius: 8px;
+  font-family: 'Forza', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.05s;
+}
+.scan-btn:active { transform: scale(0.97); }
+.scan-btn:hover  { background: var(--blue); color: #fff; }
+.scan-btn svg    { width: 14px; height: 14px; }
+.scan-btn.busy   { opacity: 0.6; pointer-events: none; }
+.scan-thumbs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.scan-thumb {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+  background: #f5f6f8;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s, transform 0.05s;
+}
+.scan-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-thumb:hover  { border-color: var(--blue); }
+.scan-thumb:active { transform: scale(0.96); }
+
+#scanLightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+#scanLightbox.open { display: flex; }
+#scanLightbox img {
+  max-width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.4);
+}
+.scan-lb-actions {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+.scan-lb-actions button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 9px;
+  font-family: 'Forza', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.scan-lb-close { background: #fff; color: #1a1a1a; }
+.scan-lb-del   { background: var(--maroon); color: #fff; }
+.scan-lb-close:active, .scan-lb-del:active { transform: scale(0.97); }
+
 /* ── EMPTY STATE ── */
 .empty-wrap {
   padding: 64px 28px 40px;
@@ -1104,6 +1197,15 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 </div>
 <div id="toast"></div>
 
+<input id="scanFileInput" type="file" accept="image/*" capture="environment" hidden>
+<div id="scanLightbox" role="dialog" aria-hidden="true">
+  <img id="scanLightboxImg" alt="Scanned card">
+  <div class="scan-lb-actions">
+    <button class="scan-lb-close" type="button" data-scan-lb-close>Close</button>
+    <button class="scan-lb-del"   type="button" data-scan-lb-del>Delete</button>
+  </div>
+</div>
+
 <script>
 const CO = [
   {n:"1075 Consulting LLC",b:"351"},
@@ -1379,6 +1481,46 @@ const loadMeals  = () => { const s = load(); return Array.isArray(s._meals) ? s.
 const saveMeals  = arr => { const s = load(); s._meals = arr; save(s); };
 const mealId     = () => "m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
+// Card scans (business cards / nametags) live on each booth's state under .scans
+// as an array of { id, data, ts }. Images are downscaled + JPEG-compressed before
+// storage so the localStorage quota holds a couple dozen per booth comfortably.
+const scanId = () => "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+function compressImageFile(file, maxW = 1280, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+        if (width > maxW) { height = Math.round(height * maxW / width); width = maxW; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image failed to load")); };
+    img.src = url;
+  });
+}
+function scanStripHtml(scans) {
+  if (!scans || !scans.length) return "";
+  return scans.map((sc, idx) =>
+    `<button class="scan-thumb" type="button" data-scan-view="${sc.id}" title="View scan"><img src="${sc.data}" alt="Scan ${idx+1}" loading="lazy"></button>`
+  ).join("");
+}
+function refreshScans(i, state) {
+  const wrap = document.querySelector(`#cc${i} .scan-thumbs`);
+  if (!wrap) return;
+  const scans = (state[key(i)]?.scans) || [];
+  wrap.innerHTML = scanStripHtml(scans);
+}
+
+let scanTargetI   = null;   // booth index awaiting a file from #scanFileInput
+let scanLightboxI = null;   // booth index for the currently-open lightbox
+let scanLightboxId= null;   // scan id for the currently-open lightbox
+
 function rowKey(b) {
   if (typeof b==="string" && b[0]==="T")
     return "T"+(Math.floor(parseInt(b.slice(1))/100)*100);
@@ -1452,6 +1594,16 @@ function buildCard(c, state) {
           <div class="note-label post">Post-Visit</div>
           <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
         </div>
+      </div>
+      <div class="scan-row">
+        <button class="scan-btn" type="button" data-scan-i="${c.i}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          Scan Card
+        </button>
+        <div class="scan-thumbs" data-scan-strip="${c.i}">${scanStripHtml(s.scans)}</div>
       </div>
     </div>`;
 }
@@ -1700,6 +1852,31 @@ let _dt = {};
 
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
+
+  const scanBtn = e.target.closest("[data-scan-i]");
+  if (scanBtn) {
+    scanTargetI = parseInt(scanBtn.dataset.scanI);
+    const inp = document.getElementById("scanFileInput");
+    inp.value = "";
+    inp.click();
+    return;
+  }
+
+  const scanView = e.target.closest("[data-scan-view]");
+  if (scanView) {
+    const id = scanView.dataset.scanView;
+    const card = scanView.closest("[data-i]");
+    const i = parseInt(card?.dataset.i);
+    const scans = (state[key(i)]?.scans) || [];
+    const sc = scans.find(s => s.id === id);
+    if (!sc) return;
+    scanLightboxI = i;
+    scanLightboxId = id;
+    document.getElementById("scanLightboxImg").src = sc.data;
+    document.getElementById("scanLightbox").classList.add("open");
+    document.getElementById("scanLightbox").setAttribute("aria-hidden","false");
+    return;
+  }
 
   const tog = e.target.closest("[data-toggle]");
   if (tog) {
@@ -1962,9 +2139,73 @@ document.getElementById("expandBtn").addEventListener("click", function () {
   this.textContent = allOpen ? "Collapse" : "Expand";
 });
 
+document.getElementById("scanFileInput").addEventListener("change", async e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file || scanTargetI == null) return;
+  const i = scanTargetI;
+  scanTargetI = null;
+  const btn = document.querySelector(`[data-scan-i="${i}"]`);
+  btn?.classList.add("busy");
+  try {
+    const dataUrl = await compressImageFile(file);
+    const state = load();
+    const k = key(i);
+    if (!state[k]) state[k] = {};
+    if (!Array.isArray(state[k].scans)) state[k].scans = [];
+    state[k].scans.push({ id: scanId(), data: dataUrl, ts: Date.now() });
+    let autoVisited = false;
+    if (!state[k].visited) { state[k].visited = true; autoVisited = true; }
+    try { save(state); }
+    catch (err) { toast("Storage full — delete a scan"); btn?.classList.remove("busy"); return; }
+    refreshScans(i, state);
+    if (autoVisited) {
+      const card = document.getElementById("cc"+i);
+      card?.classList.add("visited");
+      const vb = card?.querySelector("[data-visit]");
+      if (vb) { vb.classList.add("on"); vb.innerHTML = '<span class="dot"></span>Visited'; }
+      updateStats(state);
+      refreshBadge(rowKey(CO[i].b), state);
+    }
+    toast(autoVisited ? "Scan saved · marked as visited" : "Scan saved");
+  } catch (err) {
+    toast("Could not read image");
+  } finally {
+    btn?.classList.remove("busy");
+    e.target.value = "";
+  }
+});
+
+(() => {
+  const lb = document.getElementById("scanLightbox");
+  const closeLb = () => {
+    lb.classList.remove("open");
+    lb.setAttribute("aria-hidden","true");
+    document.getElementById("scanLightboxImg").src = "";
+    scanLightboxI = null; scanLightboxId = null;
+  };
+  lb.addEventListener("click", e => {
+    if (e.target.closest("[data-scan-lb-close]") || e.target === lb) { closeLb(); return; }
+    if (e.target.closest("[data-scan-lb-del]")) {
+      if (scanLightboxI == null || !scanLightboxId) return;
+      if (!confirm("Delete this scan?")) return;
+      const state = load();
+      const k = key(scanLightboxI);
+      const list = (state[k]?.scans) || [];
+      state[k].scans = list.filter(s => s.id !== scanLightboxId);
+      save(state);
+      refreshScans(scanLightboxI, state);
+      closeLb();
+      toast("Scan deleted");
+    }
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && lb.classList.contains("open")) closeLb();
+  });
+})();
+
 document.getElementById("exportBtn").addEventListener("click", () => {
   const state = load();
-  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes","Card Scans"]];
   [...CO].map((c,i) => ({...c,i}))
     .sort((a,b) => a.n.localeCompare(b.n))
     .forEach(c => {
@@ -1976,7 +2217,8 @@ document.getElementById("exportBtn").addEventListener("click", () => {
       rows.push([c.n, c.b,
         isOutdoor(rk) ? "Outdoor T"+rk.slice(1)+"s" : "Row "+rk+"s",
         st, schedD ? "Day "+schedD : "", schedT||"",
-        s.visited ? "Yes" : "No", s.pre||"", s.post||""]);
+        s.visited ? "Yes" : "No", s.pre||"", s.post||"",
+        (s.scans?.length || 0)]);
     });
   const meals = loadMeals().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (meals.length) {
