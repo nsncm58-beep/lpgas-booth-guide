@@ -1490,26 +1490,22 @@ const CO = [
   {n:"Zephyr Solutions LLC",b:"446"}
 ];
 
+const fmtTime = m => {
+  const h = Math.floor(m/60), mn = m%60;
+  const ampm = h >= 12 ? "PM" : "AM";
+  const dh = h > 12 ? h-12 : (h === 0 ? 12 : h);
+  return `${dh}:${String(mn).padStart(2,"0")} ${ampm}`;
+};
 const TIME_SLOTS = (() => {
   const out = [];
-  for (let m = 7*60; m <= 18*60; m += 30) {
-    const h = Math.floor(m/60), mn = m%60;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const dh = h > 12 ? h-12 : h;
-    out.push(`${dh}:${mn===0?"00":"30"} ${ampm}`);
-  }
+  for (let m = 7*60; m <= 18*60; m += 10) out.push(fmtTime(m));
   return out;
 })();
 
 // Broader time range for meals (early breakfast through late dinner)
 const MEAL_TIME_SLOTS = (() => {
   const out = [];
-  for (let m = 6*60; m <= 22*60; m += 30) {
-    const h = Math.floor(m/60), mn = m%60;
-    const ampm = h >= 12 ? "PM" : "AM";
-    const dh = h > 12 ? h-12 : (h === 0 ? 12 : h);
-    out.push(`${dh}:${mn===0?"00":"30"} ${ampm}`);
-  }
+  for (let m = 6*60; m <= 22*60; m += 10) out.push(fmtTime(m));
   return out;
 })();
 const MEAL_DEFAULT_TIME = { breakfast: "7:30 AM", lunch: "12:30 PM", dinner: "7:00 PM" };
