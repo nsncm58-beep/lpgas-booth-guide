@@ -1,44 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function myEvent() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.eventCode; }
+    function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2']; }
 
-    // The event code of the currently signed-in user (from their profile).
-    function myEvent() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.eventCode;
-    }
-    // Master accounts may view/manage every brand's data.
-    function isMaster() {
-      return request.auth != null
-          && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2'];
-    }
-
-    // User profiles. Any signed-in teammate can read profiles (needed so the
-    // team can see each other's schedules); only the owner can write their own.
     match /users/{uid} {
-      allow read:           if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == uid;
-      allow delete:         if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && request.auth.uid == uid;
     }
 
-    // Per-user schedules. Doc id is the owner's uid (home event) or
-    // "<uid>__<eventCode>" when a master books under another brand. Readable by
-    // signed-in teammates in the SAME event (brand isolation) or any master;
-    // writable only by the owner (or a master) for their own doc(s).
     match /schedules/{docId} {
-      allow read:           if request.auth != null
-                            && (resource.data.eventCode == myEvent() || isMaster());
-      allow create, update: if request.auth != null
-                            && (docId == request.auth.uid
-                                || docId.matches('^' + request.auth.uid + '__.*'))
-                            && (request.resource.data.eventCode == myEvent() || isMaster());
-      allow delete:         if request.auth != null
-                            && (docId == request.auth.uid
-                                || docId.matches('^' + request.auth.uid + '__.*'));
+      allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster());
+      allow create, update: if request.auth != null && (docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*')) && (request.resource.data.eventCode == myEvent() || isMaster());
+      allow delete: if request.auth != null && (docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'));
     }
 
-    // Everything else is denied until a later phase adds it explicitly.
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    match /{document=**} { allow read, write: if false; }
   }
 }
