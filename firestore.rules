@@ -29,6 +29,13 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
+    // Shared Dropbox connection (App-folder scoped refresh token). Readable by
+    // any signed-in user (needed to upload); writable only by a master.
+    match /config/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isMaster();
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }
