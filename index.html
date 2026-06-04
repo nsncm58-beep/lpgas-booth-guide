@@ -208,6 +208,25 @@ body {
   color: var(--blue-dark);
 }
 .btn-export:active { background: var(--blue-light); }
+.btn-upload {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.25);
+}
+.btn-upload:active { background: rgba(255,255,255,0.25); }
+.btn-upload:disabled { opacity: 0.6; }
+
+/* Dropbox section in settings */
+.settings-dbx { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.settings-dbx-status { font-size: 0.84rem; font-weight: 600; color: var(--green); margin-bottom: 8px; }
+.settings-dbx-note { font-size: 0.76rem; color: var(--muted); line-height: 1.45; margin-top: 8px; }
+.settings-dbx-btn {
+  width: 100%; padding: 11px; border-radius: 10px; cursor: pointer;
+  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
+  border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
+}
+.settings-dbx-btn.primary { background: var(--blue); color: #fff; }
+.settings-dbx-btn:active { opacity: 0.9; }
 
 /* ── VIEW TABS (primary) ── */
 .view-tabs {
@@ -1428,6 +1447,7 @@ body.home-mode .user-chip-gear { display: none !important; }
       <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
     <button class="hdr-btn btn-expand" id="expandBtn">Expand</button>
+    <button class="hdr-btn btn-upload" id="uploadBtn">Upload</button>
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
@@ -1466,9 +1486,11 @@ body.home-mode .user-chip-gear { display: none !important; }
       </span>
       <input type="checkbox" id="shareNotesToggle" class="settings-switch">
     </label>
+    <div class="settings-dbx" id="settingsDbx"></div>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
   </div>
 </div>
+<input id="dbxFileInput" type="file" multiple hidden>
 
 <!-- ── First-run: share notes with home team? ── -->
 <div id="sharePrompt" class="settings-sheet" style="display:none">
@@ -2059,6 +2081,106 @@ function fmtAgo(ts) {
   if (s < 3600) return Math.floor(s/60)+"m ago";
   if (s < 86400) return Math.floor(s/3600)+"h ago";
   return Math.floor(s/86400)+"d ago";
+}
+
+// ── DROPBOX (one shared team account, App-folder scoped, PKCE) ───────────
+const DROPBOX_APP_KEY = "tfsdeffmmeqjcpv";
+let _dbxAccess = null, _dbxAccessExp = 0, _dbxConnected = false;
+function dbxRedirectUri() { return location.origin + location.pathname; }
+function dbxB64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function dbxVerifier() { const a = new Uint8Array(64); crypto.getRandomValues(a); return dbxB64url(a.buffer); }
+async function dbxChallenge(v) { return dbxB64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v))); }
+async function dropboxConnect() {
+  const v = dbxVerifier();
+  sessionStorage.setItem("dbx_verifier", v);
+  const params = new URLSearchParams({
+    client_id: DROPBOX_APP_KEY, response_type: "code",
+    code_challenge: await dbxChallenge(v), code_challenge_method: "S256",
+    redirect_uri: dbxRedirectUri(), token_access_type: "offline",
+    scope: "files.content.write files.content.read sharing.write account_info.read"
+  });
+  location.href = "https://www.dropbox.com/oauth2/authorize?" + params.toString();
+}
+async function dropboxHandleRedirect() {
+  const code = new URLSearchParams(location.search).get("code");
+  const v = sessionStorage.getItem("dbx_verifier");
+  if (!code || !v) return;
+  sessionStorage.removeItem("dbx_verifier");
+  try {
+    const body = new URLSearchParams({
+      code, grant_type: "authorization_code", client_id: DROPBOX_APP_KEY,
+      redirect_uri: dbxRedirectUri(), code_verifier: v
+    });
+    const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body
+    });
+    const data = await res.json();
+    if (data.refresh_token) localStorage.setItem("dbx_pending_refresh", data.refresh_token);
+    if (data.access_token) { _dbxAccess = data.access_token; _dbxAccessExp = Date.now() + (data.expires_in||14400)*1000; }
+  } catch (e) {}
+  history.replaceState({}, "", dbxRedirectUri());
+}
+async function dropboxPersistPending() {
+  const rt = localStorage.getItem("dbx_pending_refresh");
+  if (!rt || !isMaster() || !fbReady) return;
+  try {
+    await fbDb.collection("config").doc("dropbox").set({
+      refreshToken: rt, appKey: DROPBOX_APP_KEY, connectedBy: currentUser.name || "", connectedAt: Date.now()
+    });
+    localStorage.removeItem("dbx_pending_refresh");
+    _dbxConnected = true;
+    toast("Dropbox connected");
+  } catch (e) { toast("Could not save Dropbox connection"); }
+}
+async function dropboxIsConnected() {
+  if (_dbxConnected) return true;
+  try { const s = await fbDb.collection("config").doc("dropbox").get(); _dbxConnected = s.exists && !!s.data().refreshToken; return _dbxConnected; }
+  catch (e) { return false; }
+}
+async function dropboxAccessToken() {
+  if (_dbxAccess && Date.now() < _dbxAccessExp - 60000) return _dbxAccess;
+  const snap = await fbDb.collection("config").doc("dropbox").get();
+  if (!snap.exists || !snap.data().refreshToken) throw new Error("Dropbox not connected");
+  const body = new URLSearchParams({ grant_type: "refresh_token", refresh_token: snap.data().refreshToken, client_id: DROPBOX_APP_KEY });
+  const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
+    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error("Dropbox auth failed");
+  _dbxAccess = data.access_token; _dbxAccessExp = Date.now() + (data.expires_in||14400)*1000;
+  return _dbxAccess;
+}
+async function dropboxUpload(file) {
+  const token = await dropboxAccessToken();
+  const path = "/" + Date.now() + "_" + file.name.replace(/[^\w.\- ]+/g, "_");
+  const up = await fetch("https://content.dropboxapi.com/2/files/upload", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + token,
+      "Content-Type": "application/octet-stream",
+      "Dropbox-API-Arg": JSON.stringify({ path, mode: "add", autorename: true, mute: false })
+    },
+    body: file
+  });
+  const meta = await up.json();
+  if (meta.error_summary || meta.error) throw new Error("Upload failed");
+  let link = "";
+  try {
+    const sl = await fetch("https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings", {
+      method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+      body: JSON.stringify({ path: meta.path_lower })
+    });
+    const sld = await sl.json();
+    link = sld.url || (sld.error && sld.error[".tag"] === "shared_link_already_exists"
+      && sld.error.shared_link_already_exists && sld.error.shared_link_already_exists.metadata
+      && sld.error.shared_link_already_exists.metadata.url) || "";
+  } catch (e) {}
+  await fbDb.collection("uploads").add({
+    uid: currentUser.uid, name: currentUser.name || "", eventCode: currentEventCode() || "",
+    fileName: file.name, link, ts: Date.now()
+  });
 }
 function buildHomeFilter() {
   let h = `<div class="team-bar home-filter">
@@ -3101,9 +3223,25 @@ authEls.signOut.addEventListener("click", async () => {
   if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
 });
 // Settings sheet (share-notes toggle)
+async function renderSettingsDbx() {
+  const el = document.getElementById("settingsDbx");
+  const connected = await dropboxIsConnected();
+  if (isMaster()) {
+    el.innerHTML = connected
+      ? `<div class="settings-dbx-status">Dropbox connected ✓</div><button class="settings-dbx-btn" id="dbxConnectBtn" type="button">Reconnect Dropbox</button>`
+      : `<button class="settings-dbx-btn primary" id="dbxConnectBtn" type="button">Connect Dropbox</button><div class="settings-dbx-note">Connect the shared team Dropbox once. Reps can then upload to it.</div>`;
+    const btn = document.getElementById("dbxConnectBtn");
+    if (btn) btn.addEventListener("click", () => dropboxConnect());
+  } else {
+    el.innerHTML = connected
+      ? `<div class="settings-dbx-status">Dropbox connected ✓ — use the Upload button to add files.</div>`
+      : `<div class="settings-dbx-note">Dropbox isn't connected yet. An admin needs to connect it before uploads work.</div>`;
+  }
+}
 document.getElementById("settingsBtn").addEventListener("click", () => {
   document.getElementById("shareNotesToggle").checked = !!(currentUser && currentUser.shareNotes);
   document.getElementById("settingsSheet").style.display = "flex";
+  renderSettingsDbx();
 });
 document.getElementById("settingsClose").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
@@ -3129,6 +3267,25 @@ document.getElementById("shareNotesToggle").addEventListener("change", async e =
   try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ shareNotes: on }, { merge: true }); } catch (err) {}
   syncMyNotesToCloud();   // push now (or delete the shared doc when turning off)
   toast(on ? "Notes shared with the home team" : "Notes no longer shared");
+});
+// Dropbox upload
+document.getElementById("uploadBtn").addEventListener("click", async () => {
+  if (!(await dropboxIsConnected())) { toast("Dropbox isn't connected yet — see Settings"); return; }
+  document.getElementById("dbxFileInput").click();
+});
+document.getElementById("dbxFileInput").addEventListener("change", async e => {
+  const files = [...(e.target.files || [])];
+  e.target.value = "";
+  if (!files.length) return;
+  const btn = document.getElementById("uploadBtn");
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = "…";
+  let ok = 0;
+  for (const f of files) {
+    try { await dropboxUpload(f); ok++; toast(`Uploaded ${f.name}`); }
+    catch (err) { toast(`Upload failed: ${f.name}`); }
+  }
+  btn.disabled = false; btn.textContent = orig;
+  if (ok) toast(ok === 1 ? "1 file uploaded" : ok + " files uploaded");
 });
 async function loadUserDoc(uid) {
   try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
@@ -3228,6 +3385,7 @@ if (fbReady) {
       subscribeTeam();
       render();
       if (pendingSharePrompt) { pendingSharePrompt = false; document.getElementById("sharePrompt").style.display = "flex"; }
+      dropboxPersistPending();   // if master just returned from a Dropbox connect
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       teamSchedules = {};
@@ -3240,6 +3398,7 @@ if (fbReady) {
   showSignedIn({ name: "Offline" });
 }
 setAuthMode("signin");
+dropboxHandleRedirect();   // catch ?code= when returning from a Dropbox connect
 
 if ("serviceWorker" in navigator) {
   const hadController = !!navigator.serviceWorker.controller;
