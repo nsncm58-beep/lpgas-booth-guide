@@ -1381,6 +1381,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 
 /* ── Home Team dashboard ── */
 .home-wrap { max-width: 900px; margin: 0 auto; padding: 16px 14px 60px; }
+.home-filter { padding: 0 0 16px; }
 .home-head h2 { font-family: var(--fd); font-weight: 800; font-size: 1.3rem; color: var(--text); }
 .home-head p { font-size: 0.85rem; color: var(--muted); margin: 4px 0 18px; }
 .home-brand { margin-bottom: 22px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -2022,6 +2023,8 @@ function subscribeTeam() {
 // ── HOME TEAM DASHBOARD (Phase 2) ───────────────────────────────────────
 let homeNotes  = {};     // docId -> { uid, name, eventCode, items }
 let _homeUnsub = null;
+let homeBrandFilter = null;   // null = all brands; else a brand key
+const HOME_FILTER_BRANDS = ["lpgas","golfdom","lm","pmp","pq"];
 function subscribeHomeNotes() {
   if (!fbReady || !isHome()) return;
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
@@ -2031,15 +2034,26 @@ function subscribeHomeNotes() {
     if (isHome()) renderHomeDashboard();
   }, () => {});
 }
+function buildHomeFilter() {
+  let h = `<div class="team-bar home-filter">
+    <button class="team-chip${!homeBrandFilter?" active":""}" data-home-brand="">All Brands</button>`;
+  HOME_FILTER_BRANDS.forEach(bk => {
+    h += `<button class="team-chip${homeBrandFilter===bk?" active":""}" data-home-brand="${bk}">${esc(BRANDS[bk].name)}</button>`;
+  });
+  return h + `</div>`;
+}
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   const byEvent = {};
   Object.values(homeNotes).forEach(d => { (byEvent[d.eventCode] = byEvent[d.eventCode] || []).push(d); });
-  const codes = Object.keys(byEvent).sort();
+  let codes = Object.keys(byEvent).sort();
+  if (homeBrandFilter) codes = codes.filter(c => resolveEvent(c).brand === homeBrandFilter);
+  const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
   let html = `<div class="home-wrap">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes across all brands.</p></div>`;
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes — ${esc(filterName)}.</p></div>
+    ${buildHomeFilter()}`;
   if (!codes.length) {
-    html += `<div class="empty-wrap"><h3>No shared notes yet</h3><p>Notes appear here when someone in the field turns on "Share notes with the home team."</p></div>`;
+    html += `<div class="empty-wrap"><h3>No shared notes yet</h3><p>${homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes appear here when someone in the field turns on "Share notes with the home team."'}</p></div>`;
   }
   codes.forEach(code => {
     const brand = BRANDS[resolveEvent(code).brand] || BRANDS.ncm;
@@ -2556,6 +2570,15 @@ let _dt = {};
 
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
+
+  const homeBrand = e.target.closest("[data-home-brand]");
+  if (homeBrand) {
+    homeBrandFilter = homeBrand.dataset.homeBrand || null;
+    applyBrand(homeBrandFilter || "ncm");
+    updateHeaderBrand(homeBrandFilter || "ncm", "Home Team");
+    renderHomeDashboard();
+    return;
+  }
 
   const tog = e.target.closest("[data-toggle]");
   if (tog) {
@@ -3120,6 +3143,7 @@ if (fbReady) {
       if (isHome()) {
         document.body.classList.add("home-mode");
         document.getElementById("brandSwitchRow").style.display = "none";
+        homeBrandFilter = null;
         applyBrand("ncm");
         updateHeaderBrand("ncm", "Home Team");
         showSignedIn({ name: "Home Team" });
