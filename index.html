@@ -1293,6 +1293,16 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   overflow-y: auto;
 }
 .auth-overlay.hidden { display: none; }
+.auth-loading { display: none; }
+.auth-overlay.checking .auth-loading { display: flex; align-items: center; justify-content: center; }
+.auth-overlay.checking .auth-card { display: none; }
+.auth-spinner {
+  width: 38px; height: 38px;
+  border: 3px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: scanSpin 0.7s linear infinite;
+}
 .auth-card {
   width: 100%;
   max-width: 380px;
@@ -1482,7 +1492,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 </div>
 
 <!-- ── Auth gate (shown until a user is signed in) ── -->
-<div id="authOverlay" class="auth-overlay">
+<div id="authOverlay" class="auth-overlay checking">
+  <div class="auth-loading" id="authLoading"><div class="auth-spinner"></div></div>
   <div class="auth-card">
     <div class="auth-brand">
       <div class="auth-title">Booth Guide</div>
@@ -1533,6 +1544,8 @@ let fbAuth = null, fbDb = null, fbReady = false;
 try {
   firebase.initializeApp(firebaseConfig);
   fbAuth = firebase.auth();
+  // Keep users signed in across reloads / app relaunches until they sign out.
+  fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
   fbDb   = firebase.firestore();
   fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => {});
   fbReady = true;
@@ -3093,6 +3106,7 @@ async function loadUserDoc(uid) {
   catch (e) { return null; }
 }
 function showSignedIn(profile) {
+  authEls.overlay.classList.remove("checking");
   authEls.overlay.classList.add("hidden");
   authEls.chip.style.display = "";
   authEls.chipName.textContent = (profile && profile.name) || "Signed in";
@@ -3100,6 +3114,7 @@ function showSignedIn(profile) {
   authEls.pass.value = "";
 }
 function showSignedOut() {
+  authEls.overlay.classList.remove("checking");
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
   currentUser = null;
