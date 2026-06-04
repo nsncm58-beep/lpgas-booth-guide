@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>NCM Event Guide</title>
+<title>NCM Events</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E2A3F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NCM Guide">
+<meta name="apple-mobile-web-app-title" content="NCM Events">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 /* ── LP Gas brand fonts: Forza (display) + Gotham (text) ── */
@@ -54,7 +54,24 @@
   font-display: swap;
   src: url("Gotham-Bold.woff2") format("woff2");
 }
+/* Camber — Pit & Quarry display font */
+@font-face {
+  font-family: 'Camber';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("Camber-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: 'Camber';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: url("Camber-Bold.woff2") format("woff2");
+}
 :root {
+  --fd: 'Forza', sans-serif;   /* display font (per-brand) */
+  --ft: 'Gotham', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;  /* text font */
   --blue:        #005C8F;
   --blue-dark:   #00466E;
   --blue-deeper: #00304C;
@@ -81,7 +98,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { overscroll-behavior: none; }
 body {
-  font-family: 'Gotham', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--ft);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
@@ -111,33 +128,19 @@ body {
   gap: 10px;
 }
 .logo-block { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.logo-img {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+.brand-logo {
+  height: 34px;
+  width: auto;
+  max-width: 190px;
+  object-fit: contain;
+  object-position: left center;
   display: block;
   flex-shrink: 0;
-}
-.logo-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.logo-title {
-  font-family: 'Forza', sans-serif;
-  font-weight: 800;
-  font-size: 1.04rem;
-  color: #fff;
-  letter-spacing: 0.2px;
-}
-.logo-sub {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 1.7px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.7);
-  margin-top: 2px;
 }
 
 .visit-counter { text-align: right; flex-shrink: 0; }
 .vc-count {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 800;
   font-size: 1.05rem;
   color: #fff;
@@ -333,7 +336,7 @@ body {
 .row-header.outdoor:active { background: #6e0f2b; }
 .row-header:not(.outdoor):active { background: var(--blue-dark); }
 .row-title {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 700;
   font-size: 1rem;
   color: #fff;
@@ -601,7 +604,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   background: #fff;
   color: var(--blue);
   border-radius: 8px;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -718,7 +721,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 10px 18px;
   border: none;
   border-radius: 9px;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -736,7 +739,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   animation: fadeIn 0.3s ease;
 }
 .empty-wrap h3 {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 1.16rem;
   color: var(--text);
   margin-bottom: 6px;
@@ -832,7 +835,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   box-shadow: var(--shadow-sm);
 }
 .sched-day-tab .stdt-day {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 800;
   font-size: 0.88rem;
   letter-spacing: 0.2px;
@@ -927,7 +930,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   font-weight: 700;
   color: var(--text-2);
   min-width: 64px;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   white-space: nowrap;
   letter-spacing: 0.2px;
   font-variant-numeric: tabular-nums;
@@ -1010,7 +1013,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   color: var(--muted);
   animation: fadeIn 0.3s ease;
 }
-.sched-empty h4 { font-family: 'Forza', sans-serif; font-weight: 800; font-size: 1.02rem; color: var(--text); margin-bottom: 6px; }
+.sched-empty h4 { font-family: var(--fd); font-weight: 800; font-size: 1.02rem; color: var(--text); margin-bottom: 6px; }
 .sched-empty p { font-size: 0.81rem; line-height: 1.55; max-width: 300px; margin: 0 auto; }
 
 /* ── MEALS ── */
@@ -1025,7 +1028,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border: 1.5px dashed var(--maroon);
   background: var(--surface);
   color: var(--maroon);
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1044,7 +1047,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   animation: fadeUp 0.2s ease both;
 }
 .meal-form-title {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 700;
   font-size: 0.78rem;
   letter-spacing: 0.6px;
@@ -1064,7 +1067,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text-2);
-  font-family: 'Gotham', sans-serif;
+  font-family: var(--ft);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -1087,7 +1090,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border-radius: 8px;
   border: 1.5px solid var(--border);
   background: #fff;
-  font-family: 'Gotham', sans-serif;
+  font-family: var(--ft);
   font-size: 0.85rem;
   color: var(--text);
   appearance: none;
@@ -1113,7 +1116,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   flex: 1;
   padding: 10px 12px;
   border-radius: 8px;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1149,7 +1152,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1157,7 +1160,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .meal-card-body { flex: 1; min-width: 0; }
 .meal-card-title {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--text);
@@ -1211,7 +1214,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--muted);
-  font-family: 'Gotham', sans-serif;
+  font-family: var(--ft);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1238,7 +1241,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border: 1.5px solid var(--border);
   background: var(--surface);
   color: var(--text-2);
-  font-family: 'Gotham', sans-serif;
+  font-family: var(--ft);
   font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1272,7 +1275,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border-left: 3px solid var(--blue-mid);
 }
 .ro-card-title {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--text);
@@ -1313,10 +1316,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   animation: fadeUp 0.25s ease both;
 }
 .auth-brand { text-align: center; margin-bottom: 18px; }
-.auth-logo { width: 130px; height: auto; margin: 0 auto 12px; display: block; }
-.auth-logo { height: 30px; margin-bottom: 12px; }
+.auth-logo { width: 200px; height: auto; margin: 2px auto 18px; display: block; }
 .auth-title {
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-weight: 800;
   font-size: 1.4rem;
   color: var(--text);
@@ -1338,7 +1340,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border-radius: 7px;
   background: transparent;
   color: var(--blue-dark);
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1363,7 +1365,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 11px 12px;
   border: 1.5px solid var(--border);
   border-radius: 9px;
-  font-family: 'Gotham', sans-serif;
+  font-family: var(--ft);
   font-size: 0.92rem;
   color: var(--text);
   background: #fff;
@@ -1384,7 +1386,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border-radius: 10px;
   background: var(--blue);
   color: #fff;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.5px;
@@ -1404,7 +1406,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   margin-left: auto;
 }
 .user-chip-name {
-  font-family: 'Gotham', sans-serif;
+  font-family: var(--ft);
   font-size: 0.72rem;
   font-weight: 600;
   color: rgba(255,255,255,0.92);
@@ -1419,7 +1421,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   color: #fff;
   border-radius: 7px;
   padding: 4px 9px;
-  font-family: 'Forza', sans-serif;
+  font-family: var(--fd);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -1436,11 +1438,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 <header class="app-header">
   <div class="header-top">
     <div class="logo-block">
-      <img src="data:image/png;base64,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" alt="LPGas" class="logo-img">
-      <div class="logo-text">
-        <span class="logo-title">LPGas Show</span>
-        <span class="logo-sub">Booth Guide</span>
-      </div>
+      <img id="brandLogo" class="brand-logo" src="./logo-lpgas.png" alt="LP Gas">
     </div>
     <div class="visit-counter">
       <div class="vc-count" id="hdrVisited">0 / 226</div>
@@ -1498,7 +1496,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   <div class="auth-card">
     <div class="auth-brand">
       <img src="./ncm-logo.png" alt="North Coast Media" class="auth-logo" onerror="this.style.display='none'">
-      <div class="auth-title">Event Guide</div>
+      <div class="auth-title">Events</div>
       <div class="auth-sub">Sign in to sync with your team</div>
     </div>
     <div class="auth-tabs">
@@ -1791,18 +1789,21 @@ const LPGAS_BOOTHS = [
 // name) and that show's booth list. Palettes override the CSS custom
 // properties the whole UI is built on (--blue family = primary, --maroon =
 // accent used by meal blocks). Primary colors sampled from NCM Brands_R.pdf.
+// font = display font (--fd); body text stays Gotham for all. logo = white
+// header wordmark. NOTE: Golfdom's true logo font (ITC Franklin Gothic) isn't
+// available, so it falls back to Gotham.
 const BRANDS = {
-  ncm:     { name:"NCM",                  show:"Event Guide",
+  ncm:     { name:"NCM",                  show:"Event Guide", font:"'Forza', sans-serif",  logo:"logo-ncm.png",
              p:{ blue:"#103A5C", dark:"#0E2A3F", deeper:"#081C2B", light:"#E9EEF3", mid:"#B9C9D6", maroon:"#3A6EA5", maroonLight:"#E7EEF5" } },
-  lpgas:   { name:"LP Gas",               show:"LPGas Show",
+  lpgas:   { name:"LP Gas",               show:"LPGas Show", font:"'Forza', sans-serif",  logo:"logo-lpgas.png",
              p:{ blue:"#005C8F", dark:"#00466E", deeper:"#00304C", light:"#E8F1F7", mid:"#BCD6E5", maroon:"#8B1538", maroonLight:"#F6E6EB" } },
-  golfdom: { name:"Golfdom",              show:"Golfdom",
+  golfdom: { name:"Golfdom",              show:"Golfdom", font:"'Gotham', sans-serif", logo:"logo-golfdom.png",
              p:{ blue:"#094169", dark:"#06314F", deeper:"#042538", light:"#E7EEF3", mid:"#A9C2D3", maroon:"#2E7D32", maroonLight:"#E6F0E6" } },
-  lm:      { name:"Landscape Management", show:"Landscape Management",
+  lm:      { name:"Landscape Management", show:"Landscape Management", font:"'Gotham', sans-serif", logo:"logo-lm.png",
              p:{ blue:"#A83616", dark:"#842810", deeper:"#5F1C0B", light:"#F7EAE4", mid:"#E0B6A6", maroon:"#4F7D2A", maroonLight:"#EAF1E3" } },
-  pmp:     { name:"PMP",                  show:"Pest Management Professional",
+  pmp:     { name:"PMP",                  show:"Pest Management Professional", font:"'Forza', sans-serif", logo:"logo-pmp.png",
              p:{ blue:"#87080A", dark:"#6A0608", deeper:"#4C0405", light:"#F6E5E5", mid:"#D9A9AA", maroon:"#1F5C8B", maroonLight:"#E4EDF4" } },
-  pq:      { name:"Pit & Quarry",         show:"Pit & Quarry",
+  pq:      { name:"Pit & Quarry",         show:"Pit & Quarry", font:"'Camber', sans-serif", logo:"logo-pq.png",
              p:{ blue:"#CF202F", dark:"#A51826", deeper:"#7C111B", light:"#FBE7E9", mid:"#EDB3B8", maroon:"#145971", maroonLight:"#E0EBEF" } },
 };
 // Registered events: code -> { brand, show, booths }. Add a show here once its
@@ -1836,24 +1837,15 @@ function applyBrand(brandKey) {
   r.setProperty("--blue-mid", p.mid);
   r.setProperty("--maroon", p.maroon);
   r.setProperty("--maroon-light", p.maroonLight);
+  r.setProperty("--fd", b.font || "'Forza', sans-serif");
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", p.deeper);
   return b;
 }
 function updateHeaderBrand(brandKey, show) {
   const b = BRANDS[brandKey] || BRANDS.ncm;
-  const img = document.querySelector(".logo-img");
-  const title = document.querySelector(".logo-title");
-  const sub = document.querySelector(".logo-sub");
-  if (brandKey === "lpgas") {
-    if (img) img.style.display = "";
-    if (title) title.textContent = "LPGas Show";
-    if (sub) sub.textContent = "Booth Guide";
-  } else {
-    if (img) img.style.display = "none";
-    if (title) title.textContent = b.name;
-    if (sub) sub.textContent = show || "Event Guide";
-  }
+  const img = document.getElementById("brandLogo");
+  if (img) { img.src = "./" + b.logo; img.alt = b.name; }
 }
 function applyEvent(code) {
   const ev = resolveEvent(code);
@@ -1864,6 +1856,7 @@ function applyEvent(code) {
   if (dl) dl.innerHTML = "";   // repopulated lazily for the new booth list
   return ev;
 }
+applyBrand("ncm");   // NCM neutral until a user signs in (login screen, spinner veil)
 
 const fmtTime = m => {
   const h = Math.floor(m/60), mn = m%60;
@@ -3206,6 +3199,7 @@ function showSignedOut() {
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
   currentUser = null;
+  applyBrand("ncm");   // login screen uses NCM neutral colors
 }
 if (fbReady) {
   fbAuth.onAuthStateChanged(async (user) => {

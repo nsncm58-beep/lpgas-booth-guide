@@ -1,6 +1,6 @@
 {
-  "name": "NCM Event Guide",
-  "short_name": "NCM Guide",
+  "name": "NCM Events",
+  "short_name": "NCM Events",
   "description": "North Coast Media trade-show event guide — booths, schedule, and team notes",
   "start_url": "./index.html",
   "scope": "./",

@@ -2,11 +2,13 @@
 // HTML is network-first so updates deploy immediately.
 // User state lives in localStorage (key: lpgas_v3) — never touched by the cache.
 
-const CACHE_NAME = 'lpgas-guide-v13';
+const CACHE_NAME = 'lpgas-guide-v14';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ncm-logo.png',
+    './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
     './Forza-Medium.woff2', './Forza-Bold.woff2', './Forza-Black.woff2',
-    './Gotham-Book.woff2', './Gotham-Medium.woff2', './Gotham-Bold.woff2'
+    './Gotham-Book.woff2', './Gotham-Medium.woff2', './Gotham-Bold.woff2',
+    './Camber-Medium.woff2', './Camber-Bold.woff2'
 ];
 
 self.addEventListener('install', event => {
