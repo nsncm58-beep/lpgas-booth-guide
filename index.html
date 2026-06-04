@@ -164,41 +164,24 @@ body {
   padding: 8px 12px 10px;
 }
 .search-wrap { flex: 1; position: relative; }
-.search-wrap::before {
-  content: "";
-  position: absolute;
-  left: 12px; top: 50%;
-  width: 12px; height: 12px;
-  margin-top: -7px;
-  border: 1.8px solid rgba(255,255,255,0.55);
-  border-radius: 50%;
-  pointer-events: none;
-}
-.search-wrap::after {
-  content: "";
-  position: absolute;
-  left: 22px; top: 50%;
-  width: 6px; height: 1.8px;
-  background: rgba(255,255,255,0.55);
-  transform: rotate(45deg);
-  margin-top: 3px;
-  border-radius: 1px;
-  pointer-events: none;
-}
 #searchInput {
   width: 100%;
-  padding: 10px 14px 10px 34px;
-  background: rgba(255,255,255,0.13);
+  padding: 10px 14px 10px 38px;
+  background-color: rgba(255,255,255,0.13);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  background-size: 16px 16px;
   border: 1.5px solid rgba(255,255,255,0.22);
   border-radius: 10px;
   color: #fff;
   font-size: 0.92rem;
   font-family: inherit;
   outline: none;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
 }
-#searchInput::placeholder { color: rgba(255,255,255,0.55); font-weight: 500; }
-#searchInput:focus { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+#searchInput::placeholder { color: rgba(255,255,255,0.6); font-weight: 500; }
+#searchInput:focus { background-color: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
 
 .hdr-btn {
   padding: 0 14px;
@@ -716,17 +699,21 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .sched-search-input {
   width: 100%;
-  padding: 9px 12px;
+  padding: 9px 12px 9px 36px;
   border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 0.85rem;
   font-family: inherit;
   color: var(--text);
-  background: #FBFCFE;
+  background-color: #FBFCFE;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%238A98A8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 11px center;
+  background-size: 15px 15px;
   outline: none;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background-color 0.15s;
 }
-.sched-search-input:focus { border-color: var(--blue); background: #fff; }
+.sched-search-input:focus { border-color: var(--blue); background-color: #fff; }
 .sched-results { margin-top: 6px; }
 .sched-result-row {
   display: flex;
@@ -1407,13 +1394,14 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--blue); margin: 8px 0 3px; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
+.home-upload { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--border-soft); }
+.home-upload-main { min-width: 0; }
+.home-upload-file { display: block; font-weight: 700; font-size: 0.86rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-upload-meta { display: block; font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+.home-upload-open { flex-shrink: 0; font-family: var(--fd); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--blue); border: 1.5px solid var(--blue); border-radius: 7px; padding: 6px 12px; text-decoration: none; }
 @media (min-width: 720px) {
   .home-note { display: grid; grid-template-columns: 1fr; }
 }
-
-/* ── Sharp-corner design language ── */
-*, *::before, *::after { border-radius: 0 !important; }
-.auth-spinner { border-radius: 50% !important; }   /* keep the loading ring round */
 </style>
 </head>
 <body>
@@ -2042,8 +2030,10 @@ function subscribeTeam() {
 }
 
 // ── HOME TEAM DASHBOARD (Phase 2) ───────────────────────────────────────
-let homeNotes  = {};     // docId -> { uid, name, eventCode, items }
-let _homeUnsub = null;
+let homeNotes   = {};    // docId -> { uid, name, eventCode, items }
+let homeUploads = [];    // [{ uid, name, eventCode, fileName, link, ts }]
+let _homeUnsub  = null;
+let _homeUpUnsub= null;
 let homeBrandFilter = null;   // null = all brands; else a brand key
 const HOME_FILTER_BRANDS = ["lpgas","golfdom","lm","pmp","pq"];
 function subscribeHomeNotes() {
@@ -2054,6 +2044,21 @@ function subscribeHomeNotes() {
     snap.forEach(d => { const x = d.data(); if (x) homeNotes[d.id] = x; });
     if (isHome()) renderHomeDashboard();
   }, () => {});
+  if (_homeUpUnsub) { _homeUpUnsub(); _homeUpUnsub = null; }
+  _homeUpUnsub = fbDb.collection("uploads").onSnapshot(snap => {
+    homeUploads = [];
+    snap.forEach(d => { const x = d.data(); if (x) homeUploads.push(x); });
+    homeUploads.sort((a,b) => (b.ts||0) - (a.ts||0));
+    if (isHome()) renderHomeDashboard();
+  }, () => {});
+}
+function fmtAgo(ts) {
+  if (!ts) return "";
+  const s = Math.floor((Date.now()-ts)/1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return Math.floor(s/60)+"m ago";
+  if (s < 86400) return Math.floor(s/3600)+"h ago";
+  return Math.floor(s/86400)+"d ago";
 }
 function buildHomeFilter() {
   let h = `<div class="team-bar home-filter">
@@ -2099,11 +2104,26 @@ function renderHomeDashboard() {
     });
     html += `</section>`;
   });
-  // Dropbox uploads — Phase 3 placeholder
+  // Dropbox uploads feed (filtered by the active brand)
+  let ups = homeUploads.slice();
+  if (homeBrandFilter) ups = ups.filter(u => resolveEvent(u.eventCode).brand === homeBrandFilter);
   html += `<section class="home-brand">
-      <div class="home-brand-bar" style="background:var(--blue-deeper)"><span>Dropbox Uploads</span></div>
-      <div class="home-empty" style="padding:16px 14px">Upload notifications will appear here once Dropbox is connected.</div>
-    </section></div>`;
+      <div class="home-brand-bar" style="background:var(--blue-deeper)"><span>Dropbox Uploads</span></div>`;
+  if (!ups.length) {
+    html += `<div class="home-empty" style="padding:16px 14px">No uploads yet. Files uploaded from the field appear here.</div>`;
+  } else {
+    ups.slice(0, 50).forEach(u => {
+      const brand = BRANDS[resolveEvent(u.eventCode).brand] || BRANDS.ncm;
+      html += `<div class="home-upload">
+        <div class="home-upload-main">
+          <span class="home-upload-file">${esc(u.fileName || "File")}</span>
+          <span class="home-upload-meta">${esc(u.name||"Rep")} · ${esc(brand.name)} · ${fmtAgo(u.ts)}</span>
+        </div>
+        ${u.link ? `<a class="home-upload-open" href="${esc(u.link)}" target="_blank" rel="noopener">Open</a>` : ""}
+      </div>`;
+    });
+  }
+  html += `</section></div>`;
   el.innerHTML = html;
 }
 
@@ -3129,7 +3149,8 @@ function showSignedOut() {
   document.getElementById("brandSwitchRow").style.display = "none";
   document.body.classList.remove("home-mode");
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
-  homeNotes = {};
+  if (_homeUpUnsub) { _homeUpUnsub(); _homeUpUnsub = null; }
+  homeNotes = {}; homeUploads = [];
   currentUser = null;
   masterEventOverride = null;
   setAuthMode("signin");
