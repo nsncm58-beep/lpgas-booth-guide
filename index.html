@@ -213,6 +213,16 @@ body {
 }
 .settings-dbx-input:focus { outline: none; border-color: var(--blue); }
 .settings-dbx-open { display: inline-block; font-family: var(--fd); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--blue); text-decoration: none; }
+/* Danger zone (clear all) */
+.settings-danger { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.settings-danger-title { font-size: 0.78rem; font-weight: 700; color: #B3261E; margin-bottom: 8px; }
+.settings-clear-btn {
+  width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid #B3261E; background: #fff; color: #B3261E;
+  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
+}
+.settings-clear-btn:active { background: #FBE9E8; }
+.settings-clear-confirm { background: #B3261E !important; }
 
 /* ── VIEW TABS (primary) ── */
 .view-tabs {
@@ -1377,7 +1387,23 @@ body.home-mode .user-chip-gear { display: none !important; }
 
 /* ── Home Team dashboard ── */
 .home-wrap { max-width: 900px; margin: 0 auto; padding: 16px 14px 60px; }
-.home-filter { padding: 0 0 16px; }
+.home-filter { padding: 0 0 12px; }
+.home-search-box { margin-bottom: 16px; }
+.home-search-input {
+  width: 100%;
+  padding: 11px 12px 11px 38px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--ft);
+  font-size: 0.9rem;
+  color: var(--text);
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A98A8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  background-size: 16px 16px;
+}
+.home-search-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 .home-head h2 { font-family: var(--fd); font-weight: 800; font-size: 1.3rem; color: var(--text); }
 .home-head p { font-size: 0.85rem; color: var(--muted); margin: 4px 0 18px; }
 .home-brand { margin-bottom: 22px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -1471,7 +1497,26 @@ body.home-mode .user-chip-gear { display: none !important; }
       <input class="settings-dbx-input" id="dbxPassInput" type="text" placeholder="Password (optional)">
       <a class="settings-dbx-open" id="dbxOpenLink" href="#" target="_blank" rel="noopener" style="display:none">Open my Dropbox</a>
     </div>
+    <div class="settings-danger" id="settingsDanger">
+      <div class="settings-danger-title">End of show</div>
+      <div class="settings-dbx-note">Clear all your booths, notes, schedule and meals for <strong id="clearEventName">this show</strong> to start fresh. Make sure you've exported anything you need first.</div>
+      <button class="settings-clear-btn" id="clearAllBtn" type="button">Clear all my show data</button>
+    </div>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── Clear-all confirm (requires password) ── -->
+<div id="clearConfirm" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Clear all show data?</div>
+    <p class="share-prompt-text">This permanently erases your booths, notes, schedule, and meals for <strong id="clearEventName2">this show</strong> — on this device and in the cloud. This can't be undone. Re-enter your password to confirm.</p>
+    <input class="settings-dbx-input" id="clearPassInput" type="password" placeholder="Your password" autocomplete="current-password">
+    <div class="auth-error" id="clearError"></div>
+    <div class="share-prompt-actions">
+      <button class="settings-done share-secondary" id="clearCancel" type="button">Cancel</button>
+      <button class="settings-done settings-clear-confirm" id="clearConfirmBtn" type="button">Clear everything</button>
+    </div>
   </div>
 </div>
 
@@ -2038,6 +2083,7 @@ function subscribeTeam() {
 let homeNotes   = {};    // docId -> { uid, name, eventCode, items }
 let _homeUnsub  = null;
 let homeBrandFilter = null;   // null = all brands; else a brand key
+let homeSearchQ = "";
 const HOME_FILTER_BRANDS = ["lpgas","golfdom","lm","pmp","pq"];
 function subscribeHomeNotes() {
   if (!fbReady || !isHome()) return;
@@ -2072,24 +2118,30 @@ function renderHomeDashboard() {
   let codes = Object.keys(byEvent).sort();
   if (homeBrandFilter) codes = codes.filter(c => resolveEvent(c).brand === homeBrandFilter);
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
+  const q = homeSearchQ.trim().toLowerCase();
+  const matchItem = it => (it.pre || it.post || it.visited) &&
+    (!q || (it.boothName||"").toLowerCase().includes(q) || (it.boothNum||"").toLowerCase().includes(q));
   let html = `<div class="home-wrap">
     <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes — ${esc(filterName)}.</p></div>
-    ${buildHomeFilter()}`;
-  if (!codes.length) {
-    html += `<div class="empty-wrap"><h3>No shared notes yet</h3><p>${homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes appear here when someone in the field turns on "Share notes with the home team."'}</p></div>`;
-  }
+    ${buildHomeFilter()}
+    <div class="home-search-box">
+      <input class="home-search-input" type="text" placeholder="Search a company in the notes…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
+    </div>`;
+  // Build per-brand sections, including only reps that have matching notes.
+  let anyShown = false;
   codes.forEach(code => {
     const brand = BRANDS[resolveEvent(code).brand] || BRANDS.ncm;
     const reps = byEvent[code].slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
+    const repsWithMatches = reps.map(r => ({ r, items: (r.items||[]).filter(matchItem) })).filter(x => x.items.length);
+    if (!repsWithMatches.length) return;
+    anyShown = true;
     html += `<section class="home-brand">
       <div class="home-brand-bar" style="background:${brand.p.blue}">
         <span>${esc(brand.name)}</span><span class="home-brand-code">${esc(code)}</span>
       </div>`;
-    reps.forEach(r => {
-      const items = (r.items || []).filter(it => it.pre || it.post || it.visited);
+    repsWithMatches.forEach(({ r, items }) => {
       html += `<div class="home-rep">
         <div class="home-rep-name">${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span></div>`;
-      if (!items.length) html += `<div class="home-empty">No notes yet.</div>`;
       items.forEach(it => {
         html += `<div class="home-note">
           <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.visited?'<span class="home-visited">Visited</span>':''}</div>
@@ -2101,8 +2153,12 @@ function renderHomeDashboard() {
     });
     html += `</section>`;
   });
+  if (!anyShown) {
+    html += `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes appear here when someone in the field turns on "Share notes with the home team."')}</p></div>`;
+  }
   html += `</div>`;
   el.innerHTML = html;
+  if (q) { const si = document.querySelector(".home-search-input"); if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); } }
 }
 
 function rowKey(b) {
@@ -2593,6 +2649,7 @@ document.getElementById("content").addEventListener("click", e => {
   const homeBrand = e.target.closest("[data-home-brand]");
   if (homeBrand) {
     homeBrandFilter = homeBrand.dataset.homeBrand || null;
+    homeSearchQ = "";
     applyBrand(homeBrandFilter || "ncm");
     updateHeaderBrand(homeBrandFilter || "ncm", "Home Team");
     renderHomeDashboard();
@@ -2802,6 +2859,7 @@ document.getElementById("content").addEventListener("click", e => {
 });
 
 document.getElementById("content").addEventListener("input", e => {
+  if (e.target.classList.contains("home-search-input")) { homeSearchQ = e.target.value; renderHomeDashboard(); return; }
   if (e.target.id === "mealCompanyInp") { mealFormCompany = e.target.value; return; }
   if (e.target.id === "mealNotesInp")   { mealFormNotes   = e.target.value; return; }
   if (e.target.id === "offTitleInp")    { offFormTitle    = e.target.value; return; }
@@ -3082,6 +3140,11 @@ function dbxPersonalSave() {
   const open = document.getElementById("dbxOpenLink");
   if (link) { open.href = link; open.style.display = ""; } else { open.style.display = "none"; }
 }
+function currentShowLabel() {
+  const ev = resolveEvent(currentEventCode());
+  const b = BRANDS[ev.brand] || BRANDS.ncm;
+  return (b.name || "this show") + (currentEventCode() ? " (" + currentEventCode() + ")" : "");
+}
 document.getElementById("settingsBtn").addEventListener("click", () => {
   document.getElementById("shareNotesToggle").checked = !!(currentUser && currentUser.shareNotes);
   const d = dbxPersonalLoad();
@@ -3089,6 +3152,7 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
   document.getElementById("dbxPassInput").value = d.pass || "";
   const open = document.getElementById("dbxOpenLink");
   if (d.link) { open.href = d.link; open.style.display = ""; } else { open.style.display = "none"; }
+  document.getElementById("clearEventName").textContent = currentShowLabel();
   document.getElementById("settingsSheet").style.display = "flex";
 });
 document.getElementById("dbxLinkInput").addEventListener("change", dbxPersonalSave);
@@ -3098,6 +3162,43 @@ document.getElementById("settingsClose").addEventListener("click", () => {
 });
 document.getElementById("settingsSheet").addEventListener("click", e => {
   if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
+});
+// Clear-all show data (password-gated)
+document.getElementById("clearAllBtn").addEventListener("click", () => {
+  document.getElementById("clearEventName2").textContent = currentShowLabel();
+  document.getElementById("clearPassInput").value = "";
+  document.getElementById("clearError").textContent = "";
+  document.getElementById("settingsSheet").style.display = "none";
+  document.getElementById("clearConfirm").style.display = "flex";
+  document.getElementById("clearPassInput").focus();
+});
+document.getElementById("clearCancel").addEventListener("click", () => {
+  document.getElementById("clearConfirm").style.display = "none";
+});
+document.getElementById("clearConfirmBtn").addEventListener("click", async () => {
+  const pass = document.getElementById("clearPassInput").value;
+  const errEl = document.getElementById("clearError");
+  if (!pass) { errEl.textContent = "Enter your password to confirm."; return; }
+  if (!fbReady || !fbAuth.currentUser) { errEl.textContent = "Not signed in."; return; }
+  const btn = document.getElementById("clearConfirmBtn");
+  btn.disabled = true;
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(fbAuth.currentUser.email, pass);
+    await fbAuth.currentUser.reauthenticateWithCredential(cred);
+  } catch (e) {
+    errEl.textContent = "Password incorrect."; btn.disabled = false; return;
+  }
+  try {
+    localStorage.removeItem(storeKey());
+    const docId = myScheduleDocId();
+    await fbDb.collection("schedules").doc(docId).delete().catch(() => {});
+    await fbDb.collection("notes").doc(docId).delete().catch(() => {});
+  } catch (e) {}
+  btn.disabled = false;
+  document.getElementById("clearConfirm").style.display = "none";
+  activeView = "booths"; schedDay = 1; allOpen = false;
+  render();
+  toast("All show data cleared");
 });
 document.getElementById("shareYes").addEventListener("click", async () => {
   document.getElementById("sharePrompt").style.display = "none";
@@ -3185,7 +3286,7 @@ if (fbReady) {
       if (isHome()) {
         document.body.classList.add("home-mode");
         document.getElementById("brandSwitchRow").style.display = "none";
-        homeBrandFilter = null;
+        homeBrandFilter = null; homeSearchQ = "";
         applyBrand("ncm");
         updateHeaderBrand("ncm", "Home Team");
         showSignedIn({ name: "Home Team" });
