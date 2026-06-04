@@ -1,13 +1,13 @@
 {
-  "name": "LPGas Show — Booth Guide",
-  "short_name": "LPGas Guide",
-  "description": "LP Gas trade show booth guide with notes",
+  "name": "NCM Event Guide",
+  "short_name": "NCM Guide",
+  "description": "North Coast Media trade-show event guide — booths, schedule, and team notes",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#005C8F",
-  "theme_color": "#005C8F",
+  "background_color": "#0E2A3F",
+  "theme_color": "#0E2A3F",
   "icons": [
     {
       "src": "./icon-192.png",

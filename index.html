@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>LPGas Show — Booth Guide</title>
+<title>NCM Event Guide</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#005C8F">
+<meta name="theme-color" content="#0E2A3F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="LPGas Guide">
+<meta name="apple-mobile-web-app-title" content="NCM Guide">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 /* ── LP Gas brand fonts: Forza (display) + Gotham (text) ── */
@@ -1313,6 +1313,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   animation: fadeUp 0.25s ease both;
 }
 .auth-brand { text-align: center; margin-bottom: 18px; }
+.auth-logo { width: 130px; height: auto; margin: 0 auto 12px; display: block; }
 .auth-logo { height: 30px; margin-bottom: 12px; }
 .auth-title {
   font-family: 'Forza', sans-serif;
@@ -1496,7 +1497,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   <div class="auth-loading" id="authLoading"><div class="auth-spinner"></div></div>
   <div class="auth-card">
     <div class="auth-brand">
-      <div class="auth-title">Booth Guide</div>
+      <img src="./ncm-logo.png" alt="North Coast Media" class="auth-logo" onerror="this.style.display='none'">
+      <div class="auth-title">Event Guide</div>
       <div class="auth-sub">Sign in to sync with your team</div>
     </div>
     <div class="auth-tabs">
@@ -1555,7 +1557,7 @@ try {
 </script>
 
 <script>
-const CO = [
+const LPGAS_BOOTHS = [
   {n:"1075 Consulting LLC",b:"351"},
   {n:"A.R.M. Solutions",b:"402"},
   {n:"ADD Systems",b:"607"},
@@ -1783,6 +1785,85 @@ const CO = [
   {n:"Worthington Enterprises",b:"1011"},
   {n:"Zephyr Solutions LLC",b:"446"}
 ];
+
+// ── BRANDS + EVENTS (multi-brand theming) ───────────────────────────────
+// One app, many NCM brands. Each event code resolves to a brand (palette +
+// name) and that show's booth list. Palettes override the CSS custom
+// properties the whole UI is built on (--blue family = primary, --maroon =
+// accent used by meal blocks). Primary colors sampled from NCM Brands_R.pdf.
+const BRANDS = {
+  ncm:     { name:"NCM",                  show:"Event Guide",
+             p:{ blue:"#103A5C", dark:"#0E2A3F", deeper:"#081C2B", light:"#E9EEF3", mid:"#B9C9D6", maroon:"#3A6EA5", maroonLight:"#E7EEF5" } },
+  lpgas:   { name:"LP Gas",               show:"LPGas Show",
+             p:{ blue:"#005C8F", dark:"#00466E", deeper:"#00304C", light:"#E8F1F7", mid:"#BCD6E5", maroon:"#8B1538", maroonLight:"#F6E6EB" } },
+  golfdom: { name:"Golfdom",              show:"Golfdom",
+             p:{ blue:"#094169", dark:"#06314F", deeper:"#042538", light:"#E7EEF3", mid:"#A9C2D3", maroon:"#2E7D32", maroonLight:"#E6F0E6" } },
+  lm:      { name:"Landscape Management", show:"Landscape Management",
+             p:{ blue:"#A83616", dark:"#842810", deeper:"#5F1C0B", light:"#F7EAE4", mid:"#E0B6A6", maroon:"#4F7D2A", maroonLight:"#EAF1E3" } },
+  pmp:     { name:"PMP",                  show:"Pest Management Professional",
+             p:{ blue:"#87080A", dark:"#6A0608", deeper:"#4C0405", light:"#F6E5E5", mid:"#D9A9AA", maroon:"#1F5C8B", maroonLight:"#E4EDF4" } },
+  pq:      { name:"Pit & Quarry",         show:"Pit & Quarry",
+             p:{ blue:"#CF202F", dark:"#A51826", deeper:"#7C111B", light:"#FBE7E9", mid:"#EDB3B8", maroon:"#145971", maroonLight:"#E0EBEF" } },
+};
+// Registered events: code -> { brand, show, booths }. Add a show here once its
+// exhibitor list is in hand. Unregistered codes still theme by prefix (below)
+// but show an empty booth list until configured.
+const EVENTS = {
+  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS },
+};
+function inferBrand(code) {
+  const c = (code || "").toUpperCase();
+  if (c.startsWith("LPG"))  return "lpgas";
+  if (c.startsWith("GOLF")) return "golfdom";
+  if (c.startsWith("LM"))   return "lm";
+  if (c.startsWith("PMP"))  return "pmp";
+  if (c.startsWith("PQ") || c.startsWith("PIT")) return "pq";
+  return "ncm";
+}
+function resolveEvent(code) {
+  if (EVENTS[code]) return EVENTS[code];
+  return { brand: inferBrand(code), show: (code || "Event Guide"), booths: [] };
+}
+let CO = LPGAS_BOOTHS;   // active booth list (swapped per event on login)
+
+function applyBrand(brandKey) {
+  const b = BRANDS[brandKey] || BRANDS.ncm;
+  const p = b.p, r = document.documentElement.style;
+  r.setProperty("--blue", p.blue);
+  r.setProperty("--blue-dark", p.dark);
+  r.setProperty("--blue-deeper", p.deeper);
+  r.setProperty("--blue-light", p.light);
+  r.setProperty("--blue-mid", p.mid);
+  r.setProperty("--maroon", p.maroon);
+  r.setProperty("--maroon-light", p.maroonLight);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", p.deeper);
+  return b;
+}
+function updateHeaderBrand(brandKey, show) {
+  const b = BRANDS[brandKey] || BRANDS.ncm;
+  const img = document.querySelector(".logo-img");
+  const title = document.querySelector(".logo-title");
+  const sub = document.querySelector(".logo-sub");
+  if (brandKey === "lpgas") {
+    if (img) img.style.display = "";
+    if (title) title.textContent = "LPGas Show";
+    if (sub) sub.textContent = "Booth Guide";
+  } else {
+    if (img) img.style.display = "none";
+    if (title) title.textContent = b.name;
+    if (sub) sub.textContent = show || "Event Guide";
+  }
+}
+function applyEvent(code) {
+  const ev = resolveEvent(code);
+  applyBrand(ev.brand);
+  updateHeaderBrand(ev.brand, ev.show);
+  CO = (ev.booths && ev.booths.length) ? ev.booths : [];
+  const dl = document.getElementById("co-datalist");
+  if (dl) dl.innerHTML = "";   // repopulated lazily for the new booth list
+  return ev;
+}
 
 const fmtTime = m => {
   const h = Math.floor(m/60), mn = m%60;
@@ -2156,6 +2237,13 @@ function render() {
     return;
   }
   filterBar?.classList.remove("hidden");
+
+  if (!CO.length) {
+    el.innerHTML = `<div class="empty-wrap"><h3>No booth list yet</h3>
+      <p>This event doesn't have an exhibitor list loaded yet. Your schedule, meals, and notes still work — booths will appear once the list is added.</p></div>`;
+    updateStats(state);
+    return;
+  }
 
   if (!list.length) {
     const msgs = {
@@ -3134,6 +3222,8 @@ if (fbReady) {
         localStorage.removeItem(STORE);
       }
       localStorage.setItem("lpgas_owner_uid", user.uid);
+      // Theme + booth list for this user's event/brand.
+      applyEvent(currentUser.eventCode);
       showSignedIn(profile);
       // Push my current schedule to the cloud (also migrates existing local data)
       // and start listening for teammates in the same event.
