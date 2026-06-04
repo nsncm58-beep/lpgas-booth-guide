@@ -3,6 +3,8 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function myEvent() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.eventCode; }
     function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2']; }
+    function isHome() { return request.auth != null && request.auth.uid in ['OjQ9GnNOF0dm10hkdAZlYyTcCHJ2']; }
+    function ownDoc(docId) { return docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'); }
 
     match /users/{uid} {
       allow read: if request.auth != null;
@@ -11,8 +13,14 @@ service cloud.firestore {
 
     match /schedules/{docId} {
       allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster());
-      allow create, update: if request.auth != null && (docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*')) && (request.resource.data.eventCode == myEvent() || isMaster());
-      allow delete: if request.auth != null && (docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'));
+      allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
+      allow delete: if request.auth != null && ownDoc(docId);
+    }
+
+    match /notes/{docId} {
+      allow read: if request.auth != null && (ownDoc(docId) || isMaster() || isHome());
+      allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
+      allow delete: if request.auth != null && ownDoc(docId);
     }
 
     match /{document=**} { allow read, write: if false; }

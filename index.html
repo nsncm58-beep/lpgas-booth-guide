@@ -585,152 +585,7 @@ textarea.nf:focus { outline: none; background: #fff; }
 textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
 
-/* ── CARD SCANS ── */
-.scan-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border);
-}
-.scan-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
-  border: 1.5px solid var(--blue);
-  background: #fff;
-  color: var(--blue);
-  border-radius: 8px;
-  font-family: var(--fd);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.05s;
-}
-.scan-btn:active { transform: scale(0.97); }
-.scan-btn:hover  { background: var(--blue); color: #fff; }
-.scan-btn svg    { width: 14px; height: 14px; }
-.scan-btn.busy   { opacity: 0.6; pointer-events: none; }
-.scan-thumbs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.scan-thumb {
-  width: 46px;
-  height: 46px;
-  padding: 0;
-  border: 1.5px solid var(--border);
-  border-radius: 7px;
-  overflow: hidden;
-  background: #f5f6f8;
-  cursor: pointer;
-  position: relative;
-  transition: border-color 0.15s, transform 0.05s;
-}
-.scan-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.scan-thumb:hover  { border-color: var(--blue); }
-.scan-thumb:active { transform: scale(0.96); }
-.scan-thumb-spin, .scan-thumb-check {
-  position: absolute; right: 2px; bottom: 2px;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 800;
-  color: #fff;
-}
-.scan-thumb-check { background: #2D7140; }
-.scan-thumb-spin {
-  background: var(--blue);
-  border: 2px solid #fff;
-  border-top-color: transparent;
-  animation: scanSpin 0.7s linear infinite;
-  box-sizing: border-box;
-}
-@keyframes scanSpin { to { transform: rotate(360deg); } }
-
-.scan-contacts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.scan-contact {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 11px;
-  background: #FBFCFE;
-}
-.sc-status {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--blue);
-  margin-bottom: 6px;
-  display: flex; align-items: center; gap: 6px;
-}
-.sc-status.err { color: var(--maroon); }
-.scan-contact-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.sce {
-  width: 100%;
-  padding: 7px 9px;
-  border: 1.5px solid var(--border);
-  border-radius: 7px;
-  font-family: inherit;
-  font-size: 0.82rem;
-  color: var(--text);
-  background: #fff;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.sce:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
-.sce-wide { grid-column: 1 / -1; }
-@media (max-width: 420px) {
-  .scan-contact-grid { grid-template-columns: 1fr; }
-}
-
-#scanLightbox {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-#scanLightbox.open { display: flex; }
-#scanLightbox img {
-  max-width: 100%;
-  max-height: 78vh;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 10px 36px rgba(0,0,0,0.4);
-}
-.scan-lb-actions {
-  position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-}
-.scan-lb-actions button {
-  padding: 10px 18px;
-  border: none;
-  border-radius: 9px;
-  font-family: var(--fd);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.scan-lb-close { background: #fff; color: #1a1a1a; }
-.scan-lb-del   { background: var(--maroon); color: #fff; }
-.scan-lb-close:active, .scan-lb-del:active { transform: scale(0.97); }
+@keyframes ncmspin { to { transform: rotate(360deg); } }
 
 /* ── EMPTY STATE ── */
 .empty-wrap {
@@ -1304,7 +1159,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border: 3px solid rgba(255,255,255,0.35);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: scanSpin 0.7s linear infinite;
+  animation: ncmspin 0.7s linear infinite;
 }
 .auth-card {
   width: 100%;
@@ -1397,6 +1252,23 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .auth-submit:active { background: var(--blue-dark); }
 .auth-submit:disabled { opacity: 0.6; cursor: default; }
 .auth-foot { text-align: center; font-size: 0.74rem; color: var(--muted); margin-top: 14px; line-height: 1.45; }
+.auth-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0 12px; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.auth-home-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid var(--blue);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--blue);
+  font-family: var(--fd);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.auth-home-btn:active { background: var(--blue-light); }
 
 /* Signed-in identity chip in the header */
 .user-chip {
@@ -1464,6 +1336,74 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .brand-switch:focus { outline: none; border-color: #fff; }
 .brand-switch option { color: #0E1B2C; }
+/* ── Settings gear + sheet ── */
+.user-chip-gear {
+  border: 1px solid rgba(255,255,255,0.45);
+  background: transparent;
+  color: #fff;
+  border-radius: 7px;
+  width: 28px; height: 26px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  line-height: 1;
+}
+.user-chip-gear:active { background: rgba(255,255,255,0.15); }
+.settings-sheet {
+  position: fixed; inset: 0; z-index: 1500;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.settings-card {
+  width: 100%; max-width: 400px;
+  background: #fff; border-radius: 16px; padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+.settings-title { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 14px; }
+.settings-row { display: flex; align-items: center; gap: 14px; justify-content: space-between; }
+.settings-row-text strong { display: block; font-size: 0.9rem; color: var(--text); }
+.settings-row-text small { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.settings-switch { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--blue); }
+.settings-done {
+  width: 100%; margin-top: 18px; padding: 12px;
+  border: none; border-radius: 10px; background: var(--blue); color: #fff;
+  font-family: var(--fd); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.4px;
+  text-transform: uppercase; cursor: pointer;
+}
+
+/* ── Home Team mode: hide the field-app chrome ── */
+body.home-mode .header-search,
+body.home-mode .view-tabs,
+body.home-mode .filter-bar,
+body.home-mode .brand-switch-row,
+body.home-mode .app-footer { display: none !important; }
+
+/* ── Home Team dashboard ── */
+.home-wrap { max-width: 900px; margin: 0 auto; padding: 16px 14px 60px; }
+.home-head h2 { font-family: var(--fd); font-weight: 800; font-size: 1.3rem; color: var(--text); }
+.home-head p { font-size: 0.85rem; color: var(--muted); margin: 4px 0 18px; }
+.home-brand { margin-bottom: 22px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.home-brand-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; color: #fff;
+  font-family: var(--fd); font-weight: 800; font-size: 1rem; letter-spacing: 0.3px;
+}
+.home-brand-code { font-family: var(--ft); font-weight: 600; font-size: 0.72rem; opacity: 0.85; }
+.home-rep { padding: 12px 16px; border-top: 1px solid var(--border-soft); }
+.home-rep:first-of-type { border-top: none; }
+.home-rep-name { font-family: var(--fd); font-weight: 700; font-size: 0.92rem; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.home-rep-count { font-family: var(--ft); font-weight: 600; font-size: 0.7rem; color: var(--muted); background: var(--bg); padding: 2px 8px; border-radius: 999px; }
+.home-empty { font-size: 0.8rem; color: var(--muted); padding: 4px 0; }
+.home-note { background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.home-note-co { font-weight: 700; font-size: 0.86rem; color: var(--text); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.home-note-booth { font-weight: 600; font-size: 0.72rem; color: var(--muted); }
+.home-visited { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--green); background: var(--green-light); padding: 2px 7px; border-radius: 999px; }
+.home-note-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--blue); margin: 8px 0 3px; }
+.home-note-label.post { color: var(--green); }
+.home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
+@media (min-width: 720px) {
+  .home-note { display: grid; grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -1477,6 +1417,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
     </div>
     <div class="user-chip" id="userChip" style="display:none">
       <span class="user-chip-name" id="userChipName"></span>
+      <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
   </div>
@@ -1516,12 +1457,18 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 </div>
 <div id="toast"></div>
 
-<input id="scanFileInput" type="file" accept="image/*" capture="environment" hidden>
-<div id="scanLightbox" role="dialog" aria-hidden="true">
-  <img id="scanLightboxImg" alt="Scanned card">
-  <div class="scan-lb-actions">
-    <button class="scan-lb-close" type="button" data-scan-lb-close>Close</button>
-    <button class="scan-lb-del"   type="button" data-scan-lb-del>Delete</button>
+<!-- ── Settings sheet ── -->
+<div id="settingsSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Settings</div>
+    <label class="settings-row">
+      <span class="settings-row-text">
+        <strong>Share my notes with the home team</strong>
+        <small>Your pre- and post-visit notes become visible to the home team. Off by default.</small>
+      </span>
+      <input type="checkbox" id="shareNotesToggle" class="settings-switch">
+    </label>
+    <button class="settings-done" id="settingsClose" type="button">Done</button>
   </div>
 </div>
 
@@ -1559,6 +1506,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
       <button type="submit" class="auth-submit" id="authSubmit">Sign In</button>
     </form>
     <div class="auth-foot" id="authFoot">Field reps: create an account with your show's event code.</div>
+    <div class="auth-divider"><span>or</span></div>
+    <button type="button" class="auth-home-btn" id="homeTeamBtn">Enter as Home Team</button>
   </div>
 </div>
 
@@ -1926,11 +1875,19 @@ function timeToMin(t) {
 // A master account can jump between brands. The active event drives theme,
 // booth list, team subscription, and which localStorage bucket is used.
 const MASTER_EMAILS = ["nstoltman@northcoastmedia.net"];
+// Home team uses a shared account. Only the (non-secret) email lives in code;
+// the passcode is typed once by the team and remembered by the browser.
+const HOME_TEAM_EMAIL = "hometeam@northcoastmedia.net";
 let masterEventOverride = null;   // set when a master switches brand
 function isMaster() {
   if (!currentUser) return false;
   return currentUser.role === "master" || currentUser.master === true
       || MASTER_EMAILS.includes((currentUser.email || "").toLowerCase());
+}
+function isHome() {
+  if (!currentUser) return false;
+  return currentUser.role === "home"
+      || (currentUser.email || "").toLowerCase() === HOME_TEAM_EMAIL;
 }
 function currentEventCode() {
   if (masterEventOverride) return masterEventOverride;
@@ -1946,7 +1903,7 @@ function storeKey() {
   return (!c || c === "LPGAS-2026") ? STORE : STORE + "__" + c;
 }
 const load  = () => { try { return JSON.parse(localStorage.getItem(storeKey())||"{}"); } catch(e){ return {}; } };
-const save  = s  => { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); };
+const save  = s  => { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); if (typeof queueNotesSync === "function") queueNotesSync(); };
 const key   = i  => "c"+i;
 
 // Meals live under the reserved "_meals" array key — booth state uses c<i> keys,
@@ -1969,6 +1926,44 @@ let viewedScheduleUid = null;   // null = my own (editable); else a teammate's u
 let teamSchedules     = {};     // uid -> { uid, name, eventCode, items, updatedAt }
 let _teamUnsub        = null;
 let _schedSyncTimer   = null;
+let _notesSyncTimer   = null;
+
+// ── SHARED NOTES (Phase 2) ──────────────────────────────────────────────
+// When a rep turns on "share notes with home team", their booth notes
+// (visited/status/pre/post) sync to notes/{docId}; the home team reads them.
+function buildSharedNotes() {
+  const state = load();
+  const items = [];
+  CO.forEach((c,i) => {
+    const s = state[key(i)];
+    if (!s) return;
+    const pre = (s.pre||"").trim(), post = (s.post||"").trim();
+    if (!s.visited && !pre && !post && !s.status) return;
+    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, status:s.status||"", pre, post });
+  });
+  return items;
+}
+function queueNotesSync() {
+  if (!fbReady || !currentUser || !currentUser.shareNotes) return;
+  clearTimeout(_notesSyncTimer);
+  _notesSyncTimer = setTimeout(syncMyNotesToCloud, 1400);
+}
+async function syncMyNotesToCloud() {
+  if (!fbReady || !currentUser) return;
+  const code = currentEventCode();
+  if (!code) return;
+  const docId = myScheduleDocId();
+  try {
+    if (currentUser.shareNotes) {
+      await fbDb.collection("notes").doc(docId).set({
+        uid: currentUser.uid, name: currentUser.name || "", eventCode: code,
+        items: buildSharedNotes(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await fbDb.collection("notes").doc(docId).delete().catch(() => {});
+    }
+  } catch (e) { /* offline — retry later */ }
+}
 
 function buildMyScheduleItems() {
   const state = load();
@@ -2023,163 +2018,58 @@ function subscribeTeam() {
     }, () => {});
 }
 
-// Card scans (business cards / nametags) live on each booth's state under .scans
-// as an array of { id, data, ts }. Images are downscaled + JPEG-compressed before
-// storage so the localStorage quota holds a couple dozen per booth comfortably.
-const scanId = () => "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-function compressImageFile(file, maxW = 1280, quality = 0.72) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      try {
-        let { width, height } = img;
-        if (width > maxW) { height = Math.round(height * maxW / width); width = maxW; }
-        const canvas = document.createElement("canvas");
-        canvas.width = width; canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        URL.revokeObjectURL(url);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      } catch (e) { URL.revokeObjectURL(url); reject(e); }
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image failed to load")); };
-    img.src = url;
-  });
+// ── HOME TEAM DASHBOARD (Phase 2) ───────────────────────────────────────
+let homeNotes  = {};     // docId -> { uid, name, eventCode, items }
+let _homeUnsub = null;
+function subscribeHomeNotes() {
+  if (!fbReady || !isHome()) return;
+  if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
+  _homeUnsub = fbDb.collection("notes").onSnapshot(snap => {
+    homeNotes = {};
+    snap.forEach(d => { const x = d.data(); if (x) homeNotes[d.id] = x; });
+    if (isHome()) renderHomeDashboard();
+  }, () => {});
 }
-function scanStripHtml(scans) {
-  if (!scans || !scans.length) return "";
-  return scans.map((sc, idx) => {
-    const st = sc.ocrStatus || "";
-    const overlay = st === "pending" ? `<span class="scan-thumb-spin" aria-label="Recognizing"></span>`
-                  : st === "done"    ? `<span class="scan-thumb-check" aria-label="Recognized">✓</span>`
-                  : "";
-    return `<button class="scan-thumb" type="button" data-scan-view="${sc.id}" title="View scan"><img src="${sc.data}" alt="Scan ${idx+1}" loading="lazy">${overlay}</button>`;
-  }).join("");
-}
-function contactBlockHtml(i, scans) {
-  if (!scans || !scans.length) return "";
-  return scans.map(sc => {
-    const c = sc.contact || {};
-    const st = sc.ocrStatus || "";
-    const statusLine = st === "pending" ? `<div class="sc-status">Recognizing card…</div>`
-                     : st === "error"   ? `<div class="sc-status err">OCR unavailable</div>`
-                     : "";
-    return `
-      <div class="scan-contact" data-sc-i="${i}" data-sc-id="${esc(sc.id)}">
-        ${statusLine}
-        <div class="scan-contact-grid">
-          <input class="sce" data-scf="name"    placeholder="Name"    value="${esc(c.name||"")}">
-          <input class="sce" data-scf="title"   placeholder="Title"   value="${esc(c.title||"")}">
-          <input class="sce" data-scf="email"   placeholder="Email"   value="${esc(c.email||"")}" type="email">
-          <input class="sce" data-scf="phone"   placeholder="Phone"   value="${esc(c.phone||"")}" type="tel">
-          <input class="sce sce-wide" data-scf="website" placeholder="Website" value="${esc(c.website||"")}">
-        </div>
+function renderHomeDashboard() {
+  const el = document.getElementById("content");
+  const byEvent = {};
+  Object.values(homeNotes).forEach(d => { (byEvent[d.eventCode] = byEvent[d.eventCode] || []).push(d); });
+  const codes = Object.keys(byEvent).sort();
+  let html = `<div class="home-wrap">
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes across all brands.</p></div>`;
+  if (!codes.length) {
+    html += `<div class="empty-wrap"><h3>No shared notes yet</h3><p>Notes appear here when someone in the field turns on "Share notes with the home team."</p></div>`;
+  }
+  codes.forEach(code => {
+    const brand = BRANDS[resolveEvent(code).brand] || BRANDS.ncm;
+    const reps = byEvent[code].slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
+    html += `<section class="home-brand">
+      <div class="home-brand-bar" style="background:${brand.p.blue}">
+        <span>${esc(brand.name)}</span><span class="home-brand-code">${esc(code)}</span>
       </div>`;
-  }).join("");
-}
-function refreshScans(i, state) {
-  const stripWrap = document.querySelector(`#cc${i} .scan-thumbs`);
-  const contactWrap = document.querySelector(`#cc${i} .scan-contacts`);
-  const scans = (state[key(i)]?.scans) || [];
-  if (stripWrap)   stripWrap.innerHTML = scanStripHtml(scans);
-  if (contactWrap) contactWrap.innerHTML = contactBlockHtml(i, scans);
-}
-
-// ── OCR (Tesseract.js, loaded lazily on first scan) ──────────────────────
-let _tessReady   = null;   // promise that resolves to window.Tesseract
-let _tessWorker  = null;   // single worker reused across recognitions
-const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
-function ensureTesseract() {
-  if (_tessReady) return _tessReady;
-  _tessReady = new Promise((resolve, reject) => {
-    if (window.Tesseract) return resolve(window.Tesseract);
-    const s = document.createElement("script");
-    s.src = TESSERACT_CDN;
-    s.onload  = () => resolve(window.Tesseract);
-    s.onerror = () => { _tessReady = null; reject(new Error("Could not load OCR engine")); };
-    document.head.appendChild(s);
+    reps.forEach(r => {
+      const items = (r.items || []).filter(it => it.pre || it.post || it.visited);
+      html += `<div class="home-rep">
+        <div class="home-rep-name">${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span></div>`;
+      if (!items.length) html += `<div class="home-empty">No notes yet.</div>`;
+      items.forEach(it => {
+        html += `<div class="home-note">
+          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.visited?'<span class="home-visited">Visited</span>':''}</div>
+          ${it.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(it.pre)}</div>` : ''}
+          ${it.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(it.post)}</div>` : ''}
+        </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</section>`;
   });
-  return _tessReady;
+  // Dropbox uploads — Phase 3 placeholder
+  html += `<section class="home-brand">
+      <div class="home-brand-bar" style="background:var(--blue-deeper)"><span>Dropbox Uploads</span></div>
+      <div class="home-empty" style="padding:16px 14px">Upload notifications will appear here once Dropbox is connected.</div>
+    </section></div>`;
+  el.innerHTML = html;
 }
-async function getTessWorker() {
-  if (_tessWorker) return _tessWorker;
-  const T = await ensureTesseract();
-  _tessWorker = await T.createWorker("eng");
-  return _tessWorker;
-}
-async function ocrImage(dataUrl) {
-  const w = await getTessWorker();
-  const { data } = await w.recognize(dataUrl);
-  return data.text || "";
-}
-// Parse name / title / email / phone / website from raw OCR text.
-function parseContactFromOcr(text) {
-  const out = { name:"", title:"", email:"", phone:"", website:"" };
-  if (!text) return out;
-  // Email
-  const emailM = text.match(/\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/);
-  if (emailM) out.email = emailM[0];
-  // Phone — north-american style first
-  const phoneM = text.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/);
-  if (phoneM) out.phone = phoneM[0];
-  // Website — prefer http(s)://, then www., then bare domain
-  const webM = text.match(/https?:\/\/[^\s]+/i)
-            || text.match(/\bwww\.[A-Za-z0-9.\-]+\.[A-Za-z]{2,}(?:\/[^\s]*)?/i)
-            || text.match(/\b[A-Za-z0-9\-]{2,}\.(?:com|net|org|io|co|us|biz|info)\b/i);
-  if (webM) out.website = webM[0];
-  // Name / Title — line-based heuristics
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const titleRx   = /\b(VP|SVP|EVP|Vice\s+President|President|CEO|CFO|COO|CTO|CMO|Director|Manager|Sales|Account|Engineer|Engineering|Owner|Founder|Co\-?Founder|Principal|Lead|Specialist|Coordinator|Representative|Rep\.?|Executive|Consultant|Marketing|Operations|Operator|Partner|Associate|Analyst|Advisor|Chief|Head\s+of)\b/i;
-  const companyRx = /\b(Inc\.?|LLC|L\.L\.C\.?|Corp\.?|Corporation|Co\.?|Company|Group|Holdings|Industries|Solutions|Systems|Services|Technologies|Technology|Partners|Associates|International|Global|Ltd\.?|Limited|GmbH|S\.A\.)\b/i;
-  const looksLikeName = (l) => {
-    if (!l) return false;
-    if (/@|http|www\.|\.com\b|\.net\b|\.org\b|\d{3}/i.test(l)) return false;
-    if (titleRx.test(l))   return false;   // smells like a job title
-    if (companyRx.test(l)) return false;   // smells like a company name
-    const w = l.split(/\s+/);
-    if (w.length < 2 || w.length > 4) return false;
-    // Each word must start with a capital followed by a lowercase letter
-    // (so all-caps tokens like "VP" or "USA" are rejected).
-    return w.every(x => /^[A-Z][a-z][A-Za-z'\-]*$/.test(x));
-  };
-  for (let i = 0; i < Math.min(lines.length, 12); i++) {
-    const l = lines[i];
-    if (!out.name  && looksLikeName(l))                            { out.name  = l; continue; }
-    if (!out.title && titleRx.test(l) && !looksLikeName(l))        { out.title = l; }
-  }
-  return out;
-}
-async function runOcrForScan(boothI, scanIdVal) {
-  try {
-    const stateNow = load();
-    const scans = stateNow[key(boothI)]?.scans || [];
-    const sc = scans.find(s => s.id === scanIdVal);
-    if (!sc) return;
-    const text = await ocrImage(sc.data);
-    const contact = parseContactFromOcr(text);
-    const state2 = load();
-    const scans2 = state2[key(boothI)]?.scans || [];
-    const sc2 = scans2.find(s => s.id === scanIdVal);
-    if (!sc2) return;
-    sc2.ocrText = text;
-    sc2.contact = contact;
-    sc2.ocrStatus = "done";
-    save(state2);
-    refreshScans(boothI, state2);
-    const summary = contact.name || contact.email || "Card recognized";
-    toast(summary === "Card recognized" ? summary : `Found ${summary}`);
-  } catch (e) {
-    const state3 = load();
-    const scans3 = state3[key(boothI)]?.scans || [];
-    const sc3 = scans3.find(s => s.id === scanIdVal);
-    if (sc3) { sc3.ocrStatus = "error"; save(state3); refreshScans(boothI, state3); }
-    toast("OCR unavailable — image saved");
-  }
-}
-
-let scanTargetI   = null;   // booth index awaiting a file from #scanFileInput
-let scanLightboxI = null;   // booth index for the currently-open lightbox
-let scanLightboxId= null;   // scan id for the currently-open lightbox
 
 function rowKey(b) {
   if (typeof b==="string" && b[0]==="T")
@@ -2262,21 +2152,11 @@ function buildCard(c, state) {
           <textarea class="nf post" data-i="${c.i}" data-f="post" placeholder="What was discussed, follow-ups, impressions…">${esc(s.post||"")}</textarea>
         </div>
       </div>
-      <div class="scan-row">
-        <button class="scan-btn" type="button" data-scan-i="${c.i}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-            <circle cx="12" cy="13" r="4"></circle>
-          </svg>
-          Scan Card
-        </button>
-        <div class="scan-thumbs" data-scan-strip="${c.i}">${scanStripHtml(s.scans)}</div>
-      </div>
-      <div class="scan-contacts">${contactBlockHtml(c.i, s.scans)}</div>
     </div>`;
 }
 
 function render() {
+  if (isHome()) { renderHomeDashboard(); return; }
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
 
@@ -2676,31 +2556,6 @@ let _dt = {};
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
 
-  const scanBtn = e.target.closest("[data-scan-i]");
-  if (scanBtn) {
-    scanTargetI = parseInt(scanBtn.dataset.scanI);
-    const inp = document.getElementById("scanFileInput");
-    inp.value = "";
-    inp.click();
-    return;
-  }
-
-  const scanView = e.target.closest("[data-scan-view]");
-  if (scanView) {
-    const id = scanView.dataset.scanView;
-    const card = scanView.closest("[data-i]");
-    const i = parseInt(card?.dataset.i);
-    const scans = (state[key(i)]?.scans) || [];
-    const sc = scans.find(s => s.id === id);
-    if (!sc) return;
-    scanLightboxI = i;
-    scanLightboxId = id;
-    document.getElementById("scanLightboxImg").src = sc.data;
-    document.getElementById("scanLightbox").classList.add("open");
-    document.getElementById("scanLightbox").setAttribute("aria-hidden","false");
-    return;
-  }
-
   const tog = e.target.closest("[data-toggle]");
   if (tog) {
     const body = document.getElementById(tog.getAttribute("data-toggle"));
@@ -3032,101 +2887,9 @@ document.getElementById("expandBtn").addEventListener("click", function () {
   this.textContent = allOpen ? "Collapse" : "Expand";
 });
 
-document.getElementById("scanFileInput").addEventListener("change", async e => {
-  const file = e.target.files && e.target.files[0];
-  if (!file || scanTargetI == null) return;
-  const i = scanTargetI;
-  scanTargetI = null;
-  const btn = document.querySelector(`[data-scan-i="${i}"]`);
-  btn?.classList.add("busy");
-  try {
-    const dataUrl = await compressImageFile(file);
-    const state = load();
-    const k = key(i);
-    if (!state[k]) state[k] = {};
-    if (!Array.isArray(state[k].scans)) state[k].scans = [];
-    const newId = scanId();
-    state[k].scans.push({ id: newId, data: dataUrl, ts: Date.now(), ocrStatus: "pending", contact: {} });
-    let autoVisited = false;
-    if (!state[k].visited) { state[k].visited = true; autoVisited = true; }
-    try { save(state); }
-    catch (err) { toast("Storage full — delete a scan"); btn?.classList.remove("busy"); return; }
-    refreshScans(i, state);
-    if (autoVisited) {
-      const card = document.getElementById("cc"+i);
-      card?.classList.add("visited");
-      const vb = card?.querySelector("[data-visit]");
-      if (vb) { vb.classList.add("on"); vb.innerHTML = '<span class="dot"></span>Visited'; }
-      updateStats(state);
-      refreshBadge(rowKey(CO[i].b), state);
-    }
-    toast(autoVisited ? "Scan saved · marked as visited · recognizing…" : "Scan saved · recognizing…");
-    // Run OCR in the background — UI already updated, user can keep working.
-    runOcrForScan(i, newId);
-  } catch (err) {
-    toast("Could not read image");
-  } finally {
-    btn?.classList.remove("busy");
-    e.target.value = "";
-  }
-});
-
-// Persist edits to contact fields (name/title/email/phone/website) as user types.
-document.getElementById("content").addEventListener("input", e => {
-  const inp = e.target.closest(".sce");
-  if (!inp) return;
-  const block = inp.closest("[data-sc-id]");
-  if (!block) return;
-  const i = parseInt(block.dataset.scI);
-  const id = block.dataset.scId;
-  const field = inp.dataset.scf;
-  clearTimeout(_dt["sce"+id+field]);
-  _dt["sce"+id+field] = setTimeout(() => {
-    const state = load();
-    const sc = (state[key(i)]?.scans || []).find(s => s.id === id);
-    if (!sc) return;
-    if (!sc.contact) sc.contact = {};
-    sc.contact[field] = inp.value;
-    save(state);
-  }, 350);
-});
-
-(() => {
-  const lb = document.getElementById("scanLightbox");
-  const closeLb = () => {
-    lb.classList.remove("open");
-    lb.setAttribute("aria-hidden","true");
-    document.getElementById("scanLightboxImg").src = "";
-    scanLightboxI = null; scanLightboxId = null;
-  };
-  lb.addEventListener("click", e => {
-    if (e.target.closest("[data-scan-lb-close]") || e.target === lb) { closeLb(); return; }
-    if (e.target.closest("[data-scan-lb-del]")) {
-      if (scanLightboxI == null || !scanLightboxId) return;
-      if (!confirm("Delete this scan?")) return;
-      const state = load();
-      const k = key(scanLightboxI);
-      const list = (state[k]?.scans) || [];
-      state[k].scans = list.filter(s => s.id !== scanLightboxId);
-      save(state);
-      refreshScans(scanLightboxI, state);
-      closeLb();
-      toast("Scan deleted");
-    }
-  });
-  document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && lb.classList.contains("open")) closeLb();
-  });
-})();
-
 document.getElementById("exportBtn").addEventListener("click", () => {
   const state = load();
-  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes","Card Scans","Contact Name(s)","Contact Title(s)","Contact Email(s)","Contact Phone(s)","Contact Website(s)"]];
-  const joinField = (scans, f) =>
-    (scans || [])
-      .map(sc => (sc.contact && sc.contact[f]) ? String(sc.contact[f]).trim() : "")
-      .filter(Boolean)
-      .join("; ");
+  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i) => ({...c,i}))
     .sort((a,b) => a.n.localeCompare(b.n))
     .forEach(c => {
@@ -3138,13 +2901,7 @@ document.getElementById("exportBtn").addEventListener("click", () => {
       rows.push([c.n, c.b,
         isOutdoor(rk) ? "Outdoor T"+rk.slice(1)+"s" : "Row "+rk+"s",
         st, schedD ? "Day "+schedD : "", schedT||"",
-        s.visited ? "Yes" : "No", s.pre||"", s.post||"",
-        (s.scans?.length || 0),
-        joinField(s.scans, "name"),
-        joinField(s.scans, "title"),
-        joinField(s.scans, "email"),
-        joinField(s.scans, "phone"),
-        joinField(s.scans, "website")]);
+        s.visited ? "Yes" : "No", s.pre||"", s.post||""]);
     });
   const meals = loadMeals().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (meals.length) {
@@ -3194,6 +2951,26 @@ const authEls = {
 };
 function setAuthMode(mode) {
   authMode = mode;
+  const emailField = authEls.email.closest(".auth-field");
+  const tabs = document.querySelector(".auth-tabs");
+  const divider = document.querySelector(".auth-divider");
+  const homeBtn = document.getElementById("homeTeamBtn");
+  authEls.err.textContent = "";
+  if (mode === "home") {
+    if (tabs) tabs.style.display = "none";
+    if (divider) divider.style.display = "none";
+    if (homeBtn) homeBtn.style.display = "none";
+    document.querySelectorAll('.auth-field[data-only="signup"]').forEach(f => f.classList.add("hide"));
+    if (emailField) emailField.classList.add("hide");
+    authEls.submit.textContent = "Enter as Home Team";
+    authEls.pass.autocomplete = "current-password";
+    authEls.foot.innerHTML = 'Enter the shared Home Team passcode. <a href="#" id="homeBack">Back</a>';
+    return;
+  }
+  if (tabs) tabs.style.display = "";
+  if (divider) divider.style.display = "";
+  if (homeBtn) homeBtn.style.display = "";
+  if (emailField) emailField.classList.remove("hide");
   document.querySelectorAll("[data-auth-tab]").forEach(t =>
     t.classList.toggle("active", t.dataset.authTab === mode));
   document.querySelectorAll('.auth-field[data-only="signup"]').forEach(f =>
@@ -3203,7 +2980,6 @@ function setAuthMode(mode) {
   authEls.foot.textContent = mode === "signup"
     ? "Field reps: create an account with your show's event code."
     : "Welcome back. Sign in to sync with your team.";
-  authEls.err.textContent = "";
 }
 function authErr(msg) { authEls.err.textContent = msg || ""; }
 function mapAuthError(e) {
@@ -3218,6 +2994,12 @@ function mapAuthError(e) {
 }
 document.querySelectorAll("[data-auth-tab]").forEach(t =>
   t.addEventListener("click", () => setAuthMode(t.dataset.authTab)));
+document.getElementById("homeTeamBtn").addEventListener("click", () => {
+  setAuthMode("home"); authEls.pass.value = ""; authEls.pass.focus();
+});
+authEls.foot.addEventListener("click", e => {
+  if (e.target && e.target.id === "homeBack") { e.preventDefault(); setAuthMode("signin"); }
+});
 
 authEls.form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -3227,7 +3009,9 @@ authEls.form.addEventListener("submit", async (e) => {
   authEls.submit.disabled = true;
   authErr("");
   try {
-    if (authMode === "signup") {
+    if (authMode === "home") {
+      await fbAuth.signInWithEmailAndPassword(HOME_TEAM_EMAIL, pass);
+    } else if (authMode === "signup") {
       const name = authEls.name.value.trim();
       const eventCode = authEls.event.value.trim().toUpperCase();
       if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
@@ -3249,6 +3033,25 @@ authEls.form.addEventListener("submit", async (e) => {
 authEls.signOut.addEventListener("click", async () => {
   if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
 });
+// Settings sheet (share-notes toggle)
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  document.getElementById("shareNotesToggle").checked = !!(currentUser && currentUser.shareNotes);
+  document.getElementById("settingsSheet").style.display = "flex";
+});
+document.getElementById("settingsClose").addEventListener("click", () => {
+  document.getElementById("settingsSheet").style.display = "none";
+});
+document.getElementById("settingsSheet").addEventListener("click", e => {
+  if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
+});
+document.getElementById("shareNotesToggle").addEventListener("change", async e => {
+  if (!currentUser) return;
+  const on = e.target.checked;
+  currentUser.shareNotes = on;
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ shareNotes: on }, { merge: true }); } catch (err) {}
+  syncMyNotesToCloud();   // push now (or delete the shared doc when turning off)
+  toast(on ? "Notes shared with the home team" : "Notes no longer shared");
+});
 async function loadUserDoc(uid) {
   try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
   catch (e) { return null; }
@@ -3266,8 +3069,12 @@ function showSignedOut() {
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
   document.getElementById("brandSwitchRow").style.display = "none";
+  document.body.classList.remove("home-mode");
+  if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
+  homeNotes = {};
   currentUser = null;
   masterEventOverride = null;
+  setAuthMode("signin");
   applyBrand("ncm");   // login screen uses NCM neutral colors
 }
 // Brands a master can jump between (label + the event code that drives it).
@@ -3308,6 +3115,16 @@ if (fbReady) {
       if (!profile) profile = { name: user.email, email: user.email, eventCode: "", role: "field" };
       currentUser = { uid: user.uid, ...profile };
       masterEventOverride = null;   // always start at the user's home brand
+      // Home team = a separate, read-only dashboard (no booths/schedule).
+      if (isHome()) {
+        document.body.classList.add("home-mode");
+        document.getElementById("brandSwitchRow").style.display = "none";
+        showSignedIn({ name: "Home Team" });
+        subscribeHomeNotes();
+        renderHomeDashboard();
+        return;
+      }
+      document.body.classList.remove("home-mode");
       // Device owner guard: if a DIFFERENT account signs in on this device,
       // clear the previous person's local data (all event buckets) so nothing
       // leaks into the new user's cloud schedule. First-ever login keeps local
@@ -3325,6 +3142,7 @@ if (fbReady) {
       // Push my current schedule to the cloud (also migrates existing local data)
       // and start listening for teammates in the same event.
       syncMyScheduleToCloud();
+      syncMyNotesToCloud();
       subscribeTeam();
       render();
     } else {
