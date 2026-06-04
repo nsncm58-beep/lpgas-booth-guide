@@ -1376,7 +1376,8 @@ body.home-mode .header-search,
 body.home-mode .view-tabs,
 body.home-mode .filter-bar,
 body.home-mode .brand-switch-row,
-body.home-mode .app-footer { display: none !important; }
+body.home-mode .app-footer,
+body.home-mode .user-chip-gear { display: none !important; }
 
 /* ── Home Team dashboard ── */
 .home-wrap { max-width: 900px; margin: 0 auto; padding: 16px 14px 60px; }
@@ -3119,6 +3120,8 @@ if (fbReady) {
       if (isHome()) {
         document.body.classList.add("home-mode");
         document.getElementById("brandSwitchRow").style.display = "none";
+        applyBrand("ncm");
+        updateHeaderBrand("ncm", "Home Team");
         showSignedIn({ name: "Home Team" });
         subscribeHomeNotes();
         renderHomeDashboard();
