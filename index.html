@@ -1429,6 +1429,41 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   cursor: pointer;
 }
 .user-chip-out:active { background: rgba(255,255,255,0.15); }
+
+/* Master-only brand switcher */
+.brand-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 10px;
+}
+.brand-switch-label {
+  font-family: var(--fd);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+  flex-shrink: 0;
+}
+.brand-switch {
+  flex: 1;
+  padding: 8px 30px 8px 12px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  font-family: var(--ft);
+  font-size: 0.86rem;
+  font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+.brand-switch:focus { outline: none; border-color: #fff; }
+.brand-switch option { color: #0E1B2C; }
 </style>
 </head>
 <body>
@@ -1448,6 +1483,10 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
       <span class="user-chip-name" id="userChipName"></span>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
+  </div>
+  <div class="brand-switch-row" id="brandSwitchRow" style="display:none">
+    <span class="brand-switch-label">Brand</span>
+    <select class="brand-switch" id="brandSwitch"></select>
   </div>
   <div class="header-search">
     <div class="search-wrap">
@@ -1887,10 +1926,31 @@ function timeToMin(t) {
   return h * 60 + m;
 }
 
-// STATE — key intentionally preserved as lpgas_v3 so existing user data carries forward.
+// ── MASTER ACCOUNT + ACTIVE EVENT ───────────────────────────────────────
+// A master account can jump between brands. The active event drives theme,
+// booth list, team subscription, and which localStorage bucket is used.
+const MASTER_EMAILS = ["nstoltman@northcoastmedia.net"];
+let masterEventOverride = null;   // set when a master switches brand
+function isMaster() {
+  if (!currentUser) return false;
+  return currentUser.role === "master" || currentUser.master === true
+      || MASTER_EMAILS.includes((currentUser.email || "").toLowerCase());
+}
+function currentEventCode() {
+  if (masterEventOverride) return masterEventOverride;
+  return (currentUser && currentUser.eventCode) || null;
+}
+
+// STATE — booth/notes/meals/off-site per event. The LP Gas / default event
+// keeps the legacy "lpgas_v3" key so existing data carries forward; other
+// events get their own namespaced bucket so brands never bleed together.
 const STORE = "lpgas_v3";
-const load  = () => { try { return JSON.parse(localStorage.getItem(STORE)||"{}"); } catch(e){ return {}; } };
-const save  = s  => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); };
+function storeKey() {
+  const c = currentEventCode();
+  return (!c || c === "LPGAS-2026") ? STORE : STORE + "__" + c;
+}
+const load  = () => { try { return JSON.parse(localStorage.getItem(storeKey())||"{}"); } catch(e){ return {}; } };
+const save  = s  => { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); };
 const key   = i  => "c"+i;
 
 // Meals live under the reserved "_meals" array key — booth state uses c<i> keys,
@@ -1927,28 +1987,39 @@ function buildMyScheduleItems() {
   loadOffsite().forEach(o => items.push({ kind:"offsite", day:o.day, time:o.time, title:o.title||"", company:o.company||"", location:o.location||"", notes:o.notes||"" }));
   return items;
 }
+// Schedule doc id: home event keeps the plain uid; other events (master
+// browsing another brand) get a uid__<code> doc so brands don't collide.
+function myScheduleDocId() {
+  const c = currentEventCode();
+  const home = (currentUser && currentUser.eventCode) || null;
+  return (c && c !== home) ? currentUser.uid + "__" + c : currentUser.uid;
+}
 function queueScheduleSync() {
   if (!fbReady || !currentUser) return;
   clearTimeout(_schedSyncTimer);
   _schedSyncTimer = setTimeout(syncMyScheduleToCloud, 1200);
 }
 async function syncMyScheduleToCloud() {
-  if (!fbReady || !currentUser || !currentUser.eventCode) return;
+  if (!fbReady || !currentUser) return;
+  const code = currentEventCode();
+  if (!code) return;
   try {
-    await fbDb.collection("schedules").doc(currentUser.uid).set({
+    await fbDb.collection("schedules").doc(myScheduleDocId()).set({
       uid: currentUser.uid,
       name: currentUser.name || "",
-      eventCode: currentUser.eventCode || "",
+      eventCode: code,
       items: buildMyScheduleItems(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   } catch (e) { /* offline — Firestore persistence will retry */ }
 }
 function subscribeTeam() {
-  if (!fbReady || !currentUser || !currentUser.eventCode) return;
+  if (!fbReady || !currentUser) return;
+  const code = currentEventCode();
+  if (!code) return;
   if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
   _teamUnsub = fbDb.collection("schedules")
-    .where("eventCode", "==", currentUser.eventCode)
+    .where("eventCode", "==", code)
     .onSnapshot(snap => {
       teamSchedules = {};
       snap.forEach(doc => { const d = doc.data(); if (d && d.uid) teamSchedules[d.uid] = d; });
@@ -3198,26 +3269,62 @@ function showSignedOut() {
   authEls.overlay.classList.remove("checking");
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
+  document.getElementById("brandSwitchRow").style.display = "none";
   currentUser = null;
+  masterEventOverride = null;
   applyBrand("ncm");   // login screen uses NCM neutral colors
 }
+// Brands a master can jump between (label + the event code that drives it).
+const MASTER_BRANDS = [
+  { code:"LPGAS-2026",   label:"LP Gas" },
+  { code:"GOLFDOM-2026", label:"Golfdom" },
+  { code:"LM-2026",      label:"Landscape Management" },
+  { code:"PMP-2026",     label:"PMP" },
+  { code:"PQ-2026",      label:"Pit & Quarry" },
+];
+function setupBrandSwitcher() {
+  const row = document.getElementById("brandSwitchRow");
+  const sel = document.getElementById("brandSwitch");
+  if (!isMaster()) { row.style.display = "none"; return; }
+  sel.innerHTML = MASTER_BRANDS.map(b => `<option value="${b.code}">${b.label}</option>`).join("");
+  // Make sure the current event is selectable even if not in the list.
+  const cur = currentEventCode();
+  if (cur && !MASTER_BRANDS.some(b => b.code === cur)) {
+    sel.insertAdjacentHTML("afterbegin", `<option value="${cur}">${cur}</option>`);
+  }
+  sel.value = cur || "LPGAS-2026";
+  row.style.display = "";
+}
+document.getElementById("brandSwitch").addEventListener("change", e => {
+  masterEventOverride = e.target.value;
+  viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
+  activeView = "booths";
+  applyEvent(masterEventOverride);
+  subscribeTeam();              // listen to the new brand's team
+  render();
+  const ev = resolveEvent(masterEventOverride);
+  toast("Switched to " + (BRANDS[ev.brand] ? BRANDS[ev.brand].name : "brand"));
+});
 if (fbReady) {
   fbAuth.onAuthStateChanged(async (user) => {
     if (user) {
       let profile = await loadUserDoc(user.uid);
       if (!profile) profile = { name: user.email, email: user.email, eventCode: "", role: "field" };
       currentUser = { uid: user.uid, ...profile };
+      masterEventOverride = null;   // always start at the user's home brand
       // Device owner guard: if a DIFFERENT account signs in on this device,
-      // clear the previous person's local booth data so it can't leak into
-      // the new user's cloud schedule. First-ever login keeps local data so
-      // any pre-account offline work still migrates up.
+      // clear the previous person's local data (all event buckets) so nothing
+      // leaks into the new user's cloud schedule. First-ever login keeps local
+      // data so any pre-account offline work still migrates up.
       const prevOwner = localStorage.getItem("lpgas_owner_uid");
       if (prevOwner && prevOwner !== user.uid) {
-        localStorage.removeItem(STORE);
+        Object.keys(localStorage).filter(k => k === STORE || k.startsWith(STORE + "__"))
+          .forEach(k => localStorage.removeItem(k));
       }
       localStorage.setItem("lpgas_owner_uid", user.uid);
       // Theme + booth list for this user's event/brand.
-      applyEvent(currentUser.eventCode);
+      applyEvent(currentEventCode());
+      setupBrandSwitcher();
       showSignedIn(profile);
       // Push my current schedule to the cloud (also migrates existing local data)
       // and start listening for teammates in the same event.
