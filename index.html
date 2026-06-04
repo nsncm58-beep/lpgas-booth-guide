@@ -1220,6 +1220,143 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .meal-act-btn:active { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
 .meal-act-btn.del:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
+
+/* ── AUTH OVERLAY ── */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: linear-gradient(160deg, var(--blue) 0%, var(--blue-deeper) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+.auth-overlay.hidden { display: none; }
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 26px 22px 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  animation: fadeUp 0.25s ease both;
+}
+.auth-brand { text-align: center; margin-bottom: 18px; }
+.auth-logo { height: 30px; margin-bottom: 12px; }
+.auth-title {
+  font-family: 'Forza', sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--text);
+  letter-spacing: 0.3px;
+}
+.auth-sub { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--blue-light);
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 9px 4px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--blue-dark);
+  font-family: 'Forza', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.auth-tab.active { background: #fff; box-shadow: 0 2px 8px rgba(0,92,143,0.18); color: var(--blue); }
+.auth-field { margin-bottom: 12px; }
+.auth-field.hide { display: none; }
+.auth-field label {
+  display: block;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.auth-field input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  font-family: 'Gotham', sans-serif;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: #fff;
+}
+.auth-field input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
+.auth-error {
+  font-size: 0.78rem;
+  color: var(--maroon);
+  margin: 2px 0 10px;
+  min-height: 0;
+  line-height: 1.4;
+}
+.auth-error:empty { margin: 0; }
+.auth-submit {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: #fff;
+  font-family: 'Forza', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.auth-submit:active { background: var(--blue-dark); }
+.auth-submit:disabled { opacity: 0.6; cursor: default; }
+.auth-foot { text-align: center; font-size: 0.74rem; color: var(--muted); margin-top: 14px; line-height: 1.45; }
+
+/* Signed-in identity chip in the header */
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+.user-chip-name {
+  font-family: 'Gotham', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.92);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-chip-out {
+  border: 1px solid rgba(255,255,255,0.45);
+  background: transparent;
+  color: #fff;
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-family: 'Forza', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.user-chip-out:active { background: rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
@@ -1238,6 +1375,10 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
     <div class="visit-counter">
       <div class="vc-count" id="hdrVisited">0 / 226</div>
       <div class="vc-label">Visited</div>
+    </div>
+    <div class="user-chip" id="userChip" style="display:none">
+      <span class="user-chip-name" id="userChipName"></span>
+      <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
   </div>
   <div class="header-search">
@@ -1280,6 +1421,66 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
     <button class="scan-lb-del"   type="button" data-scan-lb-del>Delete</button>
   </div>
 </div>
+
+<!-- ── Auth gate (shown until a user is signed in) ── -->
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-title">Booth Guide</div>
+      <div class="auth-sub">Sign in to sync with your team</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-auth-tab="signin">Sign In</button>
+      <button class="auth-tab" data-auth-tab="signup">Create Account</button>
+    </div>
+    <form id="authForm" class="auth-form" autocomplete="on">
+      <div class="auth-field" data-only="signup">
+        <label>Your Name</label>
+        <input id="authName" type="text" autocomplete="name" placeholder="Jane Smith">
+      </div>
+      <div class="auth-field" data-only="signup">
+        <label>Event Code</label>
+        <input id="authEvent" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. LPGAS-2026">
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input id="authEmail" type="email" autocomplete="email" placeholder="you@company.com">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input id="authPass" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div class="auth-error" id="authError"></div>
+      <button type="submit" class="auth-submit" id="authSubmit">Sign In</button>
+    </form>
+    <div class="auth-foot" id="authFoot">Field reps: create an account with your show's event code.</div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase (ncm-booth-guide project) ──────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCtDbOGJxIDZL0UlHmWg4WtxgRgr_SEb9k",
+  authDomain: "ncm-booth-guide.firebaseapp.com",
+  projectId: "ncm-booth-guide",
+  storageBucket: "ncm-booth-guide.firebasestorage.app",
+  messagingSenderId: "295667731300",
+  appId: "1:295667731300:web:01015bc3dec52655194871"
+};
+let fbAuth = null, fbDb = null, fbReady = false;
+try {
+  firebase.initializeApp(firebaseConfig);
+  fbAuth = firebase.auth();
+  fbDb   = firebase.firestore();
+  fbDb.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  fbReady = true;
+} catch (e) {
+  console.warn("Firebase init failed:", e);
+}
+</script>
 
 <script>
 const CO = [
@@ -2611,6 +2812,113 @@ function toast(msg) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove("show"), 2400);
 }
+
+// ── AUTH CONTROLLER (Phase 1: accounts + identity) ──────────────────────
+let authMode = "signin";   // "signin" | "signup"
+let currentUser = null;    // { uid, name, email, eventCode, role }
+const authEls = {
+  overlay:  document.getElementById("authOverlay"),
+  form:     document.getElementById("authForm"),
+  name:     document.getElementById("authName"),
+  event:    document.getElementById("authEvent"),
+  email:    document.getElementById("authEmail"),
+  pass:     document.getElementById("authPass"),
+  err:      document.getElementById("authError"),
+  submit:   document.getElementById("authSubmit"),
+  foot:     document.getElementById("authFoot"),
+  chip:     document.getElementById("userChip"),
+  chipName: document.getElementById("userChipName"),
+  signOut:  document.getElementById("signOutBtn"),
+};
+function setAuthMode(mode) {
+  authMode = mode;
+  document.querySelectorAll("[data-auth-tab]").forEach(t =>
+    t.classList.toggle("active", t.dataset.authTab === mode));
+  document.querySelectorAll('.auth-field[data-only="signup"]').forEach(f =>
+    f.classList.toggle("hide", mode !== "signup"));
+  authEls.submit.textContent = mode === "signup" ? "Create Account" : "Sign In";
+  authEls.pass.autocomplete = mode === "signup" ? "new-password" : "current-password";
+  authEls.foot.textContent = mode === "signup"
+    ? "Field reps: create an account with your show's event code."
+    : "Welcome back. Sign in to sync with your team.";
+  authEls.err.textContent = "";
+}
+function authErr(msg) { authEls.err.textContent = msg || ""; }
+function mapAuthError(e) {
+  const c = (e && e.code) || "";
+  if (c.includes("invalid-email")) return "That email doesn't look right.";
+  if (c.includes("missing-password") || c.includes("weak-password")) return "Password must be at least 6 characters.";
+  if (c.includes("email-already-in-use")) return "That email already has an account — try Sign In.";
+  if (c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("user-not-found")) return "Email or password is incorrect.";
+  if (c.includes("operation-not-allowed") || c.includes("configuration-not-found")) return "Email/Password sign-in isn't enabled in Firebase yet.";
+  if (c.includes("network")) return "Network error — check your connection.";
+  return (e && e.message) || "Something went wrong. Try again.";
+}
+document.querySelectorAll("[data-auth-tab]").forEach(t =>
+  t.addEventListener("click", () => setAuthMode(t.dataset.authTab)));
+
+authEls.form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!fbReady) { authErr("Firebase not loaded — check your connection."); return; }
+  const email = authEls.email.value.trim();
+  const pass  = authEls.pass.value;
+  authEls.submit.disabled = true;
+  authErr("");
+  try {
+    if (authMode === "signup") {
+      const name = authEls.name.value.trim();
+      const eventCode = authEls.event.value.trim().toUpperCase();
+      if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
+      if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
+      const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
+      await fbDb.collection("users").doc(cred.user.uid).set({
+        name, email, eventCode, role: "field",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else {
+      await fbAuth.signInWithEmailAndPassword(email, pass);
+    }
+    // onAuthStateChanged finishes the flow
+  } catch (err) {
+    authErr(mapAuthError(err));
+    authEls.submit.disabled = false;
+  }
+});
+authEls.signOut.addEventListener("click", async () => {
+  if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
+});
+async function loadUserDoc(uid) {
+  try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
+  catch (e) { return null; }
+}
+function showSignedIn(profile) {
+  authEls.overlay.classList.add("hidden");
+  authEls.chip.style.display = "";
+  authEls.chipName.textContent = (profile && profile.name) || "Signed in";
+  authEls.submit.disabled = false;
+  authEls.pass.value = "";
+}
+function showSignedOut() {
+  authEls.overlay.classList.remove("hidden");
+  authEls.chip.style.display = "none";
+  currentUser = null;
+}
+if (fbReady) {
+  fbAuth.onAuthStateChanged(async (user) => {
+    if (user) {
+      let profile = await loadUserDoc(user.uid);
+      if (!profile) profile = { name: user.email, email: user.email, eventCode: "", role: "field" };
+      currentUser = { uid: user.uid, ...profile };
+      showSignedIn(profile);
+    } else {
+      showSignedOut();
+    }
+  });
+} else {
+  // If Firebase can't load (offline / blocked), don't lock the user out of the offline tool.
+  showSignedIn({ name: "Offline" });
+}
+setAuthMode("signin");
 
 if ("serviceWorker" in navigator) {
   const hadController = !!navigator.serviceWorker.controller;

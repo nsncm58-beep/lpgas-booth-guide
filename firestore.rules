@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profiles. Any signed-in teammate can read profiles (needed so the
+    // team can see each other's schedules); only the owner can write their own.
+    match /users/{uid} {
+      allow read:          if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == uid;
+      allow delete:        if false;
+    }
+
+    // Everything else is denied until a later phase adds it explicitly.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
