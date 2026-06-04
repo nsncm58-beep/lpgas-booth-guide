@@ -1370,6 +1370,10 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   font-family: var(--fd); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.4px;
   text-transform: uppercase; cursor: pointer;
 }
+.share-prompt-text { font-size: 0.86rem; color: var(--text-2); line-height: 1.5; margin: 4px 0 4px; }
+.share-prompt-actions { display: flex; gap: 10px; }
+.share-prompt-actions .settings-done { margin-top: 14px; }
+.share-secondary { background: var(--surface); border: 1.5px solid var(--border); color: var(--text-2); }
 
 /* ── Home Team mode: hide the field-app chrome ── */
 body.home-mode .header-search,
@@ -1471,6 +1475,18 @@ body.home-mode .user-chip-gear { display: none !important; }
       <input type="checkbox" id="shareNotesToggle" class="settings-switch">
     </label>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── First-run: share notes with home team? ── -->
+<div id="sharePrompt" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Share your notes with the home team?</div>
+    <p class="share-prompt-text">The home team uses your post-visit notes to create content during the show. You can turn this on or off anytime from the settings gear.</p>
+    <div class="share-prompt-actions">
+      <button class="settings-done share-secondary" id="shareNo" type="button">Not now</button>
+      <button class="settings-done" id="shareYes" type="button">Yes, share</button>
+    </div>
   </div>
 </div>
 
@@ -1881,6 +1897,7 @@ const MASTER_EMAILS = ["nstoltman@northcoastmedia.net"];
 // the passcode is typed once by the team and remembered by the browser.
 const HOME_TEAM_EMAIL = "hometeam@northcoastmedia.net";
 let masterEventOverride = null;   // set when a master switches brand
+let pendingSharePrompt = false;   // true right after a new account is created
 function isMaster() {
   if (!currentUser) return false;
   return currentUser.role === "master" || currentUser.master === true
@@ -3040,9 +3057,10 @@ authEls.form.addEventListener("submit", async (e) => {
       const eventCode = authEls.event.value.trim().toUpperCase();
       if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
       if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
+      pendingSharePrompt = true;   // set before createUser so it's ready when onAuthStateChanged fires
       const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
       await fbDb.collection("users").doc(cred.user.uid).set({
-        name, email, eventCode, role: "field",
+        name, email, eventCode, role: "field", shareNotes: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } else {
@@ -3050,6 +3068,7 @@ authEls.form.addEventListener("submit", async (e) => {
     }
     // onAuthStateChanged finishes the flow
   } catch (err) {
+    pendingSharePrompt = false;
     authErr(mapAuthError(err));
     authEls.submit.disabled = false;
   }
@@ -3067,6 +3086,17 @@ document.getElementById("settingsClose").addEventListener("click", () => {
 });
 document.getElementById("settingsSheet").addEventListener("click", e => {
   if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
+});
+document.getElementById("shareYes").addEventListener("click", async () => {
+  document.getElementById("sharePrompt").style.display = "none";
+  if (!currentUser) return;
+  currentUser.shareNotes = true;
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ shareNotes: true }, { merge: true }); } catch (e) {}
+  syncMyNotesToCloud();
+  toast("Notes will be shared with the home team");
+});
+document.getElementById("shareNo").addEventListener("click", () => {
+  document.getElementById("sharePrompt").style.display = "none";
 });
 document.getElementById("shareNotesToggle").addEventListener("change", async e => {
   if (!currentUser) return;
@@ -3172,6 +3202,7 @@ if (fbReady) {
       syncMyNotesToCloud();
       subscribeTeam();
       render();
+      if (pendingSharePrompt) { pendingSharePrompt = false; document.getElementById("sharePrompt").style.display = "flex"; }
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       teamSchedules = {};
