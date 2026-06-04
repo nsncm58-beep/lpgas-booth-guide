@@ -2,12 +2,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // The event code of the currently signed-in user (from their profile).
+    function myEvent() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.eventCode;
+    }
+
     // User profiles. Any signed-in teammate can read profiles (needed so the
     // team can see each other's schedules); only the owner can write their own.
     match /users/{uid} {
-      allow read:          if request.auth != null;
+      allow read:           if request.auth != null;
       allow create, update: if request.auth != null && request.auth.uid == uid;
-      allow delete:        if false;
+      allow delete:         if false;
+    }
+
+    // Per-user schedules. Readable only by signed-in teammates in the SAME
+    // event (brand isolation); writable only by the owner.
+    match /schedules/{uid} {
+      allow read:           if request.auth != null && resource.data.eventCode == myEvent();
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                            && request.resource.data.eventCode == myEvent();
+      allow delete:         if false;
     }
 
     // Everything else is denied until a later phase adds it explicitly.

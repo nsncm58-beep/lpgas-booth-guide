@@ -1221,6 +1221,65 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .meal-act-btn:active { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
 .meal-act-btn.del:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
 
+/* ── TEAM SCHEDULE BAR ── */
+.team-bar {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 10px 12px 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.team-bar::-webkit-scrollbar { display: none; }
+.team-chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: 'Gotham', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.team-chip.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,92,143,0.22);
+}
+.ro-banner {
+  margin: 4px 12px 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: var(--blue-light);
+  color: var(--blue-dark);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+}
+.ro-banner strong { font-weight: 800; }
+.meal-card.ro .meal-card-actions { display: none; }
+.ro-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: 0 0 8px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--blue-mid);
+}
+.ro-card-title {
+  font-family: 'Forza', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+.ro-card-sub { font-size: 0.78rem; color: var(--muted); margin-top: 3px; font-weight: 500; }
+
 /* ── AUTH OVERLAY ── */
 .auth-overlay {
   position: fixed;
@@ -1744,7 +1803,7 @@ function timeToMin(t) {
 // STATE — key intentionally preserved as lpgas_v3 so existing user data carries forward.
 const STORE = "lpgas_v3";
 const load  = () => { try { return JSON.parse(localStorage.getItem(STORE)||"{}"); } catch(e){ return {}; } };
-const save  = s  => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch(e){} };
+const save  = s  => { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); };
 const key   = i  => "c"+i;
 
 // Meals live under the reserved "_meals" array key — booth state uses c<i> keys,
@@ -1759,6 +1818,56 @@ const loadOffsite = () => { const s = load(); return Array.isArray(s._offsite) ?
 const saveOffsite = arr => { const s = load(); s._offsite = arr; save(s); };
 const offsiteId   = () => "o"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const OFFSITE_DEFAULT_TIME = "5:00 PM";
+
+// ── CLOUD SCHEDULE SYNC (Phase 1b) ──────────────────────────────────────
+// Each signed-in user pushes a normalized snapshot of their agenda to
+// schedules/{uid}; teammates in the same event read it (view-only).
+let viewedScheduleUid = null;   // null = my own (editable); else a teammate's uid
+let teamSchedules     = {};     // uid -> { uid, name, eventCode, items, updatedAt }
+let _teamUnsub        = null;
+let _schedSyncTimer   = null;
+
+function buildMyScheduleItems() {
+  const state = load();
+  const items = [];
+  CO.forEach((c,i) => {
+    const sv = state[key(i)]?.scheduled;
+    if (!sv) return;
+    const [d,t] = sv.split("|");
+    items.push({ kind:"booth", day:parseInt(d), time:t, boothName:c.n, boothNum:c.b });
+  });
+  loadMeals().forEach(m => items.push({ kind:"meal", day:m.day, time:m.time, mealType:m.type, company:m.company||"", notes:m.notes||"" }));
+  loadOffsite().forEach(o => items.push({ kind:"offsite", day:o.day, time:o.time, title:o.title||"", company:o.company||"", location:o.location||"", notes:o.notes||"" }));
+  return items;
+}
+function queueScheduleSync() {
+  if (!fbReady || !currentUser) return;
+  clearTimeout(_schedSyncTimer);
+  _schedSyncTimer = setTimeout(syncMyScheduleToCloud, 1200);
+}
+async function syncMyScheduleToCloud() {
+  if (!fbReady || !currentUser || !currentUser.eventCode) return;
+  try {
+    await fbDb.collection("schedules").doc(currentUser.uid).set({
+      uid: currentUser.uid,
+      name: currentUser.name || "",
+      eventCode: currentUser.eventCode || "",
+      items: buildMyScheduleItems(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { /* offline — Firestore persistence will retry */ }
+}
+function subscribeTeam() {
+  if (!fbReady || !currentUser || !currentUser.eventCode) return;
+  if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
+  _teamUnsub = fbDb.collection("schedules")
+    .where("eventCode", "==", currentUser.eventCode)
+    .onSnapshot(snap => {
+      teamSchedules = {};
+      snap.forEach(doc => { const d = doc.data(); if (d && d.uid) teamSchedules[d.uid] = d; });
+      if (activeView === "schedule") render();
+    }, () => {});
+}
 
 // Card scans (business cards / nametags) live on each booth's state under .scans
 // as an array of { id, data, ts }. Images are downscaled + JPEG-compressed before
@@ -2147,8 +2256,91 @@ function buildOffsiteForm() {
     </div>`;
 }
 
+// Read-only card for a teammate's normalized schedule item.
+function roCardHtml(it) {
+  if (it.kind === "booth") {
+    return `<div class="ro-card">
+      <div class="ro-card-title">${esc(it.boothName||"Booth visit")}</div>
+      <div class="ro-card-sub">Booth ${esc(it.boothNum||"")}</div>
+    </div>`;
+  }
+  if (it.kind === "meal") {
+    return `<div class="meal-card ro">
+      <div class="meal-card-icon">${esc((MEAL_LABEL[it.mealType]||"Meal").charAt(0))}</div>
+      <div class="meal-card-body">
+        <div class="meal-card-title">${esc(MEAL_LABEL[it.mealType]||"Meal")}</div>
+        ${it.company ? `<div class="meal-card-with">With <strong>${esc(it.company)}</strong></div>` : ""}
+        ${it.notes   ? `<div class="meal-card-notes">${esc(it.notes)}</div>` : ""}
+      </div>
+    </div>`;
+  }
+  return `<div class="meal-card offsite ro">
+    <div class="meal-card-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+    </div>
+    <div class="meal-card-body">
+      <div class="meal-card-title">${esc(it.title || "Off-Site Meeting")}</div>
+      ${it.company  ? `<div class="meal-card-with">With <strong>${esc(it.company)}</strong></div>` : ""}
+      ${it.location ? `<div class="meal-card-loc">${esc(it.location)}</div>` : ""}
+      ${it.notes    ? `<div class="meal-card-notes">${esc(it.notes)}</div>` : ""}
+    </div>
+  </div>`;
+}
+
+function buildTeamBar() {
+  const mine = currentUser ? currentUser.uid : null;
+  const teammates = Object.values(teamSchedules)
+    .filter(s => s.uid !== mine)
+    .sort((a,b) => (a.name||"").localeCompare(b.name||""));
+  if (!teammates.length) return "";
+  return `<div class="team-bar">
+    <button class="team-chip${!viewedScheduleUid?" active":""}" data-team-uid="">My Schedule</button>
+    ${teammates.map(s => `<button class="team-chip${viewedScheduleUid===s.uid?" active":""}" data-team-uid="${esc(s.uid)}">${esc(s.name||"Teammate")}</button>`).join("")}
+  </div>`;
+}
+
 function renderScheduleView(state) {
   const el = document.getElementById("content");
+  const teamBar = buildTeamBar();
+
+  // ── Viewing a teammate's schedule (read-only) ──
+  if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
+    const tm = teamSchedules[viewedScheduleUid];
+    const items = Array.isArray(tm.items) ? tm.items : [];
+    const dc = [0,0,0,0];
+    items.forEach(it => { if (it.day>=1 && it.day<=3) dc[it.day]++; });
+    const dayTabs = [1,2,3].map(d => `
+      <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
+        <span class="stdt-day">Day ${d}</span>
+        <span class="stdt-count">${dc[d]} booked</span>
+      </button>`).join("");
+    const byTime = {};
+    items.filter(it => it.day === schedDay).forEach(it => {
+      (byTime[it.time] = byTime[it.time]||[]).push(it);
+    });
+    const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
+    let html = teamBar + `<div class="sched-day-tabs">${dayTabs}</div>`;
+    html += `<div class="ro-banner">Viewing <strong>${esc(tm.name||"teammate")}</strong> · view only</div>`;
+    if (!slotTimes.length) {
+      html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4>
+        <p>${esc(tm.name||"This teammate")} hasn't scheduled anything for this day.</p></div>`;
+    } else {
+      slotTimes.forEach(t => {
+        html += `<div class="time-slot"><div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
+        byTime[t].forEach(it => { html += roCardHtml(it); });
+        html += `</div>`;
+      });
+    }
+    el.innerHTML = html;
+    updateStats(state);
+    return;
+  }
+  if (viewedScheduleUid && !teamSchedules[viewedScheduleUid]) viewedScheduleUid = null;
+
+  // ── My own schedule (editable) ──
   const meals = loadMeals();
   const offsite = loadOffsite();
 
@@ -2208,7 +2400,7 @@ function renderScheduleView(state) {
   const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
   const hasAny = slotTimes.length > 0;
 
-  let html = `
+  let html = teamBar + `
 <div class="sched-day-tabs">${dayTabs}</div>
 <div class="sched-search-box">
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
@@ -2353,6 +2545,15 @@ document.getElementById("content").addEventListener("click", e => {
     const body = document.getElementById(tog.getAttribute("data-toggle"));
     body?.classList.toggle("open");
     tog.querySelector(".row-chevron")?.classList.toggle("open");
+    return;
+  }
+
+  const teamChip = e.target.closest("[data-team-uid]");
+  if (teamChip) {
+    viewedScheduleUid = teamChip.dataset.teamUid || null;
+    schedSearchQ = "";
+    mealFormOpen = false; offFormOpen = false;
+    render();
     return;
   }
 
@@ -2909,8 +3110,25 @@ if (fbReady) {
       let profile = await loadUserDoc(user.uid);
       if (!profile) profile = { name: user.email, email: user.email, eventCode: "", role: "field" };
       currentUser = { uid: user.uid, ...profile };
+      // Device owner guard: if a DIFFERENT account signs in on this device,
+      // clear the previous person's local booth data so it can't leak into
+      // the new user's cloud schedule. First-ever login keeps local data so
+      // any pre-account offline work still migrates up.
+      const prevOwner = localStorage.getItem("lpgas_owner_uid");
+      if (prevOwner && prevOwner !== user.uid) {
+        localStorage.removeItem(STORE);
+      }
+      localStorage.setItem("lpgas_owner_uid", user.uid);
       showSignedIn(profile);
+      // Push my current schedule to the cloud (also migrates existing local data)
+      // and start listening for teammates in the same event.
+      syncMyScheduleToCloud();
+      subscribeTeam();
+      render();
     } else {
+      if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
+      teamSchedules = {};
+      viewedScheduleUid = null;
       showSignedOut();
     }
   });
