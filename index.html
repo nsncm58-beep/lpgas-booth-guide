@@ -1410,6 +1410,10 @@ body.home-mode .user-chip-gear { display: none !important; }
 @media (min-width: 720px) {
   .home-note { display: grid; grid-template-columns: 1fr; }
 }
+
+/* ── Sharp-corner design language ── */
+*, *::before, *::after { border-radius: 0 !important; }
+.auth-spinner { border-radius: 50% !important; }   /* keep the loading ring round */
 </style>
 </head>
 <body>
@@ -1806,7 +1810,7 @@ const BRANDS = {
   pmp:     { name:"PMP",                  show:"Pest Management Professional", font:"'Forza', sans-serif", logo:"logo-pmp.png",
              p:{ blue:"#87080A", dark:"#6A0608", deeper:"#4C0405", light:"#F6E5E5", mid:"#D9A9AA", maroon:"#1F5C8B", maroonLight:"#E4EDF4" } },
   pq:      { name:"Pit & Quarry",         show:"Pit & Quarry", font:"'Camber', sans-serif", logo:"logo-pq.png",
-             p:{ blue:"#C02026", dark:"#991A1E", deeper:"#701315", light:"#FBE9EA", mid:"#E6B2B4", maroon:"#145971", maroonLight:"#E0EBEF" } },
+             p:{ blue:"#9F2823", dark:"#7F201C", deeper:"#5F1815", light:"#F6E9E8", mid:"#D9ABA9", maroon:"#145971", maroonLight:"#E0EBEF" } },
 };
 // Registered events: code -> { brand, show, booths }. Add a show here once its
 // exhibitor list is in hand. Unregistered codes still theme by prefix (below)
