@@ -198,11 +198,6 @@ body {
   -webkit-user-select: none; user-select: none;
 }
 .hdr-btn:active { transform: scale(0.94); opacity: 0.88; }
-.btn-expand {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  border: 1.5px solid rgba(255,255,255,0.25);
-}
 .btn-export {
   background: #fff;
   color: var(--blue-dark);
@@ -1432,7 +1427,6 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="search-wrap">
       <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
-    <button class="hdr-btn btn-expand" id="expandBtn">Expand</button>
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
@@ -2927,13 +2921,6 @@ let _st;
 document.getElementById("searchInput").addEventListener("input", () => {
   clearTimeout(_st);
   _st = setTimeout(render, 180);
-});
-
-document.getElementById("expandBtn").addEventListener("click", function () {
-  allOpen = !allOpen;
-  document.querySelectorAll(".row-body").forEach(b => b.classList.toggle("open", allOpen));
-  document.querySelectorAll(".row-chevron").forEach(c => c.classList.toggle("open", allOpen));
-  this.textContent = allOpen ? "Collapse" : "Expand";
 });
 
 document.getElementById("exportBtn").addEventListener("click", () => {
