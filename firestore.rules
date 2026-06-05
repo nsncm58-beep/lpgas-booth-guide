@@ -14,19 +14,19 @@ service cloud.firestore {
     match /schedules/{docId} {
       allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster());
       allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
-      allow delete: if request.auth != null && ownDoc(docId);
+      allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
 
     match /notes/{docId} {
       allow read: if request.auth != null && (ownDoc(docId) || isMaster() || isHome());
       allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
-      allow delete: if request.auth != null && ownDoc(docId);
+      allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
 
     match /uploads/{docId} {
       allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster() || isHome());
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster());
     }
 
     // Shared Dropbox connection (App-folder scoped refresh token). Readable by

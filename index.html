@@ -223,6 +223,15 @@ body {
 }
 .settings-clear-btn:active { background: #FBE9E8; }
 .settings-clear-confirm { background: #B3261E !important; }
+.settings-admin { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.cleanup-list { max-height: 50vh; overflow-y: auto; margin: 10px 0 4px; }
+.cleanup-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border-soft); }
+.cleanup-row-main { min-width: 0; }
+.cleanup-row-name { font-weight: 700; font-size: 0.84rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cleanup-row-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.cleanup-del { flex-shrink: 0; border: 1.5px solid #B3261E; background: #fff; color: #B3261E; border-radius: 7px; padding: 5px 11px; font-family: var(--fd); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; cursor: pointer; }
+.cleanup-del:active { background: #FBE9E8; }
+.cleanup-empty { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
 
 /* ── VIEW TABS (primary) ── */
 .view-tabs {
@@ -1502,7 +1511,22 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="settings-dbx-note">Clear all your booths, notes, schedule and meals for <strong id="clearEventName">this show</strong> to start fresh. Make sure you've exported anything you need first.</div>
       <button class="settings-clear-btn" id="clearAllBtn" type="button">Clear all my show data</button>
     </div>
+    <div class="settings-admin" id="settingsAdmin" style="display:none">
+      <div class="settings-dbx-title">Admin</div>
+      <div class="settings-dbx-note">Review and delete any stray records (test accounts, old entries) across all brands.</div>
+      <button class="settings-dbx-btn" id="cleanupBtn" type="button" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;border:1.5px solid var(--blue);background:#fff;color:var(--blue);font-family:var(--fd);font-weight:700;font-size:0.8rem;letter-spacing:0.4px;text-transform:uppercase;cursor:pointer;">Clean up team data</button>
+    </div>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── Admin: clean up team data (master only) ── -->
+<div id="cleanupSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Clean up team data</div>
+    <p class="settings-dbx-note">Schedules &amp; shared notes across all brands. Delete any stray or test records.</p>
+    <div id="cleanupList" class="cleanup-list"></div>
+    <button class="settings-done" id="cleanupClose" type="button">Done</button>
   </div>
 </div>
 
@@ -3153,6 +3177,7 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
   const open = document.getElementById("dbxOpenLink");
   if (d.link) { open.href = d.link; open.style.display = ""; } else { open.style.display = "none"; }
   document.getElementById("clearEventName").textContent = currentShowLabel();
+  document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
   document.getElementById("settingsSheet").style.display = "flex";
 });
 document.getElementById("dbxLinkInput").addEventListener("change", dbxPersonalSave);
@@ -3174,6 +3199,48 @@ document.getElementById("clearAllBtn").addEventListener("click", () => {
 });
 document.getElementById("clearCancel").addEventListener("click", () => {
   document.getElementById("clearConfirm").style.display = "none";
+});
+// Admin cleanup (master only)
+async function renderCleanupList() {
+  const el = document.getElementById("cleanupList");
+  el.innerHTML = `<div class="cleanup-empty">Loading…</div>`;
+  const rows = [];
+  try {
+    const sc = await fbDb.collection("schedules").get();
+    sc.forEach(d => rows.push({ coll: "schedules", id: d.id, name: d.data().name || "(no name)", event: d.data().eventCode || "", items: (d.data().items||[]).length }));
+  } catch (e) {}
+  try {
+    const nt = await fbDb.collection("notes").get();
+    nt.forEach(d => rows.push({ coll: "notes", id: d.id, name: d.data().name || "(no name)", event: d.data().eventCode || "", items: (d.data().items||[]).length }));
+  } catch (e) {}
+  if (!rows.length) { el.innerHTML = `<div class="cleanup-empty">Nothing here.</div>`; return; }
+  rows.sort((a,b) => (a.event||"").localeCompare(b.event||"") || a.name.localeCompare(b.name));
+  el.innerHTML = rows.map(r =>
+    `<div class="cleanup-row">
+      <div class="cleanup-row-main">
+        <div class="cleanup-row-name">${esc(r.name)}</div>
+        <div class="cleanup-row-meta">${r.coll} · ${esc(r.event||"—")} · ${r.items} item${r.items===1?"":"s"}</div>
+      </div>
+      <button class="cleanup-del" data-cl-coll="${r.coll}" data-cl-id="${esc(r.id)}">Delete</button>
+    </div>`).join("");
+}
+document.getElementById("cleanupBtn").addEventListener("click", () => {
+  document.getElementById("settingsSheet").style.display = "none";
+  document.getElementById("cleanupSheet").style.display = "flex";
+  renderCleanupList();
+});
+document.getElementById("cleanupClose").addEventListener("click", () => {
+  document.getElementById("cleanupSheet").style.display = "none";
+});
+document.getElementById("cleanupList").addEventListener("click", async e => {
+  const btn = e.target.closest("[data-cl-id]");
+  if (!btn) return;
+  const coll = btn.dataset.clColl, id = btn.dataset.clId;
+  if (!confirm("Delete this " + coll.slice(0,-1) + " record? This can't be undone.")) return;
+  btn.disabled = true; btn.textContent = "…";
+  try { await fbDb.collection(coll).doc(id).delete(); toast("Deleted"); }
+  catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
+  renderCleanupList();
 });
 document.getElementById("clearConfirmBtn").addEventListener("click", async () => {
   const pass = document.getElementById("clearPassInput").value;
