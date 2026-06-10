@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function myEvent() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.eventCode; }
-    function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2']; }
+    function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2', 'roafgq9A27Rrg1DewdCvy2TnxDk1']; }
     function isHome() { return request.auth != null && request.auth.uid in ['OjQ9GnNOF0dm10hkdAZlYyTcCHJ2']; }
     function ownDoc(docId) { return docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'); }
 
