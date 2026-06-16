@@ -36,6 +36,14 @@ service cloud.firestore {
       allow write: if isMaster();
     }
 
+    // Archived past-show CSVs. Each doc is owned by the rep who archived it
+    // (readable by them or a master); created by the owner; deletable by owner/master.
+    match /archives/{docId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster());
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster());
+    }
+
     match /{document=**} { allow read, write: if false; }
   }
 }

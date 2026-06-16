@@ -223,6 +223,13 @@ body {
 }
 .settings-clear-btn:active { background: #FBE9E8; }
 .settings-clear-confirm { background: #B3261E !important; }
+.settings-stack-btn {
+  width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
+  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
+}
+.settings-stack-btn.primary { background: var(--blue); color: #fff; }
+.settings-stack-btn:active { opacity: 0.9; }
 .settings-admin { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
 .cleanup-list { max-height: 50vh; overflow-y: auto; margin: 10px 0 4px; }
 .cleanup-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border-soft); }
@@ -1497,10 +1504,12 @@ body.home-mode .user-chip-gear { display: none !important; }
       <input class="settings-dbx-input" id="dbxPassInput" type="text" placeholder="Password (optional)">
       <a class="settings-dbx-open" id="dbxOpenLink" href="#" target="_blank" rel="noopener" style="display:none">Open my Dropbox</a>
     </div>
-    <div class="settings-danger" id="settingsDanger">
-      <div class="settings-danger-title">End of show</div>
-      <div class="settings-dbx-note">Clear all your booths, notes, schedule and meals for <strong id="clearEventName">this show</strong> to start fresh. Make sure you've exported anything you need first.</div>
-      <button class="settings-clear-btn" id="clearAllBtn" type="button">Clear all my show data</button>
+    <div class="settings-danger" id="settingsShows">
+      <div class="settings-dbx-title">Shows</div>
+      <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
+      <div class="settings-dbx-note" style="margin-top:14px;">Starting a new show saves your current show (<strong id="curShowName">this show</strong>) to your old-show data as a CSV, then resets your booths, notes and schedule for the new one.</div>
+      <input class="settings-dbx-input" id="newShowCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="New event code" style="margin-top:8px;">
+      <button class="settings-dbx-btn settings-stack-btn primary" id="startNewShowBtn" type="button">Start new show</button>
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
@@ -1521,17 +1530,26 @@ body.home-mode .user-chip-gear { display: none !important; }
   </div>
 </div>
 
-<!-- ── Clear-all confirm (requires password) ── -->
-<div id="clearConfirm" class="settings-sheet" style="display:none">
+<!-- ── Start-new-show confirm ── -->
+<div id="newShowConfirm" class="settings-sheet" style="display:none">
   <div class="settings-card">
-    <div class="settings-title">Clear all show data?</div>
-    <p class="share-prompt-text">This permanently erases your booths, notes, schedule, and meals for <strong id="clearEventName2">this show</strong> — on this device and in the cloud. This can't be undone. Re-enter your password to confirm.</p>
-    <input class="settings-dbx-input" id="clearPassInput" type="password" placeholder="Your password" autocomplete="current-password">
-    <div class="auth-error" id="clearError"></div>
+    <div class="settings-title">Start a new show?</div>
+    <p class="share-prompt-text">Your current show (<strong id="rolloverFrom">—</strong>) will be saved to <em>Access old show data</em> as a CSV, then your booths, notes and schedule reset for <strong id="rolloverTo">—</strong>.</p>
+    <div class="auth-error" id="newShowError"></div>
     <div class="share-prompt-actions">
-      <button class="settings-done share-secondary" id="clearCancel" type="button">Cancel</button>
-      <button class="settings-done settings-clear-confirm" id="clearConfirmBtn" type="button">Clear everything</button>
+      <button class="settings-done share-secondary" id="newShowCancel" type="button">Cancel</button>
+      <button class="settings-done" id="newShowConfirmBtn" type="button">Archive &amp; start</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Old show data (archived CSVs) ── -->
+<div id="oldDataSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Old show data</div>
+    <p class="settings-dbx-note">Shows you've archived. Download any past show's CSV.</p>
+    <div id="oldDataList" class="cleanup-list"></div>
+    <button class="settings-done" id="oldDataClose" type="button">Done</button>
   </div>
 </div>
 
@@ -2996,7 +3014,8 @@ document.getElementById("searchInput").addEventListener("input", () => {
   _st = setTimeout(render, 180);
 });
 
-document.getElementById("exportBtn").addEventListener("click", () => {
+// Build the current show's CSV (reused by Export + the end-of-show archive).
+function buildShowCsv() {
   const state = load();
   const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i) => ({...c,i}))
@@ -3024,12 +3043,22 @@ document.getElementById("exportBtn").addEventListener("click", () => {
     rows.push(["Off-Site Meeting","Day","Time","With","Location","Notes"]);
     offsite.forEach(o => rows.push([o.title||"Off-Site Meeting", "Day "+o.day, o.time, o.company||"", o.location||"", o.notes||""]));
   }
-  const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
-  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  return rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
+}
+function csvFileName(code) {
+  const ev = resolveEvent(code);
+  const brand = (BRANDS[ev.brand] || BRANDS.ncm).name.replace(/[^\w]+/g, "");
+  return brand + "_" + (code || "show") + ".csv";
+}
+function downloadCsv(csvText, filename) {
+  const blob = new Blob(["\uFEFF"+csvText], {type:"text/csv;charset=utf-8;"});
   const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement("a"), {href:url, download:"LPGas_BoothNotes.csv"});
+  const a = Object.assign(document.createElement("a"), {href:url, download:filename});
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+document.getElementById("exportBtn").addEventListener("click", () => {
+  downloadCsv(buildShowCsv(), csvFileName(currentEventCode()));
   toast("CSV downloaded");
 });
 
@@ -3171,7 +3200,8 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
   document.getElementById("dbxPassInput").value = d.pass || "";
   const open = document.getElementById("dbxOpenLink");
   if (d.link) { open.href = d.link; open.style.display = ""; } else { open.style.display = "none"; }
-  document.getElementById("clearEventName").textContent = currentShowLabel();
+  document.getElementById("curShowName").textContent = currentShowLabel();
+  document.getElementById("newShowCode").value = "";
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
   document.getElementById("settingsSheet").style.display = "flex";
 });
@@ -3183,17 +3213,62 @@ document.getElementById("settingsClose").addEventListener("click", () => {
 document.getElementById("settingsSheet").addEventListener("click", e => {
   if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
 });
-// Clear-all show data (password-gated)
-document.getElementById("clearAllBtn").addEventListener("click", () => {
-  document.getElementById("clearEventName2").textContent = currentShowLabel();
-  document.getElementById("clearPassInput").value = "";
-  document.getElementById("clearError").textContent = "";
+// Access old show data (archived CSVs)
+let _archiveCache = {};
+async function renderOldData() {
+  const el = document.getElementById("oldDataList");
+  el.innerHTML = `<div class="cleanup-empty">Loading…</div>`;
+  _archiveCache = {};
+  let docs = [];
+  try {
+    const snap = await fbDb.collection("archives").where("uid", "==", currentUser.uid).get();
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+  } catch (e) {}
+  docs.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (!docs.length) { el.innerHTML = `<div class="cleanup-empty">No archived shows yet. When you start a new show, the current one is saved here.</div>`; return; }
+  el.innerHTML = docs.map(d => {
+    _archiveCache[d.id] = { csv: d.csv || "", code: d.eventCode || "show" };
+    const when = d.ts ? new Date(d.ts).toLocaleDateString() : "";
+    return `<div class="cleanup-row">
+      <div class="cleanup-row-main">
+        <div class="cleanup-row-name">${esc(d.brand || d.show || d.eventCode || "Show")}</div>
+        <div class="cleanup-row-meta">${esc(d.eventCode || "—")}${when ? " · " + esc(when) : ""}</div>
+      </div>
+      <button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-arch-id="${esc(d.id)}">Download</button>
+    </div>`;
+  }).join("");
+}
+document.getElementById("oldDataBtn").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
-  document.getElementById("clearConfirm").style.display = "flex";
-  document.getElementById("clearPassInput").focus();
+  document.getElementById("oldDataSheet").style.display = "flex";
+  renderOldData();
 });
-document.getElementById("clearCancel").addEventListener("click", () => {
-  document.getElementById("clearConfirm").style.display = "none";
+document.getElementById("oldDataClose").addEventListener("click", () => {
+  document.getElementById("oldDataSheet").style.display = "none";
+});
+document.getElementById("oldDataList").addEventListener("click", e => {
+  const btn = e.target.closest("[data-arch-id]");
+  if (!btn) return;
+  const a = _archiveCache[btn.dataset.archId];
+  if (a) downloadCsv(a.csv, csvFileName(a.code));
+});
+
+// Start a new show: archive the current one to the cloud, then reset onto the new code
+document.getElementById("startNewShowBtn").addEventListener("click", () => {
+  const newCode = (document.getElementById("newShowCode").value || "").trim().toUpperCase();
+  if (!newCode) { toast("Enter the new event code"); return; }
+  if (!EVENTS[newCode]) { toast("That event code doesn't exist"); return; }
+  if (newCode === currentEventCode()) { toast("You're already on that show"); return; }
+  document.getElementById("rolloverFrom").textContent = currentShowLabel();
+  const nb = BRANDS[resolveEvent(newCode).brand] || BRANDS.ncm;
+  document.getElementById("rolloverTo").textContent = nb.name + " (" + newCode + ")";
+  document.getElementById("newShowError").textContent = "";
+  document.getElementById("newShowConfirm").dataset.newCode = newCode;
+  document.getElementById("settingsSheet").style.display = "none";
+  document.getElementById("newShowConfirm").style.display = "flex";
+});
+document.getElementById("newShowCancel").addEventListener("click", () => {
+  document.getElementById("newShowConfirm").style.display = "none";
 });
 // Admin cleanup (master only)
 async function renderCleanupList() {
@@ -3237,30 +3312,44 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
   catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
   renderCleanupList();
 });
-document.getElementById("clearConfirmBtn").addEventListener("click", async () => {
-  const pass = document.getElementById("clearPassInput").value;
-  const errEl = document.getElementById("clearError");
-  if (!pass) { errEl.textContent = "Enter your password to confirm."; return; }
-  if (!fbReady || !fbAuth.currentUser) { errEl.textContent = "Not signed in."; return; }
-  const btn = document.getElementById("clearConfirmBtn");
+document.getElementById("newShowConfirmBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("newShowError");
+  const newCode = document.getElementById("newShowConfirm").dataset.newCode;
+  if (!newCode || !EVENTS[newCode]) { errEl.textContent = "That event code doesn't exist."; return; }
+  if (!fbReady || !currentUser) { errEl.textContent = "Not signed in."; return; }
+  const btn = document.getElementById("newShowConfirmBtn");
   btn.disabled = true;
+  const oldCode = currentEventCode();
+  const oldDocId = myScheduleDocId();
+  const oldStoreKey = storeKey();
+  // 1) archive the current show as a CSV in the cloud
   try {
-    const cred = firebase.auth.EmailAuthProvider.credential(fbAuth.currentUser.email, pass);
-    await fbAuth.currentUser.reauthenticateWithCredential(cred);
-  } catch (e) {
-    errEl.textContent = "Password incorrect."; btn.disabled = false; return;
-  }
+    const ev = resolveEvent(oldCode);
+    await fbDb.collection("archives").add({
+      uid: currentUser.uid, name: currentUser.name || "",
+      eventCode: oldCode, show: ev.show || oldCode,
+      brand: (BRANDS[ev.brand] || BRANDS.ncm).name,
+      csv: buildShowCsv(), ts: Date.now()
+    });
+  } catch (e) { errEl.textContent = "Couldn't archive — check your connection."; btn.disabled = false; return; }
+  // 2) clear the old show's data (local bucket + its cloud schedule/notes)
   try {
-    localStorage.removeItem(storeKey());
-    const docId = myScheduleDocId();
-    await fbDb.collection("schedules").doc(docId).delete().catch(() => {});
-    await fbDb.collection("notes").doc(docId).delete().catch(() => {});
+    localStorage.removeItem(oldStoreKey);
+    await fbDb.collection("schedules").doc(oldDocId).delete().catch(() => {});
+    await fbDb.collection("notes").doc(oldDocId).delete().catch(() => {});
   } catch (e) {}
-  btn.disabled = false;
-  document.getElementById("clearConfirm").style.display = "none";
-  activeView = "booths"; schedDay = 1; allOpen = false;
+  // 3) move this user onto the new show + reset the view
+  masterEventOverride = null;
+  currentUser.eventCode = newCode;
+  try { await fbDb.collection("users").doc(currentUser.uid).set({ eventCode: newCode }, { merge: true }); } catch (e) {}
+  applyEvent(newCode);
+  if (typeof setupBrandSwitcher === "function") setupBrandSwitcher();
+  subscribeTeam();
+  activeView = "booths"; schedDay = 1; allOpen = false; viewedScheduleUid = null;
   render();
-  toast("All show data cleared");
+  btn.disabled = false;
+  document.getElementById("newShowConfirm").style.display = "none";
+  toast("Archived. You're now on " + newCode);
 });
 document.getElementById("shareYes").addEventListener("click", async () => {
   document.getElementById("sharePrompt").style.display = "none";
