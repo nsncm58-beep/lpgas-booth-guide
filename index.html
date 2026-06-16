@@ -3125,6 +3125,10 @@ authEls.form.addEventListener("submit", async (e) => {
       const eventCode = authEls.event.value.trim().toUpperCase();
       if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
       if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
+      if (!EVENTS[eventCode]) {
+        authErr("That event code doesn't exist. Double-check it with your team and enter a valid code.");
+        authEls.submit.disabled = false; return;
+      }
       pendingSharePrompt = true;   // set before createUser so it's ready when onAuthStateChanged fires
       const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
       await fbDb.collection("users").doc(cred.user.uid).set({
