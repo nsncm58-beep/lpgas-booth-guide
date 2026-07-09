@@ -1936,7 +1936,11 @@ const BRANDS = {
 // The field "Photos" button and the home-dashboard link appear automatically
 // once these URLs are set.
 const EVENTS = {
-  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS },
+  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS,
+    media: {
+      request: "https://www.dropbox.com/request/7k5dtr7uk0yovvbmf2mv",
+      folder:  "https://www.dropbox.com/scl/fo/910b2tw61y00s2nw0rsk0/APYafVxNjJrx15F-VJO-E1c?rlkey=rx3nzpc09m8z5seif84ydf74b&st=wqu8t797&dl=0"
+    } },
 };
 function eventMedia(code) { return (EVENTS[code] && EVENTS[code].media) || null; }
 function inferBrand(code) {
