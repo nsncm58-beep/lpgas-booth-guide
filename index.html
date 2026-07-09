@@ -599,6 +599,36 @@ textarea.nf:focus { outline: none; background: #fff; }
 textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
 
+/* ── SHOW MEDIA (photos + videos → team Dropbox) ── */
+.home-media { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+.home-media-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+.home-media-link:active { background: var(--blue-light); }
+.home-media-play {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-media-main { flex: 1; min-width: 0; }
+.home-media-code { display: block; font-weight: 600; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
 @keyframes ncmspin { to { transform: rotate(360deg); } }
 
 /* ── EMPTY STATE ── */
@@ -1460,6 +1490,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="search-wrap">
       <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
+    <button class="hdr-btn btn-export" id="mediaBtn" style="display:none">Photos</button>
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
@@ -1550,6 +1581,17 @@ body.home-mode .user-chip-gear { display: none !important; }
     <p class="settings-dbx-note">Shows you've archived. Download any past show's CSV.</p>
     <div id="oldDataList" class="cleanup-list"></div>
     <button class="settings-done" id="oldDataClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── Show photos & videos (all media goes to the team Dropbox) ── -->
+<div id="mediaSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Show photos &amp; videos</div>
+    <p class="share-prompt-text">Photos and videos upload straight to the shared team Dropbox, where the home team can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.</p>
+    <p class="share-prompt-text"><strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
+    <button class="settings-done" id="mediaUploadOpen" type="button">Open uploader</button>
+    <button class="settings-done share-secondary" id="mediaSheetClose" type="button">Close</button>
   </div>
 </div>
 
@@ -1886,9 +1928,17 @@ const BRANDS = {
 // Registered events: code -> { brand, show, booths }. Add a show here once its
 // exhibitor list is in hand. Unregistered codes still theme by prefix (below)
 // but show an empty booth list until configured.
+// Optional per-show media: ALL photos + videos live in the team Dropbox (not
+// Firestore, which keeps the app 100% free and handles hours of video). Create
+// a Dropbox file request for the show, then add to that show's entry:
+//   media: { request: "<file-request URL: reps upload here, no account needed>",
+//            folder:  "<Dropbox folder URL: the home team views everything here>" }
+// The field "Photos" button and the home-dashboard link appear automatically
+// once these URLs are set.
 const EVENTS = {
   "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS },
 };
+function eventMedia(code) { return (EVENTS[code] && EVENTS[code].media) || null; }
 function inferBrand(code) {
   const c = (code || "").toUpperCase();
   if (c.startsWith("LPG"))  return "lpgas";
@@ -2160,6 +2210,19 @@ function renderHomeDashboard() {
     <div class="home-search-box">
       <input class="home-search-input" type="text" placeholder="Search a company in the notes…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
     </div>`;
+  // Show media: one link per show with a team Dropbox folder configured.
+  // Field reps upload via the file request; everything lands in this folder.
+  let mediaCodes = Object.keys(EVENTS).filter(c => { const m = eventMedia(c); return m && m.folder; });
+  if (homeBrandFilter) mediaCodes = mediaCodes.filter(c => resolveEvent(c).brand === homeBrandFilter);
+  if (mediaCodes.length && !q) {
+    html += `<div class="home-media">` + mediaCodes.map(c => {
+      const b = BRANDS[resolveEvent(c).brand] || BRANDS.ncm;
+      return `<a class="home-media-link" href="${esc(eventMedia(c).folder)}" target="_blank" rel="noopener">
+        <span class="home-media-play"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
+        <span class="home-media-main">${esc(b.name)} show photos &amp; videos<span class="home-media-code">${esc(c)} · opens the team Dropbox</span></span>
+      </a>`;
+    }).join("") + `</div>`;
+  }
   // Build per-brand sections, including only reps that have matching notes.
   let anyShown = false;
   codes.forEach(code => {
@@ -3062,6 +3125,31 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   toast("CSV downloaded");
 });
 
+// ── SHOW MEDIA (photos + videos → team Dropbox) ─────────────────────────
+// The header "Photos" button only shows when the active show has a Dropbox
+// file request configured (EVENTS[code].media). Uploads happen on Dropbox's
+// file-request page: no Dropbox account, no OAuth, nothing in Firestore.
+function updateMediaBtn() {
+  const btn = document.getElementById("mediaBtn");
+  if (!btn) return;
+  const m = (currentUser && !isHome()) ? eventMedia(currentEventCode()) : null;
+  btn.style.display = (m && m.request) ? "" : "none";
+}
+document.getElementById("mediaBtn").addEventListener("click", () => {
+  document.getElementById("mediaSheet").style.display = "flex";
+});
+document.getElementById("mediaUploadOpen").addEventListener("click", () => {
+  const m = eventMedia(currentEventCode());
+  if (m && m.request) window.open(m.request, "_blank", "noopener");
+  document.getElementById("mediaSheet").style.display = "none";
+});
+document.getElementById("mediaSheetClose").addEventListener("click", () => {
+  document.getElementById("mediaSheet").style.display = "none";
+});
+document.getElementById("mediaSheet").addEventListener("click", e => {
+  if (e.target.id === "mediaSheet") e.currentTarget.style.display = "none";
+});
+
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -3345,6 +3433,7 @@ document.getElementById("newShowConfirmBtn").addEventListener("click", async () 
   applyEvent(newCode);
   if (typeof setupBrandSwitcher === "function") setupBrandSwitcher();
   subscribeTeam();
+  updateMediaBtn();
   activeView = "booths"; schedDay = 1; allOpen = false; viewedScheduleUid = null;
   render();
   btn.disabled = false;
@@ -3388,6 +3477,7 @@ function showSignedOut() {
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
   document.getElementById("brandSwitchRow").style.display = "none";
+  document.getElementById("mediaBtn").style.display = "none";
   document.body.classList.remove("home-mode");
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
   homeNotes = {};
@@ -3423,6 +3513,7 @@ document.getElementById("brandSwitch").addEventListener("change", e => {
   activeView = "booths";
   applyEvent(masterEventOverride);
   subscribeTeam();              // listen to the new brand's team
+  updateMediaBtn();
   render();
   const ev = resolveEvent(masterEventOverride);
   toast("Switched to " + (BRANDS[ev.brand] ? BRANDS[ev.brand].name : "brand"));
@@ -3466,6 +3557,7 @@ if (fbReady) {
       syncMyScheduleToCloud();
       syncMyNotesToCloud();
       subscribeTeam();
+      updateMediaBtn();
       render();
       if (pendingSharePrompt) { pendingSharePrompt = false; document.getElementById("sharePrompt").style.display = "flex"; }
     } else {
