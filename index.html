@@ -203,8 +203,8 @@ body {
   color: var(--blue-dark);
 }
 .btn-export:active { background: var(--blue-light); }
-/* Personal Dropbox section in settings */
-.settings-dbx { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+/* Shared settings-section field styles (class names are historical — the
+   personal-Dropbox section that coined them was removed) */
 .settings-dbx-title { font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
 .settings-dbx-input {
   width: 100%; padding: 9px 11px; margin-bottom: 8px;
@@ -212,7 +212,6 @@ body {
   font-family: var(--ft); font-size: 0.85rem; color: var(--text); background: #fff;
 }
 .settings-dbx-input:focus { outline: none; border-color: var(--blue); }
-.settings-dbx-open { display: inline-block; font-family: var(--fd); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--blue); text-decoration: none; }
 /* Danger zone (clear all) */
 .settings-danger { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
 .settings-danger-title { font-size: 0.78rem; font-weight: 700; color: #B3261E; margin-bottom: 8px; }
@@ -223,6 +222,27 @@ body {
 }
 .settings-clear-btn:active { background: #FBE9E8; }
 .settings-clear-confirm { background: #B3261E !important; }
+.admin-btn {
+  width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
+  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
+}
+.admin-btn:active { background: var(--blue-light); }
+/* Admin: event codes + QR guide sheet */
+.guide-card { max-height: 86vh; overflow-y: auto; }
+.guide-note { font-size: 0.7rem; color: var(--muted); margin: 2px 0 12px; line-height: 1.5; }
+.guide-install { text-align: center; padding: 2px 0 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px; }
+.guide-install .guide-qr-lg { width: 150px; height: 150px; margin: 0 auto 8px; }
+.guide-url { font-size: 0.72rem; font-weight: 700; word-break: break-all; color: var(--text-2); }
+.guide-ev { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+.guide-ev-bar { color: #fff; padding: 8px 12px; font-family: var(--fd); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.3px; }
+.guide-ev-body { padding: 10px 12px; display: flex; gap: 12px; align-items: center; }
+.guide-ev-info { flex: 1; min-width: 0; }
+.guide-ev-code { font-family: var(--fd); font-weight: 900; font-size: 1.05rem; letter-spacing: 0.6px; color: var(--text); }
+.guide-ev-meta { font-size: 0.68rem; color: var(--muted); line-height: 1.5; margin-top: 3px; }
+.guide-ev-qr { width: 92px; height: 92px; flex-shrink: 0; }
+.guide-ev-qr img, .guide-ev-qr canvas, .guide-qr-lg img, .guide-qr-lg canvas { width: 100% !important; height: 100% !important; display: block; }
+
 .settings-stack-btn {
   width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
   border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
@@ -1529,12 +1549,6 @@ body.home-mode .user-chip-gear { display: none !important; }
       </span>
       <input type="checkbox" id="shareNotesToggle" class="settings-switch">
     </label>
-    <div class="settings-dbx" id="settingsDbx">
-      <div class="settings-dbx-title">Your Dropbox (optional, private to you)</div>
-      <input class="settings-dbx-input" id="dbxLinkInput" type="url" placeholder="Dropbox link (https://…)">
-      <input class="settings-dbx-input" id="dbxPassInput" type="text" placeholder="Password (optional)">
-      <a class="settings-dbx-open" id="dbxOpenLink" href="#" target="_blank" rel="noopener" style="display:none">Open my Dropbox</a>
-    </div>
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
       <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
@@ -1544,10 +1558,20 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
-      <div class="settings-dbx-note">Review and delete any stray records (test accounts, old entries) across all brands.</div>
-      <button class="settings-dbx-btn" id="cleanupBtn" type="button" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;border:1.5px solid var(--blue);background:#fff;color:var(--blue);font-family:var(--fd);font-weight:700;font-size:0.8rem;letter-spacing:0.4px;text-transform:uppercase;cursor:pointer;">Clean up team data</button>
+      <div class="settings-dbx-note">Event codes with install/join QR codes, plus tools to review and delete stray records across all brands.</div>
+      <button class="settings-dbx-btn admin-btn" id="adminGuideBtn" type="button">Event codes &amp; install QRs</button>
+      <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button">Clean up team data</button>
     </div>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── Admin: event codes + install/join QRs (master only) ── -->
+<div id="guideSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card guide-card">
+    <div class="settings-title">Event codes &amp; install</div>
+    <div id="guideBody"></div>
+    <button class="settings-done" id="guideClose" type="button">Done</button>
   </div>
 </div>
 
@@ -3290,17 +3314,6 @@ authEls.form.addEventListener("submit", async (e) => {
 authEls.signOut.addEventListener("click", async () => {
   if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
 });
-// Personal Dropbox link (private to this device — not shared with anyone).
-function dbxPersonalLoad() {
-  try { return JSON.parse(localStorage.getItem("dbx_personal") || "{}"); } catch (e) { return {}; }
-}
-function dbxPersonalSave() {
-  const link = document.getElementById("dbxLinkInput").value.trim();
-  const pass = document.getElementById("dbxPassInput").value;
-  localStorage.setItem("dbx_personal", JSON.stringify({ link, pass }));
-  const open = document.getElementById("dbxOpenLink");
-  if (link) { open.href = link; open.style.display = ""; } else { open.style.display = "none"; }
-}
 function currentShowLabel() {
   const ev = resolveEvent(currentEventCode());
   const b = BRANDS[ev.brand] || BRANDS.ncm;
@@ -3308,18 +3321,11 @@ function currentShowLabel() {
 }
 document.getElementById("settingsBtn").addEventListener("click", () => {
   document.getElementById("shareNotesToggle").checked = !!(currentUser && currentUser.shareNotes);
-  const d = dbxPersonalLoad();
-  document.getElementById("dbxLinkInput").value = d.link || "";
-  document.getElementById("dbxPassInput").value = d.pass || "";
-  const open = document.getElementById("dbxOpenLink");
-  if (d.link) { open.href = d.link; open.style.display = ""; } else { open.style.display = "none"; }
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("newShowCode").value = "";
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
   document.getElementById("settingsSheet").style.display = "flex";
 });
-document.getElementById("dbxLinkInput").addEventListener("change", dbxPersonalSave);
-document.getElementById("dbxPassInput").addEventListener("change", dbxPersonalSave);
 document.getElementById("settingsClose").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
 });
@@ -3383,6 +3389,72 @@ document.getElementById("startNewShowBtn").addEventListener("click", () => {
 document.getElementById("newShowCancel").addEventListener("click", () => {
   document.getElementById("newShowConfirm").style.display = "none";
 });
+// Admin: event codes + install/join QRs (master only). Renders straight from
+// the live BRANDS/EVENTS/MEDIA/MASTER_BRANDS registries in this build, so it
+// can never go stale. QR lib loads on demand (masters only ever pay for it).
+const GUIDE_APP_URL = location.origin + location.pathname.replace(/index\.html$/, "");
+let _qrLib = null;
+function loadQrLib() {
+  if (window.QRCode) return Promise.resolve();
+  if (!_qrLib) _qrLib = new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+    s.onload = ok; s.onerror = () => fail(new Error("QR lib failed to load"));
+    document.head.appendChild(s);
+  });
+  return _qrLib;
+}
+async function openGuideSheet() {
+  document.getElementById("settingsSheet").style.display = "none";
+  document.getElementById("guideSheet").style.display = "flex";
+  const body = document.getElementById("guideBody");
+  const codes = [...new Set([].concat(
+    Object.keys(EVENTS), MASTER_BRANDS.map(b => b.code), Object.keys(MEDIA)))];
+  let h = `<div class="guide-note">Reads straight from this build, so it's always current. Each show's QR opens the app with that event code prefilled on the signup form.</div>
+    <div class="guide-install">
+      <div class="guide-qr-lg" id="gqrInstall"></div>
+      <div class="guide-url">${esc(GUIDE_APP_URL)}</div>
+      <div class="guide-note" style="margin:6px 0 0">Scan to open. iPhone: Share &rarr; Add to Home Screen. Android: menu &rarr; Install app.</div>
+    </div>`;
+  codes.forEach((code, i) => {
+    const ev = EVENTS[code];
+    const b = BRANDS[ev ? ev.brand : inferBrand(code)] || BRANDS.ncm;
+    const med = MEDIA[code] || {};
+    const bits = [
+      ev ? "Signup open" : "Signup not open yet (masters only)",
+      ev ? ((ev.booths || []).length + " booths") : "no booth list",
+      (med.request && med.folder) ? "Photos & videos wired" : "no media links yet"
+    ];
+    h += `<div class="guide-ev">
+      <div class="guide-ev-bar" style="background:${b.p.blue}">${esc(b.name)}</div>
+      <div class="guide-ev-body">
+        <div class="guide-ev-info">
+          <div class="guide-ev-code">${esc(code)}</div>
+          <div class="guide-ev-meta">${bits.map(esc).join(" · ")}</div>
+        </div>
+        <div class="guide-ev-qr" data-gqr="${esc(GUIDE_APP_URL + "?code=" + code)}"></div>
+      </div>
+    </div>`;
+  });
+  body.innerHTML = h;
+  try {
+    await loadQrLib();
+    const mk = (el, text, size) => { el.innerHTML = ""; new QRCode(el, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); };
+    mk(document.getElementById("gqrInstall"), GUIDE_APP_URL, 150);
+    body.querySelectorAll("[data-gqr]").forEach(el => mk(el, el.dataset.gqr, 92));
+  } catch (e) {
+    document.getElementById("gqrInstall").innerHTML =
+      '<div class="guide-note">QR codes need a connection. The links and codes above still work.</div>';
+  }
+}
+document.getElementById("adminGuideBtn").addEventListener("click", openGuideSheet);
+document.getElementById("guideClose").addEventListener("click", () => {
+  document.getElementById("guideSheet").style.display = "none";
+});
+document.getElementById("guideSheet").addEventListener("click", e => {
+  if (e.target.id === "guideSheet") e.currentTarget.style.display = "none";
+});
+
 // Admin cleanup (master only)
 async function renderCleanupList() {
   const el = document.getElementById("cleanupList");
