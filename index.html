@@ -3497,6 +3497,17 @@ function showSignedIn(profile) {
   authEls.submit.disabled = false;
   authEls.pass.value = "";
 }
+// QR deep link: the admin guide (guide.html) makes per-show QRs that open the
+// app as ?code=<EVENTCODE>. Prefill signup with it so reps can't typo the code.
+// Called both at startup and from showSignedOut(), because the auth check
+// resolves after startup and showSignedOut() resets the form to sign-in.
+function applyQrPrefill() {
+  const qrCode = new URLSearchParams(location.search).get("code");
+  if (qrCode && authEls.event) {
+    authEls.event.value = qrCode.trim().toUpperCase();
+    setAuthMode("signup");
+  }
+}
 function showSignedOut() {
   authEls.overlay.classList.remove("checking");
   authEls.overlay.classList.remove("hidden");
@@ -3509,6 +3520,7 @@ function showSignedOut() {
   currentUser = null;
   masterEventOverride = null;
   setAuthMode("signin");
+  applyQrPrefill();
   applyBrand("ncm");   // login screen uses NCM neutral colors
 }
 // Brands a master can jump between (label + the event code that drives it).
@@ -3597,6 +3609,7 @@ if (fbReady) {
   showSignedIn({ name: "Offline" });
 }
 setAuthMode("signin");
+applyQrPrefill();
 
 if ("serviceWorker" in navigator) {
   const hadController = !!navigator.serviceWorker.controller;

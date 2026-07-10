@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>NCM Events Guide: Codes &amp; Install (Admin)</title>
+<!--
+  ADMIN REFERENCE PAGE (unlisted — nothing links here; share the URL only if needed).
+  This page contains NO data of its own. On every load it fetches the deployed
+  app (./index.html + ./sw.js) and parses the live BRANDS / EVENTS / MEDIA /
+  MASTER_BRANDS registries out of it, so it is always current with whatever is
+  deployed. If those registries are ever reformatted heavily, update the
+  regexes in parseApp() below.
+-->
+<style>
+  @font-face { font-family:'Forza';  font-weight:700; font-display:swap; src:url("Forza-Bold.woff2") format("woff2"); }
+  @font-face { font-family:'Forza';  font-weight:900; font-display:swap; src:url("Forza-Black.woff2") format("woff2"); }
+  @font-face { font-family:'Gotham'; font-weight:400; font-display:swap; src:url("Gotham-Book.woff2") format("woff2"); }
+  @font-face { font-family:'Gotham'; font-weight:500; font-display:swap; src:url("Gotham-Medium.woff2") format("woff2"); }
+  @font-face { font-family:'Gotham'; font-weight:700; font-display:swap; src:url("Gotham-Bold.woff2") format("woff2"); }
+  :root { --navy:#103A5C; --navy-deep:#081C2B; --text:#1B2733; --muted:#5B6B7C; --border:#D9E1E8; --bg:#F2F5F8; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-text-size-adjust:100%; }
+  body { font-family:'Gotham', -apple-system, sans-serif; background:var(--bg); color:var(--text); }
+  .page { max-width:960px; margin:0 auto; padding:0 16px 60px; }
+
+  header.hero { background:var(--navy); color:#fff; padding:26px 16px 22px; }
+  .hero-inner { max-width:960px; margin:0 auto; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .hero img { height:44px; display:block; }
+  .hero h1 { font-family:'Forza', sans-serif; font-weight:900; font-size:1.5rem; letter-spacing:0.3px; }
+  .hero p { font-size:0.8rem; opacity:0.85; margin-top:3px; }
+
+  .statusline { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:0.75rem; color:var(--muted); padding:14px 2px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:#2D7140; display:inline-block; }
+  .statusline button { margin-left:auto; padding:7px 14px; border:1.5px solid var(--navy); background:#fff; color:var(--navy);
+    border-radius:8px; font-family:'Forza', sans-serif; font-weight:700; font-size:0.7rem; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; }
+
+  section.install { background:#fff; border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:22px;
+    display:flex; gap:24px; align-items:center; flex-wrap:wrap; box-shadow:0 2px 10px rgba(9,30,50,0.05); }
+  .install-qr { width:190px; height:190px; padding:12px; border:1px solid var(--border); border-radius:12px; background:#fff; flex-shrink:0; }
+  .install-qr img, .install-qr canvas { width:100% !important; height:100% !important; }
+  .install-info h2 { font-family:'Forza', sans-serif; font-weight:800; font-size:1.15rem; color:var(--navy); margin-bottom:8px; }
+  .install-info .url { font-size:0.85rem; font-weight:700; word-break:break-all; margin-bottom:10px; }
+  .install-info ol { font-size:0.82rem; color:var(--muted); line-height:1.6; padding-left:18px; }
+  .install-info li strong { color:var(--text); }
+
+  h2.codes-title { font-family:'Forza', sans-serif; font-weight:800; font-size:1.15rem; color:var(--navy); margin:26px 2px 4px; }
+  p.codes-sub { font-size:0.8rem; color:var(--muted); margin:0 2px 14px; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; }
+  .card { background:#fff; border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 2px 10px rgba(9,30,50,0.05); break-inside:avoid; }
+  .card-bar { color:#fff; padding:12px 16px; display:flex; align-items:center; gap:10px; }
+  .card-bar img { height:22px; display:block; }
+  .card-bar .bname { font-family:'Forza', sans-serif; font-weight:800; font-size:0.95rem; letter-spacing:0.3px; }
+  .card-body { padding:14px 16px 18px; }
+  .code { font-family:'Forza', sans-serif; font-weight:900; font-size:1.4rem; letter-spacing:1px; margin-bottom:2px; }
+  .showname { font-size:0.78rem; color:var(--muted); margin-bottom:10px; }
+  .badges { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .badge { font-size:0.64rem; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; padding:4px 9px; border-radius:999px; border:1px solid; }
+  .b-ok   { color:#2D7140; border-color:#BCDDC6; background:#EDF7F0; }
+  .b-warn { color:#8A6D1A; border-color:#E8D9A8; background:#FBF6E7; }
+  .b-info { color:#33526E; border-color:#C4D4E2; background:#EEF4F9; }
+  .qr-row { display:flex; gap:14px; align-items:center; }
+  .qr-box { width:120px; height:120px; padding:8px; border:1px solid var(--border); border-radius:10px; background:#fff; flex-shrink:0; }
+  .qr-box img, .qr-box canvas { width:100% !important; height:100% !important; }
+  .qr-note { font-size:0.72rem; color:var(--muted); line-height:1.5; }
+  .qr-note strong { color:var(--text); }
+
+  .fail { background:#FBEFEF; border:1px solid #E5BEBE; color:#7C2D2D; border-radius:12px; padding:14px 16px; font-size:0.82rem; line-height:1.5; margin:14px 0; }
+  .loading { text-align:center; color:var(--muted); font-size:0.85rem; padding:50px 0; }
+
+  footer.note { margin-top:26px; font-size:0.72rem; color:var(--muted); line-height:1.6; }
+
+  @media print {
+    body { background:#fff; }
+    .statusline button { display:none; }
+    .card, section.install { box-shadow:none; }
+    header.hero { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <img src="./logo-ncm.png" alt="North Coast Media">
+    <div>
+      <h1>NCM Events Guide: Codes &amp; Install</h1>
+      <p>Admin reference. Everything below is read live from the deployed app, so it is always current.</p>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+  <div class="statusline" id="statusline"><span class="dot"></span><span id="statusText">Reading the deployed app…</span>
+    <button type="button" onclick="location.reload()">Refresh</button>
+  </div>
+
+  <section class="install">
+    <div class="install-qr" id="installQr"></div>
+    <div class="install-info">
+      <h2>Install the app</h2>
+      <div class="url" id="appUrl"></div>
+      <ol>
+        <li>Scan the QR (or open the link) on your phone.</li>
+        <li><strong>iPhone:</strong> Share button &rarr; <strong>Add to Home Screen</strong>. <strong>Android:</strong> browser menu &rarr; <strong>Install app</strong>.</li>
+        <li>Open it from the home screen and create an account with your show's event code below.</li>
+      </ol>
+    </div>
+  </section>
+
+  <h2 class="codes-title">Event codes</h2>
+  <p class="codes-sub">Each show's QR opens the app with that event code already filled in on the signup form (no typos). Codes marked "signup not open" work only for masters via the brand switcher until that show's exhibitor list is loaded.</p>
+
+  <div id="content" class="grid"><div class="loading">Reading the deployed app…</div></div>
+
+  <footer class="note">
+    Unlisted admin page. Data source: the live <code>index.html</code> of this deployment (registries: BRANDS, EVENTS, MEDIA, MASTER_BRANDS) plus <code>sw.js</code> for the build version. If a card ever shows "parse failed," the app's registry formatting changed; update the regexes in this file. Never put the home team passcode on this page.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const APP_URL = location.href.replace(/guide\.html.*$/, "");
+
+function qr(el, text, size) {
+  if (typeof QRCode === "undefined") {
+    el.innerHTML = '<div style="font-size:0.6rem;color:#7C2D2D;padding:6px;">QR library blocked. Use the link instead.</div>';
+    return;
+  }
+  new QRCode(el, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+}
+
+function parseApp(html, sw) {
+  const out = { brands: {}, events: [], media: {}, switcher: [], cache: null, boothCounts: {} };
+
+  const bBlock = (html.match(/const BRANDS = \{([\s\S]*?)\n\};/) || [])[1] || "";
+  const bre = /(\w+):\s*\{ name:"([^"]+)",\s*show:"([^"]*)",[^\n]*logo:"([^"]+)"/g;
+  let m;
+  while ((m = bre.exec(bBlock))) {
+    const tail = bBlock.slice(bre.lastIndex, bre.lastIndex + 220);
+    const blue = (tail.match(/blue:"(#[0-9A-Fa-f]{6})"/) || [])[1] || "#103A5C";
+    out.brands[m[1]] = { name: m[2], logo: m[4], blue };
+  }
+
+  const eBlock = (html.match(/const EVENTS = \{([\s\S]*?)\n\};/) || [])[1] || "";
+  const ere = /"([A-Z0-9-]+)":\s*\{\s*brand:"(\w+)",\s*show:"([^"]+)",\s*booths:\s*(\w+)/g;
+  while ((m = ere.exec(eBlock))) {
+    out.events.push({ code: m[1], brand: m[2], show: m[3], boothsVar: m[4] });
+    const vBlock = (html.match(new RegExp("const " + m[4] + " = \\[([\\s\\S]*?)\\n\\];")) || [])[1] || "";
+    out.boothCounts[m[1]] = (vBlock.match(/\{n:/g) || []).length;
+  }
+
+  const mBlock = (html.match(/const MEDIA = \{([\s\S]*?)\n\};/) || [])[1] || "";
+  const mre = /"([A-Z0-9-]+)":\s*\{([\s\S]*?)\n  \}/g;
+  while ((m = mre.exec(mBlock))) {
+    out.media[m[1]] = {
+      request: (m[2].match(/request:\s*"([^"]*)"/) || [])[1] || "",
+      folder:  (m[2].match(/folder:\s*"([^"]*)"/)  || [])[1] || ""
+    };
+  }
+
+  const sBlock = (html.match(/const MASTER_BRANDS = \[([\s\S]*?)\n\];/) || [])[1] || "";
+  const sre = /code:"([^"]+)",\s*label:"([^"]+)"/g;
+  while ((m = sre.exec(sBlock))) out.switcher.push({ code: m[1], label: m[2] });
+
+  out.cache = (sw.match(/CACHE_NAME = '([^']+)'/) || [])[1] || null;
+
+  // Brand for switcher-only codes comes from the same prefix logic as the app.
+  out.inferBrand = c => c.startsWith("LPG") ? "lpgas" : c.startsWith("GOLF") ? "golfdom"
+    : c.startsWith("LM") ? "lm" : c.startsWith("PMP") ? "pmp"
+    : (c.startsWith("PQ") || c.startsWith("PIT")) ? "pq" : "ncm";
+  return out;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function cardHtml(code, brand, showName, badges) {
+  return `
+  <div class="card">
+    <div class="card-bar" style="background:${brand.blue}">
+      <img src="./${esc(brand.logo)}" alt="" onerror="this.style.display='none'">
+      <span class="bname">${esc(brand.name)}</span>
+    </div>
+    <div class="card-body">
+      <div class="code">${esc(code)}</div>
+      <div class="showname">${esc(showName)}</div>
+      <div class="badges">${badges.join("")}</div>
+      <div class="qr-row">
+        <div class="qr-box" data-qr="${esc(APP_URL + "?code=" + code)}"></div>
+        <div class="qr-note"><strong>Scan to join this show.</strong> Opens the app with the event code prefilled on the signup form.</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function load() {
+  const content = document.getElementById("content");
+  document.getElementById("appUrl").textContent = APP_URL;
+  qr(document.getElementById("installQr"), APP_URL, 166);
+  try {
+    const [html, sw] = await Promise.all([
+      fetch("./index.html", { cache: "no-store" }).then(r => r.text()),
+      fetch("./sw.js?v=" + Date.now(), { cache: "no-store" }).then(r => r.text()).catch(() => "")
+    ]);
+    const d = parseApp(html, sw);
+    if (!d.events.length && !d.switcher.length) throw new Error("registries not found (formatting changed?)");
+
+    const now = new Date();
+    document.getElementById("statusText").textContent =
+      "Live from the deployed app · build " + (d.cache || "unknown") + " · checked " + now.toLocaleString();
+
+    const seen = new Set();
+    let cards = "";
+    d.events.forEach(ev => {
+      seen.add(ev.code);
+      const brand = d.brands[ev.brand] || { name: ev.brand, blue: "#103A5C", logo: "logo-ncm.png" };
+      const med = d.media[ev.code] || {};
+      const badges = [
+        '<span class="badge b-ok">Signup open</span>',
+        '<span class="badge b-info">' + (d.boothCounts[ev.code] || 0) + ' booths</span>',
+        (med.request && med.folder) ? '<span class="badge b-ok">Photos &amp; videos wired</span>'
+          : '<span class="badge b-warn">No media links yet</span>'
+      ];
+      cards += cardHtml(ev.code, brand, ev.show, badges);
+    });
+    d.switcher.forEach(sb => {
+      if (seen.has(sb.code)) return;
+      const bk = d.inferBrand(sb.code);
+      const brand = d.brands[bk] || { name: sb.label, blue: "#103A5C", logo: "logo-ncm.png" };
+      const med = d.media[sb.code] || {};
+      const badges = [
+        '<span class="badge b-warn">Signup not open (no exhibitor list)</span>',
+        '<span class="badge b-info">Masters only</span>',
+        (med.request && med.folder) ? '<span class="badge b-ok">Photos &amp; videos wired</span>'
+          : '<span class="badge b-warn">No media links yet</span>'
+      ];
+      cards += cardHtml(sb.code, brand, sb.label, badges);
+    });
+    content.innerHTML = cards;
+    content.querySelectorAll("[data-qr]").forEach(el => qr(el, el.dataset.qr, 104));
+  } catch (e) {
+    content.innerHTML = '<div class="fail"><strong>Couldn\'t read the deployed app.</strong> ' + esc(e.message) +
+      '. The registries may have been reformatted; update the regexes in guide.html. The app itself is unaffected.</div>';
+    document.getElementById("statusText").textContent = "Parse failed";
+  }
+}
+load();
+</script>
+</body>
+</html>
