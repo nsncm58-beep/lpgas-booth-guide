@@ -1946,10 +1946,19 @@ const MEDIA = {
     request: "https://www.dropbox.com/request/7k5dtr7uk0yovvbmf2mv",
     folder:  "https://www.dropbox.com/scl/fo/910b2tw61y00s2nw0rsk0/APYafVxNjJrx15F-VJO-E1c?rlkey=rx3nzpc09m8z5seif84ydf74b&st=wqu8t797&dl=0"
   },
-  // "GOLFDOM-2026": { request: "", folder: "" },
-  // "LM-2026":      { request: "", folder: "" },
-  // "PMP-2026":     { request: "", folder: "" },
-  // "PQ-2026":      { request: "", folder: "" },
+  "GOLFDOM-2026": {
+    request: "",   // pending: Dropbox file request for this folder
+    folder:  "https://www.dropbox.com/scl/fo/tpcykgukulgsn2rz3igog/AOfYHr-sS9yPixUDpQ7Gkps?rlkey=ki4rqqykm3k4uw65vnf0bkxod&st=2rdfkogp&dl=0"
+  },
+  "LM-2026": {
+    request: "",   // pending: Dropbox file request for this folder
+    folder:  "https://www.dropbox.com/scl/fo/q0vaw0wf0vpikeluedtq3/AD7pdpoVtq9-QDQJjYdfn6Y?rlkey=tpsdymae35xcgdyzje5534l08&st=qq1z79vw&dl=0"
+  },
+  // "PMP-2026": { request: "", folder: "" },  // pending both
+  "PQ-2026": {
+    request: "",   // pending: Dropbox file request for this folder
+    folder:  "https://www.dropbox.com/scl/fo/urmd5fwwvvvqrs047d34b/ANIQvm1mNbU9HB-qsD7wbk4?rlkey=88se6magvw566sthkkwpfktv0&st=1oa7gnxi&dl=0"
+  },
 };
 function eventMedia(code) { return MEDIA[code] || null; }
 function inferBrand(code) {
