@@ -1,8 +1,9 @@
-// LPGas Booth Guide — Service Worker v5
+// NCM Events Guide: Service Worker
 // HTML is network-first so updates deploy immediately.
-// User state lives in localStorage (key: lpgas_v3) — never touched by the cache.
+// User state lives in localStorage (legacy key: lpgas_v3, kept so existing
+// devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'lpgas-guide-v33';
+const CACHE_NAME = 'ncm-events-guide-v34';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
