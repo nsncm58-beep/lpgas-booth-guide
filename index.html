@@ -1928,21 +1928,30 @@ const BRANDS = {
 // Registered events: code -> { brand, show, booths }. Add a show here once its
 // exhibitor list is in hand. Unregistered codes still theme by prefix (below)
 // but show an empty booth list until configured.
-// Optional per-show media: ALL photos + videos live in the team Dropbox (not
-// Firestore, which keeps the app 100% free and handles hours of video). Create
-// a Dropbox file request for the show, then add to that show's entry:
-//   media: { request: "<file-request URL: reps upload here, no account needed>",
-//            folder:  "<Dropbox folder URL: the home team views everything here>" }
-// The field "Photos" button and the home-dashboard link appear automatically
-// once these URLs are set.
 const EVENTS = {
-  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS,
-    media: {
-      request: "https://www.dropbox.com/request/7k5dtr7uk0yovvbmf2mv",
-      folder:  "https://www.dropbox.com/scl/fo/910b2tw61y00s2nw0rsk0/APYafVxNjJrx15F-VJO-E1c?rlkey=rx3nzpc09m8z5seif84ydf74b&st=wqu8t797&dl=0"
-    } },
+  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS },
 };
-function eventMedia(code) { return (EVENTS[code] && EVENTS[code].media) || null; }
+// Per-show media: ALL photos + videos live in the team Dropbox (not Firestore,
+// which keeps the app 100% free and handles hours of video). MEDIA is a
+// separate registry from EVENTS on purpose: an event code here gets working
+// Photos/upload buttons (for masters brand-jumping too) WITHOUT becoming a
+// valid signup code. Folders live in the corporate Dropbox under
+// "North Coast Media Team Folder/NCM Events Media/<CODE>". Per code:
+//   request: <Dropbox file-request URL: reps upload here, no account needed>
+//   folder:  <Dropbox share link for that code's subfolder: home team views here>
+// The field "Photos" button and the home-dashboard link appear automatically
+// once a code's URLs are set.
+const MEDIA = {
+  "LPGAS-2026": {
+    request: "https://www.dropbox.com/request/7k5dtr7uk0yovvbmf2mv",
+    folder:  "https://www.dropbox.com/scl/fo/910b2tw61y00s2nw0rsk0/APYafVxNjJrx15F-VJO-E1c?rlkey=rx3nzpc09m8z5seif84ydf74b&st=wqu8t797&dl=0"
+  },
+  // "GOLFDOM-2026": { request: "", folder: "" },
+  // "LM-2026":      { request: "", folder: "" },
+  // "PMP-2026":     { request: "", folder: "" },
+  // "PQ-2026":      { request: "", folder: "" },
+};
+function eventMedia(code) { return MEDIA[code] || null; }
 function inferBrand(code) {
   const c = (code || "").toUpperCase();
   if (c.startsWith("LPG"))  return "lpgas";
@@ -2216,7 +2225,7 @@ function renderHomeDashboard() {
     </div>`;
   // Show media: one link per show with a team Dropbox folder configured.
   // Field reps upload via the file request; everything lands in this folder.
-  let mediaCodes = Object.keys(EVENTS).filter(c => { const m = eventMedia(c); return m && m.folder; });
+  let mediaCodes = Object.keys(MEDIA).filter(c => { const m = eventMedia(c); return m && m.folder; });
   if (homeBrandFilter) mediaCodes = mediaCodes.filter(c => resolveEvent(c).brand === homeBrandFilter);
   if (mediaCodes.length && !q) {
     html += `<div class="home-media">` + mediaCodes.map(c => {
