@@ -1963,6 +1963,11 @@ const BRANDS = {
 const EVENTS = {
   "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS },
 };
+// THE definitive list of event codes this app accepts — signup, Start new
+// show and the master switcher are all locked to these five. Nothing outside
+// this list can join or exist. Adding a future show = add it here + an EVENTS
+// entry (booth list) + the whitelist in firestore.rules (then republish).
+const VALID_EVENT_CODES = ["LPGAS-2026", "GOLFDOM-2026", "LM-2026", "PMP-2026", "PQ-2026"];
 // Per-show media: ALL photos + videos live in the team Dropbox (not Firestore,
 // which keeps the app 100% free and handles hours of video). MEDIA is a
 // separate registry from EVENTS on purpose: an event code here gets working
@@ -3299,7 +3304,7 @@ authEls.form.addEventListener("submit", async (e) => {
       const eventCode = authEls.event.value.trim().toUpperCase();
       if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
       if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
-      if (!EVENTS[eventCode]) {
+      if (!VALID_EVENT_CODES.includes(eventCode)) {
         authErr("That event code doesn't exist. Double-check it with your team and enter a valid code.");
         authEls.submit.disabled = false; return;
       }
@@ -3384,7 +3389,7 @@ document.getElementById("oldDataList").addEventListener("click", e => {
 document.getElementById("startNewShowBtn").addEventListener("click", () => {
   const newCode = (document.getElementById("newShowCode").value || "").trim().toUpperCase();
   if (!newCode) { toast("Enter the new event code"); return; }
-  if (!EVENTS[newCode]) { toast("That event code doesn't exist"); return; }
+  if (!VALID_EVENT_CODES.includes(newCode)) { toast("That event code doesn't exist"); return; }
   if (newCode === currentEventCode()) { toast("You're already on that show"); return; }
   document.getElementById("rolloverFrom").textContent = currentShowLabel();
   const nb = BRANDS[resolveEvent(newCode).brand] || BRANDS.ncm;
@@ -3417,7 +3422,7 @@ async function openGuideSheet() {
   document.getElementById("guideSheet").style.display = "flex";
   const body = document.getElementById("guideBody");
   const codes = [...new Set([].concat(
-    Object.keys(EVENTS), MASTER_BRANDS.map(b => b.code), Object.keys(MEDIA)))];
+    VALID_EVENT_CODES, Object.keys(EVENTS), Object.keys(MEDIA)))];
   let h = `<div class="guide-note">Reads straight from this build, so it's always current. Each show's QR opens the app with that event code prefilled on the signup form.</div>
     <div class="guide-install">
       <div class="guide-qr-lg" id="gqrInstall"></div>
@@ -3429,8 +3434,8 @@ async function openGuideSheet() {
     const b = BRANDS[ev ? ev.brand : inferBrand(code)] || BRANDS.ncm;
     const med = MEDIA[code] || {};
     const bits = [
-      ev ? "Signup open" : "Signup not open yet (masters only)",
-      ev ? ((ev.booths || []).length + " booths") : "no booth list",
+      "Signup open",
+      ev ? ((ev.booths || []).length + " booths") : "booth list not loaded yet",
       (med.request && med.folder) ? "Photos & videos wired" : "no media links yet"
     ];
     h += `<div class="guide-ev">
@@ -3512,7 +3517,7 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
 document.getElementById("newShowConfirmBtn").addEventListener("click", async () => {
   const errEl = document.getElementById("newShowError");
   const newCode = document.getElementById("newShowConfirm").dataset.newCode;
-  if (!newCode || !EVENTS[newCode]) { errEl.textContent = "That event code doesn't exist."; return; }
+  if (!newCode || !VALID_EVENT_CODES.includes(newCode)) { errEl.textContent = "That event code doesn't exist."; return; }
   if (!fbReady || !currentUser) { errEl.textContent = "Not signed in."; return; }
   const btn = document.getElementById("newShowConfirmBtn");
   btn.disabled = true;
@@ -3623,12 +3628,10 @@ function setupBrandSwitcher() {
   const sel = document.getElementById("brandSwitch");
   if (!isMaster()) { row.style.display = "none"; return; }
   sel.innerHTML = MASTER_BRANDS.map(b => `<option value="${b.code}">${b.label}</option>`).join("");
-  // Make sure the current event is selectable even if not in the list.
+  // The switcher is locked to the five valid codes — legacy/unknown codes
+  // (e.g. the old LPG2026 typo) are never added as phantom entries.
   const cur = currentEventCode();
-  if (cur && !MASTER_BRANDS.some(b => b.code === cur)) {
-    sel.insertAdjacentHTML("afterbegin", `<option value="${cur}">${cur}</option>`);
-  }
-  sel.value = cur || "LPGAS-2026";
+  sel.value = MASTER_BRANDS.some(b => b.code === cur) ? cur : "LPGAS-2026";
   row.style.display = "";
 }
 document.getElementById("brandSwitch").addEventListener("change", e => {

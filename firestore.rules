@@ -5,10 +5,17 @@ service cloud.firestore {
     function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2', 'roafgq9A27Rrg1DewdCvy2TnxDk1']; }
     function isHome() { return request.auth != null && request.auth.uid in ['OjQ9GnNOF0dm10hkdAZlYyTcCHJ2']; }
     function ownDoc(docId) { return docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'); }
+    // The app is locked to exactly these events. Because a profile's eventCode
+    // must be on this list, myEvent() is always valid too, and everything that
+    // validates against myEvent() (schedules, notes) inherits the lock.
+    // Adding a future show = add its code here AND in index.html, republish.
+    function validEvent(c) { return c in ['LPGAS-2026', 'GOLFDOM-2026', 'LM-2026', 'PMP-2026', 'PQ-2026']; }
 
     match /users/{uid} {
       allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+                            && validEvent(request.resource.data.eventCode);
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     match /schedules/{docId} {
