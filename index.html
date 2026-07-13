@@ -212,16 +212,8 @@ body {
   font-family: var(--ft); font-size: 0.85rem; color: var(--text); background: #fff;
 }
 .settings-dbx-input:focus { outline: none; border-color: var(--blue); }
-/* Danger zone (clear all) */
+/* Settings section container (name is historical; the Shows section uses it) */
 .settings-danger { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
-.settings-danger-title { font-size: 0.78rem; font-weight: 700; color: #B3261E; margin-bottom: 8px; }
-.settings-clear-btn {
-  width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
-  border: 1.5px solid #B3261E; background: #fff; color: #B3261E;
-  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
-}
-.settings-clear-btn:active { background: #FBE9E8; }
-.settings-clear-confirm { background: #B3261E !important; }
 .admin-btn {
   width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
   border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
@@ -2718,7 +2710,9 @@ function renderScheduleView(state) {
         <p>${esc(tm.name||"This teammate")} hasn't scheduled anything for this day.</p></div>`;
     } else {
       slotTimes.forEach(t => {
-        html += `<div class="time-slot"><div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
+        // esc(t): times here come from the TEAMMATE's cloud doc, not this
+        // device — treat them as untrusted like every other synced field.
+        html += `<div class="time-slot"><div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span><span class="time-line"></span></div>`;
         byTime[t].forEach(it => { html += roCardHtml(it); });
         html += `</div>`;
       });
@@ -2758,7 +2752,7 @@ function renderScheduleView(state) {
       return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
     return matches.map(c => {
       const cur = state[key(c.i)]?.scheduled || null;
-      const meta = cur ? `Currently Day ${cur.split("|")[0]} · ${cur.split("|")[1]}` : "";
+      const meta = cur ? `Currently Day ${esc(cur.split("|")[0])} · ${esc(cur.split("|")[1])}` : "";
       return `
         <div class="sched-result-row">
           <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
@@ -2818,7 +2812,7 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
       const entries = byTime[t] || [];
       if (!entries.length) return;
       html += `<div class="time-slot">
-        <div class="time-slot-hdr"><span class="time-lbl">${t}</span><span class="time-line"></span></div>`;
+        <div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span><span class="time-line"></span></div>`;
       entries.forEach(entry => {
         if (entry.kind === "booth") {
           const c = entry.c;
@@ -3163,7 +3157,7 @@ document.getElementById("content").addEventListener("input", e => {
     if (!matches.length) { rEl.innerHTML = `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`; return; }
     rEl.innerHTML = matches.map(c => {
       const cur = state[key(c.i)]?.scheduled || null;
-      const meta = cur ? `Currently Day ${cur.split("|")[0]} · ${cur.split("|")[1]}` : "";
+      const meta = cur ? `Currently Day ${esc(cur.split("|")[0])} · ${esc(cur.split("|")[1])}` : "";
       return `
         <div class="sched-result-row">
           <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>

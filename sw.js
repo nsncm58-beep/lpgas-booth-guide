@@ -3,7 +3,7 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v40';
+const CACHE_NAME = 'ncm-events-guide-v41';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
@@ -34,6 +34,13 @@ self.addEventListener('message', event => {
 
 self.addEventListener('fetch', event => {
     const req = event.request;
+    // Only handle GETs, and never touch Firebase/Google API traffic: caching
+    // Firestore long-poll responses would grow the cache with one-time URLs
+    // for the whole show and risk replaying stale data. (gstatic SDK files
+    // and the cdnjs QR lib still cache normally below.)
+    if (req.method !== 'GET') return;
+    const host = new URL(req.url).hostname;
+    if (host.endsWith('googleapis.com') || host.endsWith('firebaseapp.com')) return;
     if (req.destination === 'document' || req.url.endsWith('.html')) {
         event.respondWith(
             fetch(req).then(res => {

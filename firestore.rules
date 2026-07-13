@@ -11,8 +11,10 @@ service cloud.firestore {
     // Adding a future show = add its code here AND in index.html, republish.
     function validEvent(c) { return c in ['LPGAS-2026', 'GOLFDOM-2026', 'LM-2026', 'PMP-2026', 'PQ-2026']; }
 
+    // Profiles hold names + emails, so reads are limited to yourself, masters
+    // and the home account (teammates see names via schedules/notes instead).
     match /users/{uid} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && (request.auth.uid == uid || isMaster() || isHome());
       allow create, update: if request.auth != null && request.auth.uid == uid
                             && validEvent(request.resource.data.eventCode);
       allow delete: if request.auth != null && request.auth.uid == uid;
@@ -30,18 +32,9 @@ service cloud.firestore {
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
 
-    match /uploads/{docId} {
-      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster() || isHome());
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster());
-    }
-
-    // Shared Dropbox connection (App-folder scoped refresh token). Readable by
-    // any signed-in user (needed to upload); writable only by a master.
-    match /config/{docId} {
-      allow read: if request.auth != null;
-      allow write: if isMaster();
-    }
+    // (The old `uploads` and `config` blocks from the removed Dropbox-OAuth
+    // feature are gone: those collections are unused, and dropping the rules
+    // means the default deny-all below closes them completely.)
 
     // Home-team workflow flags ("Follow up" / "Covered" on shared booth notes).
     // Written by the shared home account so all four members see the same
