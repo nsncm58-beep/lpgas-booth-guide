@@ -1492,6 +1492,32 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--blue); margin: 8px 0 3px; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
+/* Home dashboard: status chips, freshness, copy buttons, workflow flags */
+.home-controls-row { display: flex; align-items: center; gap: 8px; margin: -6px 0 14px; font-size: 0.78rem; color: var(--muted); cursor: pointer; -webkit-user-select: none; user-select: none; }
+.home-controls-row input { width: 16px; height: 16px; accent-color: var(--blue); }
+.home-bar-right { display: flex; align-items: center; gap: 10px; }
+.home-copy-btn {
+  border: 1px solid rgba(255,255,255,0.55); background: transparent; color: #fff;
+  border-radius: 7px; padding: 4px 10px; cursor: pointer;
+  font-family: var(--ft); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+}
+.home-copy-btn:active { background: rgba(255,255,255,0.15); }
+.home-copy-btn.rep { border-color: var(--border); color: var(--muted); background: #fff; margin-left: auto; }
+.home-copy-btn.rep:active { background: var(--bg); }
+.home-rep-ago { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
+.home-chip { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 999px; }
+.home-chip.cust { color: #005C8F; background: #E8F1F7; }
+.home-chip.non  { color: #8B1538; background: #F6E6EB; }
+.home-note-flags { display: flex; gap: 6px; margin-top: 9px; }
+.flag-btn {
+  font-family: var(--ft); font-size: 0.66rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer;
+}
+.flag-btn:active { opacity: 0.75; }
+.flag-btn.on-star { color: #8A6D1A; border-color: #E8D9A8; background: #FBF6E7; }
+.flag-btn.on-cov  { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
+.home-note.covered { opacity: 0.55; }
 @media (min-width: 720px) {
   .home-note { display: grid; grid-template-columns: 1fr; }
 }
@@ -2248,6 +2274,65 @@ function fmtAgo(ts) {
   return Math.floor(s/86400)+"d ago";
 }
 
+// Shared workflow flags: the home team marks a rep's booth note "Follow up"
+// or "Covered" so four people writing content don't double-cover a booth.
+// One doc per flag (homeFlags/{event__repUid__booth#}) shared by the whole
+// home account across devices; masters can read + clean up.
+let homeFlags = {};            // docId -> { state: "star" | "covered", ... }
+let _homeFlagsUnsub = null;
+let homeHideCovered = false;
+let _homeCopyIndex = {};       // eventCode -> { brandName, reps: [{name, items}] } from the last render
+function flagId(code, uid, boothNum) { return code + "__" + uid + "__" + boothNum; }
+function subscribeHomeFlags() {
+  if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
+  homeFlags = {};
+  if (!fbReady || !isHome()) return;
+  _homeFlagsUnsub = fbDb.collection("homeFlags").onSnapshot(snap => {
+    homeFlags = {};
+    snap.forEach(d => { const x = d.data(); if (x) homeFlags[d.id] = x; });
+    if (isHome()) renderHomeDashboard();
+  }, () => {});
+}
+function toggleHomeFlag(id, state, meta) {
+  if (!fbReady) return;
+  const cur = homeFlags[id] && homeFlags[id].state;
+  const op = (cur === state)
+    ? fbDb.collection("homeFlags").doc(id).delete()
+    : fbDb.collection("homeFlags").doc(id).set({
+        state, eventCode: meta.code, repUid: meta.uid,
+        boothNum: meta.b, boothName: meta.n, ts: Date.now() });
+  op.catch(() => toast("Couldn't save the flag (are the latest Firestore rules published?)"));
+}
+// Copy-for-content: clean plain text of what's on screen, ready to paste
+// into a draft. Respects the current search/filter/hide-covered view.
+function notesToText(items) {
+  let t = "";
+  items.forEach(it => {
+    const tags = [
+      it.status === "customer" ? "Customer" : it.status === "noncustomer" ? "Non-customer" : "",
+      it.visited ? "Visited" : ""
+    ].filter(Boolean).join(", ");
+    t += it.boothName + " (Booth " + it.boothNum + ")" + (tags ? "  [" + tags + "]" : "") + "\n";
+    if (it.pre)  t += "  Pre-visit: "  + it.pre  + "\n";
+    if (it.post) t += "  Post-visit: " + it.post + "\n";
+    t += "\n";
+  });
+  return t;
+}
+function copyToClipboard(t) {
+  const done = () => toast("Copied to clipboard");
+  const fallback = () => {
+    const ta = document.createElement("textarea");
+    ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { toast("Couldn't copy"); }
+    ta.remove();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(done).catch(fallback);
+  } else fallback();
+}
+
 function buildHomeFilter() {
   let h = `<div class="team-bar home-filter">
     <button class="team-chip${!homeBrandFilter?" active":""}" data-home-brand="">All Brands</button>`;
@@ -2264,14 +2349,20 @@ function renderHomeDashboard() {
   if (homeBrandFilter) codes = codes.filter(c => resolveEvent(c).brand === homeBrandFilter);
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
   const q = homeSearchQ.trim().toLowerCase();
+  // Search matches company + booth number + the note text itself, so the
+  // team can hunt topics ("autogas", "tariffs"), not just company names.
   const matchItem = it => (it.pre || it.post || it.visited) &&
-    (!q || (it.boothName||"").toLowerCase().includes(q) || (it.boothNum||"").toLowerCase().includes(q));
+    (!q || (it.boothName||"").toLowerCase().includes(q) || (it.boothNum||"").toLowerCase().includes(q)
+        || (it.pre||"").toLowerCase().includes(q)       || (it.post||"").toLowerCase().includes(q));
+  const docTs = d => (d.updatedAt && typeof d.updatedAt.toMillis === "function") ? d.updatedAt.toMillis() : 0;
+  _homeCopyIndex = {};
   let html = `<div class="home-wrap">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes — ${esc(filterName)}.</p></div>
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes: ${esc(filterName)}. Freshest reps float to the top.</p></div>
     ${buildHomeFilter()}
     <div class="home-search-box">
-      <input class="home-search-input" type="text" placeholder="Search a company in the notes…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
-    </div>`;
+      <input class="home-search-input" type="text" placeholder="Search companies or note text…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
+    </div>
+    <label class="home-controls-row"><input type="checkbox" id="homeHideCov"${homeHideCovered ? " checked" : ""}> Hide covered booths</label>`;
   // Show media: one link per show with a team Dropbox folder configured.
   // Field reps upload via the file request; everything lands in this folder.
   let mediaCodes = Object.keys(MEDIA).filter(c => { const m = eventMedia(c); return m && m.folder; });
@@ -2286,25 +2377,41 @@ function renderHomeDashboard() {
     }).join("") + `</div>`;
   }
   // Build per-brand sections, including only reps that have matching notes.
+  // Reps sort freshest-sync-first so new material surfaces during a show.
   let anyShown = false;
   codes.forEach(code => {
     const brand = BRANDS[resolveEvent(code).brand] || BRANDS.ncm;
-    const reps = byEvent[code].slice().sort((a,b) => (a.name||"").localeCompare(b.name||""));
-    const repsWithMatches = reps.map(r => ({ r, items: (r.items||[]).filter(matchItem) })).filter(x => x.items.length);
+    const reps = byEvent[code].slice().sort((a,b) => docTs(b) - docTs(a) || (a.name||"").localeCompare(b.name||""));
+    const repsWithMatches = reps.map(r => {
+      let items = (r.items||[]).filter(matchItem);
+      if (homeHideCovered) items = items.filter(it => (homeFlags[flagId(code, r.uid, it.boothNum)] || {}).state !== "covered");
+      return { r, items };
+    }).filter(x => x.items.length);
     if (!repsWithMatches.length) return;
     anyShown = true;
+    _homeCopyIndex[code] = { brandName: brand.name, reps: [] };
     html += `<section class="home-brand">
       <div class="home-brand-bar" style="background:${brand.p.blue}">
-        <span>${esc(brand.name)}</span><span class="home-brand-code">${esc(code)}</span>
+        <span>${esc(brand.name)}</span>
+        <span class="home-bar-right"><button class="home-copy-btn" type="button" data-copy-brand="${esc(code)}">Copy all</button><span class="home-brand-code">${esc(code)}</span></span>
       </div>`;
-    repsWithMatches.forEach(({ r, items }) => {
+    repsWithMatches.forEach(({ r, items }, ri) => {
+      _homeCopyIndex[code].reps.push({ name: r.name || "Rep", items });
+      const ago = fmtAgo(docTs(r));
       html += `<div class="home-rep">
-        <div class="home-rep-name">${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span></div>`;
+        <div class="home-rep-name">${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span>${ago ? `<span class="home-rep-ago">updated ${esc(ago)}</span>` : ""}<button class="home-copy-btn rep" type="button" data-copy-rep="${esc(code)}|${ri}">Copy</button></div>`;
       items.forEach(it => {
-        html += `<div class="home-note">
-          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.visited?'<span class="home-visited">Visited</span>':''}</div>
+        const fid = flagId(code, r.uid, it.boothNum);
+        const fl = (homeFlags[fid] || {}).state || "";
+        const flagAttrs = `data-flag="${esc(fid)}" data-flag-code="${esc(code)}" data-flag-uid="${esc(r.uid||"")}" data-flag-b="${esc(it.boothNum)}" data-flag-n="${esc(it.boothName)}"`;
+        html += `<div class="home-note${fl==="covered"?" covered":""}">
+          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.status==="customer"?'<span class="home-chip cust">Customer</span>':''}${it.status==="noncustomer"?'<span class="home-chip non">Non-Cust</span>':''}${it.visited?'<span class="home-visited">Visited</span>':''}</div>
           ${it.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(it.pre)}</div>` : ''}
           ${it.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(it.post)}</div>` : ''}
+          <div class="home-note-flags">
+            <button class="flag-btn${fl==="star"?" on-star":""}" type="button" ${flagAttrs} data-flag-state="star">${fl==="star"?"★":"☆"} Follow up</button>
+            <button class="flag-btn${fl==="covered"?" on-cov":""}" type="button" ${flagAttrs} data-flag-state="covered">✓ Covered</button>
+          </div>
         </div>`;
       });
       html += `</div>`;
@@ -2804,6 +2911,33 @@ let _dt = {};
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
 
+  const cpBrand = e.target.closest("[data-copy-brand]");
+  if (cpBrand) {
+    const code = cpBrand.dataset.copyBrand;
+    const ix = _homeCopyIndex[code];
+    if (ix) {
+      let t = ix.brandName + " (" + code + ") shared field notes\n\n";
+      ix.reps.forEach(rp => { t += "===== " + rp.name + " =====\n" + notesToText(rp.items); });
+      copyToClipboard(t);
+    }
+    return;
+  }
+  const cpRep = e.target.closest("[data-copy-rep]");
+  if (cpRep) {
+    const parts = cpRep.dataset.copyRep.split("|");
+    const rp = (_homeCopyIndex[parts[0]] || { reps: [] }).reps[parseInt(parts[1])];
+    if (rp) copyToClipboard(rp.name + " (" + parts[0] + ") shared field notes\n\n" + notesToText(rp.items));
+    return;
+  }
+  const flagBtn = e.target.closest("[data-flag]");
+  if (flagBtn) {
+    toggleHomeFlag(flagBtn.dataset.flag, flagBtn.dataset.flagState, {
+      code: flagBtn.dataset.flagCode, uid: flagBtn.dataset.flagUid,
+      b: flagBtn.dataset.flagB, n: flagBtn.dataset.flagN
+    });
+    return;
+  }
+
   const homeBrand = e.target.closest("[data-home-brand]");
   if (homeBrand) {
     homeBrandFilter = homeBrand.dataset.homeBrand || null;
@@ -3081,6 +3215,7 @@ document.getElementById("content").addEventListener("input", e => {
 });
 
 document.getElementById("content").addEventListener("change", e => {
+  if (e.target.id === "homeHideCov") { homeHideCovered = e.target.checked; renderHomeDashboard(); return; }
   if (e.target.id === "mealTimeSel") { mealFormTime = e.target.value; return; }
   if (e.target.id === "offTimeSel")  { offFormTime  = e.target.value; return; }
   const sel = e.target.closest(".sched-sel");
@@ -3485,6 +3620,14 @@ async function renderCleanupList() {
     const nt = await fbDb.collection("notes").get();
     nt.forEach(d => rows.push({ coll: "notes", id: d.id, name: d.data().name || "(no name)", event: d.data().eventCode || "", items: (d.data().items||[]).length }));
   } catch (e) {}
+  try {
+    // Home-team flags, grouped per event into one deletable row.
+    const fl = await fbDb.collection("homeFlags").get();
+    const groups = {};
+    fl.forEach(d => { const ev = (d.data() || {}).eventCode || "(unknown)"; (groups[ev] = groups[ev] || []).push(d.id); });
+    Object.entries(groups).forEach(([ev, ids]) =>
+      rows.push({ coll: "homeFlags", id: ids.join(","), name: "Home team flags", event: ev, items: ids.length }));
+  } catch (e) {}
   if (!rows.length) { el.innerHTML = `<div class="cleanup-empty">Nothing here.</div>`; return; }
   rows.sort((a,b) => (a.event||"").localeCompare(b.event||"") || a.name.localeCompare(b.name));
   el.innerHTML = rows.map(r =>
@@ -3508,9 +3651,18 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
   const btn = e.target.closest("[data-cl-id]");
   if (!btn) return;
   const coll = btn.dataset.clColl, id = btn.dataset.clId;
-  if (!confirm("Delete this " + coll.slice(0,-1) + " record? This can't be undone.")) return;
+  const ids = id.split(",").filter(Boolean);
+  const what = ids.length > 1 ? ids.length + " " + coll + " records" : "this " + coll.slice(0,-1) + " record";
+  if (!confirm("Delete " + what + "? This can't be undone.")) return;
   btn.disabled = true; btn.textContent = "…";
-  try { await fbDb.collection(coll).doc(id).delete(); toast("Deleted"); }
+  try {
+    for (let i = 0; i < ids.length; i += 400) {
+      const batch = fbDb.batch();
+      ids.slice(i, i + 400).forEach(x => batch.delete(fbDb.collection(coll).doc(x)));
+      await batch.commit();
+    }
+    toast("Deleted");
+  }
   catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
   renderCleanupList();
 });
@@ -3608,7 +3760,9 @@ function showSignedOut() {
   document.getElementById("mediaBtn").style.display = "none";
   document.body.classList.remove("home-mode");
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
+  if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
   homeNotes = {};
+  homeFlags = {};
   currentUser = null;
   masterEventOverride = null;
   setAuthMode("signin");
@@ -3661,6 +3815,7 @@ if (fbReady) {
         updateHeaderBrand("ncm", "Home Team");
         showSignedIn({ name: "Home Team" });
         subscribeHomeNotes();
+        subscribeHomeFlags();
         renderHomeDashboard();
         return;
       }

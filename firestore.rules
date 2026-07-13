@@ -43,6 +43,13 @@ service cloud.firestore {
       allow write: if isMaster();
     }
 
+    // Home-team workflow flags ("Follow up" / "Covered" on shared booth notes).
+    // Written by the shared home account so all four members see the same
+    // state across devices; masters can read and clean up.
+    match /homeFlags/{docId} {
+      allow read, create, update, delete: if request.auth != null && (isHome() || isMaster());
+    }
+
     // Archived past-show CSVs. Each doc is owned by the rep who archived it
     // (readable by them or a master); created by the owner; deletable by owner/master.
     match /archives/{docId} {
