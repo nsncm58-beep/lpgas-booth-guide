@@ -1493,8 +1493,6 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
 /* Home dashboard: status chips, freshness, copy buttons, workflow flags */
-.home-controls-row { display: flex; align-items: center; gap: 8px; margin: -6px 0 14px; font-size: 0.78rem; color: var(--muted); cursor: pointer; -webkit-user-select: none; user-select: none; }
-.home-controls-row input { width: 16px; height: 16px; accent-color: var(--blue); }
 .home-bar-right { display: flex; align-items: center; gap: 10px; }
 .home-copy-btn {
   border: 1px solid rgba(255,255,255,0.55); background: transparent; color: #fff;
@@ -2280,7 +2278,6 @@ function fmtAgo(ts) {
 // home account across devices; masters can read + clean up.
 let homeFlags = {};            // docId -> { state: "star" | "covered", ... }
 let _homeFlagsUnsub = null;
-let homeHideCovered = false;
 let _homeCopyIndex = {};       // eventCode -> { brandName, reps: [{name, items}] } from the last render
 function flagId(code, uid, boothNum) { return code + "__" + uid + "__" + boothNum; }
 function subscribeHomeFlags() {
@@ -2361,8 +2358,7 @@ function renderHomeDashboard() {
     ${buildHomeFilter()}
     <div class="home-search-box">
       <input class="home-search-input" type="text" placeholder="Search companies or note text…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
-    </div>
-    <label class="home-controls-row"><input type="checkbox" id="homeHideCov"${homeHideCovered ? " checked" : ""}> Hide covered booths</label>`;
+    </div>`;
   // Show media: one link per show with a team Dropbox folder configured.
   // Field reps upload via the file request; everything lands in this folder.
   let mediaCodes = Object.keys(MEDIA).filter(c => { const m = eventMedia(c); return m && m.folder; });
@@ -2382,11 +2378,8 @@ function renderHomeDashboard() {
   codes.forEach(code => {
     const brand = BRANDS[resolveEvent(code).brand] || BRANDS.ncm;
     const reps = byEvent[code].slice().sort((a,b) => docTs(b) - docTs(a) || (a.name||"").localeCompare(b.name||""));
-    const repsWithMatches = reps.map(r => {
-      let items = (r.items||[]).filter(matchItem);
-      if (homeHideCovered) items = items.filter(it => (homeFlags[flagId(code, r.uid, it.boothNum)] || {}).state !== "covered");
-      return { r, items };
-    }).filter(x => x.items.length);
+    const repsWithMatches = reps.map(r => ({ r, items: (r.items||[]).filter(matchItem) }))
+      .filter(x => x.items.length);
     if (!repsWithMatches.length) return;
     anyShown = true;
     _homeCopyIndex[code] = { brandName: brand.name, reps: [] };
@@ -3215,7 +3208,6 @@ document.getElementById("content").addEventListener("input", e => {
 });
 
 document.getElementById("content").addEventListener("change", e => {
-  if (e.target.id === "homeHideCov") { homeHideCovered = e.target.checked; renderHomeDashboard(); return; }
   if (e.target.id === "mealTimeSel") { mealFormTime = e.target.value; return; }
   if (e.target.id === "offTimeSel")  { offFormTime  = e.target.value; return; }
   const sel = e.target.closest(".sched-sel");
