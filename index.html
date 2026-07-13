@@ -1356,6 +1356,15 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Masters' names open the event codes & QR guide */
+.user-chip-name.chip-admin {
+  cursor: pointer;
+  text-decoration: underline dotted rgba(255,255,255,0.65);
+  text-underline-offset: 3px;
+  -webkit-user-select: none; user-select: none;
+}
+.user-chip-name.chip-admin:active { opacity: 0.75;
+}
 .user-chip-out {
   border: 1px solid rgba(255,255,255,0.45);
   background: transparent;
@@ -1558,8 +1567,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
-      <div class="settings-dbx-note">Event codes with install/join QR codes, plus tools to review and delete stray records across all brands.</div>
-      <button class="settings-dbx-btn admin-btn" id="adminGuideBtn" type="button">Event codes &amp; install QRs</button>
+      <div class="settings-dbx-note">Review and delete any stray records (test accounts, old entries) across all brands. Tip: tap your name in the header for event codes &amp; install QRs.</div>
       <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button">Clean up team data</button>
     </div>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
@@ -3447,7 +3455,11 @@ async function openGuideSheet() {
       '<div class="guide-note">QR codes need a connection. The links and codes above still work.</div>';
   }
 }
-document.getElementById("adminGuideBtn").addEventListener("click", openGuideSheet);
+// The guide hangs off the admin's own name in the header (masters only) —
+// tap "Nate"/"Rachel" to open it. Field reps' names aren't tappable.
+document.getElementById("userChipName").addEventListener("click", () => {
+  if (isMaster()) openGuideSheet();
+});
 document.getElementById("guideClose").addEventListener("click", () => {
   document.getElementById("guideSheet").style.display = "none";
 });
@@ -3566,6 +3578,9 @@ function showSignedIn(profile) {
   authEls.chip.style.display = "";
   const nm = (profile && profile.name) || "Signed in";
   authEls.chipName.textContent = isHome() ? nm : (nm.trim().split(/\s+/)[0] || nm);
+  // Masters' names are tappable — they open the event codes & QR guide.
+  authEls.chipName.classList.toggle("chip-admin", isMaster());
+  authEls.chipName.title = isMaster() ? "Event codes & install QRs" : "";
   authEls.submit.disabled = false;
   authEls.pass.value = "";
 }
