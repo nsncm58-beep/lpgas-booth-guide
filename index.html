@@ -1485,6 +1485,17 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
 /* Home dashboard: status chips, freshness, copy buttons, workflow flags */
+.home-view-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.home-view-tab {
+  flex: 1; padding: 10px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px;
+  text-transform: uppercase; cursor: pointer;
+}
+.home-view-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.home-rep-head { cursor: pointer; -webkit-user-select: none; user-select: none; }
+.home-rep-chev { color: var(--muted); font-size: 0.75rem; width: 14px; display: inline-block; flex-shrink: 0; }
+.home-note.covered .home-note-co { text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .home-bar-right { display: flex; align-items: center; gap: 10px; }
 .home-copy-btn {
   border: 1px solid rgba(255,255,255,0.55); background: transparent; color: #fff;
@@ -2292,6 +2303,26 @@ function toggleHomeFlag(id, state, meta) {
         boothNum: meta.b, boothName: meta.n, ts: Date.now() });
   op.catch(() => toast("Couldn't save the flag (are the latest Firestore rules published?)"));
 }
+// Home dashboard organization: two views (Notes / Schedules), collapsible
+// per-rep sections in Notes, and read-only rep schedules in Schedules
+// (mirrors the field team view; needs isHome() on schedules read in rules).
+let homeView = "notes";           // "notes" | "sched"
+const homeOpenReps = new Set();   // "<code>|<uid>" keys of expanded rep sections
+let homeSchedules = {};           // docId -> schedule doc (home view only)
+let _homeSchedUnsub = null;
+let homeSchedRep = null;          // selected schedules docId
+let homeSchedDay = 1;
+function homeDocTs(d) { return (d && d.updatedAt && typeof d.updatedAt.toMillis === "function") ? d.updatedAt.toMillis() : 0; }
+function subscribeHomeSchedules() {
+  if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
+  homeSchedules = {};
+  if (!fbReady || !isHome()) return;
+  _homeSchedUnsub = fbDb.collection("schedules").onSnapshot(snap => {
+    homeSchedules = {};
+    snap.forEach(d => { const x = d.data(); if (x && x.uid) homeSchedules[d.id] = x; });
+    if (isHome() && homeView === "sched") renderHomeDashboard();
+  }, () => {});
+}
 // Copy-for-content: clean plain text of what's on screen, ready to paste
 // into a draft. Respects the current search/filter/hide-covered view.
 function notesToText(items) {
@@ -2332,6 +2363,26 @@ function buildHomeFilter() {
 }
 function renderHomeDashboard() {
   const el = document.getElementById("content");
+  const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
+  let html = `<div class="home-wrap">
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>${homeView === "sched" ? "Rep schedules (view only): " : "Shared field notes: "}${esc(filterName)}.</p></div>
+    ${buildHomeFilter()}
+    <div class="home-view-tabs">
+      <button class="home-view-tab${homeView==="notes"?" active":""}" type="button" data-home-view="notes">Notes</button>
+      <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
+    </div>`;
+  html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
+  html += `</div>`;
+  el.innerHTML = html;
+  if (homeView === "notes" && homeSearchQ.trim()) {
+    const si = document.querySelector(".home-search-input");
+    if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
+  }
+}
+
+// The Notes view: search + media links + per-brand sections with collapsible
+// per-rep accordions (tap a rep header to expand; searching auto-expands).
+function buildHomeNotesView() {
   const byEvent = {};
   Object.values(homeNotes).forEach(d => { (byEvent[d.eventCode] = byEvent[d.eventCode] || []).push(d); });
   let codes = Object.keys(byEvent).sort();
@@ -2343,11 +2394,9 @@ function renderHomeDashboard() {
   const matchItem = it => (it.pre || it.post || it.visited) &&
     (!q || (it.boothName||"").toLowerCase().includes(q) || (it.boothNum||"").toLowerCase().includes(q)
         || (it.pre||"").toLowerCase().includes(q)       || (it.post||"").toLowerCase().includes(q));
-  const docTs = d => (d.updatedAt && typeof d.updatedAt.toMillis === "function") ? d.updatedAt.toMillis() : 0;
+  const docTs = homeDocTs;
   _homeCopyIndex = {};
-  let html = `<div class="home-wrap">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>Shared field notes: ${esc(filterName)}. Freshest reps float to the top.</p></div>
-    ${buildHomeFilter()}
+  let html = `
     <div class="home-search-box">
       <input class="home-search-input" type="text" placeholder="Search companies or note text…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
     </div>`;
@@ -2383,9 +2432,11 @@ function renderHomeDashboard() {
     repsWithMatches.forEach(({ r, items }, ri) => {
       _homeCopyIndex[code].reps.push({ name: r.name || "Rep", items });
       const ago = fmtAgo(docTs(r));
+      const repKey = code + "|" + (r.uid || "");
+      const open = !!q || homeOpenReps.has(repKey);   // searching auto-expands matches
       html += `<div class="home-rep">
-        <div class="home-rep-name">${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span>${ago ? `<span class="home-rep-ago">updated ${esc(ago)}</span>` : ""}<button class="home-copy-btn rep" type="button" data-copy-rep="${esc(code)}|${ri}">Copy</button></div>`;
-      items.forEach(it => {
+        <div class="home-rep-name home-rep-head" data-rep-toggle="${esc(repKey)}"><span class="home-rep-chev">${open ? "▾" : "▸"}</span>${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span>${ago ? `<span class="home-rep-ago">updated ${esc(ago)}</span>` : ""}<button class="home-copy-btn rep" type="button" data-copy-rep="${esc(code)}|${ri}">Copy</button></div>`;
+      if (open) items.forEach(it => {
         const fid = flagId(code, r.uid, it.boothNum);
         const fl = (homeFlags[fid] || {}).state || "";
         const flagAttrs = `data-flag="${esc(fid)}" data-flag-code="${esc(code)}" data-flag-uid="${esc(r.uid||"")}" data-flag-b="${esc(it.boothNum)}" data-flag-n="${esc(it.boothName)}"`;
@@ -2406,9 +2457,46 @@ function renderHomeDashboard() {
   if (!anyShown) {
     html += `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes appear here when someone in the field turns on "Share notes with the home team."')}</p></div>`;
   }
-  html += `</div>`;
-  el.innerHTML = html;
-  if (q) { const si = document.querySelector(".home-search-input"); if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); } }
+  return html;
+}
+
+// The Schedules view: pick a rep, see their Day 1/2/3 agenda read-only
+// (same cards as the field team view; data = the schedules collection).
+function buildHomeSchedView() {
+  let entries = Object.entries(homeSchedules);
+  if (homeBrandFilter) entries = entries.filter(([id, s]) => resolveEvent(s.eventCode).brand === homeBrandFilter);
+  entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
+  if (!entries.length) {
+    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>Rep agendas appear here automatically as the field builds them${homeBrandFilter ? " for " + esc(BRANDS[homeBrandFilter].name) : ""}.</p></div>`;
+  }
+  if (!homeSchedRep || !entries.some(([id]) => id === homeSchedRep)) homeSchedRep = entries[0][0];
+  const sel = homeSchedules[homeSchedRep];
+  let h = `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
+    `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(s.eventCode||"")}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
+  const items = Array.isArray(sel.items) ? sel.items : [];
+  const dc = [0,0,0,0];
+  items.forEach(it => { if (it.day>=1 && it.day<=3) dc[it.day]++; });
+  h += `<div class="sched-day-tabs">` + [1,2,3].map(d => `
+    <button class="sched-day-tab${homeSchedDay===d?" active":""}" data-hs-day="${d}">
+      <span class="stdt-day">Day ${d}</span>
+      <span class="stdt-count">${dc[d]} booked</span>
+    </button>`).join("") + `</div>`;
+  const ago = fmtAgo(homeDocTs(sel));
+  h += `<div class="ro-banner">Viewing <strong>${esc(sel.name||"rep")}</strong> (${esc(sel.eventCode||"")})${ago ? " · updated " + esc(ago) : ""} · view only</div>`;
+  const byTime = {};
+  items.filter(it => it.day === homeSchedDay).forEach(it => { (byTime[it.time] = byTime[it.time]||[]).push(it); });
+  const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
+  if (!slotTimes.length) {
+    h += `<div class="sched-empty"><h4>Nothing booked on Day ${homeSchedDay}</h4>
+      <p>${esc(sel.name||"This rep")} hasn't scheduled anything for this day.</p></div>`;
+  } else {
+    slotTimes.forEach(t => {
+      h += `<div class="time-slot"><div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span><span class="time-line"></span></div>`;
+      byTime[t].forEach(it => { h += roCardHtml(it); });
+      h += `</div>`;
+    });
+  }
+  return h;
 }
 
 function rowKey(b) {
@@ -2924,6 +3012,20 @@ document.getElementById("content").addEventListener("click", e => {
     });
     return;
   }
+
+  const hv = e.target.closest("[data-home-view]");
+  if (hv) { homeView = hv.dataset.homeView; renderHomeDashboard(); return; }
+  const rt = e.target.closest("[data-rep-toggle]");
+  if (rt) {
+    const k = rt.dataset.repToggle;
+    if (homeOpenReps.has(k)) homeOpenReps.delete(k); else homeOpenReps.add(k);
+    renderHomeDashboard();
+    return;
+  }
+  const hsr = e.target.closest("[data-hs-rep]");
+  if (hsr) { homeSchedRep = hsr.dataset.hsRep; renderHomeDashboard(); return; }
+  const hsd = e.target.closest("[data-hs-day]");
+  if (hsd) { homeSchedDay = parseInt(hsd.dataset.hsDay); renderHomeDashboard(); return; }
 
   const homeBrand = e.target.closest("[data-home-brand]");
   if (homeBrand) {
@@ -3747,8 +3849,12 @@ function showSignedOut() {
   document.body.classList.remove("home-mode");
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
+  if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
   homeNotes = {};
   homeFlags = {};
+  homeSchedules = {};
+  homeView = "notes"; homeSchedRep = null; homeSchedDay = 1;
+  homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
   setAuthMode("signin");
@@ -3802,6 +3908,7 @@ if (fbReady) {
         showSignedIn({ name: "Home Team" });
         subscribeHomeNotes();
         subscribeHomeFlags();
+        subscribeHomeSchedules();
         renderHomeDashboard();
         return;
       }

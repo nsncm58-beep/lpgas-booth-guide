@@ -20,8 +20,9 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
+    // isHome(): the home dashboard's Schedules view shows rep agendas read-only.
     match /schedules/{docId} {
-      allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster());
+      allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster() || isHome());
       allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
