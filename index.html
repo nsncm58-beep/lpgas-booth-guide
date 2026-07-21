@@ -1496,6 +1496,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-rep-head { cursor: pointer; -webkit-user-select: none; user-select: none; }
 .home-rep-chev { color: var(--muted); font-size: 0.75rem; width: 14px; display: inline-block; flex-shrink: 0; }
 .home-note.covered .home-note-co { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.hs-hit-meta { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin: 10px 0 4px; }
 .home-bar-right { display: flex; align-items: center; gap: 10px; }
 .home-copy-btn {
   border: 1px solid rgba(255,255,255,0.55); background: transparent; color: #fff;
@@ -2312,6 +2313,12 @@ let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
 let homeSchedRep = null;          // selected schedules docId
 let homeSchedDay = 1;
+let homeSchedQ = "";              // Schedules-view search (across ALL reps + days)
+function schedItemMatch(it, q) {
+  return [it.boothName, it.boothNum, it.company, it.title, it.location, it.notes,
+          MEAL_LABEL[it.mealType] || "", it.time]
+    .some(x => (x || "").toLowerCase().includes(q));
+}
 function homeDocTs(d) { return (d && d.updatedAt && typeof d.updatedAt.toMillis === "function") ? d.updatedAt.toMillis() : 0; }
 function subscribeHomeSchedules() {
   if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
@@ -2374,8 +2381,9 @@ function renderHomeDashboard() {
   html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
   html += `</div>`;
   el.innerHTML = html;
-  if (homeView === "notes" && homeSearchQ.trim()) {
-    const si = document.querySelector(".home-search-input");
+  const activeQ = homeView === "sched" ? homeSchedQ : homeSearchQ;
+  if (activeQ.trim()) {
+    const si = document.querySelector(homeView === "sched" ? ".hs-search-input" : ".home-search-input");
     if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
   }
 }
@@ -2469,9 +2477,35 @@ function buildHomeSchedView() {
   if (!entries.length) {
     return `<div class="empty-wrap"><h3>No schedules to show</h3><p>Rep agendas appear here automatically as the field builds them${homeBrandFilter ? " for " + esc(BRANDS[homeBrandFilter].name) : ""}.</p></div>`;
   }
+  let h = `<div class="home-search-box">
+    <input class="home-search-input hs-search-input" type="text" placeholder="Search all agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
+  </div>`;
+  const q = homeSchedQ.trim().toLowerCase();
+  // Searching scans EVERY rep's agenda across all three days and returns a
+  // flat hit list ("who is meeting X, and when"). Empty search = rep picker.
+  if (q) {
+    let anyHit = false;
+    entries.forEach(([id, s]) => {
+      const hits = (Array.isArray(s.items) ? s.items : [])
+        .filter(it => schedItemMatch(it, q))
+        .sort((a, b) => (a.day - b.day) || (timeToMin(a.time || "") - timeToMin(b.time || "")));
+      if (!hits.length) return;
+      anyHit = true;
+      h += `<div class="home-rep">
+        <div class="home-rep-name">${esc(s.name || "Rep")}<span class="home-rep-count">${hits.length} match${hits.length === 1 ? "" : "es"}</span><span class="home-rep-ago">${esc(s.eventCode || "")}</span></div>`;
+      hits.forEach(it => {
+        h += `<div class="hs-hit-meta">Day ${esc(String(it.day))} · ${esc(it.time || "")}</div>` + roCardHtml(it);
+      });
+      h += `</div>`;
+    });
+    if (!anyHit) {
+      h += `<div class="empty-wrap"><h3>No matches</h3><p>Nothing in any rep's agenda matches "${esc(homeSchedQ)}".</p></div>`;
+    }
+    return h;
+  }
   if (!homeSchedRep || !entries.some(([id]) => id === homeSchedRep)) homeSchedRep = entries[0][0];
   const sel = homeSchedules[homeSchedRep];
-  let h = `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
+  h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
     `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(s.eventCode||"")}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
   const items = Array.isArray(sel.items) ? sel.items : [];
   const dc = [0,0,0,0];
@@ -3030,7 +3064,7 @@ document.getElementById("content").addEventListener("click", e => {
   const homeBrand = e.target.closest("[data-home-brand]");
   if (homeBrand) {
     homeBrandFilter = homeBrand.dataset.homeBrand || null;
-    homeSearchQ = "";
+    homeSearchQ = ""; homeSchedQ = "";
     applyBrand(homeBrandFilter || "ncm");
     updateHeaderBrand(homeBrandFilter || "ncm", "Home Team");
     renderHomeDashboard();
@@ -3240,6 +3274,7 @@ document.getElementById("content").addEventListener("click", e => {
 });
 
 document.getElementById("content").addEventListener("input", e => {
+  if (e.target.classList.contains("hs-search-input")) { homeSchedQ = e.target.value; renderHomeDashboard(); return; }
   if (e.target.classList.contains("home-search-input")) { homeSearchQ = e.target.value; renderHomeDashboard(); return; }
   if (e.target.id === "mealCompanyInp") { mealFormCompany = e.target.value; return; }
   if (e.target.id === "mealNotesInp")   { mealFormNotes   = e.target.value; return; }
@@ -3853,7 +3888,7 @@ function showSignedOut() {
   homeNotes = {};
   homeFlags = {};
   homeSchedules = {};
-  homeView = "notes"; homeSchedRep = null; homeSchedDay = 1;
+  homeView = "notes"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
   homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
