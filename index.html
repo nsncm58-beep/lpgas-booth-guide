@@ -1579,20 +1579,13 @@ body.home-mode .user-chip-gear { display: none !important; }
 <div id="settingsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title">Settings</div>
-    <label class="settings-row">
-      <span class="settings-row-text">
-        <strong>Share my notes with the home team</strong>
-        <small>Your pre- and post-visit notes become visible to the home team. Off by default.</small>
-      </span>
-      <input type="checkbox" id="shareNotesToggle" class="settings-switch">
-    </label>
-    <div class="settings-dbx-title" style="margin-top:16px">My team</div>
+    <div class="settings-dbx-title">My team</div>
     <select id="deptSelect" class="settings-dbx-input">
       <option value="">Choose…</option>
       <option value="edit">Editorial / Digital</option>
       <option value="sales">Sales</option>
     </select>
-    <div class="settings-dbx-note">The home team's Schedules view only shows Editorial / Digital schedules.</div>
+    <div class="settings-dbx-note">Editorial / Digital: your notes and schedule are shared with the home team automatically. Sales: nothing is shared with the home team.</div>
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
       <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
@@ -1659,18 +1652,6 @@ body.home-mode .user-chip-gear { display: none !important; }
     <p class="share-prompt-text"><strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
     <button class="settings-done" id="mediaUploadOpen" type="button">Open uploader</button>
     <button class="settings-done share-secondary" id="mediaSheetClose" type="button">Close</button>
-  </div>
-</div>
-
-<!-- ── First-run: share notes with home team? ── -->
-<div id="sharePrompt" class="settings-sheet" style="display:none">
-  <div class="settings-card">
-    <div class="settings-title">Share your notes with the home team?</div>
-    <p class="share-prompt-text">The home team uses your post-visit notes to create content during the show. You can turn this on or off anytime from the settings gear.</p>
-    <div class="share-prompt-actions">
-      <button class="settings-done share-secondary" id="shareNo" type="button">Not now</button>
-      <button class="settings-done" id="shareYes" type="button">Yes, share</button>
-    </div>
   </div>
 </div>
 
@@ -2130,11 +2111,17 @@ function timeToMin(t) {
 // A master account can jump between brands. The active event drives theme,
 // booth list, team subscription, and which localStorage bucket is used.
 const MASTER_EMAILS = ["nstoltman@northcoastmedia.net", "rrosen@northcoastmedia.net"];
+// Sharing policy is team-based: Editorial/Digital ("edit") notes + schedules
+// flow to the home team automatically; Sales never do. Brian Kanaba predates
+// the team field and is pinned to Sales here by the owner's explicit call —
+// this hides his notes/schedule from the home DISPLAY only; nothing of his
+// is ever deleted (his local data and existing cloud docs stay untouched).
+const DEPT_OVERRIDES = { "nF8nwrY8EvXFVXWyP7mgnPtjlT02": "sales" };   // Brian Kanaba
+function effectiveDept(uid, dept) { return DEPT_OVERRIDES[uid] || dept || ""; }
 // Home team uses a shared account. Only the (non-secret) email lives in code;
 // the passcode is typed once by the team and remembered by the browser.
 const HOME_TEAM_EMAIL = "hometeam@northcoastmedia.net";
 let masterEventOverride = null;   // set when a master switches brand
-let pendingSharePrompt = false;   // true right after a new account is created
 function isMaster() {
   if (!currentUser) return false;
   return currentUser.role === "master" || currentUser.master === true
@@ -2199,25 +2186,28 @@ function buildSharedNotes() {
   });
   return items;
 }
+function myNotesAutoShare() {
+  return !!currentUser && effectiveDept(currentUser.uid, currentUser.dept) === "edit";
+}
 function queueNotesSync() {
-  if (!fbReady || !currentUser || !currentUser.shareNotes) return;
+  if (!fbReady || !myNotesAutoShare()) return;
   clearTimeout(_notesSyncTimer);
   _notesSyncTimer = setTimeout(syncMyNotesToCloud, 1400);
 }
 async function syncMyNotesToCloud() {
-  if (!fbReady || !currentUser) return;
+  // Editorial/Digital notes share automatically. For Sales/unclassified this
+  // is a NO-OP by design: we never write, and we NEVER DELETE an existing
+  // cloud notes doc (owner's requirement — e.g. Brian's notes must survive;
+  // the home dashboard simply doesn't display non-edit docs).
+  if (!fbReady || !myNotesAutoShare()) return;
   const code = currentEventCode();
   if (!code) return;
-  const docId = myScheduleDocId();
   try {
-    if (currentUser.shareNotes) {
-      await fbDb.collection("notes").doc(docId).set({
-        uid: currentUser.uid, name: currentUser.name || "", eventCode: code,
-        items: buildSharedNotes(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else {
-      await fbDb.collection("notes").doc(docId).delete().catch(() => {});
-    }
+    await fbDb.collection("notes").doc(myScheduleDocId()).set({
+      uid: currentUser.uid, name: currentUser.name || "", eventCode: code,
+      dept: "edit",
+      items: buildSharedNotes(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
   } catch (e) { /* offline — retry later */ }
 }
 
@@ -2255,7 +2245,7 @@ async function syncMyScheduleToCloud() {
       uid: currentUser.uid,
       name: currentUser.name || "",
       eventCode: code,
-      dept: currentUser.dept || "",   // home dashboard shows edit/digital only
+      dept: effectiveDept(currentUser.uid, currentUser.dept),   // home shows edit/digital only
       items: buildMyScheduleItems(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -2415,7 +2405,11 @@ function renderHomeDashboard() {
 // per-rep accordions (tap a rep header to expand; searching auto-expands).
 function buildHomeNotesView() {
   const byEvent = {};
-  Object.values(homeNotes).forEach(d => { (byEvent[d.eventCode] = byEvent[d.eventCode] || []).push(d); });
+  // Display only Editorial/Digital docs (sales + unclassified stay hidden;
+  // their docs are untouched in Firestore, just not rendered here).
+  Object.values(homeNotes)
+    .filter(d => effectiveDept(d.uid, d.dept) === "edit")
+    .forEach(d => { (byEvent[d.eventCode] = byEvent[d.eventCode] || []).push(d); });
   let codes = Object.keys(byEvent).sort();
   if (homeBrandFilter) codes = codes.filter(c => resolveEvent(c).brand === homeBrandFilter);
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
@@ -2486,7 +2480,7 @@ function buildHomeNotesView() {
     html += `</section>`;
   });
   if (!anyShown) {
-    html += `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes appear here when someone in the field turns on "Share notes with the home team."')}</p></div>`;
+    html += `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes from Editorial / Digital reps appear here automatically as they work the floor.')}</p></div>`;
   }
   return html;
 }
@@ -2495,7 +2489,7 @@ function buildHomeNotesView() {
 // (same cards as the field team view; data = the schedules collection).
 function buildHomeSchedView() {
   let entries = Object.entries(homeSchedules)
-    .filter(([id, s]) => s.dept === "edit");   // edit/digital only; sales and unclassified never show
+    .filter(([id, s]) => effectiveDept(s.uid, s.dept) === "edit");   // edit/digital only
   if (homeBrandFilter) entries = entries.filter(([id, s]) => resolveEvent(s.eventCode).brand === homeBrandFilter);
   entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
   if (!entries.length) {
@@ -3598,10 +3592,9 @@ authEls.form.addEventListener("submit", async (e) => {
         authErr("That event code doesn't exist. Double-check it with your team and enter a valid code.");
         authEls.submit.disabled = false; return;
       }
-      pendingSharePrompt = true;   // set before createUser so it's ready when onAuthStateChanged fires
       const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
       await fbDb.collection("users").doc(cred.user.uid).set({
-        name, email, eventCode, dept, role: "field", shareNotes: false,
+        name, email, eventCode, dept, role: "field",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } else {
@@ -3609,7 +3602,6 @@ authEls.form.addEventListener("submit", async (e) => {
     }
     // onAuthStateChanged finishes the flow
   } catch (err) {
-    pendingSharePrompt = false;
     authErr(mapAuthError(err));
     authEls.submit.disabled = false;
   }
@@ -3623,7 +3615,6 @@ function currentShowLabel() {
   return (b.name || "this show") + (currentEventCode() ? " (" + currentEventCode() + ")" : "");
 }
 document.getElementById("settingsBtn").addEventListener("click", () => {
-  document.getElementById("shareNotesToggle").checked = !!(currentUser && currentUser.shareNotes);
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("newShowCode").value = "";
@@ -3862,31 +3853,13 @@ document.getElementById("newShowConfirmBtn").addEventListener("click", async () 
   document.getElementById("newShowConfirm").style.display = "none";
   toast("Archived. You're now on " + newCode);
 });
-document.getElementById("shareYes").addEventListener("click", async () => {
-  document.getElementById("sharePrompt").style.display = "none";
-  if (!currentUser) return;
-  currentUser.shareNotes = true;
-  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ shareNotes: true }, { merge: true }); } catch (e) {}
-  syncMyNotesToCloud();
-  toast("Notes will be shared with the home team");
-});
-document.getElementById("shareNo").addEventListener("click", () => {
-  document.getElementById("sharePrompt").style.display = "none";
-});
 document.getElementById("deptSelect").addEventListener("change", async e => {
   if (!currentUser || !e.target.value) return;
   currentUser.dept = e.target.value;
   try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ dept: currentUser.dept }, { merge: true }); } catch (err) {}
   queueScheduleSync();   // restamp the cloud schedule with the new team
+  queueNotesSync();      // edit -> start auto-sharing notes (sales -> no-op, nothing deleted)
   toast(currentUser.dept === "edit" ? "Set to Editorial / Digital" : "Set to Sales");
-});
-document.getElementById("shareNotesToggle").addEventListener("change", async e => {
-  if (!currentUser) return;
-  const on = e.target.checked;
-  currentUser.shareNotes = on;
-  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ shareNotes: on }, { merge: true }); } catch (err) {}
-  syncMyNotesToCloud();   // push now (or delete the shared doc when turning off)
-  toast(on ? "Notes shared with the home team" : "Notes no longer shared");
 });
 async function loadUserDoc(uid) {
   try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
@@ -4009,7 +3982,6 @@ if (fbReady) {
       subscribeTeam();
       updateMediaBtn();
       render();
-      if (pendingSharePrompt) { pendingSharePrompt = false; document.getElementById("sharePrompt").style.display = "flex"; }
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       teamSchedules = {};
