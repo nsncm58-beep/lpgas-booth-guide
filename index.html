@@ -1458,6 +1458,21 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--blue); margin: 8px 0 3px; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
+/* Home dashboard: All-Brands overview cards */
+.home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; }
+.home-ov-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+.home-ov-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.12); }
+.home-ov-bar { color: #fff; padding: 11px 14px; display: flex; align-items: center; gap: 10px; font-family: var(--fd); font-weight: 800; font-size: 0.95rem; letter-spacing: 0.3px; }
+.home-ov-bar img { height: 20px; display: block; }
+.home-ov-body { padding: 12px 14px 14px; }
+.home-ov-code { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 10px; }
+.home-ov-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-bottom: 12px; }
+.home-ov-stat strong { display: block; font-family: var(--fd); font-weight: 900; font-size: 1.25rem; color: var(--text); line-height: 1.1; }
+.home-ov-stat span { font-size: 0.66rem; color: var(--muted); font-weight: 600; }
+.home-ov-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-soft); padding-top: 10px; font-size: 0.68rem; color: var(--muted); }
+.home-ov-media { font-weight: 700; color: var(--blue); text-decoration: none; white-space: nowrap; }
+.home-ov-hint { text-align: center; font-size: 0.74rem; color: var(--muted); margin-top: 18px; }
+
 /* Home dashboard: reminders aside (video pipeline) */
 .home-aside { margin: 16px 0 0; }
 @media (min-width: 1040px) {
@@ -2395,6 +2410,61 @@ function buildHomeReminders() {
   h += `</div></aside>`;
   return h;
 }
+
+// All-Brands landing: one live status card per brand (mission control).
+// Picking a brand (card or chip) opens its notes/schedules/search.
+function buildHomeOverview() {
+  let h = `<div class="home-ov-grid">`;
+  HOME_FILTER_BRANDS.forEach(bk => {
+    const brand = BRANDS[bk];
+    const codes = VALID_EVENT_CODES.filter(c => resolveEvent(c).brand === bk);
+    const notesDocs = Object.values(homeNotes).filter(d =>
+      codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
+    const schedDocs = Object.values(homeSchedules).filter(d =>
+      codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
+    const reps = new Set();
+    notesDocs.forEach(d => reps.add(d.uid));
+    schedDocs.forEach(d => reps.add(d.uid));
+    let visited = 0, notesN = 0, vidDone = 0, stars = 0, last = 0;
+    notesDocs.forEach(d => {
+      last = Math.max(last, homeDocTs(d));
+      (d.items || []).forEach(it => {
+        if (it.pre || it.post) notesN++;
+        if (!it.visited) return;
+        visited++;
+        if (homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum]) vidDone++;
+      });
+    });
+    schedDocs.forEach(d => { last = Math.max(last, homeDocTs(d)); });
+    Object.values(homeFlags).forEach(f => {
+      if (f.state === "star" && codes.includes(f.eventCode)) stars++;
+    });
+    const vidPending = visited - vidDone;
+    const media = codes.map(c => eventMedia(c)).find(m => m && m.folder);
+    const code = codes[0] || "";
+    h += `<div class="home-ov-card" data-home-brand="${esc(bk)}" role="button" tabindex="0">
+      <div class="home-ov-bar" style="background:${brand.p.blue}">
+        <img src="./${esc(brand.logo)}" alt="" onerror="this.style.display='none'">
+        <span>${esc(brand.name)}</span>
+      </div>
+      <div class="home-ov-body">
+        <div class="home-ov-code">${esc(code)}</div>
+        <div class="home-ov-stats">
+          <div class="home-ov-stat"><strong>${reps.size}</strong><span>rep${reps.size===1?"":"s"} active</span></div>
+          <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
+          <div class="home-ov-stat"><strong>${notesN}</strong><span>notes</span></div>
+          <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
+        </div>
+        <div class="home-ov-foot">
+          <span>${stars ? "★ " + stars + " follow-up" + (stars===1?"":"s") + " · " : ""}${last ? "active " + esc(fmtAgo(last)) : "no activity yet"}</span>
+          ${media ? `<a class="home-ov-media" href="${esc(media.folder)}" target="_blank" rel="noopener">Photos &amp; videos</a>` : ""}
+        </div>
+      </div>
+    </div>`;
+  });
+  h += `</div><div class="home-ov-hint">Pick a brand for its notes, schedules and search.</div>`;
+  return h;
+}
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
 // (mirrors the field team view; needs isHome() on schedules read in rules).
@@ -2462,14 +2532,21 @@ function buildHomeFilter() {
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
+  const subtitle = !homeBrandFilter ? "Live overview of every brand."
+    : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "."
+                            : "Shared field notes: " + esc(filterName) + ".");
   let html = `<div class="home-wrap"><div class="home-main">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>${homeView === "sched" ? "Rep schedules (view only): " : "Shared field notes: "}${esc(filterName)}.</p></div>
-    ${buildHomeFilter()}
-    <div class="home-view-tabs">
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle}</p></div>
+    ${buildHomeFilter()}`;
+  if (homeBrandFilter) {
+    html += `<div class="home-view-tabs">
       <button class="home-view-tab${homeView==="notes"?" active":""}" type="button" data-home-view="notes">Notes</button>
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
     </div>`;
-  html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
+    html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
+  } else {
+    html += buildHomeOverview();
+  }
   html += `</div>` + buildHomeReminders() + `</div>`;
   el.innerHTML = html;
   const activeQ = homeView === "sched" ? homeSchedQ : homeSearchQ;
@@ -3168,6 +3245,7 @@ document.getElementById("content").addEventListener("click", e => {
 
   const homeBrand = e.target.closest("[data-home-brand]");
   if (homeBrand) {
+    if (e.target.closest("a")) return;   // the card's Photos & videos link is just a link
     homeBrandFilter = homeBrand.dataset.homeBrand || null;
     homeSearchQ = ""; homeSchedQ = "";
     applyBrand(homeBrandFilter || "ncm");
