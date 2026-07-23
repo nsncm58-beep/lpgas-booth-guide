@@ -3,7 +3,7 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v50';
+const CACHE_NAME = 'ncm-events-guide-v51';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
@@ -26,10 +26,6 @@ self.addEventListener('activate', event => {
         )
     );
     self.clients.claim();
-});
-
-self.addEventListener('message', event => {
-    if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', event => {

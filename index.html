@@ -686,33 +686,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
-/* ── UPDATE BANNER ── */
-#update-banner {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 600;
-  background: var(--blue-deeper);
-  color: #fff;
-  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0));
-  text-align: center;
-  font-size: 0.86rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  border-top: 2px solid rgba(255,255,255,0.18);
-  display: none;
-  -webkit-user-select: none; user-select: none;
-}
-#update-banner.show { display: block; animation: fadeUp 0.35s ease; }
-.ub-action {
-  display: inline-block;
-  margin-left: 12px;
-  background: rgba(255,255,255,0.22);
-  border-radius: 6px;
-  padding: 3px 11px;
-  font-size: 0.78rem;
-}
-
 /* ── FOOTER ── */
 .app-footer {
   padding: 18px 16px calc(36px + env(safe-area-inset-bottom, 0));
@@ -1552,8 +1525,6 @@ body.home-mode .user-chip-gear { display: none !important; }
 </style>
 </head>
 <body>
-
-<div id="update-banner" role="button" tabindex="0">Update available<span class="ub-action">Tap to reload</span></div>
 
 <header class="app-header">
   <div class="header-top">
@@ -4131,25 +4102,11 @@ if (fbReady) {
 setAuthMode("signin");
 applyQrPrefill();
 
+// Updates arrive silently: HTML is network-first, so every launch runs the
+// newest deploy. (The old "Update available" banner was removed as noise.)
 if ("serviceWorker" in navigator) {
-  const hadController = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (hadController) {
-      const banner = document.getElementById("update-banner");
-      banner.classList.add("show");
-      banner.addEventListener("click", () => window.location.reload(), {once:true});
-    }
-  });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").then(reg => {
-      if (reg.waiting && hadController) {
-        const banner = document.getElementById("update-banner");
-        banner.classList.add("show");
-        banner.addEventListener("click", () => {
-          reg.waiting.postMessage({type:"SKIP_WAITING"});
-        }, {once:true});
-      }
-    }).catch(() => {});
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 }
 
