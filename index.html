@@ -2007,33 +2007,32 @@ const VALID_EVENT_CODES = ["LPGAS-2026", "GOLFDOM-2026", "LM-2026", "PMP-2026", 
 // The field "Photos" button and the home-dashboard link appear automatically
 // once a code's URLs are set.
 const MEDIA = {
+  // All five brands live in Microsoft 365 (Homebase Teams channels, one
+  // folder per show, migrated off Dropbox 2026-07-16). Each show uses ONE
+  // "Anyone with the link can edit" URL for BOTH slots by the owner's
+  // explicit choice: zero sign-in for uploads AND home-team viewing.
+  // Tradeoff accepted: link holders can view/edit, and there's no separate
+  // view link to fall back on if the link ever has to be revoked.
+  // Anyone links on this tenant carry no forced expiration.
   "LPGAS-2026": {
-    request: "https://www.dropbox.com/request/cvfytsa3bl59ghxcqu9d",
-    folder:  "https://www.dropbox.com/scl/fo/71u7z94ewvhdy739fmlpq/AKZpbCTSzAkerZA--_1KEn8?rlkey=bogfvhxlyscmkt7ip9acwdbo8&st=rqhjyjjo&dl=0"
+    request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgDZCcaj65sQR4kAd28fUteWAfxb1p5Iqyx12kx3HQIcjjU?e=UrhwSt",
+    folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgDZCcaj65sQR4kAd28fUteWAfxb1p5Iqyx12kx3HQIcjjU?e=UrhwSt"
   },
   "GOLFDOM-2026": {
-    request: "https://www.dropbox.com/request/8r8pf3qg09p513eoysqi",
-    folder:  "https://www.dropbox.com/scl/fo/tpcykgukulgsn2rz3igog/AOfYHr-sS9yPixUDpQ7Gkps?rlkey=ki4rqqykm3k4uw65vnf0bkxod&st=2rdfkogp&dl=0"
+    request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgACFrLYfCDrS7lv3xGPVHtUAea9kGGv2tF1oyn39GKgm1o?e=pUieyH",
+    folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgACFrLYfCDrS7lv3xGPVHtUAea9kGGv2tF1oyn39GKgm1o?e=pUieyH"
   },
   "LM-2026": {
-    // PILOT: Microsoft 365 (Teams channel "Landscape Management" in Homebase,
-    // folder LM-2026). Org-scoped "people in NCM can edit" link serves both
-    // slots: reps sign in with their NCM account to upload; home team views
-    // the same folder (also visible in the Teams channel's Shared tab).
-    // request = "Anyone with the link can edit" (no-login uploads; verified
-    // anonymously). Swap to a Request files link (upload-only) once IT runs
-    // Set-SPOTenant -CoreRequestFilesLinkEnabled $true.
     request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgApfTpOu8iqTLksHIdbjZpEAbAhZrscrRyVhY7TmSeHYCM?e=tLGHjF",
-    // folder = org-scoped link (home team views signed in as themselves)
-    folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgApfTpOu8iqTLksHIdbjZpEAWpG7l_JLyqhbGRJ_Fs6gT8?e=ddUVjB"
+    folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgApfTpOu8iqTLksHIdbjZpEAbAhZrscrRyVhY7TmSeHYCM?e=tLGHjF"
   },
   "PMP-2026": {
-    request: "https://www.dropbox.com/request/1qzshlzvmqo75wxgr18g",
-    folder:  "https://www.dropbox.com/scl/fo/3plkbcb3qcy8i7mpuz12y/AF-LtmtxQKsxHCiD9WrV7FA?rlkey=sd555vmeouvem7fdwl3vlrwb9&st=opdwusl4&dl=0"
+    request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgCS04oU1J5BQbdb-NU68cujAWjD4yC2ZhrZATmCLvxBYs0?e=nLNp0m",
+    folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgCS04oU1J5BQbdb-NU68cujAWjD4yC2ZhrZATmCLvxBYs0?e=nLNp0m"
   },
   "PQ-2026": {
-    request: "https://www.dropbox.com/request/hukojj5boh51076lemdh",
-    folder:  "https://www.dropbox.com/scl/fo/urmd5fwwvvvqrs047d34b/ANIQvm1mNbU9HB-qsD7wbk4?rlkey=88se6magvw566sthkkwpfktv0&st=1oa7gnxi&dl=0"
+    request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgAzKN31RRHzQIn3hF50GTcEAYjq2LKFXq3QAFDu51Hko4M?e=1wOy74",
+    folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgAzKN31RRHzQIn3hF50GTcEAYjq2LKFXq3QAFDu51Hko4M?e=1wOy74"
   },
 };
 function eventMedia(code) { return MEDIA[code] || null; }
