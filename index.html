@@ -1462,8 +1462,8 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; }
 .home-ov-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
 .home-ov-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.12); }
-.home-ov-bar { color: #fff; padding: 11px 14px; display: flex; align-items: center; gap: 10px; font-family: var(--fd); font-weight: 800; font-size: 0.95rem; letter-spacing: 0.3px; }
-.home-ov-bar img { height: 20px; display: block; }
+.home-ov-bar { padding: 12px 14px; display: flex; align-items: center; min-height: 50px; }
+.home-ov-bar img { height: 26px; display: block; }
 .home-ov-body { padding: 12px 14px 14px; }
 .home-ov-code { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 10px; }
 .home-ov-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-bottom: 12px; }
@@ -2444,8 +2444,7 @@ function buildHomeOverview() {
     const code = codes[0] || "";
     h += `<div class="home-ov-card" data-home-brand="${esc(bk)}" role="button" tabindex="0">
       <div class="home-ov-bar" style="background:${brand.p.blue}">
-        <img src="./${esc(brand.logo)}" alt="" onerror="this.style.display='none'">
-        <span>${esc(brand.name)}</span>
+        <img src="./${esc(brand.logo)}" alt="${esc(brand.name)}" onerror="this.style.display='none'">
       </div>
       <div class="home-ov-body">
         <div class="home-ov-code">${esc(code)}</div>
