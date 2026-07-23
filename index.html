@@ -612,34 +612,32 @@ textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(
 textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
 
 /* ── SHOW MEDIA (photos + videos → team Dropbox) ── */
-.home-media { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
-.home-media-link {
+/* Prominent per-brand media box at the top of the right rail */
+.home-aside-media {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  border-radius: 14px;
+  margin-bottom: 14px;
   text-decoration: none;
-  color: var(--text);
-  font-weight: 700;
-  font-size: 0.86rem;
-}
-.home-media-link:active { background: var(--blue-light); }
-.home-media-play {
-  flex-shrink: 0;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: var(--blue);
   color: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.home-aside-media:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.18); }
+.home-aside-media-play {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  color: var(--text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
-.home-media-main { flex: 1; min-width: 0; }
-.home-media-code { display: block; font-weight: 600; font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.home-aside-media-main { font-family: var(--fd); font-weight: 800; font-size: 0.95rem; line-height: 1.25; min-width: 0; }
+.home-aside-media-sub { display: block; font-family: var(--ft); font-weight: 600; font-size: 0.66rem; opacity: 0.85; margin-top: 3px; }
 
 @keyframes ncmspin { to { transform: rotate(360deg); } }
 
@@ -1479,8 +1477,6 @@ body.home-mode .user-chip-gear { display: none !important; }
   .home-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 30px; align-items: start; }
   .home-aside { margin: 0; position: sticky; top: 16px; }
   .home-rem-card { max-height: calc(100vh - 32px); overflow-y: auto; }
-  /* media link cards use the width: two per row */
-  .home-media { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 }
 .home-rem-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
 .home-rem-title { font-family: var(--fd); font-weight: 800; font-size: 1rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
@@ -2398,7 +2394,19 @@ function buildHomeReminders() {
       <div class="home-rem-meta">visited by ${esc(r.name)}${r.vts ? " · " + esc(fmtAgo(r.vts)) : ""}</div>
       <button class="home-rem-btn${r.done ? " done" : ""}" type="button" data-vd="${esc(r.id)}" data-vd-code="${esc(r.code)}" data-vd-uid="${esc(r.uid)}" data-vd-name="${esc(r.name)}" data-vd-b="${esc(r.boothNum)}" data-vd-n="${esc(r.boothName)}">${r.done ? "✓ Video done · undo" : "Mark video done"}</button>
     </div>`;
-  let h = `<aside class="home-aside"><div class="home-rem-card">
+  let h = `<aside class="home-aside">`;
+  // The selected brand's show media, front and center above the reminders.
+  if (homeBrandFilter) {
+    const mc = Object.keys(MEDIA).find(c => resolveEvent(c).brand === homeBrandFilter && (eventMedia(c) || {}).folder);
+    if (mc) {
+      const b = BRANDS[homeBrandFilter];
+      h += `<a class="home-aside-media" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
+        <span class="home-aside-media-play"><svg width="13" height="15" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
+        <span class="home-aside-media-main">Show photos &amp; videos<span class="home-aside-media-sub">${esc(mc)} · ${mediaIsMicrosoft(eventMedia(mc)) ? "opens the shared Microsoft 365 folder" : "opens the team Dropbox"}</span></span>
+      </a>`;
+    }
+  }
+  h += `<div class="home-rem-card">
     <div class="home-rem-title">Reminders<span class="home-rem-count">${pending.length}</span></div>
     <div class="home-rem-sub">Booths visited by Editorial / Digital reps. Mark each video done as you finish it; the rep sees it on their booth card.</div>`;
   h += pending.length ? pending.map(itemHtml).join("")
@@ -2579,19 +2587,6 @@ function buildHomeNotesView() {
     <div class="home-search-box">
       <input class="home-search-input" type="text" placeholder="Search companies or note text…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
     </div>`;
-  // Show media: one link per show with a team Dropbox folder configured.
-  // Field reps upload via the file request; everything lands in this folder.
-  let mediaCodes = Object.keys(MEDIA).filter(c => { const m = eventMedia(c); return m && m.folder; });
-  if (homeBrandFilter) mediaCodes = mediaCodes.filter(c => resolveEvent(c).brand === homeBrandFilter);
-  if (mediaCodes.length && !q) {
-    html += `<div class="home-media">` + mediaCodes.map(c => {
-      const b = BRANDS[resolveEvent(c).brand] || BRANDS.ncm;
-      return `<a class="home-media-link" href="${esc(eventMedia(c).folder)}" target="_blank" rel="noopener">
-        <span class="home-media-play"><svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
-        <span class="home-media-main">${esc(b.name)} show photos &amp; videos<span class="home-media-code">${esc(c)} · ${mediaIsMicrosoft(eventMedia(c)) ? "opens the shared Microsoft 365 folder" : "opens the team Dropbox"}</span></span>
-      </a>`;
-    }).join("") + `</div>`;
-  }
   // Build per-brand sections, including only reps that have matching notes.
   // Reps sort freshest-sync-first so new material surfaces during a show.
   let anyShown = false;
