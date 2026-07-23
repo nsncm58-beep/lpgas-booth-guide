@@ -2020,7 +2020,11 @@ const MEDIA = {
     // folder LM-2026). Org-scoped "people in NCM can edit" link serves both
     // slots: reps sign in with their NCM account to upload; home team views
     // the same folder (also visible in the Teams channel's Shared tab).
-    request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgApfTpOu8iqTLksHIdbjZpEAWpG7l_JLyqhbGRJ_Fs6gT8?e=ddUVjB",
+    // request = "Anyone with the link can edit" (no-login uploads; verified
+    // anonymously). Swap to a Request files link (upload-only) once IT runs
+    // Set-SPOTenant -CoreRequestFilesLinkEnabled $true.
+    request: "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgApfTpOu8iqTLksHIdbjZpEAbAhZrscrRyVhY7TmSeHYCM?e=tLGHjF",
+    // folder = org-scoped link (home team views signed in as themselves)
     folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgApfTpOu8iqTLksHIdbjZpEAWpG7l_JLyqhbGRJ_Fs6gT8?e=ddUVjB"
   },
   "PMP-2026": {
@@ -3464,7 +3468,7 @@ document.getElementById("mediaBtn").addEventListener("click", () => {
   // The explainer matches the show's storage provider (Dropbox vs Microsoft 365).
   const m = eventMedia(currentEventCode());
   document.getElementById("mediaSheetInfo").textContent = mediaIsMicrosoft(m)
-    ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the home team can view them (it also appears in the brand's Teams channel). If you're asked to sign in, use your NCM Microsoft account, then tap Upload."
+    ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the home team can view them (it also appears in the brand's Teams channel). No sign-in needed: tap Upload and pick files from your camera roll. Please add files only; don't move or delete what's there."
     : "Photos and videos upload straight to the shared team Dropbox, where the home team can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.";
   document.getElementById("mediaSheet").style.display = "flex";
 });
