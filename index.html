@@ -1275,7 +1275,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   color: var(--muted);
   margin-bottom: 5px;
 }
-.auth-field input {
+.auth-field input, .auth-field select {
   width: 100%;
   padding: 11px 12px;
   border: 1.5px solid var(--border);
@@ -1285,7 +1285,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   color: var(--text);
   background: #fff;
 }
-.auth-field input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
+.auth-field input:focus, .auth-field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 .auth-error {
   font-size: 0.78rem;
   color: var(--maroon);
@@ -1586,6 +1586,13 @@ body.home-mode .user-chip-gear { display: none !important; }
       </span>
       <input type="checkbox" id="shareNotesToggle" class="settings-switch">
     </label>
+    <div class="settings-dbx-title" style="margin-top:16px">My team</div>
+    <select id="deptSelect" class="settings-dbx-input">
+      <option value="">Choose…</option>
+      <option value="edit">Editorial / Digital</option>
+      <option value="sales">Sales</option>
+    </select>
+    <div class="settings-dbx-note">The home team's Schedules view only shows Editorial / Digital schedules.</div>
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
       <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
@@ -1688,6 +1695,14 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="auth-field" data-only="signup">
         <label>Event Code</label>
         <input id="authEvent" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. LPGAS-2026">
+      </div>
+      <div class="auth-field" data-only="signup">
+        <label>Your Team</label>
+        <select id="authDept">
+          <option value="">Choose…</option>
+          <option value="edit">Editorial / Digital</option>
+          <option value="sales">Sales</option>
+        </select>
       </div>
       <div class="auth-field">
         <label>Email</label>
@@ -2240,6 +2255,7 @@ async function syncMyScheduleToCloud() {
       uid: currentUser.uid,
       name: currentUser.name || "",
       eventCode: code,
+      dept: currentUser.dept || "",   // home dashboard shows edit/digital only
       items: buildMyScheduleItems(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -2478,11 +2494,12 @@ function buildHomeNotesView() {
 // The Schedules view: pick a rep, see their Day 1/2/3 agenda read-only
 // (same cards as the field team view; data = the schedules collection).
 function buildHomeSchedView() {
-  let entries = Object.entries(homeSchedules);
+  let entries = Object.entries(homeSchedules)
+    .filter(([id, s]) => s.dept === "edit");   // edit/digital only; sales and unclassified never show
   if (homeBrandFilter) entries = entries.filter(([id, s]) => resolveEvent(s.eventCode).brand === homeBrandFilter);
   entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
   if (!entries.length) {
-    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>Rep agendas appear here automatically as the field builds them${homeBrandFilter ? " for " + esc(BRANDS[homeBrandFilter].name) : ""}.</p></div>`;
+    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows Editorial / Digital team schedules (set under Settings &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
   }
   let h = `<div class="home-search-box">
     <input class="home-search-input hs-search-input" type="text" placeholder="Search all agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
@@ -3573,8 +3590,10 @@ authEls.form.addEventListener("submit", async (e) => {
     } else if (authMode === "signup") {
       const name = authEls.name.value.trim();
       const eventCode = authEls.event.value.trim().toUpperCase();
+      const dept = document.getElementById("authDept").value;
       if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
       if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
+      if (!dept)      { authErr("Pick your team (Sales or Editorial / Digital)."); authEls.submit.disabled = false; return; }
       if (!VALID_EVENT_CODES.includes(eventCode)) {
         authErr("That event code doesn't exist. Double-check it with your team and enter a valid code.");
         authEls.submit.disabled = false; return;
@@ -3582,7 +3601,7 @@ authEls.form.addEventListener("submit", async (e) => {
       pendingSharePrompt = true;   // set before createUser so it's ready when onAuthStateChanged fires
       const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
       await fbDb.collection("users").doc(cred.user.uid).set({
-        name, email, eventCode, role: "field", shareNotes: false,
+        name, email, eventCode, dept, role: "field", shareNotes: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } else {
@@ -3605,6 +3624,7 @@ function currentShowLabel() {
 }
 document.getElementById("settingsBtn").addEventListener("click", () => {
   document.getElementById("shareNotesToggle").checked = !!(currentUser && currentUser.shareNotes);
+  document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("newShowCode").value = "";
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
@@ -3852,6 +3872,13 @@ document.getElementById("shareYes").addEventListener("click", async () => {
 });
 document.getElementById("shareNo").addEventListener("click", () => {
   document.getElementById("sharePrompt").style.display = "none";
+});
+document.getElementById("deptSelect").addEventListener("change", async e => {
+  if (!currentUser || !e.target.value) return;
+  currentUser.dept = e.target.value;
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ dept: currentUser.dept }, { merge: true }); } catch (err) {}
+  queueScheduleSync();   // restamp the cloud schedule with the new team
+  toast(currentUser.dept === "edit" ? "Set to Editorial / Digital" : "Set to Sales");
 });
 document.getElementById("shareNotesToggle").addEventListener("change", async e => {
   if (!currentUser) return;
