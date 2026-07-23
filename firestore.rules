@@ -44,6 +44,13 @@ service cloud.firestore {
       allow read, create, update, delete: if request.auth != null && (isHome() || isMaster());
     }
 
+    // Video pipeline: home marks a rep's visited booth's video as done;
+    // the rep reads their own records to show the "Video done" chip.
+    match /videoStatus/{docId} {
+      allow read: if request.auth != null && (resource.data.repUid == request.auth.uid || isHome() || isMaster());
+      allow create, update, delete: if request.auth != null && (isHome() || isMaster());
+    }
+
     // Archived past-show CSVs. Each doc is owned by the rep who archived it
     // (readable by them or a master); created by the owner; deletable by owner/master.
     match /archives/{docId} {

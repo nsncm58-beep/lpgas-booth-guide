@@ -1484,6 +1484,28 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--blue); margin: 8px 0 3px; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
+/* Home dashboard: reminders aside (video pipeline) */
+.home-aside { margin: 16px 0 0; }
+@media (min-width: 1040px) {
+  .home-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  .home-aside { margin: 0; position: sticky; top: 14px; }
+}
+.home-rem-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
+.home-rem-title { font-family: var(--fd); font-weight: 800; font-size: 1rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.home-rem-count { background: var(--maroon); color: #fff; border-radius: 999px; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; font-family: var(--ft); }
+.home-rem-sub { font-size: 0.7rem; color: var(--muted); line-height: 1.5; margin: 6px 0 10px; }
+.home-rem-empty { font-size: 0.75rem; color: var(--muted); padding: 8px 0; }
+.home-rem-item { border-top: 1px solid var(--border-soft); padding: 9px 0; }
+.home-rem-co { font-size: 0.8rem; font-weight: 700; color: var(--text); }
+.home-rem-meta { font-size: 0.68rem; color: var(--muted); margin: 2px 0 7px; }
+.home-rem-btn { font-family: var(--ft); font-size: 0.66rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; }
+.home-rem-btn:active { opacity: 0.75; }
+.home-rem-btn.done { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
+.home-rem-item.isdone .home-rem-co { text-decoration: line-through; opacity: 0.6; }
+.home-rem-donehead { font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 10px 0 2px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+/* Rep-side: the home team finished this booth's video */
+.video-done-chip { flex-shrink: 0; background: #EDF7F0; color: #2D7140; border: 1px solid #BCDDC6; padding: 3px 8px; border-radius: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px; }
+
 /* Home dashboard: status chips, freshness, copy buttons, workflow flags */
 .home-view-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
 .home-view-tab {
@@ -2182,7 +2204,7 @@ function buildSharedNotes() {
     if (!s) return;
     const pre = (s.pre||"").trim(), post = (s.post||"").trim();
     if (!s.visited && !pre && !post && !s.status) return;
-    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, status:s.status||"", pre, post });
+    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, vts: s.vts || 0, status:s.status||"", pre, post });
   });
   return items;
 }
@@ -2317,6 +2339,87 @@ function toggleHomeFlag(id, state, meta) {
         boothNum: meta.b, boothName: meta.n, ts: Date.now() });
   op.catch(() => toast("Couldn't save the flag (are the latest Firestore rules published?)"));
 }
+// ── VIDEO PIPELINE ───────────────────────────────────────────────────────
+// Edit/digital booth visits become home-team "Reminders"; the home team
+// marks each video done in videoStatus/{event__repUid__booth#}, and the rep
+// on the floor sees a live "Video done" chip on that booth card.
+let homeVideoStatus = {};      // docId -> doc (home side, all)
+let _homeVdUnsub = null;
+let homeShowDoneRem = false;   // "Completed" group expanded?
+let myVideoDone = {};          // boothNum -> true (rep side, own+current event)
+let _myVdUnsub = null;
+function subscribeHomeVideoStatus() {
+  if (_homeVdUnsub) { _homeVdUnsub(); _homeVdUnsub = null; }
+  homeVideoStatus = {};
+  if (!fbReady || !isHome()) return;
+  _homeVdUnsub = fbDb.collection("videoStatus").onSnapshot(snap => {
+    homeVideoStatus = {};
+    snap.forEach(d => { const x = d.data(); if (x) homeVideoStatus[d.id] = x; });
+    if (isHome()) renderHomeDashboard();
+  }, () => {});
+}
+function subscribeMyVideoStatus() {
+  if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
+  myVideoDone = {};
+  if (!fbReady || !currentUser || isHome()) return;
+  const code = currentEventCode();
+  if (!code) return;
+  _myVdUnsub = fbDb.collection("videoStatus")
+    .where("repUid", "==", currentUser.uid)
+    .where("eventCode", "==", code)
+    .onSnapshot(snap => {
+      myVideoDone = {};
+      snap.forEach(d => { const x = d.data(); if (x && x.boothNum) myVideoDone[x.boothNum] = true; });
+      const typing = document.activeElement && document.activeElement.classList
+                  && document.activeElement.classList.contains("nf");
+      if (activeView === "booths" && !isHome() && !typing) render();
+    }, () => {});
+}
+function toggleVideoDone(id, meta) {
+  if (!fbReady) return;
+  const op = homeVideoStatus[id]
+    ? fbDb.collection("videoStatus").doc(id).delete()
+    : fbDb.collection("videoStatus").doc(id).set({
+        eventCode: meta.code, repUid: meta.uid, repName: meta.name,
+        boothName: meta.n, boothNum: meta.b, done: true, ts: Date.now() });
+  op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+}
+// The Reminders panel: every visited booth from an edit/digital rep, newest
+// first, with a Video-done toggle. Rendered beside the dashboard on desktop.
+function buildHomeReminders() {
+  const rem = [];
+  Object.values(homeNotes)
+    .filter(d => effectiveDept(d.uid, d.dept) === "edit")
+    .forEach(d => {
+      if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
+      (d.items || []).forEach(it => {
+        if (!it.visited) return;
+        const id = d.eventCode + "__" + d.uid + "__" + it.boothNum;
+        rem.push({ id, code: d.eventCode, uid: d.uid, name: d.name || "Rep",
+          boothName: it.boothName, boothNum: it.boothNum, vts: it.vts || 0,
+          done: !!homeVideoStatus[id] });
+      });
+    });
+  rem.sort((a, b) => b.vts - a.vts);
+  const pending = rem.filter(r => !r.done);
+  const done    = rem.filter(r => r.done);
+  const itemHtml = r => `<div class="home-rem-item${r.done ? " isdone" : ""}">
+      <div class="home-rem-co">${esc(r.boothName)} <span class="home-note-booth">Booth ${esc(r.boothNum)}</span></div>
+      <div class="home-rem-meta">visited by ${esc(r.name)}${r.vts ? " · " + esc(fmtAgo(r.vts)) : ""}</div>
+      <button class="home-rem-btn${r.done ? " done" : ""}" type="button" data-vd="${esc(r.id)}" data-vd-code="${esc(r.code)}" data-vd-uid="${esc(r.uid)}" data-vd-name="${esc(r.name)}" data-vd-b="${esc(r.boothNum)}" data-vd-n="${esc(r.boothName)}">${r.done ? "✓ Video done · undo" : "Mark video done"}</button>
+    </div>`;
+  let h = `<aside class="home-aside"><div class="home-rem-card">
+    <div class="home-rem-title">Reminders<span class="home-rem-count">${pending.length}</span></div>
+    <div class="home-rem-sub">Booths visited by Editorial / Digital reps. Mark each video done as you finish it; the rep sees it on their booth card.</div>`;
+  h += pending.length ? pending.map(itemHtml).join("")
+    : `<div class="home-rem-empty">Nothing waiting. Visits appear here live as reps work the floor.</div>`;
+  if (done.length) {
+    h += `<div class="home-rem-donehead" data-rem-done-toggle>${homeShowDoneRem ? "▾" : "▸"} Completed (${done.length})</div>`;
+    if (homeShowDoneRem) h += done.map(itemHtml).join("");
+  }
+  h += `</div></aside>`;
+  return h;
+}
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
 // (mirrors the field team view; needs isHome() on schedules read in rules).
@@ -2384,7 +2487,7 @@ function buildHomeFilter() {
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
-  let html = `<div class="home-wrap">
+  let html = `<div class="home-wrap"><div class="home-main">
     <div class="home-head"><h2>Home Team Dashboard</h2><p>${homeView === "sched" ? "Rep schedules (view only): " : "Shared field notes: "}${esc(filterName)}.</p></div>
     ${buildHomeFilter()}
     <div class="home-view-tabs">
@@ -2392,7 +2495,7 @@ function renderHomeDashboard() {
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
     </div>`;
   html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
-  html += `</div>`;
+  html += `</div>` + buildHomeReminders() + `</div>`;
   el.innerHTML = html;
   const activeQ = homeView === "sched" ? homeSchedQ : homeSearchQ;
   if (activeQ.trim()) {
@@ -2606,6 +2709,7 @@ function buildCard(c, state) {
       <div class="card-top">
         <span class="co-name">${esc(c.n)}</span>
         ${schedTag}
+        ${myVideoDone[c.b] ? '<span class="video-done-chip">Video done</span>' : ''}
         <span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>
       </div>
       <div class="card-actions">
@@ -3065,6 +3169,14 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  const vd = e.target.closest("[data-vd]");
+  if (vd) {
+    toggleVideoDone(vd.dataset.vd, { code: vd.dataset.vdCode, uid: vd.dataset.vdUid,
+      name: vd.dataset.vdName, b: vd.dataset.vdB, n: vd.dataset.vdN });
+    return;
+  }
+  if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
+
   const hv = e.target.closest("[data-home-view]");
   if (hv) { homeView = hv.dataset.homeView; renderHomeDashboard(); return; }
   const rt = e.target.closest("[data-rep-toggle]");
@@ -3277,6 +3389,7 @@ document.getElementById("content").addEventListener("click", e => {
     const k = key(i);
     if (!state[k]) state[k] = {};
     state[k].visited = !state[k].visited;
+    if (state[k].visited) state[k].vts = Date.now();   // when: drives home-team reminders
     save(state);
     const on = state[k].visited;
     visBtn.classList.toggle("on", on);
@@ -3338,6 +3451,7 @@ document.getElementById("content").addEventListener("input", e => {
     let autoVisited = false;
     if (f === "post" && v.trim() && !state[k].visited) {
       state[k].visited = true;
+      state[k].vts = Date.now();
       autoVisited = true;
     }
     save(state);
@@ -3768,6 +3882,13 @@ async function renderCleanupList() {
     nt.forEach(d => rows.push({ coll: "notes", id: d.id, name: d.data().name || "(no name)", event: d.data().eventCode || "", items: (d.data().items||[]).length }));
   } catch (e) {}
   try {
+    const vd = await fbDb.collection("videoStatus").get();
+    const vgroups = {};
+    vd.forEach(d => { const ev = (d.data() || {}).eventCode || "(unknown)"; (vgroups[ev] = vgroups[ev] || []).push(d.id); });
+    Object.entries(vgroups).forEach(([ev, ids]) =>
+      rows.push({ coll: "videoStatus", id: ids.join(","), name: "Video pipeline records", event: ev, items: ids.length }));
+  } catch (e) {}
+  try {
     // Home-team flags, grouped per event into one deletable row.
     const fl = await fbDb.collection("homeFlags").get();
     const groups = {};
@@ -3846,6 +3967,7 @@ document.getElementById("newShowConfirmBtn").addEventListener("click", async () 
   applyEvent(newCode);
   if (typeof setupBrandSwitcher === "function") setupBrandSwitcher();
   subscribeTeam();
+  subscribeMyVideoStatus();
   updateMediaBtn();
   activeView = "booths"; schedDay = 1; allOpen = false; viewedScheduleUid = null;
   render();
@@ -3898,9 +4020,13 @@ function showSignedOut() {
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
   if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
+  if (_homeVdUnsub) { _homeVdUnsub(); _homeVdUnsub = null; }
+  if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
   homeNotes = {};
   homeFlags = {};
   homeSchedules = {};
+  homeVideoStatus = {};
+  myVideoDone = {};
   homeView = "notes"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
   homeOpenReps.clear();
   currentUser = null;
@@ -3934,6 +4060,7 @@ document.getElementById("brandSwitch").addEventListener("change", e => {
   activeView = "booths";
   applyEvent(masterEventOverride);
   subscribeTeam();              // listen to the new brand's team
+  subscribeMyVideoStatus();
   updateMediaBtn();
   render();
   const ev = resolveEvent(masterEventOverride);
@@ -3957,6 +4084,7 @@ if (fbReady) {
         subscribeHomeNotes();
         subscribeHomeFlags();
         subscribeHomeSchedules();
+        subscribeHomeVideoStatus();
         renderHomeDashboard();
         return;
       }
@@ -3980,11 +4108,14 @@ if (fbReady) {
       syncMyScheduleToCloud();
       syncMyNotesToCloud();
       subscribeTeam();
+      subscribeMyVideoStatus();
       updateMediaBtn();
       render();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
+      if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
       teamSchedules = {};
+      myVideoDone = {};
       viewedScheduleUid = null;
       showSignedOut();
     }
