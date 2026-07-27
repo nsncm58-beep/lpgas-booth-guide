@@ -2249,7 +2249,7 @@ function buildMyScheduleItems() {
     const sv = state[key(i)]?.scheduled;
     if (!sv) return;
     const [d,t] = sv.split("|");
-    items.push({ kind:"booth", day:parseInt(d), time:t, boothName:c.n, boothNum:c.b });
+    items.push({ kind:"booth", day:parseInt(d), time:t, boothName:c.n, boothNum:c.b, video: !!state[key(i)]?.video });
   });
   loadMeals().forEach(m => items.push({ kind:"meal", day:m.day, time:m.time, mealType:m.type, company:m.company||"", notes:m.notes||"" }));
   loadOffsite().forEach(o => items.push({ kind:"offsite", day:o.day, time:o.time, title:o.title||"", company:o.company||"", location:o.location||"", notes:o.notes||"" }));
@@ -2983,7 +2983,7 @@ function buildOffsiteForm() {
 function roCardHtml(it) {
   if (it.kind === "booth") {
     return `<div class="ro-card">
-      <div class="ro-card-title">${esc(it.boothName||"Booth visit")}</div>
+      <div class="ro-card-title">${esc(it.boothName||"Booth visit")}${it.video ? ' <span class="home-chip vid">Video</span>' : ''}</div>
       <div class="ro-card-sub">Booth ${esc(it.boothNum||"")}</div>
     </div>`;
   }
