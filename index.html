@@ -1527,6 +1527,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-rep-head { cursor: pointer; -webkit-user-select: none; user-select: none; }
 .home-rep-chev { color: var(--muted); font-size: 0.75rem; width: 14px; display: inline-block; flex-shrink: 0; }
 .home-note.covered .home-note-co { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.hs-note { margin: -4px 0 12px 16px; border-left: 3px solid var(--border); }
 .hs-hit-meta { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin: 10px 0 4px; }
 .home-bar-right { display: flex; align-items: center; gap: 10px; }
 .home-copy-btn {
@@ -2660,6 +2661,23 @@ function buildHomeNotesView() {
   return html;
 }
 
+// A rep's shared note rendered under their scheduled booth meeting, with the
+// same Follow up / Covered flags as the Notes tab (same ids, same state).
+function schedNoteHtml(n, sel) {
+  if (!n || (!n.pre && !n.post && !n.status && !n.visited)) return "";
+  const fid = flagId(sel.eventCode, sel.uid, n.boothNum);
+  const fl = (homeFlags[fid] || {}).state || "";
+  const flagAttrs = `data-flag="${esc(fid)}" data-flag-code="${esc(sel.eventCode)}" data-flag-uid="${esc(sel.uid||"")}" data-flag-b="${esc(n.boothNum)}" data-flag-n="${esc(n.boothName)}"`;
+  return `<div class="home-note hs-note${fl==="covered"?" covered":""}">
+    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.status==="customer"?'<span class="home-chip cust">Customer</span>':''}${n.status==="noncustomer"?'<span class="home-chip non">Non-Cust</span>':''}${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}</div>
+    ${n.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(n.pre)}</div>` : ''}
+    ${n.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(n.post)}</div>` : ''}
+    <div class="home-note-flags">
+      <button class="flag-btn${fl==="star"?" on-star":""}" type="button" ${flagAttrs} data-flag-state="star">${fl==="star"?"★":"☆"} Follow up</button>
+      <button class="flag-btn${fl==="covered"?" on-cov":""}" type="button" ${flagAttrs} data-flag-state="covered">✓ Covered</button>
+    </div>
+  </div>`;
+}
 // The Schedules view: pick a rep, see their Day 1/2/3 agenda read-only
 // (same cards as the field team view; data = the schedules collection).
 function buildHomeSchedView() {
@@ -2713,13 +2731,18 @@ function buildHomeSchedView() {
   const byTime = {};
   items.filter(it => it.day === homeSchedDay).forEach(it => { (byTime[it.time] = byTime[it.time]||[]).push(it); });
   const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
+  const noteDoc = Object.values(homeNotes).find(d => d.uid === sel.uid && d.eventCode === sel.eventCode);
+  const noteFor = bn => noteDoc ? (noteDoc.items || []).find(it => it.boothNum === bn) : null;
   if (!slotTimes.length) {
     h += `<div class="sched-empty"><h4>Nothing booked on Day ${homeSchedDay}</h4>
       <p>${esc(sel.name||"This rep")} hasn't scheduled anything for this day.</p></div>`;
   } else {
     slotTimes.forEach(t => {
       h += `<div class="time-slot"><div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span><span class="time-line"></span></div>`;
-      byTime[t].forEach(it => { h += roCardHtml(it); });
+      byTime[t].forEach(it => {
+        h += roCardHtml(it);
+        if (it.kind === "booth") h += schedNoteHtml(noteFor(it.boothNum), sel);
+      });
       h += `</div>`;
     });
   }
