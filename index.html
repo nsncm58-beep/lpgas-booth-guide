@@ -575,6 +575,27 @@ body {
   background-color: var(--blue-light);
 }
 
+/* Video flag toggle (edit/digital reps): footage for the home team */
+.video-btn {
+  padding: 0 11px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  -webkit-user-select: none; user-select: none;
+}
+.video-btn:active { transform: scale(0.94); }
+.video-btn.on { border-color: var(--maroon); color: var(--maroon); background: var(--maroon-light); }
+
 /* ── NOTES PANEL ── */
 .notes-content {
   padding: 12px 0 2px;
@@ -1520,6 +1541,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-chip { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 999px; }
 .home-chip.cust { color: #005C8F; background: #E8F1F7; }
 .home-chip.non  { color: #8B1538; background: #F6E6EB; }
+.home-chip.vid  { color: #5B2D71; background: #F1E8F6; }
 .home-note-flags { display: flex; gap: 6px; margin-top: 9px; }
 .flag-btn {
   font-family: var(--ft); font-size: 0.66rem; font-weight: 600;
@@ -2190,7 +2212,7 @@ function buildSharedNotes() {
     if (!s) return;
     const pre = (s.pre||"").trim(), post = (s.post||"").trim();
     if (!s.visited && !pre && !post && !s.status) return;
-    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, vts: s.vts || 0, status:s.status||"", pre, post });
+    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post });
   });
   return items;
 }
@@ -2381,7 +2403,7 @@ function buildHomeReminders() {
     .forEach(d => {
       if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
       (d.items || []).forEach(it => {
-        if (!it.visited) return;
+        if (!it.visited || !it.video) return;   // reps flag videos explicitly
         const id = d.eventCode + "__" + d.uid + "__" + it.boothNum;
         rem.push({ id, code: d.eventCode, uid: d.uid, name: d.name || "Rep",
           boothName: it.boothName, boothNum: it.boothNum, vts: it.vts || 0,
@@ -2410,9 +2432,9 @@ function buildHomeReminders() {
   }
   h += `<div class="home-rem-card">
     <div class="home-rem-title">Reminders<span class="home-rem-count">${pending.length}</span></div>
-    <div class="home-rem-sub">Booths visited by Editorial / Digital reps. Mark each video done as you finish it; the rep sees it on their booth card.</div>`;
+    <div class="home-rem-sub">Booth videos flagged by Editorial / Digital reps land here once the booth is visited. Mark each done as you finish it; the rep sees it on their booth card.</div>`;
   h += pending.length ? pending.map(itemHtml).join("")
-    : `<div class="home-rem-empty">Nothing waiting. Visits appear here live as reps work the floor.</div>`;
+    : `<div class="home-rem-empty">Nothing waiting. Reps flag footage with the Video button on a booth; it lands here once that booth is visited.</div>`;
   if (done.length) {
     h += `<div class="home-rem-donehead" data-rem-done-toggle>${homeShowDoneRem ? "▾" : "▸"} Completed (${done.length})</div>`;
     if (homeShowDoneRem) h += done.map(itemHtml).join("");
@@ -2435,13 +2457,15 @@ function buildHomeOverview() {
     const reps = new Set();
     notesDocs.forEach(d => reps.add(d.uid));
     schedDocs.forEach(d => reps.add(d.uid));
-    let visited = 0, notesN = 0, vidDone = 0, stars = 0, last = 0;
+    let visited = 0, notesN = 0, vidTotal = 0, vidDone = 0, stars = 0, last = 0;
     notesDocs.forEach(d => {
       last = Math.max(last, homeDocTs(d));
       (d.items || []).forEach(it => {
         if (it.pre || it.post) notesN++;
         if (!it.visited) return;
         visited++;
+        if (!it.video) return;   // only rep-flagged videos count in the pipeline
+        vidTotal++;
         if (homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum]) vidDone++;
       });
     });
@@ -2449,7 +2473,7 @@ function buildHomeOverview() {
     Object.values(homeFlags).forEach(f => {
       if (f.state === "star" && codes.includes(f.eventCode)) stars++;
     });
-    const vidPending = visited - vidDone;
+    const vidPending = vidTotal - vidDone;
     const media = codes.map(c => eventMedia(c)).find(m => m && m.folder);
     const code = codes[0] || "";
     h += `<div class="home-ov-card" data-home-brand="${esc(bk)}" role="button" tabindex="0">
@@ -2617,7 +2641,7 @@ function buildHomeNotesView() {
         const fl = (homeFlags[fid] || {}).state || "";
         const flagAttrs = `data-flag="${esc(fid)}" data-flag-code="${esc(code)}" data-flag-uid="${esc(r.uid||"")}" data-flag-b="${esc(it.boothNum)}" data-flag-n="${esc(it.boothName)}"`;
         html += `<div class="home-note${fl==="covered"?" covered":""}">
-          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.status==="customer"?'<span class="home-chip cust">Customer</span>':''}${it.status==="noncustomer"?'<span class="home-chip non">Non-Cust</span>':''}${it.visited?'<span class="home-visited">Visited</span>':''}</div>
+          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.status==="customer"?'<span class="home-chip cust">Customer</span>':''}${it.status==="noncustomer"?'<span class="home-chip non">Non-Cust</span>':''}${it.video?'<span class="home-chip vid">Video</span>':''}${it.visited?'<span class="home-visited">Visited</span>':''}</div>
           ${it.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(it.pre)}</div>` : ''}
           ${it.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(it.post)}</div>` : ''}
           <div class="home-note-flags">
@@ -2769,6 +2793,9 @@ function buildCard(c, state) {
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
           <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unsure</button>
         </div>
+        ${myNotesAutoShare() ? `<button class="video-btn${s.video?" on":""}" data-video="${c.i}" title="Flag this booth's video for the home team">
+          <svg width="14" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>
+          Video</button>` : ""}
         <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" title="Schedule">
           <option value="">Schedule…</option>
           ${timeOpts}
@@ -3408,6 +3435,20 @@ document.getElementById("content").addEventListener("click", e => {
     saveOffsite(loadOffsite().filter(o => o.id !== id));
     toast("Off-site meeting removed");
     render();
+    return;
+  }
+
+  const vidBtn = e.target.closest("[data-video]");
+  if (vidBtn) {
+    const i = parseInt(vidBtn.dataset.video);
+    const k = key(i);
+    if (!state[k]) state[k] = {};
+    state[k].video = !state[k].video;
+    save(state);
+    vidBtn.classList.toggle("on", state[k].video);
+    toast(state[k].video
+      ? (state[k].visited ? "Video flagged for the home team" : "Video flagged. It reaches the home team once you mark the booth visited")
+      : "Video flag removed");
     return;
   }
 
