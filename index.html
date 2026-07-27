@@ -1582,8 +1582,8 @@ body.home-mode .user-chip-gear { display: none !important; }
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
-    <button class="v-tab"        data-v="schedule">My Schedule</button>
-    <button class="v-tab active" data-v="booths">Booths</button>
+    <button class="v-tab active" data-v="schedule">My Schedule</button>
+    <button class="v-tab"        data-v="booths">Booths</button>
   </div>
   <div class="filter-bar">
     <button class="f-pill active"     data-f="all">All Booths</button>
@@ -2502,7 +2502,7 @@ function buildHomeOverview() {
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
 // (mirrors the field team view; needs isHome() on schedules read in rules).
-let homeView = "notes";           // "notes" | "sched"
+let homeView = "sched";           // "sched" | "notes" (schedules is the default view)
 const homeOpenReps = new Set();   // "<code>|<uid>" keys of expanded rep sections
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
@@ -2763,7 +2763,7 @@ function esc(s){
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 
-let activeView   = "booths";   // "booths" | "schedule"
+let activeView   = "schedule";   // "schedule" | "booths" (schedule is the landing view)
 let activeFilter = "all";
 let allOpen      = false;
 let schedSearchQ = "";
@@ -4082,7 +4082,7 @@ document.getElementById("newShowConfirmBtn").addEventListener("click", async () 
   subscribeTeam();
   subscribeMyVideoStatus();
   updateMediaBtn();
-  activeView = "booths"; schedDay = 1; allOpen = false; viewedScheduleUid = null;
+  activeView = "schedule"; schedDay = 1; allOpen = false; viewedScheduleUid = null;
   render();
   btn.disabled = false;
   document.getElementById("newShowConfirm").style.display = "none";
@@ -4140,7 +4140,7 @@ function showSignedOut() {
   homeSchedules = {};
   homeVideoStatus = {};
   myVideoDone = {};
-  homeView = "notes"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
+  homeView = "sched"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
   homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
@@ -4170,7 +4170,7 @@ function setupBrandSwitcher() {
 document.getElementById("brandSwitch").addEventListener("change", e => {
   masterEventOverride = e.target.value;
   viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
-  activeView = "booths";
+  activeView = "schedule";
   applyEvent(masterEventOverride);
   subscribeTeam();              // listen to the new brand's team
   subscribeMyVideoStatus();
