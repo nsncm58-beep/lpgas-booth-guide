@@ -1582,8 +1582,8 @@ body.home-mode .user-chip-gear { display: none !important; }
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
-    <button class="v-tab active" data-v="booths">Booths</button>
     <button class="v-tab"        data-v="schedule">My Schedule</button>
+    <button class="v-tab active" data-v="booths">Booths</button>
   </div>
   <div class="filter-bar">
     <button class="f-pill active"     data-f="all">All Booths</button>
@@ -2574,8 +2574,8 @@ function renderHomeDashboard() {
     ${buildHomeFilter()}`;
   if (homeBrandFilter) {
     html += `<div class="home-view-tabs">
-      <button class="home-view-tab${homeView==="notes"?" active":""}" type="button" data-home-view="notes">Notes</button>
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
+      <button class="home-view-tab${homeView==="notes"?" active":""}" type="button" data-home-view="notes">Notes</button>
     </div>`;
     html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
   } else {
