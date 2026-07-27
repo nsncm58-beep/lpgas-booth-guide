@@ -2282,7 +2282,9 @@ const HOME_FILTER_BRANDS = ["lpgas","golfdom","lm","pmp","pq"];
 function subscribeHomeNotes() {
   if (!fbReady || !isHome()) return;
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
-  _homeUnsub = fbDb.collection("notes").onSnapshot(snap => {
+  // dept filter at the QUERY level: sales/unclassified notes never even
+  // reach the home account (rules enforce the same server-side).
+  _homeUnsub = fbDb.collection("notes").where("dept", "==", "edit").onSnapshot(snap => {
     homeNotes = {};
     snap.forEach(d => { const x = d.data(); if (x) homeNotes[d.id] = x; });
     if (isHome()) renderHomeDashboard();
@@ -2492,7 +2494,7 @@ function subscribeHomeSchedules() {
   if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
   homeSchedules = {};
   if (!fbReady || !isHome()) return;
-  _homeSchedUnsub = fbDb.collection("schedules").onSnapshot(snap => {
+  _homeSchedUnsub = fbDb.collection("schedules").where("dept", "==", "edit").onSnapshot(snap => {
     homeSchedules = {};
     snap.forEach(d => { const x = d.data(); if (x && x.uid) homeSchedules[d.id] = x; });
     if (isHome() && homeView === "sched") renderHomeDashboard();
@@ -2645,7 +2647,7 @@ function buildHomeSchedView() {
     return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows Editorial / Digital team schedules (set under Settings &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
   }
   let h = `<div class="home-search-box">
-    <input class="home-search-input hs-search-input" type="text" placeholder="Search all agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
+    <input class="home-search-input hs-search-input" type="text" placeholder="Search this brand&#39;s agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
   </div>`;
   const q = homeSchedQ.trim().toLowerCase();
   // Searching scans EVERY rep's agenda across all three days and returns a

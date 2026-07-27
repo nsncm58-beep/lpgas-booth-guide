@@ -16,19 +16,26 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if request.auth != null && (request.auth.uid == uid || isMaster() || isHome());
       allow create, update: if request.auth != null && request.auth.uid == uid
-                            && validEvent(request.resource.data.eventCode);
+                            && validEvent(request.resource.data.eventCode)
+                            && (!("dept" in request.resource.data) || request.resource.data.dept in ["sales", "edit"]);
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // isHome(): the home dashboard's Schedules view shows rep agendas read-only.
     match /schedules/{docId} {
-      allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster() || isHome());
+      // Home may only read Editorial/Digital schedules (matches the client's
+      // dept-filtered query); the field team bar reads same-event as before.
+      allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster()
+                                              || (isHome() && resource.data.dept == "edit"));
       allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
 
     match /notes/{docId} {
-      allow read: if request.auth != null && (ownDoc(docId) || isMaster() || isHome());
+      // Home may only read Editorial/Digital notes; sales/legacy docs (no
+      // dept field, e.g. Brian's) are unreadable by home and never displayed.
+      allow read: if request.auth != null && (ownDoc(docId) || isMaster()
+                                              || (isHome() && resource.data.dept == "edit"));
       allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
