@@ -3,7 +3,7 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v62';
+const CACHE_NAME = 'ncm-events-guide-v63';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
@@ -39,7 +39,9 @@ self.addEventListener('fetch', event => {
     if (host.endsWith('googleapis.com') || host.endsWith('firebaseapp.com')) return;
     if (req.destination === 'document' || req.url.endsWith('.html')) {
         event.respondWith(
-            fetch(req).then(res => {
+            // no-cache: revalidate with the server every time, so a relaunch
+            // never serves the CDN's up-to-10-minute-stale copy of the app.
+            fetch(req, { cache: 'no-cache' }).then(res => {
                 const clone = res.clone();
                 caches.open(CACHE_NAME).then(c => c.put(req, clone));
                 return res;

@@ -2770,6 +2770,10 @@ function esc(s){
 }
 
 let activeView   = "schedule";   // "schedule" | "booths" (schedule is the landing view)
+// Booth rows render lazily: headers always, cards only when a row is opened.
+// (226 cards x ~200 <option>s each was tens of thousands of hidden elements.)
+const rowOpen = new Set();       // row keys the user has expanded (survives re-renders)
+let _rowGroups = {};             // rk -> current filtered companies, for lazy fill
 let activeFilter = "all";
 let allOpen      = false;
 let schedSearchQ = "";
@@ -2898,6 +2902,7 @@ function render() {
   Object.values(groups).forEach(a => a.sort((x,y) => x.n.localeCompare(y.n)));
   const rowKeys = Object.keys(groups).sort((a,b) => rowOrder(a) - rowOrder(b));
 
+  _rowGroups = groups;
   let html = "";
   rowKeys.forEach((rk, ri) => {
     const comps = groups[rk];
@@ -2905,17 +2910,18 @@ function render() {
     const nVisited = comps.filter(c => state[key(c.i)]?.visited).length;
     const pillCls  = nVisited===comps.length && comps.length>0 ? "row-pill done" : "row-pill";
     const bodyId = "rb"+rk.replace(/\W/g,"_");
+    const isOpen = allOpen || rowOpen.has(rk);
     html += `
 <div class="row-section" data-rk="${esc(rk)}" style="animation-delay:${Math.min(ri*0.03,0.3)}s">
   <div class="row-header${outdoor?" outdoor":""}" data-toggle="${bodyId}">
     <span class="row-title">${esc(rowLabel(rk))}</span>
     <span class="row-right">
       <span class="${pillCls}" id="badge_${esc(rk)}">${nVisited}/${comps.length}</span>
-      <span class="row-chevron${allOpen?" open":""}">▾</span>
+      <span class="row-chevron${isOpen?" open":""}">▾</span>
     </span>
   </div>
-  <div class="row-body${allOpen?" open":""}" id="${bodyId}"><div class="row-body-inner">`;
-    comps.forEach(c => { html += buildCard(c, state); });
+  <div class="row-body${isOpen?" open":""}" id="${bodyId}"><div class="row-body-inner">`;
+    if (isOpen) comps.forEach(c => { html += buildCard(c, state); });
     html += `</div></div></div>`;
   });
 
@@ -3235,13 +3241,11 @@ function updateStats(state) {
 
 function refreshBadge(rk, state) {
   const badge = document.getElementById("badge_"+rk);
-  const sec   = document.querySelector(`[data-rk="${CSS.escape(rk)}"]`);
-  if (!badge || !sec) return;
-  const cards = sec.querySelectorAll(".co-card");
-  let vis = 0;
-  cards.forEach(c => { if (state[key(parseInt(c.dataset.i))]?.visited) vis++; });
-  badge.textContent = vis+"/"+cards.length;
-  badge.className = vis===cards.length && cards.length>0 ? "row-pill done" : "row-pill";
+  if (!badge) return;
+  const comps = _rowGroups[rk] || [];
+  const vis = comps.filter(c => state[key(c.i)]?.visited).length;
+  badge.textContent = vis+"/"+comps.length;
+  badge.className = vis===comps.length && comps.length>0 ? "row-pill done" : "row-pill";
 }
 
 let _dt = {};
@@ -3312,6 +3316,15 @@ document.getElementById("content").addEventListener("click", e => {
   const tog = e.target.closest("[data-toggle]");
   if (tog) {
     const body = document.getElementById(tog.getAttribute("data-toggle"));
+    const rk = tog.closest(".row-section")?.dataset.rk;
+    const opening = body && !body.classList.contains("open");
+    if (rk != null) { if (opening) rowOpen.add(rk); else rowOpen.delete(rk); }
+    if (opening) {
+      const inner = body.querySelector(".row-body-inner");
+      if (inner && !inner.childElementCount) {   // lazy fill on first open
+        inner.innerHTML = (_rowGroups[rk] || []).map(c => buildCard(c, load())).join("");
+      }
+    }
     body?.classList.toggle("open");
     tog.querySelector(".row-chevron")?.classList.toggle("open");
     return;
@@ -4249,11 +4262,31 @@ if (fbReady) {
 setAuthMode("signin");
 applyQrPrefill();
 
-// Updates arrive silently: HTML is network-first, so every launch runs the
-// newest deploy. (The old "Update available" banner was removed as noise.)
+// Updates are fully silent: HTML is network-first so every launch runs the
+// newest deploy, AND a long-running session self-updates — when a new build
+// takes control we reload invisibly (immediately if the app is backgrounded,
+// otherwise the next time it returns to the foreground). Installed PWAs can
+// stay "launched" for days, so waiting for a relaunch wasn't enough.
 if ("serviceWorker" in navigator) {
+  let swRefreshing = false;
+  let swUpdatePending = false;
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || swRefreshing) return;
+    if (document.visibilityState === "hidden") { swRefreshing = true; location.reload(); }
+    else swUpdatePending = true;
+  });
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js").then(reg => {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState !== "visible") {
+          if (swUpdatePending && !swRefreshing) { swRefreshing = true; location.reload(); }
+          return;
+        }
+        reg.update().catch(() => {});
+        if (swUpdatePending && !swRefreshing) { swRefreshing = true; location.reload(); }
+      });
+    }).catch(() => {});
   });
 }
 
