@@ -1368,27 +1368,25 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .user-chip-out:active { background: rgba(255,255,255,0.15); }
 
 /* Master-only brand switcher */
-.brand-switch-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-top: 10px;
-}
+/* Masters' brand switcher: compact dropdown living inside the user chip */
+.brand-switch-row { display: inline-flex; align-items: center; }
 .brand-switch {
-  flex: 1;
-  padding: 8px 30px 8px 12px;
-  border-radius: 9px;
-  border: 1.5px solid rgba(255,255,255,0.4);
-  background: rgba(255,255,255,0.12);
+  height: 26px;
+  max-width: 108px;
+  padding: 0 20px 0 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.45);
+  background-color: transparent;
   color: #fff;
   font-family: var(--ft);
-  font-size: 0.86rem;
+  font-size: 0.7rem;
   font-weight: 600;
+  cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='9' height='5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3.5 3 3.5-3' stroke='%23ffffff' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 11px center;
+  background-position: right 6px center;
 }
 .brand-switch:focus { outline: none; border-color: #fff; }
 .brand-switch option { color: #0E1B2C; }
@@ -1570,13 +1568,11 @@ body.home-mode .user-chip-gear { display: none !important; }
       <img id="brandLogo" class="brand-logo" src="./logo-lpgas.png" alt="LP Gas">
     </div>
     <div class="user-chip" id="userChip" style="display:none">
+      <span class="brand-switch-row" id="brandSwitchRow" style="display:none"><select class="brand-switch" id="brandSwitch" title="Switch brand"></select></span>
       <span class="user-chip-name" id="userChipName"></span>
       <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
-  </div>
-  <div class="brand-switch-row" id="brandSwitchRow" style="display:none">
-    <select class="brand-switch" id="brandSwitch"></select>
   </div>
   <div class="header-search">
     <button class="hdr-btn btn-export" id="mediaBtn" style="display:none">Photos</button>
@@ -4174,9 +4170,9 @@ function showSignedOut() {
 const MASTER_BRANDS = [
   { code:"LPGAS-2026",   label:"LP Gas" },
   { code:"GOLFDOM-2026", label:"Golfdom" },
-  { code:"LM-2026",      label:"Landscape Management" },
+  { code:"LM-2026",      label:"LM" },
   { code:"PMP-2026",     label:"PMP" },
-  { code:"PQ-2026",      label:"Pit & Quarry" },
+  { code:"PQ-2026",      label:"P&Q" },
 ];
 function setupBrandSwitcher() {
   const row = document.getElementById("brandSwitchRow");
