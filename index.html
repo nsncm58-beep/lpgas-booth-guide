@@ -162,7 +162,10 @@ body {
   display: flex;
   gap: 8px;
   padding: 8px 12px 10px;
+  justify-content: flex-end;
 }
+.booths-search { padding: 2px 12px 10px; }
+.booths-search.hidden { display: none; }
 .search-wrap { flex: 1; position: relative; }
 #searchInput {
   width: 100%;
@@ -1430,6 +1433,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 
 /* ── Home Team mode: hide the field-app chrome ── */
 body.home-mode .header-search,
+body.home-mode .booths-search,
 body.home-mode .view-tabs,
 body.home-mode .filter-bar,
 body.home-mode .brand-switch-row,
@@ -1575,15 +1579,17 @@ body.home-mode .user-chip-gear { display: none !important; }
     <select class="brand-switch" id="brandSwitch"></select>
   </div>
   <div class="header-search">
-    <div class="search-wrap">
-      <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
-    </div>
     <button class="hdr-btn btn-export" id="mediaBtn" style="display:none">Photos</button>
     <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
     <button class="v-tab active" data-v="schedule">My Schedule</button>
     <button class="v-tab"        data-v="booths">Booths</button>
+  </div>
+  <div class="booths-search hidden">
+    <div class="search-wrap">
+      <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
   </div>
   <div class="filter-bar">
     <button class="f-pill active"     data-f="all">All Booths</button>
@@ -2853,12 +2859,15 @@ function render() {
   const el = document.getElementById("content");
   const filterBar = document.querySelector(".filter-bar");
 
+  const boothsSearch = document.querySelector(".booths-search");
   if (activeView === "schedule") {
     filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
     renderScheduleView(state);
     return;
   }
   filterBar?.classList.remove("hidden");
+  boothsSearch?.classList.remove("hidden");
 
   if (!CO.length) {
     el.innerHTML = `<div class="empty-wrap"><h3>No booth list yet</h3>
