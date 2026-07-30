@@ -3,9 +3,9 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v65';
+const CACHE_NAME = 'ncm-events-guide-v66';
 const ASSETS = [
-    './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ncm-logo.png',
+    './index.html', './manifest.json', './icon-192.png', './icon-512.png', './favicon.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
     './Forza-Medium.woff2', './Forza-Bold.woff2', './Forza-Black.woff2',
     './Gotham-Book.woff2', './Gotham-Medium.woff2', './Gotham-Bold.woff2',
