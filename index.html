@@ -1556,6 +1556,12 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-chip.cust { color: #005C8F; background: #E8F1F7; }
 .home-chip.non  { color: #8B1538; background: #F6E6EB; }
 .home-chip.vid  { color: #5B2D71; background: #F1E8F6; }
+.home-chip.planned { color: #6b7280; background: #eef1f4; }
+.home-note.vid-done { opacity: 0.72; }
+.home-vids-summary {
+  font-family: var(--ft); font-size: 0.76rem; font-weight: 700; color: var(--muted);
+  letter-spacing: 0.3px; margin: 2px 2px 12px;
+}
 .home-note-flags { display: flex; gap: 6px; margin-top: 9px; }
 .flag-btn {
   font-family: var(--ft); font-size: 0.66rem; font-weight: 600;
@@ -2561,8 +2567,9 @@ function buildHomeOverview() {
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
 // (mirrors the field team view; needs isHome() on schedules read in rules).
-let homeView = "sched";           // "sched" | "notes" (schedules is the default view)
-let homeVideosOnly = false;       // toggle: show only video-flagged booths in both views
+let homeView = "sched";           // "sched" | "videos" (schedules is the default view)
+let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged booths
+let homeShowDoneVids = false;     // Videos view: completed section expanded?
 const homeOpenReps = new Set();   // "<code>|<uid>" keys of expanded rep sections
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
@@ -2627,19 +2634,18 @@ function renderHomeDashboard() {
   const el = document.getElementById("content");
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
   const subtitle = !homeBrandFilter ? "Live overview of every brand."
-    : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "."
-                            : "Shared field notes: " + esc(filterName) + ".")
-      + (homeVideosOnly ? " Showing video booths only." : "");
+    : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
+                            : "Every video flagged by the field team: " + esc(filterName) + ".");
   let html = `<div class="home-wrap"><div class="home-main">
     <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle}</p></div>
     ${buildHomeFilter()}`;
   if (homeBrandFilter) {
     html += `<div class="home-view-tabs">
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
-      <button class="home-view-tab${homeView==="notes"?" active":""}" type="button" data-home-view="notes">Notes</button>
-      <button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>
+      <button class="home-view-tab${homeView!=="sched"?" active":""}" type="button" data-home-view="videos">Videos</button>
+      ${homeView==="sched" ? `<button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>` : ""}
     </div>`;
-    html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
+    html += (homeView === "sched") ? buildHomeSchedView() : buildHomeVideosView();
   } else {
     html += buildHomeOverview();
   }
@@ -2653,77 +2659,58 @@ function renderHomeDashboard() {
 }
 
 // The Notes view: search + media links + per-brand sections with collapsible
-// per-rep accordions (tap a rep header to expand; searching auto-expands).
-function buildHomeNotesView() {
-  const byEvent = {};
-  // Display only Editorial/Digital docs (sales + unclassified stay hidden;
-  // their docs are untouched in Firestore, just not rendered here).
+// The Videos view: one flat list of every video-flagged booth across every
+// Editorial/Digital rep. Ready-to-produce first (visited, newest visit on
+// top), then planned-but-unvisited, with completed collapsed at the bottom.
+function buildHomeVideosView() {
+  const q = homeSearchQ.trim().toLowerCase();
+  const vids = [];
   Object.values(homeNotes)
     .filter(d => effectiveDept(d.uid, d.dept) === "edit")
-    .forEach(d => { (byEvent[d.eventCode] = byEvent[d.eventCode] || []).push(d); });
-  let codes = Object.keys(byEvent).sort();
-  if (homeBrandFilter) codes = codes.filter(c => resolveEvent(c).brand === homeBrandFilter);
-  const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
-  const q = homeSearchQ.trim().toLowerCase();
-  // Search matches company + booth number + the note text itself, so the
-  // team can hunt topics ("autogas", "tariffs"), not just company names.
-  // Videos-only swaps the base test: every video-flagged booth (even one with
-  // no notes yet) and nothing else.
-  const matchItem = it => (homeVideosOnly ? !!it.video : (it.pre || it.post || it.visited)) &&
-    (!q || (it.boothName||"").toLowerCase().includes(q) || (it.boothNum||"").toLowerCase().includes(q)
-        || (it.pre||"").toLowerCase().includes(q)       || (it.post||"").toLowerCase().includes(q));
-  const docTs = homeDocTs;
-  _homeCopyIndex = {};
+    .forEach(d => {
+      if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
+      (d.items || []).forEach(it => {
+        if (!it.video) return;
+        const id = d.eventCode + "__" + d.uid + "__" + it.boothNum;
+        vids.push({ id, code: d.eventCode, uid: d.uid, name: d.name || "Rep",
+          boothName: it.boothName, boothNum: it.boothNum, visited: !!it.visited,
+          vts: it.vts || 0, done: !!homeVideoStatus[id] });
+      });
+    });
+  const shown = vids.filter(v => !q || (v.boothName||"").toLowerCase().includes(q)
+    || (v.boothNum||"").toLowerCase().includes(q) || (v.name||"").toLowerCase().includes(q));
+  const rank = v => v.visited ? 0 : 1;
+  shown.sort((a,b) => rank(a) - rank(b) || (b.vts - a.vts) || (a.boothName||"").localeCompare(b.boothName||""));
+  const pending = shown.filter(v => !v.done);
+  const done    = shown.filter(v => v.done);
+  const itemHtml = v => `<div class="home-note${v.done ? " vid-done" : ""}">
+    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
+    <div class="home-rem-meta">flagged by ${esc(v.name)}${v.vts ? " · visited " + esc(fmtAgo(v.vts)) : ""}</div>
+    <div class="home-note-flags">
+      <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd="${esc(v.id)}" data-vd-code="${esc(v.code)}" data-vd-uid="${esc(v.uid||"")}" data-vd-name="${esc(v.name)}" data-vd-b="${esc(v.boothNum)}" data-vd-n="${esc(v.boothName)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
+    </div>
+  </div>`;
   let html = `
     <div class="home-search-box">
-      <input class="home-search-input" type="text" placeholder="Search companies or note text…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
+      <input class="home-search-input" type="text" placeholder="Search videos: company, booth or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
     </div>`;
-  // Build per-brand sections, including only reps that have matching notes.
-  // Reps sort freshest-sync-first so new material surfaces during a show.
-  let anyShown = false;
-  codes.forEach(code => {
-    const brand = BRANDS[resolveEvent(code).brand] || BRANDS.ncm;
-    const reps = byEvent[code].slice().sort((a,b) => docTs(b) - docTs(a) || (a.name||"").localeCompare(b.name||""));
-    const repsWithMatches = reps.map(r => ({ r, items: (r.items||[]).filter(matchItem) }))
-      .filter(x => x.items.length);
-    if (!repsWithMatches.length) return;
-    anyShown = true;
-    _homeCopyIndex[code] = { brandName: brand.name, reps: [] };
-    html += `<section class="home-brand">
-      <div class="home-brand-bar" style="background:${brand.p.blue}">
-        <span>${esc(brand.name)}</span>
-        <span class="home-bar-right"><button class="home-copy-btn" type="button" data-copy-brand="${esc(code)}">Copy all</button><span class="home-brand-code">${esc(code)}</span></span>
-      </div>`;
-    repsWithMatches.forEach(({ r, items }, ri) => {
-      _homeCopyIndex[code].reps.push({ name: r.name || "Rep", items });
-      const ago = fmtAgo(docTs(r));
-      const repKey = code + "|" + (r.uid || "");
-      const open = !!q || homeOpenReps.has(repKey);   // searching auto-expands matches
-      html += `<div class="home-rep">
-        <div class="home-rep-name home-rep-head" data-rep-toggle="${esc(repKey)}"><span class="home-rep-chev">${open ? "▾" : "▸"}</span>${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span>${ago ? `<span class="home-rep-ago">updated ${esc(ago)}</span>` : ""}<button class="home-copy-btn rep" type="button" data-copy-rep="${esc(code)}|${ri}">Copy</button></div>`;
-      if (open) items.forEach(it => {
-        // Customer status is sales-side only; the home team just sees the
-        // note itself. Video-flagged booths get the same Mark-video-done
-        // toggle as the Reminders rail (same videoStatus doc, same handler).
-        const vdid = code + "__" + (r.uid||"") + "__" + it.boothNum;
-        const vdone = !!homeVideoStatus[vdid];
-        html += `<div class="home-note">
-          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.video?'<span class="home-chip vid">Video</span>':''}${it.visited?'<span class="home-visited">Visited</span>':''}</div>
-          ${it.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(it.pre)}</div>` : ''}
-          ${it.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(it.post)}</div>` : ''}
-          ${it.video ? `<div class="home-note-flags">
-            <button class="home-rem-btn${vdone ? " done" : ""}" type="button" data-vd="${esc(vdid)}" data-vd-code="${esc(code)}" data-vd-uid="${esc(r.uid||"")}" data-vd-name="${esc(r.name||"Rep")}" data-vd-b="${esc(it.boothNum)}" data-vd-n="${esc(it.boothName)}">${vdone ? "✓ Video done · undo" : "Mark video done"}</button>
-          </div>` : ''}
-        </div>`;
-      });
-      html += `</div>`;
-    });
-    html += `</section>`;
-  });
-  if (!anyShown) {
-    html += homeVideosOnly
-      ? `<div class="empty-wrap"><h3>${q ? "No matches" : "No video booths yet"}</h3><p>${q ? "No video-flagged booths matching \""+esc(homeSearchQ)+"\"." : "Booths appear here once a rep flags them with the Video button."}</p></div>`
-      : `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes from Editorial / Digital reps appear here automatically as they work the floor.')}</p></div>`;
+  if (vids.length && !q) {
+    const nDone = vids.filter(v => v.done).length;
+    html += `<div class="home-vids-summary">${vids.length} video${vids.length===1?"":"s"} flagged · ${nDone} done · ${vids.length - nDone} to go</div>`;
+  }
+  if (!vids.length) {
+    html += `<div class="empty-wrap"><h3>No videos flagged yet</h3><p>Every booth a rep flags with the Video button lands here, whether or not they've visited it yet.</p></div>`;
+  } else if (!shown.length) {
+    html += `<div class="empty-wrap"><h3>No matches</h3><p>No videos matching "${esc(homeSearchQ)}".</p></div>`;
+  } else {
+    html += pending.map(itemHtml).join("");
+    if (!pending.length && done.length) {
+      html += `<div class="home-rem-empty">All caught up. Every flagged video is marked done.</div>`;
+    }
+    if (done.length) {
+      html += `<div class="home-rem-donehead" data-vids-done-toggle>${homeShowDoneVids ? "▾" : "▸"} Completed (${done.length})</div>`;
+      if (homeShowDoneVids) html += done.map(itemHtml).join("");
+    }
   }
   return html;
 }
@@ -3372,6 +3359,7 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
   if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vid-only]")) { homeVideosOnly = !homeVideosOnly; renderHomeDashboard(); return; }
 
   const hv = e.target.closest("[data-home-view]");
@@ -4272,7 +4260,7 @@ function showSignedOut() {
   homeVideoStatus = {};
   myVideoDone = {};
   homeView = "sched"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
-  homeVideosOnly = false;
+  homeVideosOnly = false; homeShowDoneVids = false;
   homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
