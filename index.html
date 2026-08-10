@@ -933,6 +933,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   justify-content: center;
   margin: 8px 12px 14px;
 }
+/* Meal/off-site add buttons stay tucked away until the rep taps the
+   "Search to add" field (or already has one of the forms open). */
+.sched-add-tools.hide { display: none; }
 .meal-add-btn {
   padding: 9px 18px;
   border-radius: 10px;
@@ -2588,7 +2591,7 @@ function notesToText(items) {
   let t = "";
   items.forEach(it => {
     const tags = [
-      it.status === "customer" ? "Customer" : it.status === "noncustomer" ? "Non-customer" : "",
+      it.video ? "Video" : "",
       it.visited ? "Visited" : ""
     ].filter(Boolean).join(", ");
     t += it.boothName + " (Booth " + it.boothNum + ")" + (tags ? "  [" + tags + "]" : "") + "\n";
@@ -2699,17 +2702,18 @@ function buildHomeNotesView() {
       html += `<div class="home-rep">
         <div class="home-rep-name home-rep-head" data-rep-toggle="${esc(repKey)}"><span class="home-rep-chev">${open ? "▾" : "▸"}</span>${esc(r.name||"Rep")}<span class="home-rep-count">${items.length} booth${items.length===1?"":"s"}</span>${ago ? `<span class="home-rep-ago">updated ${esc(ago)}</span>` : ""}<button class="home-copy-btn rep" type="button" data-copy-rep="${esc(code)}|${ri}">Copy</button></div>`;
       if (open) items.forEach(it => {
-        const fid = flagId(code, r.uid, it.boothNum);
-        const fl = (homeFlags[fid] || {}).state || "";
-        const flagAttrs = `data-flag="${esc(fid)}" data-flag-code="${esc(code)}" data-flag-uid="${esc(r.uid||"")}" data-flag-b="${esc(it.boothNum)}" data-flag-n="${esc(it.boothName)}"`;
-        html += `<div class="home-note${fl==="covered"?" covered":""}">
-          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.status==="customer"?'<span class="home-chip cust">Customer</span>':''}${it.status==="noncustomer"?'<span class="home-chip non">Non-Cust</span>':''}${it.video?'<span class="home-chip vid">Video</span>':''}${it.visited?'<span class="home-visited">Visited</span>':''}</div>
+        // Customer status is sales-side only; the home team just sees the
+        // note itself. Video-flagged booths get the same Mark-video-done
+        // toggle as the Reminders rail (same videoStatus doc, same handler).
+        const vdid = code + "__" + (r.uid||"") + "__" + it.boothNum;
+        const vdone = !!homeVideoStatus[vdid];
+        html += `<div class="home-note">
+          <div class="home-note-co">${esc(it.boothName)} <span class="home-note-booth">Booth ${esc(it.boothNum)}</span>${it.video?'<span class="home-chip vid">Video</span>':''}${it.visited?'<span class="home-visited">Visited</span>':''}</div>
           ${it.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(it.pre)}</div>` : ''}
           ${it.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(it.post)}</div>` : ''}
-          <div class="home-note-flags">
-            <button class="flag-btn${fl==="star"?" on-star":""}" type="button" ${flagAttrs} data-flag-state="star">${fl==="star"?"★":"☆"} Follow up</button>
-            <button class="flag-btn${fl==="covered"?" on-cov":""}" type="button" ${flagAttrs} data-flag-state="covered">✓ Covered</button>
-          </div>
+          ${it.video ? `<div class="home-note-flags">
+            <button class="home-rem-btn${vdone ? " done" : ""}" type="button" data-vd="${esc(vdid)}" data-vd-code="${esc(code)}" data-vd-uid="${esc(r.uid||"")}" data-vd-name="${esc(r.name||"Rep")}" data-vd-b="${esc(it.boothNum)}" data-vd-n="${esc(it.boothName)}">${vdone ? "✓ Video done · undo" : "Mark video done"}</button>
+          </div>` : ''}
         </div>`;
       });
       html += `</div>`;
@@ -2727,18 +2731,18 @@ function buildHomeNotesView() {
 // A rep's shared note rendered under their scheduled booth meeting, with the
 // same Follow up / Covered flags as the Notes tab (same ids, same state).
 function schedNoteHtml(n, sel) {
-  if (!n || (!n.pre && !n.post && !n.status && !n.visited)) return "";
-  const fid = flagId(sel.eventCode, sel.uid, n.boothNum);
-  const fl = (homeFlags[fid] || {}).state || "";
-  const flagAttrs = `data-flag="${esc(fid)}" data-flag-code="${esc(sel.eventCode)}" data-flag-uid="${esc(sel.uid||"")}" data-flag-b="${esc(n.boothNum)}" data-flag-n="${esc(n.boothName)}"`;
-  return `<div class="home-note hs-note${fl==="covered"?" covered":""}">
-    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.status==="customer"?'<span class="home-chip cust">Customer</span>':''}${n.status==="noncustomer"?'<span class="home-chip non">Non-Cust</span>':''}${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}</div>
+  // n.video is part of the gate so a booth flagged for video with no notes
+  // yet still surfaces its Mark-video-done button under the agenda card.
+  if (!n || (!n.pre && !n.post && !n.visited && !n.video)) return "";
+  const vdid = sel.eventCode + "__" + (sel.uid||"") + "__" + n.boothNum;
+  const vdone = !!homeVideoStatus[vdid];
+  return `<div class="home-note hs-note">
+    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}</div>
     ${n.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(n.pre)}</div>` : ''}
     ${n.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(n.post)}</div>` : ''}
-    <div class="home-note-flags">
-      <button class="flag-btn${fl==="star"?" on-star":""}" type="button" ${flagAttrs} data-flag-state="star">${fl==="star"?"★":"☆"} Follow up</button>
-      <button class="flag-btn${fl==="covered"?" on-cov":""}" type="button" ${flagAttrs} data-flag-state="covered">✓ Covered</button>
-    </div>
+    ${n.video ? `<div class="home-note-flags">
+      <button class="home-rem-btn${vdone ? " done" : ""}" type="button" data-vd="${esc(vdid)}" data-vd-code="${esc(sel.eventCode)}" data-vd-uid="${esc(sel.uid||"")}" data-vd-name="${esc(sel.name||"Rep")}" data-vd-b="${esc(n.boothNum)}" data-vd-n="${esc(n.boothName)}">${vdone ? "✓ Video done · undo" : "Mark video done"}</button>
+    </div>` : ''}
   </div>`;
 }
 // The Schedules view: pick a rep, see their Day 1/2/3 agenda read-only
@@ -2840,6 +2844,7 @@ let _rowGroups = {};             // rk -> current filtered companies, for lazy f
 let activeFilter = "all";
 let allOpen      = false;
 let schedSearchQ = "";
+let schedAddVisible = false;   // add-meal/off-site buttons show after the search field is tapped
 let schedDay     = 1;
 let mealFormOpen   = false;
 let mealFormType   = "lunch";
@@ -3224,6 +3229,7 @@ function renderScheduleView(state) {
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
 </div>
+<div class="sched-add-tools${(schedAddVisible || mealFormOpen || offFormOpen || schedSearchQ) ? "" : " hide"}">
 <div class="meal-add-row">
   ${mealFormOpen
     ? ""
@@ -3235,7 +3241,8 @@ ${mealFormOpen ? buildMealForm() : ""}
     ? ""
     : `<button class="meal-add-btn offsite" data-off-open>+ Add Off-Site Meeting</button>`}
 </div>
-${offFormOpen ? buildOffsiteForm() : ""}`;
+${offFormOpen ? buildOffsiteForm() : ""}
+</div>`;
 
   if (!hasAny) {
     html += `<div class="sched-empty">
@@ -3735,6 +3742,28 @@ document.querySelector(".filter-bar").addEventListener("click", e => {
   pill.classList.add("active");
   activeFilter = pill.dataset.f;
   render();
+});
+
+// The schedule's add-meal/off-site buttons reveal when the rep taps into
+// "Search to add to Day N" and tuck away again on a tap anywhere else.
+// Class toggles (no re-render) so the keyboard and focus are undisturbed.
+document.addEventListener("focusin", e => {
+  if (e.target.classList && e.target.classList.contains("sched-search-input") && !schedAddVisible) {
+    schedAddVisible = true;
+    document.querySelector(".sched-add-tools")?.classList.remove("hide");
+  }
+});
+document.addEventListener("pointerdown", e => {
+  const inSearch = e.target.closest(".sched-search-box");
+  const inTools  = e.target.closest(".sched-add-tools");
+  if (inSearch && !schedAddVisible) {   // the tap itself reveals (focusin can lag on touch)
+    schedAddVisible = true;
+    document.querySelector(".sched-add-tools")?.classList.remove("hide");
+    return;
+  }
+  if (!schedAddVisible || mealFormOpen || offFormOpen || inSearch || inTools) return;
+  schedAddVisible = false;
+  document.querySelector(".sched-add-tools")?.classList.add("hide");
 });
 
 let _st;
