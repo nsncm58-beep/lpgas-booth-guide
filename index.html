@@ -2285,6 +2285,50 @@ async function syncMyScheduleToCloud() {
     });
   } catch (e) { /* offline — Firestore persistence will retry */ }
 }
+// New-device continuity: if this device has no local data for the current
+// event but the cloud has this rep's schedule/notes, rebuild local state from
+// the cloud FIRST. (Previously a fresh device pushed its emptiness up on
+// login, silently wiping the rep's cloud docs.)
+async function hydrateFromCloud() {
+  if (!fbReady || !currentUser || isHome()) return;
+  const st = load();
+  if (Object.keys(st).some(k => k[0] === "c") || (st._meals||[]).length || (st._offsite||[]).length) return;
+  try {
+    const [nd, sd] = await Promise.all([
+      fbDb.collection("notes").doc(myScheduleDocId()).get(),
+      fbDb.collection("schedules").doc(myScheduleDocId()).get()
+    ]);
+    const byBooth = {};
+    CO.forEach((c, i) => { byBooth[c.b + "||" + c.n] = i; });
+    const fresh = {};
+    if (nd.exists) (nd.data().items || []).forEach(it => {
+      const i = byBooth[it.boothNum + "||" + it.boothName];
+      if (i == null) return;
+      fresh["c"+i] = { visited: !!it.visited, video: !!it.video, vts: it.vts || 0,
+        status: it.status || "", pre: it.pre || "", post: it.post || "" };
+    });
+    if (sd.exists) {
+      const meals = [], offs = [];
+      (sd.data().items || []).forEach(it => {
+        if (it.kind === "booth") {
+          const i = byBooth[it.boothNum + "||" + it.boothName];
+          if (i != null) { fresh["c"+i] = fresh["c"+i] || {}; fresh["c"+i].scheduled = it.day + "|" + it.time; }
+        } else if (it.kind === "meal") {
+          meals.push({ id: mealId(), type: it.mealType, day: it.day, time: it.time, company: it.company || "", notes: it.notes || "" });
+        } else {
+          offs.push({ id: offsiteId(), day: it.day, time: it.time, title: it.title || "", company: it.company || "", location: it.location || "", notes: it.notes || "" });
+        }
+      });
+      if (meals.length) fresh._meals = meals;
+      if (offs.length) fresh._offsite = offs;
+    }
+    if (Object.keys(fresh).length) {
+      localStorage.setItem(storeKey(), JSON.stringify(fresh));
+      toast("Restored your show data from the cloud");
+    }
+  } catch (e) { /* offline: nothing to restore from */ }
+}
+
 function subscribeTeam() {
   if (!fbReady || !currentUser) return;
   const code = currentEventCode();
@@ -4235,8 +4279,9 @@ if (fbReady) {
       applyEvent(currentEventCode());
       setupBrandSwitcher();
       showSignedIn(profile);
-      // Push my current schedule to the cloud (also migrates existing local data)
-      // and start listening for teammates in the same event.
+      // Pull cloud data down first if this device is empty, THEN push (which
+      // also migrates existing local data) and start the team subscription.
+      await hydrateFromCloud();
       syncMyScheduleToCloud();
       syncMyNotesToCloud();
       subscribeTeam();
