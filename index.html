@@ -1527,6 +1527,13 @@ body.home-mode .user-chip-gear { display: none !important; }
   text-transform: uppercase; cursor: pointer;
 }
 .home-view-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.home-vid-toggle {
+  flex: 0 0 auto; padding: 10px 16px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+  font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px;
+  text-transform: uppercase; cursor: pointer;
+}
+.home-vid-toggle.on { background: #5B2D71; border-color: #5B2D71; color: #fff; }
 .home-rep-head { cursor: pointer; -webkit-user-select: none; user-select: none; }
 .home-rep-chev { color: var(--muted); font-size: 0.75rem; width: 14px; display: inline-block; flex-shrink: 0; }
 .home-note.covered .home-note-co { text-decoration: line-through; text-decoration-thickness: 1.5px; }
@@ -2215,7 +2222,9 @@ function buildSharedNotes() {
     const s = state[key(i)];
     if (!s) return;
     const pre = (s.pre||"").trim(), post = (s.post||"").trim();
-    if (!s.visited && !pre && !post && !s.status) return;
+    // A bare Video flag shares too, so the home team's videos-only view
+    // sees every planned video even before the rep visits or writes notes.
+    if (!s.visited && !pre && !post && !s.status && !s.video) return;
     items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post });
   });
   return items;
@@ -2550,6 +2559,7 @@ function buildHomeOverview() {
 // per-rep sections in Notes, and read-only rep schedules in Schedules
 // (mirrors the field team view; needs isHome() on schedules read in rules).
 let homeView = "sched";           // "sched" | "notes" (schedules is the default view)
+let homeVideosOnly = false;       // toggle: show only video-flagged booths in both views
 const homeOpenReps = new Set();   // "<code>|<uid>" keys of expanded rep sections
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
@@ -2615,7 +2625,8 @@ function renderHomeDashboard() {
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
   const subtitle = !homeBrandFilter ? "Live overview of every brand."
     : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "."
-                            : "Shared field notes: " + esc(filterName) + ".");
+                            : "Shared field notes: " + esc(filterName) + ".")
+      + (homeVideosOnly ? " Showing video booths only." : "");
   let html = `<div class="home-wrap"><div class="home-main">
     <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle}</p></div>
     ${buildHomeFilter()}`;
@@ -2623,6 +2634,7 @@ function renderHomeDashboard() {
     html += `<div class="home-view-tabs">
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
       <button class="home-view-tab${homeView==="notes"?" active":""}" type="button" data-home-view="notes">Notes</button>
+      <button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>
     </div>`;
     html += (homeView === "sched") ? buildHomeSchedView() : buildHomeNotesView();
   } else {
@@ -2652,7 +2664,9 @@ function buildHomeNotesView() {
   const q = homeSearchQ.trim().toLowerCase();
   // Search matches company + booth number + the note text itself, so the
   // team can hunt topics ("autogas", "tariffs"), not just company names.
-  const matchItem = it => (it.pre || it.post || it.visited) &&
+  // Videos-only swaps the base test: every video-flagged booth (even one with
+  // no notes yet) and nothing else.
+  const matchItem = it => (homeVideosOnly ? !!it.video : (it.pre || it.post || it.visited)) &&
     (!q || (it.boothName||"").toLowerCase().includes(q) || (it.boothNum||"").toLowerCase().includes(q)
         || (it.pre||"").toLowerCase().includes(q)       || (it.post||"").toLowerCase().includes(q));
   const docTs = homeDocTs;
@@ -2703,7 +2717,9 @@ function buildHomeNotesView() {
     html += `</section>`;
   });
   if (!anyShown) {
-    html += `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes from Editorial / Digital reps appear here automatically as they work the floor.')}</p></div>`;
+    html += homeVideosOnly
+      ? `<div class="empty-wrap"><h3>${q ? "No matches" : "No video booths yet"}</h3><p>${q ? "No video-flagged booths matching \""+esc(homeSearchQ)+"\"." : "Booths appear here once a rep flags them with the Video button."}</p></div>`
+      : `<div class="empty-wrap"><h3>${q ? "No matches" : "No shared notes yet"}</h3><p>${q ? "No companies matching \""+esc(homeSearchQ)+"\" in the shared notes." : (homeBrandFilter ? "No shared notes for "+esc(filterName)+" yet." : 'Notes from Editorial / Digital reps appear here automatically as they work the floor.')}</p></div>`;
   }
   return html;
 }
@@ -2739,13 +2755,16 @@ function buildHomeSchedView() {
     <input class="home-search-input hs-search-input" type="text" placeholder="Search this brand&#39;s agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
   </div>`;
   const q = homeSchedQ.trim().toLowerCase();
+  // Videos-only trims agendas to video-flagged booth meetings (meals and
+  // off-site items are never videos, so they drop out too).
+  const vOnly = it => !homeVideosOnly || (it.kind === "booth" && it.video);
   // Searching scans EVERY rep's agenda across all three days and returns a
   // flat hit list ("who is meeting X, and when"). Empty search = rep picker.
   if (q) {
     let anyHit = false;
     entries.forEach(([id, s]) => {
       const hits = (Array.isArray(s.items) ? s.items : [])
-        .filter(it => schedItemMatch(it, q))
+        .filter(it => vOnly(it) && schedItemMatch(it, q))
         .sort((a, b) => (a.day - b.day) || (timeToMin(a.time || "") - timeToMin(b.time || "")));
       if (!hits.length) return;
       anyHit = true;
@@ -2765,7 +2784,7 @@ function buildHomeSchedView() {
   const sel = homeSchedules[homeSchedRep];
   h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
     `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(s.eventCode||"")}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
-  const items = Array.isArray(sel.items) ? sel.items : [];
+  const items = (Array.isArray(sel.items) ? sel.items : []).filter(vOnly);
   const dc = [0,0,0,0];
   items.forEach(it => { if (it.day>=1 && it.day<=3) dc[it.day]++; });
   h += `<div class="sched-day-tabs">` + [1,2,3].map(d => `
@@ -2781,7 +2800,10 @@ function buildHomeSchedView() {
   const noteDoc = Object.values(homeNotes).find(d => d.uid === sel.uid && d.eventCode === sel.eventCode);
   const noteFor = bn => noteDoc ? (noteDoc.items || []).find(it => it.boothNum === bn) : null;
   if (!slotTimes.length) {
-    h += `<div class="sched-empty"><h4>Nothing booked on Day ${homeSchedDay}</h4>
+    h += homeVideosOnly
+      ? `<div class="sched-empty"><h4>No videos on Day ${homeSchedDay}</h4>
+      <p>${esc(sel.name||"This rep")} has no video-flagged booths scheduled this day.</p></div>`
+      : `<div class="sched-empty"><h4>Nothing booked on Day ${homeSchedDay}</h4>
       <p>${esc(sel.name||"This rep")} hasn't scheduled anything for this day.</p></div>`;
   } else {
     slotTimes.forEach(t => {
@@ -3343,6 +3365,7 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
   if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-vid-only]")) { homeVideosOnly = !homeVideosOnly; renderHomeDashboard(); return; }
 
   const hv = e.target.closest("[data-home-view]");
   if (hv) { homeView = hv.dataset.homeView; renderHomeDashboard(); return; }
@@ -4220,6 +4243,7 @@ function showSignedOut() {
   homeVideoStatus = {};
   myVideoDone = {};
   homeView = "sched"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
+  homeVideosOnly = false;
   homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
