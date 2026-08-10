@@ -1557,6 +1557,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-chip.non  { color: #8B1538; background: #F6E6EB; }
 .home-chip.vid  { color: #5B2D71; background: #F1E8F6; }
 .home-chip.planned { color: #6b7280; background: #eef1f4; }
+.home-chip.multi { color: var(--blue-deeper); background: var(--blue-mid); }
 .home-note.vid-done { opacity: 0.72; }
 .home-vids-summary {
   font-family: var(--ft); font-size: 0.76rem; font-weight: 700; color: var(--muted);
@@ -2460,6 +2461,30 @@ function toggleVideoDone(id, meta) {
         boothName: meta.n, boothNum: meta.b, done: true, ts: Date.now() });
   op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
+// Grouped variant for the Videos tab: one booth's video covers every rep who
+// flagged it, so done/undo writes or deletes EACH rep's videoStatus doc —
+// all their reminders clear together and each sees the done chip. If only
+// some reps were marked done earlier (via the Reminders rail), the first
+// click completes the stragglers; undo only offers once all are done.
+function toggleVideoDoneGroup(code, boothNum) {
+  if (!fbReady) return;
+  const members = [];
+  Object.values(homeNotes)
+    .filter(d => effectiveDept(d.uid, d.dept) === "edit" && d.eventCode === code)
+    .forEach(d => (d.items || []).forEach(it => {
+      if (it.video && it.boothNum === boothNum) members.push({ d, it });
+    }));
+  if (!members.length) return;
+  const allDone = members.every(({ d, it }) => homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]);
+  Promise.all(members.map(({ d, it }) => {
+    const id = code + "__" + d.uid + "__" + it.boothNum;
+    return allDone
+      ? fbDb.collection("videoStatus").doc(id).delete()
+      : fbDb.collection("videoStatus").doc(id).set({
+          eventCode: code, repUid: d.uid, repName: d.name || "Rep",
+          boothName: it.boothName, boothNum: it.boothNum, done: true, ts: Date.now() });
+  })).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+}
 // The Reminders panel: every visited booth from an edit/digital rep, newest
 // first, with a Video-done toggle. Rendered beside the dashboard on desktop.
 function buildHomeReminders() {
@@ -2660,34 +2685,45 @@ function renderHomeDashboard() {
 
 // The Notes view: search + media links + per-brand sections with collapsible
 // The Videos view: one flat list of every video-flagged booth across every
-// Editorial/Digital rep. Ready-to-produce first (visited, newest visit on
-// top), then planned-but-unvisited, with completed collapsed at the bottom.
+// Editorial/Digital rep. Reps who flagged the SAME booth share one card (a
+// video only needs making once); its done button covers all of them. Ready-
+// to-produce first (visited, newest visit on top), then planned-but-
+// unvisited, with completed collapsed at the bottom.
 function buildHomeVideosView() {
   const q = homeSearchQ.trim().toLowerCase();
-  const vids = [];
+  const groups = {};   // "<code>__<booth#>" -> one card, however many reps flagged it
   Object.values(homeNotes)
     .filter(d => effectiveDept(d.uid, d.dept) === "edit")
     .forEach(d => {
       if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
       (d.items || []).forEach(it => {
         if (!it.video) return;
-        const id = d.eventCode + "__" + d.uid + "__" + it.boothNum;
-        vids.push({ id, code: d.eventCode, uid: d.uid, name: d.name || "Rep",
-          boothName: it.boothName, boothNum: it.boothNum, visited: !!it.visited,
-          vts: it.vts || 0, done: !!homeVideoStatus[id] });
+        const gk = d.eventCode + "__" + it.boothNum;
+        const g = groups[gk] = groups[gk] || { code: d.eventCode, boothNum: it.boothNum, boothName: it.boothName, reps: [] };
+        g.reps.push({ name: d.name || "Rep", visited: !!it.visited, vts: it.vts || 0,
+          done: !!homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum] });
       });
     });
+  const vids = Object.values(groups).map(g => {
+    const latest = g.reps.filter(r => r.visited).sort((a,b) => b.vts - a.vts)[0] || null;
+    return { ...g,
+      visited: !!latest,
+      vts: latest ? latest.vts : 0,
+      visitor: latest ? latest.name : "",
+      done: g.reps.every(r => r.done),
+      names: g.reps.map(r => r.name).join(", ") };
+  });
   const shown = vids.filter(v => !q || (v.boothName||"").toLowerCase().includes(q)
-    || (v.boothNum||"").toLowerCase().includes(q) || (v.name||"").toLowerCase().includes(q));
+    || (v.boothNum||"").toLowerCase().includes(q) || v.names.toLowerCase().includes(q));
   const rank = v => v.visited ? 0 : 1;
   shown.sort((a,b) => rank(a) - rank(b) || (b.vts - a.vts) || (a.boothName||"").localeCompare(b.boothName||""));
   const pending = shown.filter(v => !v.done);
   const done    = shown.filter(v => v.done);
   const itemHtml = v => `<div class="home-note${v.done ? " vid-done" : ""}">
-    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
-    <div class="home-rem-meta">flagged by ${esc(v.name)}${v.vts ? " · visited " + esc(fmtAgo(v.vts)) : ""}</div>
+    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
+    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtAgo(v.vts)) : ""}</div>
     <div class="home-note-flags">
-      <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd="${esc(v.id)}" data-vd-code="${esc(v.code)}" data-vd-uid="${esc(v.uid||"")}" data-vd-name="${esc(v.name)}" data-vd-b="${esc(v.boothNum)}" data-vd-n="${esc(v.boothName)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
+      <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
     </div>
   </div>`;
   let html = `
@@ -3358,6 +3394,8 @@ document.getElementById("content").addEventListener("click", e => {
       name: vd.dataset.vdName, b: vd.dataset.vdB, n: vd.dataset.vdN });
     return;
   }
+  const vdg = e.target.closest("[data-vd-group]");
+  if (vdg) { toggleVideoDoneGroup(vdg.dataset.vdgCode, vdg.dataset.vdgB); return; }
   if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vid-only]")) { homeVideosOnly = !homeVideosOnly; renderHomeDashboard(); return; }
