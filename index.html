@@ -2840,7 +2840,12 @@ function buildCard(c, state) {
   const scheduled = s.scheduled || null;
   const outdoor   = isOutdoor(rowKey(c.b));
   const npId      = "np"+c.i;
-  const statusCls = status === "customer" ? " s-customer"
+  // Customer / Non-Cust / Unsure is a sales-team concept. Editorial/Digital
+  // reps never classify booths, so their cards skip the picker and the
+  // colored accent (any previously stored status stays in storage untouched).
+  const salesView = !myNotesAutoShare();
+  const statusCls = !salesView ? ""
+                  : status === "customer" ? " s-customer"
                   : status === "noncustomer" ? " s-noncustomer" : "";
   const schedTag = scheduled
     ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}</span>`
@@ -2862,11 +2867,11 @@ function buildCard(c, state) {
         <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
           <span class="dot"></span>${visited?"Visited":"Mark Visit"}
         </button>
-        <div class="status-group">
+        ${salesView ? `<div class="status-group">
           <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
           <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unsure</button>
-        </div>
+        </div>` : ""}
         ${myNotesAutoShare() ? `<button class="video-btn${s.video?" on":""}" data-video="${c.i}" title="Flag this booth's video for the home team">
           <svg width="14" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>
           Video</button>` : ""}
@@ -2892,6 +2897,16 @@ function render() {
   if (isHome()) { renderHomeDashboard(); return; }
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
+
+  // Editors don't classify booths, so the customer-status filters disappear
+  // for them (and an active one falls back to All Booths).
+  const statusPills = !myNotesAutoShare();
+  document.querySelectorAll(".f-pill.f-customer, .f-pill.f-noncust, .f-pill.f-unknown")
+    .forEach(p => { p.style.display = statusPills ? "" : "none"; });
+  if (!statusPills && (activeFilter === "customer" || activeFilter === "noncustomer" || activeFilter === "unknown")) {
+    activeFilter = "all";
+    document.querySelectorAll(".f-pill").forEach(p => p.classList.toggle("active", p.dataset.f === "all"));
+  }
 
   let list = CO.map((c,i)=>({...c,i}));
   if (q) list = list.filter(c => c.n.toLowerCase().includes(q) || c.b.toLowerCase().includes(q));
@@ -4157,6 +4172,7 @@ document.getElementById("deptSelect").addEventListener("change", async e => {
   try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ dept: currentUser.dept }, { merge: true }); } catch (err) {}
   queueScheduleSync();   // restamp the cloud schedule with the new team
   queueNotesSync();      // edit -> start auto-sharing notes (sales -> no-op, nothing deleted)
+  render();              // status picker/filters are sales-only, swap them in or out now
   toast(currentUser.dept === "edit" ? "Set to Editorial / Digital" : "Set to Sales");
 });
 async function loadUserDoc(uid) {
