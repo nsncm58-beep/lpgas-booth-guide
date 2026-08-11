@@ -2600,11 +2600,10 @@ function buildHomeOverview() {
     const reps = new Set();
     notesDocs.forEach(d => reps.add(d.uid));
     schedDocs.forEach(d => reps.add(d.uid));
-    let visited = 0, notesN = 0, vidTotal = 0, vidDone = 0, stars = 0, last = 0;
+    let visited = 0, vidTotal = 0, vidDone = 0, last = 0;
     notesDocs.forEach(d => {
       last = Math.max(last, homeDocTs(d));
       (d.items || []).forEach(it => {
-        if (it.pre || it.post) notesN++;
         if (!it.visited) return;
         visited++;
         if (!it.video) return;   // only rep-flagged videos count in the pipeline
@@ -2613,9 +2612,6 @@ function buildHomeOverview() {
       });
     });
     schedDocs.forEach(d => { last = Math.max(last, homeDocTs(d)); });
-    Object.values(homeFlags).forEach(f => {
-      if (f.state === "star" && codes.includes(f.eventCode)) stars++;
-    });
     const vidPending = vidTotal - vidDone;
     const media = codes.map(c => eventMedia(c)).find(m => m && m.folder);
     const code = codes[0] || "";
@@ -2628,17 +2624,16 @@ function buildHomeOverview() {
         <div class="home-ov-stats">
           <div class="home-ov-stat"><strong>${reps.size}</strong><span>rep${reps.size===1?"":"s"} active</span></div>
           <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
-          <div class="home-ov-stat"><strong>${notesN}</strong><span>notes</span></div>
           <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
         </div>
         <div class="home-ov-foot">
-          <span>${stars ? "★ " + stars + " follow-up" + (stars===1?"":"s") + " · " : ""}${last ? "active " + esc(fmtAgo(last)) : "no activity yet"}</span>
+          <span>${last ? "active " + esc(fmtAgo(last)) : "no activity yet"}</span>
           ${media ? `<a class="home-ov-media" href="${esc(media.folder)}" target="_blank" rel="noopener">Photos &amp; videos</a>` : ""}
         </div>
       </div>
     </div>`;
   });
-  h += `</div><div class="home-ov-hint">Pick a brand for its notes, schedules and search.</div>`;
+  h += `</div><div class="home-ov-hint">Pick a brand for its videos, schedules and search.</div>`;
   return h;
 }
 // Home dashboard organization: two views (Notes / Schedules), collapsible
@@ -2732,7 +2727,7 @@ function renderHomeDashboard() {
     : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
                             : "Every video flagged by the field team: " + esc(filterName) + ".");
   let html = `<div class="home-wrap"><div class="home-main">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle} You're <strong>${esc(homeMember())}</strong><button class="home-switch-link" type="button" data-home-member-switch>switch</button></p></div>
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle}</p></div>
     ${buildHomeFilter()}`;
   if (homeBrandFilter) {
     html += `<div class="home-view-tabs">
