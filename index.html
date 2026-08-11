@@ -1356,6 +1356,21 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .user-chip-name.chip-admin:active { opacity: 0.75;
 }
+/* Home-team identity chip: shows who's at the desk, tap to switch */
+.user-chip-member {
+  border: 1px solid rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-family: var(--fd);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.user-chip-member:active { background: rgba(255,255,255,0.22); }
 .user-chip-out {
   border: 1px solid rgba(255,255,255,0.45);
   background: transparent;
@@ -1617,6 +1632,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="user-chip" id="userChip" style="display:none">
       <span class="brand-switch-row" id="brandSwitchRow" style="display:none"><select class="brand-switch" id="brandSwitch" title="Switch brand"></select></span>
       <span class="user-chip-name" id="userChipName"></span>
+      <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
       <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
@@ -2146,6 +2162,15 @@ function updateHeaderBrand(brandKey, show) {
   const b = BRANDS[brandKey] || BRANDS.ncm;
   const img = document.getElementById("brandLogo");
   if (img) { img.src = "./" + b.logo; img.alt = b.name; }
+  updateHomeMemberChip();
+}
+// Header chip next to Sign out showing who's at the home desk; tap = switch.
+function updateHomeMemberChip() {
+  const btn = document.getElementById("homeMemberBtn");
+  if (!btn) return;
+  const show = typeof isHome === "function" && isHome();
+  btn.style.display = show ? "" : "none";
+  if (show) btn.textContent = "👤 " + (homeMember() || "Pick name");
 }
 function applyEvent(code) {
   const ev = resolveEvent(code);
@@ -2706,6 +2731,7 @@ function buildHomeFilter() {
 }
 function renderHomeDashboard() {
   const el = document.getElementById("content");
+  updateHomeMemberChip();
   // Shared login, individual people: each device picks a name once before
   // anything else, so "Working on" claims are attributable.
   if (!homeMember()) {
@@ -4065,6 +4091,10 @@ authEls.form.addEventListener("submit", async (e) => {
     authErr(mapAuthError(err));
     authEls.submit.disabled = false;
   }
+});
+document.getElementById("homeMemberBtn").addEventListener("click", () => {
+  try { localStorage.removeItem("home_member"); } catch (e) {}
+  if (isHome()) renderHomeDashboard();   // re-opens the "Who's working the desk?" picker
 });
 authEls.signOut.addEventListener("click", async () => {
   if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
