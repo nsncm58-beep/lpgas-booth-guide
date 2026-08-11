@@ -1463,7 +1463,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 }
 .home-search-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 .home-head h2 { font-family: var(--fd); font-weight: 800; font-size: 1.3rem; color: var(--text); }
-.home-head p { font-size: 0.85rem; color: var(--muted); margin: 4px 0 18px; }
+.home-head p { font-size: 0.88rem; color: #4b5563; margin: 4px 0 18px; }
 .home-brand { margin-bottom: 22px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
 .home-brand-bar {
   display: flex; align-items: center; justify-content: space-between;
@@ -1560,8 +1560,37 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-chip.multi { color: var(--blue-deeper); background: var(--blue-mid); }
 .home-note.vid-done { opacity: 0.72; }
 .home-vids-summary {
-  font-family: var(--ft); font-size: 0.76rem; font-weight: 700; color: var(--muted);
-  letter-spacing: 0.3px; margin: 2px 2px 12px;
+  font-family: var(--fd); font-size: 0.92rem; font-weight: 700; color: var(--text);
+  letter-spacing: 0.3px; margin: 2px 2px 14px;
+}
+/* Videos tab: each video sits in its own white box so entries are easy to
+   tell apart at a glance, with bigger, darker type than the old flat list. */
+.home-vids .home-note {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(16, 42, 67, 0.07);
+}
+.home-vids .home-note-co { font-size: 1.02rem; }
+.home-vids .home-rem-meta { font-size: 0.78rem; color: #4b5563; margin: 5px 0 10px; }
+.home-rem-btn.work.on    { color: #5B2D71; border-color: #D9C6E5; background: #F1E8F6; }
+.home-rem-btn.work.other { color: #8A5D00; border-color: #ECD9A8; background: #FDF6E3; }
+/* One-time "who's on the desk" picker for the shared home login */
+.home-member-pick {
+  background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 26px 22px; text-align: center; margin-top: 8px;
+}
+.home-member-pick h3 { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 5px; }
+.home-member-pick p { font-size: 0.82rem; color: var(--muted); margin-bottom: 16px; }
+.home-member-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.home-member-btn {
+  padding: 13px 26px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: #fff; font-family: var(--fd); font-weight: 700; font-size: 0.92rem;
+  color: var(--text); cursor: pointer;
+}
+.home-member-btn:active { background: var(--blue); border-color: var(--blue); color: #fff; }
+.home-switch-link {
+  border: none; background: none; color: var(--blue); cursor: pointer;
+  font-size: 0.8rem; font-weight: 700; padding: 0; margin-left: 6px; text-decoration: underline;
 }
 .home-note-flags { display: flex; gap: 6px; margin-top: 9px; }
 .flag-btn {
@@ -2461,6 +2490,19 @@ function toggleVideoDone(id, meta) {
         boothName: meta.n, boothNum: meta.b, done: true, ts: Date.now() });
   op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
+// "Working on" claims live in the homeFlags collection (home/master already
+// read+write it) under their own id space: work__<code>__<booth#> with a
+// `member` field. Tap to claim as yourself, tap again to release; tapping
+// someone else's claim takes it over (small team, no locking ceremony).
+function toggleWorkingOn(code, boothNum) {
+  if (!fbReady) return;
+  const id = "work__" + code + "__" + boothNum;
+  const mine = homeFlags[id] && homeFlags[id].member === homeMember();
+  const op = mine
+    ? fbDb.collection("homeFlags").doc(id).delete()
+    : fbDb.collection("homeFlags").doc(id).set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now() });
+  op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+}
 // Grouped variant for the Videos tab: one booth's video covers every rep who
 // flagged it, so done/undo writes or deletes EACH rep's videoStatus doc —
 // all their reminders clear together and each sees the done chip. If only
@@ -2476,14 +2518,17 @@ function toggleVideoDoneGroup(code, boothNum) {
     }));
   if (!members.length) return;
   const allDone = members.every(({ d, it }) => homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]);
-  Promise.all(members.map(({ d, it }) => {
+  const ops = members.map(({ d, it }) => {
     const id = code + "__" + d.uid + "__" + it.boothNum;
     return allDone
       ? fbDb.collection("videoStatus").doc(id).delete()
       : fbDb.collection("videoStatus").doc(id).set({
           eventCode: code, repUid: d.uid, repName: d.name || "Rep",
           boothName: it.boothName, boothNum: it.boothNum, done: true, ts: Date.now() });
-  })).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+  });
+  // Finishing a video also clears any "Working on" claim on it.
+  if (!allDone) ops.push(fbDb.collection("homeFlags").doc("work__" + code + "__" + boothNum).delete());
+  Promise.all(ops).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 // The Reminders panel: every visited booth from an edit/digital rep, newest
 // first, with a Video-done toggle. Rendered beside the dashboard on desktop.
@@ -2592,9 +2637,13 @@ function buildHomeOverview() {
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
 // (mirrors the field team view; needs isHome() on schedules read in rules).
-let homeView = "sched";           // "sched" | "videos" (schedules is the default view)
+let homeView = "videos";          // "videos" | "sched" (videos is the default view)
 let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged booths
 let homeShowDoneVids = false;     // Videos view: completed section expanded?
+// The home login is shared, so each device picks WHO is at it once; the name
+// shows on videos they claim via the "Working on" button.
+const HOME_MEMBERS = ["Test", "Sydney", "Mason", "Will", "Payton", "Edit"];
+function homeMember() { try { return localStorage.getItem("home_member") || ""; } catch (e) { return ""; } }
 const homeOpenReps = new Set();   // "<code>|<uid>" keys of expanded rep sections
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
@@ -2657,17 +2706,30 @@ function buildHomeFilter() {
 }
 function renderHomeDashboard() {
   const el = document.getElementById("content");
+  // Shared login, individual people: each device picks a name once before
+  // anything else, so "Working on" claims are attributable.
+  if (!homeMember()) {
+    el.innerHTML = `<div class="home-wrap"><div class="home-main">
+      <div class="home-head"><h2>Home Team Dashboard</h2><p>Quick one-time setup for this device.</p></div>
+      <div class="home-member-pick">
+        <h3>Who's working the desk?</h3>
+        <p>Your name shows on videos you claim with the Working on button, so the team knows who's on what.</p>
+        <div class="home-member-grid">${HOME_MEMBERS.map(m => `<button class="home-member-btn" type="button" data-home-member="${esc(m)}">${esc(m)}</button>`).join("")}</div>
+      </div>
+    </div></div>`;
+    return;
+  }
   const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
   const subtitle = !homeBrandFilter ? "Live overview of every brand."
     : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
                             : "Every video flagged by the field team: " + esc(filterName) + ".");
   let html = `<div class="home-wrap"><div class="home-main">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle}</p></div>
+    <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle} You're <strong>${esc(homeMember())}</strong><button class="home-switch-link" type="button" data-home-member-switch>switch</button></p></div>
     ${buildHomeFilter()}`;
   if (homeBrandFilter) {
     html += `<div class="home-view-tabs">
-      <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
       <button class="home-view-tab${homeView!=="sched"?" active":""}" type="button" data-home-view="videos">Videos</button>
+      <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
       ${homeView==="sched" ? `<button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>` : ""}
     </div>`;
     html += (homeView === "sched") ? buildHomeSchedView() : buildHomeVideosView();
@@ -2719,13 +2781,21 @@ function buildHomeVideosView() {
   shown.sort((a,b) => rank(a) - rank(b) || (b.vts - a.vts) || (a.boothName||"").localeCompare(b.boothName||""));
   const pending = shown.filter(v => !v.done);
   const done    = shown.filter(v => v.done);
-  const itemHtml = v => `<div class="home-note${v.done ? " vid-done" : ""}">
+  const itemHtml = v => {
+    // "Working on" claim: whoever at the home desk grabbed this video.
+    const wk = homeFlags["work__" + v.code + "__" + v.boothNum];
+    const wkMine = wk && wk.member === homeMember();
+    const workBtn = v.done ? "" :
+      `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
+    return `<div class="home-note${v.done ? " vid-done" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
     <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtAgo(v.vts)) : ""}</div>
     <div class="home-note-flags">
       <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
+      ${workBtn}
     </div>
   </div>`;
+  };
   let html = `
     <div class="home-search-box">
       <input class="home-search-input" type="text" placeholder="Search videos: company, booth or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
@@ -2739,6 +2809,7 @@ function buildHomeVideosView() {
   } else if (!shown.length) {
     html += `<div class="empty-wrap"><h3>No matches</h3><p>No videos matching "${esc(homeSearchQ)}".</p></div>`;
   } else {
+    html += `<div class="home-vids">`;
     html += pending.map(itemHtml).join("");
     if (!pending.length && done.length) {
       html += `<div class="home-rem-empty">All caught up. Every flagged video is marked done.</div>`;
@@ -2747,6 +2818,7 @@ function buildHomeVideosView() {
       html += `<div class="home-rem-donehead" data-vids-done-toggle>${homeShowDoneVids ? "▾" : "▸"} Completed (${done.length})</div>`;
       if (homeShowDoneVids) html += done.map(itemHtml).join("");
     }
+    html += `</div>`;
   }
   return html;
 }
@@ -3396,6 +3468,11 @@ document.getElementById("content").addEventListener("click", e => {
   }
   const vdg = e.target.closest("[data-vd-group]");
   if (vdg) { toggleVideoDoneGroup(vdg.dataset.vdgCode, vdg.dataset.vdgB); return; }
+  const wk = e.target.closest("[data-work-code]");
+  if (wk) { toggleWorkingOn(wk.dataset.workCode, wk.dataset.workB); return; }
+  const hm = e.target.closest("[data-home-member]");
+  if (hm) { try { localStorage.setItem("home_member", hm.dataset.homeMember); } catch (err) {} renderHomeDashboard(); return; }
+  if (e.target.closest("[data-home-member-switch]")) { try { localStorage.removeItem("home_member"); } catch (err) {} renderHomeDashboard(); return; }
   if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vid-only]")) { homeVideosOnly = !homeVideosOnly; renderHomeDashboard(); return; }
@@ -4297,7 +4374,7 @@ function showSignedOut() {
   homeSchedules = {};
   homeVideoStatus = {};
   myVideoDone = {};
-  homeView = "sched"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
+  homeView = "videos"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
   homeVideosOnly = false; homeShowDoneVids = false;
   homeOpenReps.clear();
   currentUser = null;
