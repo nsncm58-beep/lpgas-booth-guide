@@ -159,12 +159,13 @@ body {
   margin-top: 4px;
 }
 
-.header-search {
-  display: flex;
-  gap: 8px;
-  padding: 8px 12px 10px;
-}
-.header-search .hdr-btn { flex: 1; }   /* Photos + Export share the full row */
+/* Photos sits beside the logo, Export lives in the user chip (both small
+   white-outline chips) — the old full-width button row is gone for room. */
+.hdr-photos { flex-shrink: 0; }
+#signOutBtn { display: none; }                        /* field/master: Sign out moved into Settings */
+body.home-mode #signOutBtn { display: inline-block; } /* home has no gear, so it keeps the header one */
+body.home-mode #exportBtn { display: none !important; }
+body.home-mode #mediaBtn { display: none !important; }  /* home gets the media box in its sidebar */
 .booths-search { padding: 10px 12px 12px; }
 .booths-search.hidden { display: none; }
 .search-wrap { flex: 1; position: relative; }
@@ -187,26 +188,6 @@ body {
 #searchInput::placeholder { color: rgba(255,255,255,0.6); font-weight: 500; }
 #searchInput:focus { background-color: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
 
-.hdr-btn {
-  padding: 0 14px;
-  height: 40px;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.12s, opacity 0.12s, background 0.18s;
-  -webkit-user-select: none; user-select: none;
-}
-.hdr-btn:active { transform: scale(0.94); opacity: 0.88; }
-.btn-export {
-  background: #fff;
-  color: var(--blue-dark);
-}
-.btn-export:active { background: var(--blue-light); }
 /* Shared settings-section field styles (class names are historical — the
    personal-Dropbox section that coined them was removed) */
 .settings-dbx-title { font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
@@ -1449,7 +1430,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .share-secondary { background: var(--surface); border: 1.5px solid var(--border); color: var(--text-2); }
 
 /* ── Home Team mode: hide the field-app chrome ── */
-body.home-mode .header-search,
 body.home-mode .booths-search,
 body.home-mode .view-tabs,
 body.home-mode .filter-bar,
@@ -1628,18 +1608,16 @@ body.home-mode .user-chip-gear { display: none !important; }
   <div class="header-top">
     <div class="logo-block">
       <img id="brandLogo" class="brand-logo" src="./logo-lpgas.png" alt="LP Gas">
+      <button class="user-chip-out hdr-photos" id="mediaBtn" style="display:none" type="button">Photos</button>
     </div>
     <div class="user-chip" id="userChip" style="display:none">
       <span class="brand-switch-row" id="brandSwitchRow" style="display:none"><select class="brand-switch" id="brandSwitch" title="Switch brand"></select></span>
       <span class="user-chip-name" id="userChipName"></span>
       <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
       <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
+      <button class="user-chip-out" id="exportBtn" type="button">Export</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
-  </div>
-  <div class="header-search">
-    <button class="hdr-btn btn-export" id="mediaBtn" style="display:none">Photos</button>
-    <button class="hdr-btn btn-export" id="exportBtn">Export</button>
   </div>
   <div class="view-tabs">
     <button class="v-tab active" data-v="schedule">My Schedule</button>
@@ -1693,6 +1671,10 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="settings-dbx-title">Admin</div>
       <div class="settings-dbx-note">Review and delete any stray records (test accounts, old entries) across all brands. Tip: tap your name in the header for event codes &amp; install QRs.</div>
       <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button">Clean up team data</button>
+    </div>
+    <div class="settings-danger">
+      <div class="settings-dbx-title">Account</div>
+      <button class="settings-dbx-btn settings-stack-btn" id="settingsSignOut" type="button">Sign out</button>
     </div>
     <button class="settings-done" id="settingsClose" type="button">Done</button>
   </div>
@@ -4113,6 +4095,12 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
 });
 document.getElementById("settingsClose").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
+});
+// Settings > Account > Sign out: close the sheet, then run the same flow as
+// the home team's header button (authEls.signOut keeps the shared handler).
+document.getElementById("settingsSignOut").addEventListener("click", () => {
+  document.getElementById("settingsSheet").style.display = "none";
+  authEls.signOut.click();
 });
 document.getElementById("settingsSheet").addEventListener("click", e => {
   if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
