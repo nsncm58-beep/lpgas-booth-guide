@@ -1569,6 +1569,11 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-vids .home-rem-meta { font-size: 0.78rem; color: #4b5563; margin: 5px 0 10px; }
 .home-rem-btn.work.on    { color: #5B2D71; border-color: #D9C6E5; background: #F1E8F6; }
 .home-rem-btn.work.other { color: #8A5D00; border-color: #ECD9A8; background: #FDF6E3; }
+/* Editors' booth notes, expanded under a video card via View notes */
+.home-vid-notes { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 4px; }
+.hvn-rep { padding: 8px 0 2px; }
+.hvn-rep + .hvn-rep { border-top: 1px dashed var(--border); }
+.hvn-name { font-family: var(--fd); font-weight: 700; font-size: 0.8rem; color: var(--text); margin-bottom: 2px; }
 /* One-time "who's on the desk" picker for the shared home login */
 .home-member-pick {
   background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
@@ -2642,6 +2647,7 @@ function buildHomeOverview() {
 let homeView = "videos";          // "videos" | "sched" (videos is the default view)
 let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged booths
 let homeShowDoneVids = false;     // Videos view: completed section expanded?
+const homeVidNotesOpen = new Set();  // "<code>__<booth#>" videos with editor notes expanded
 // The home login is shared, so each device picks WHO is at it once; the name
 // shows on videos they claim via the "Working on" button.
 const HOME_MEMBERS = ["Test", "Sydney", "Mason", "Will", "Payton", "Edit"];
@@ -2766,6 +2772,7 @@ function buildHomeVideosView() {
         const gk = d.eventCode + "__" + it.boothNum;
         const g = groups[gk] = groups[gk] || { code: d.eventCode, boothNum: it.boothNum, boothName: it.boothName, reps: [] };
         g.reps.push({ name: d.name || "Rep", visited: !!it.visited, vts: it.vts || 0,
+          pre: it.pre || "", post: it.post || "",
           done: !!homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum] });
       });
     });
@@ -2790,13 +2797,30 @@ function buildHomeVideosView() {
     const wkMine = wk && wk.member === homeMember();
     const workBtn = v.done ? "" :
       `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
+    // Editors' booth notes, tucked behind a toggle per video.
+    const gk = v.code + "__" + v.boothNum;
+    const noted = v.reps.filter(r => r.pre || r.post);
+    const notesOpen = homeVidNotesOpen.has(gk);
+    const notesBtn = noted.length
+      ? `<button class="home-rem-btn" type="button" data-vid-notes="${esc(gk)}">${notesOpen ? "Hide notes" : "View notes"}${noted.length > 1 ? " (" + noted.length + ")" : ""}</button>`
+      : "";
+    const notesHtml = (noted.length && notesOpen)
+      ? `<div class="home-vid-notes">${noted.map(r => `
+          <div class="hvn-rep">
+            <div class="hvn-name">${esc(r.name)}</div>
+            ${r.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(r.pre)}</div>` : ""}
+            ${r.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(r.post)}</div>` : ""}
+          </div>`).join("")}</div>`
+      : "";
     return `<div class="home-note${v.done ? " vid-done" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
     <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtAgo(v.vts)) : ""}</div>
     <div class="home-note-flags">
       <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
       ${workBtn}
+      ${notesBtn}
     </div>
+    ${notesHtml}
   </div>`;
   };
   let html = `
@@ -3478,6 +3502,13 @@ document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-home-member-switch]")) { try { localStorage.removeItem("home_member"); } catch (err) {} renderHomeDashboard(); return; }
   if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
+  const vn = e.target.closest("[data-vid-notes]");
+  if (vn) {
+    const k = vn.dataset.vidNotes;
+    if (homeVidNotesOpen.has(k)) homeVidNotesOpen.delete(k); else homeVidNotesOpen.add(k);
+    renderHomeDashboard();
+    return;
+  }
   if (e.target.closest("[data-vid-only]")) { homeVideosOnly = !homeVideosOnly; renderHomeDashboard(); return; }
 
   const hv = e.target.closest("[data-home-view]");
@@ -3543,9 +3574,16 @@ document.getElementById("content").addEventListener("click", e => {
   if (rmBtn) {
     const i = parseInt(rmBtn.dataset.rm);
     const k = key(i);
-    if (state[k]) state[k].scheduled = null;
+    let clearedVideo = false;
+    if (state[k]) {
+      state[k].scheduled = null;
+      // Cancelling a planned visit cancels its video plan too, so the home
+      // team stops waiting on it. A visited booth keeps its flag — that
+      // footage was already shot.
+      if (state[k].video && !state[k].visited) { state[k].video = false; clearedVideo = true; }
+    }
     save(state);
-    toast("Removed from schedule");
+    toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
     render();
     return;
   }
@@ -3808,10 +3846,14 @@ document.getElementById("content").addEventListener("change", e => {
     const state = load();
     if (!state[k]) state[k] = {};
     state[k].scheduled = v || null;
+    // Same rule as the Remove button: unscheduling an unvisited booth
+    // withdraws its video plan from the home team's Videos tab.
+    let clearedVideo = false;
+    if (!v && state[k].video && !state[k].visited) { state[k].video = false; clearedVideo = true; }
     save(state);
     sel.classList.toggle("scheduled", !!v);
     if (v) { const [d,t] = v.split("|"); toast(`Day ${d} · ${t}`); }
-    else toast("Removed from schedule");
+    else toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
     render();
     return;
   }
@@ -4389,6 +4431,7 @@ function showSignedOut() {
   myVideoDone = {};
   homeView = "videos"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
   homeVideosOnly = false; homeShowDoneVids = false;
+  homeVidNotesOpen.clear();
   homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
