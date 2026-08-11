@@ -1592,6 +1592,8 @@ body.home-mode .user-chip-gear { display: none !important; }
 .hvn-rep { padding: 8px 0 2px; }
 .hvn-rep + .hvn-rep { border-top: 1px dashed var(--border); }
 .hvn-name { font-family: var(--fd); font-weight: 700; font-size: 0.8rem; color: var(--text); margin-bottom: 2px; }
+.hvn-vtime { font-family: var(--ft); font-weight: 600; font-size: 0.72rem; color: var(--muted); }
+.hs-vtime { font-size: 0.7rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
 /* One-time "who's on the desk" picker for the shared home login */
 .home-member-pick {
   background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
@@ -2446,6 +2448,16 @@ function fmtAgo(ts) {
   if (s < 86400) return Math.floor(s/3600)+"h ago";
   return Math.floor(s/86400)+"d ago";
 }
+// Exact visit clock time (vs fmtAgo's relative style): the home team matches
+// booth visits against SharePoint upload timestamps, so precision matters.
+function fmtExact(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+  const mo = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()];
+  let h = d.getHours(); const am = h < 12 ? "AM" : "PM"; h = h % 12 || 12;
+  return wd + " " + h + ":" + String(d.getMinutes()).padStart(2, "0") + " " + am + " (" + mo + " " + d.getDate() + ")";
+}
 
 // Shared workflow flags: the home team marks a rep's booth note "Follow up"
 // or "Covered" so four people writing content don't double-cover a booth.
@@ -2581,7 +2593,7 @@ function buildHomeReminders() {
   const done    = rem.filter(r => r.done);
   const itemHtml = r => `<div class="home-rem-item${r.done ? " isdone" : ""}">
       <div class="home-rem-co">${esc(r.boothName)} <span class="home-note-booth">Booth ${esc(r.boothNum)}</span></div>
-      <div class="home-rem-meta">visited by ${esc(r.name)}${r.vts ? " · " + esc(fmtAgo(r.vts)) : ""}</div>
+      <div class="home-rem-meta">visited by ${esc(r.name)}${r.vts ? " · " + esc(fmtExact(r.vts)) : ""}</div>
       <button class="home-rem-btn${r.done ? " done" : ""}" type="button" data-vd="${esc(r.id)}" data-vd-code="${esc(r.code)}" data-vd-uid="${esc(r.uid)}" data-vd-name="${esc(r.name)}" data-vd-b="${esc(r.boothNum)}" data-vd-n="${esc(r.boothName)}">${r.done ? "✓ Video done · undo" : "Mark video done"}</button>
     </div>`;
   let h = `<aside class="home-aside">`;
@@ -2825,14 +2837,14 @@ function buildHomeVideosView() {
     const notesHtml = (noted.length && notesOpen)
       ? `<div class="home-vid-notes">${noted.map(r => `
           <div class="hvn-rep">
-            <div class="hvn-name">${esc(r.name)}</div>
+            <div class="hvn-name">${esc(r.name)}${r.visited && r.vts ? `<span class="hvn-vtime"> · visited ${esc(fmtExact(r.vts))}</span>` : ""}</div>
             ${r.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(r.pre)}</div>` : ""}
             ${r.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(r.post)}</div>` : ""}
           </div>`).join("")}</div>`
       : "";
     return `<div class="home-note${v.done ? " vid-done" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
-    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtAgo(v.vts)) : ""}</div>
+    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}</div>
     <div class="home-note-flags">
       <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
       ${workBtn}
@@ -2877,7 +2889,7 @@ function schedNoteHtml(n, sel) {
   const vdid = sel.eventCode + "__" + (sel.uid||"") + "__" + n.boothNum;
   const vdone = !!homeVideoStatus[vdid];
   return `<div class="home-note hs-note">
-    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}</div>
+    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}${n.visited && n.vts ? `<span class="hs-vtime">${esc(fmtExact(n.vts))}</span>` : ""}</div>
     ${n.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(n.pre)}</div>` : ''}
     ${n.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(n.post)}</div>` : ''}
     ${n.video ? `<div class="home-note-flags">
