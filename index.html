@@ -128,7 +128,9 @@ body {
   padding: 13px 14px 6px;
   gap: 12px;
 }
-.logo-block { display: flex; align-items: center; gap: 12px; min-width: 0; }
+/* min-content: the block may never shrink below its contents, or the Videos
+   pill slides under the user chip on narrow screens. */
+.logo-block { display: flex; align-items: center; gap: 12px; min-width: min-content; }
 .brand-logo {
   height: 30px;
   width: auto;
@@ -1624,6 +1626,34 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note.covered { opacity: 0.55; }
 @media (min-width: 720px) {
   .home-note { display: grid; grid-template-columns: 1fr; }
+}
+/* Narrow-screen header: everything in this row is fixed-width, so each tier
+   sets explicit sizes (flex shrink-chains here caused the Videos pill to
+   slide under the user chip). Budgeted for the widest case: a master's
+   brand dropdown + name + gear + Export alongside the logo and pill.
+   These live at the END of the stylesheet — the base .user-chip-* rules sit
+   above and would otherwise win the equal-specificity tie. */
+@media (max-width: 640px) {
+  .header-top { gap: 8px; }
+  .logo-block { gap: 8px; }
+  .brand-logo { max-width: 88px; }
+  .hdr-photos { padding: 7px 11px; font-size: 0.62rem; letter-spacing: 0.4px; gap: 5px; }
+  .user-chip { gap: 6px; }
+  .user-chip-name { max-width: 50px; }
+  .brand-switch { max-width: 76px; font-size: 0.64rem; }
+  .user-chip-out, .user-chip-member { padding: 5px 8px; font-size: 0.58rem; }
+}
+@media (max-width: 430px) {
+  .logo-block { gap: 6px; }
+  .brand-logo { max-width: 64px; }
+  .hdr-photos { padding: 6px 9px; font-size: 0.6rem; }
+  .user-chip { gap: 5px; }
+  .user-chip-name { max-width: 40px; }
+  .brand-switch { max-width: 64px; font-size: 0.62rem; padding: 0 16px 0 6px; }
+  .user-chip-out, .user-chip-member { padding: 5px 7px; font-size: 0.56rem; }
+}
+@media (max-width: 380px) {
+  .brand-logo { max-width: 48px; }
 }
 </style>
 </head>
