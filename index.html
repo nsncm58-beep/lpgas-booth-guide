@@ -162,8 +162,8 @@ body {
 }
 
 /* Videos (show media) sits beside the logo as a solid white pill (the
-   header's one standout action); Export lives in the user chip as a small
-   outline chip. The old full-width button row is gone for room. */
+   header's one standout action); Export and Sign out live in Settings.
+   The old full-width button row is gone for room. */
 .hdr-photos {
   flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 6px;
@@ -184,7 +184,6 @@ body {
 .hdr-photos:active { transform: scale(0.94); opacity: 0.88; }
 #signOutBtn { display: none; }                        /* field/master: Sign out moved into Settings */
 body.home-mode #signOutBtn { display: inline-block; } /* home has no gear, so it keeps the header one */
-body.home-mode #exportBtn { display: none !important; }
 body.home-mode #mediaBtn { display: none !important; }  /* home gets the media box in its sidebar */
 .booths-search { padding: 10px 12px 12px; }
 .booths-search.hidden { display: none; }
@@ -1670,7 +1669,6 @@ body.home-mode .user-chip-gear { display: none !important; }
       <span class="user-chip-name" id="userChipName"></span>
       <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
       <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
-      <button class="user-chip-out" id="exportBtn" type="button">Export</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
   </div>
@@ -1700,7 +1698,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 
 <div class="app-footer">
   Notes save automatically. Use Schedule on any booth to plan a meeting.<br>
-  Export to download all notes as CSV.
+  Export your notes as a CSV from Settings (the ⚙ up top).
 </div>
 <div id="toast"></div>
 
@@ -1715,6 +1713,11 @@ body.home-mode .user-chip-gear { display: none !important; }
       <option value="sales">Sales</option>
     </select>
     <div class="settings-dbx-note">Editorial / Digital: your notes and schedule are shared with the home team automatically. Sales: nothing is shared with the home team.</div>
+    <div class="settings-danger">
+      <div class="settings-dbx-title">Export</div>
+      <button class="settings-dbx-btn settings-stack-btn" id="exportBtn" type="button">Download show data (CSV)</button>
+      <div class="settings-dbx-note">All booths with your visits, notes, meals and off-site meetings for this show.</div>
+    </div>
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
       <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
@@ -4024,6 +4027,7 @@ function downloadCsv(csvText, filename) {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 document.getElementById("exportBtn").addEventListener("click", () => {
+  document.getElementById("settingsSheet").style.display = "none";  // it lives in Settings now
   downloadCsv(buildShowCsv(), csvFileName(currentEventCode()));
   toast("CSV downloaded");
 });
