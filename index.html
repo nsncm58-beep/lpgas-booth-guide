@@ -1729,6 +1729,7 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="settings-dbx-title">Admin</div>
       <div class="settings-dbx-note">Review and delete any stray records (test accounts, old entries) across all brands. Tip: tap your name in the header for event codes &amp; install QRs.</div>
       <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button">Clean up team data</button>
+      <button class="settings-dbx-btn admin-btn" id="notifyBtn" type="button" style="margin-top:8px;">Teams notifications</button>
     </div>
     <div class="settings-danger">
       <div class="settings-dbx-title">Account</div>
@@ -1744,6 +1745,23 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="settings-title">Event codes &amp; install</div>
     <div id="guideBody"></div>
     <button class="settings-done" id="guideClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── Admin: Teams notification setup (master only) ── -->
+<div id="notifySheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Teams notifications</div>
+    <p class="settings-dbx-note">The home team gets a Flow bot DM when a video is ready to produce and when one is marked done. Leave the URL blank to switch notifications off.</p>
+    <div class="settings-dbx-title" style="margin-top:14px;">Power Automate webhook URL</div>
+    <input class="settings-dbx-input" id="notifyUrlInp" type="url" autocomplete="off" spellcheck="false" placeholder="https://…/triggers/manual/paths/invoke?…sig=…">
+    <div class="settings-dbx-note">Reuses the Marketing Projects assignment flow (it accepts an email and message). Stored in Firestore, never in the app's public source.</div>
+    <div class="settings-dbx-title" style="margin-top:14px;">Home team emails</div>
+    <textarea class="settings-dbx-input" id="notifyEmailsInp" rows="6" spellcheck="false" placeholder="Sydney: sherbruck@northcoastmedia.net"></textarea>
+    <div class="settings-dbx-note">One per line, <strong>Name: email</strong>. The name must match the desk picker. Anyone left blank is skipped.</div>
+    <button class="settings-dbx-btn settings-stack-btn primary" id="notifySaveBtn" type="button">Save</button>
+    <button class="settings-dbx-btn settings-stack-btn" id="notifyTestBtn" type="button">Send me a test DM</button>
+    <button class="settings-done" id="notifyClose" type="button">Done</button>
   </div>
 </div>
 
@@ -2492,11 +2510,61 @@ function fmtExact(ts) {
   return wd + " " + h + ":" + String(d.getMinutes()).padStart(2, "0") + " " + am + " (" + mo + " " + d.getDate() + ")";
 }
 
-// Shared workflow flags: the home team marks a rep's booth note "Follow up"
-// or "Covered" so four people writing content don't double-cover a booth.
-// One doc per flag (homeFlags/{event__repUid__booth#}) shared by the whole
+// ── TEAMS NOTIFICATIONS ──────────────────────────────────────────────────
+// Same pattern as the Marketing Projects tracker: POST {email, text} to a
+// Power Automate flow that DMs that person as the Flow bot. The flow URL
+// carries a sig= secret, so it NEVER lives in this (public) source: it sits
+// in Firestore at config/notifications, written by a master in Settings >
+// Admin. Empty URL = notifications dormant, no redeploy needed to silence.
+let notifyCfg = { url: "", emails: {} };
+let _notifyCfgUnsub = null;
+function subscribeNotifyConfig() {
+  if (_notifyCfgUnsub) { _notifyCfgUnsub(); _notifyCfgUnsub = null; }
+  notifyCfg = { url: "", emails: {} };
+  if (!fbReady || !currentUser) return;
+  _notifyCfgUnsub = fbDb.collection("config").doc("notifications").onSnapshot(d => {
+    const x = (d.exists && d.data()) || {};
+    notifyCfg = { url: x.webhookUrl || "", emails: x.emails || {} };
+  }, () => {});
+}
+// One DM per home member. Fire-and-forget: a failed webhook must never block
+// a rep tapping Mark Visit on a show floor with flaky wifi.
+// mode:'cors' is required — 'no-cors' downgrades Content-Type to text/plain
+// and the flow trigger rejects it (TriggerInputSchemaMismatch).
+function notifyHome(text, skipMember) {
+  if (!notifyCfg.url) return;
+  const targets = Object.entries(notifyCfg.emails)
+    .filter(([name, email]) => email && name !== skipMember);
+  targets.forEach(([name, email]) => {
+    try {
+      fetch(notifyCfg.url, {
+        method: "POST", mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, text })
+      }).catch(() => {});
+    } catch (e) {}
+  });
+  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, targets: targets.map(t => t[0]) });
+}
+const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
+// Rep side: a booth is "ready to produce" the moment it is BOTH visited and
+// video-flagged, whichever tap completes the pair. Fires once per booth per
+// device (guarded by the caller), never for sales reps (they have no Video
+// button at all).
+function notifyVideoReady(i, state) {
+  const c = CO[i]; if (!c) return;
+  const s = state[key(i)] || {};
+  const who = (currentUser && currentUser.name) || "A rep";
+  const when = fmtExact(s.vts || Date.now());
+  const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
+  notifyHome(brand + " show, video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
+    "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the home dashboard</a>');
+}
+// ── SHARED HOME FLAGS ────────────────────────────────────────────────────
+// Legacy "Follow up"/"Covered" note flags (UI removed; docs kept) plus the
+// Videos tab's "Working on" claims. One doc per flag, shared by the whole
 // home account across devices; masters can read + clean up.
-let homeFlags = {};            // docId -> { state: "star" | "covered", ... }
+let homeFlags = {};            // docId -> { state: "star" | "covered", ... } or { member }
 let _homeFlagsUnsub = null;
 let _homeCopyIndex = {};       // eventCode -> { brandName, reps: [{name, items}] } from the last render
 function flagId(code, uid, boothNum) { return code + "__" + uid + "__" + boothNum; }
@@ -2558,12 +2626,22 @@ function subscribeMyVideoStatus() {
 }
 function toggleVideoDone(id, meta) {
   if (!fbReady) return;
-  const op = homeVideoStatus[id]
+  const wasDone = !!homeVideoStatus[id];
+  const op = wasDone
     ? fbDb.collection("videoStatus").doc(id).delete()
     : fbDb.collection("videoStatus").doc(id).set({
         eventCode: meta.code, repUid: meta.uid, repName: meta.name,
         boothName: meta.n, boothNum: meta.b, done: true, ts: Date.now() });
+  if (!wasDone) notifyVideoDone(meta.code, meta.b, meta.n);
   op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+}
+// Home side: announce a finished video to the rest of the desk (the person
+// who marked it is skipped — they already know).
+function notifyVideoDone(code, boothNum, boothName) {
+  const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
+  const me = homeMember() || "Someone";
+  notifyHome(brand + " show, video finished: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
+    "). Marked done by " + esc(me) + '. <a href="' + APP_LINK + '">Open the home dashboard</a>', me);
 }
 // "Working on" claims live in the homeFlags collection (home/master already
 // read+write it) under their own id space: work__<code>__<booth#> with a
@@ -2603,6 +2681,7 @@ function toggleVideoDoneGroup(code, boothNum) {
   });
   // Finishing a video also clears any "Working on" claim on it.
   if (!allDone) ops.push(fbDb.collection("homeFlags").doc("work__" + code + "__" + boothNum).delete());
+  if (!allDone) notifyVideoDone(code, boothNum, members[0].it.boothName);
   Promise.all(ops).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 // The Reminders panel: every visited booth from an edit/digital rep, newest
@@ -3784,6 +3863,8 @@ document.getElementById("content").addEventListener("click", e => {
     state[k].video = !state[k].video;
     save(state);
     vidBtn.classList.toggle("on", state[k].video);
+    // Flagging AFTER the visit completes the pair, so it pings here too.
+    if (state[k].video && state[k].visited) notifyVideoReady(i, state);
     toast(state[k].video
       ? (state[k].visited ? "Video flagged for the home team" : "Video flagged. It reaches the home team once you mark the booth visited")
       : "Video flag removed");
@@ -3819,6 +3900,7 @@ document.getElementById("content").addEventListener("click", e => {
     state[k].visited = !state[k].visited;
     if (state[k].visited) state[k].vts = Date.now();   // when: drives home-team reminders
     save(state);
+    if (state[k].visited && state[k].video) notifyVideoReady(i, state);
     const on = state[k].visited;
     visBtn.classList.toggle("on", on);
     visBtn.innerHTML = `<span class="dot"></span>${on?"Visited":"Mark Visit"}`;
@@ -3884,6 +3966,8 @@ document.getElementById("content").addEventListener("input", e => {
     }
     save(state);
     if (autoVisited) {
+      // A post-visit note auto-marks the visit, so it can complete the pair too.
+      if (state[k].video) notifyVideoReady(i, state);
       const card = document.getElementById("cc"+i);
       card?.classList.add("visited");
       const vb = card?.querySelector("[data-visit]");
@@ -4263,6 +4347,59 @@ document.getElementById("startNewShowBtn").addEventListener("click", () => {
 document.getElementById("newShowCancel").addEventListener("click", () => {
   document.getElementById("newShowConfirm").style.display = "none";
 });
+// Admin: Teams notification setup (master only). Writes config/notifications
+// so the flow URL can be rotated or cleared without a redeploy.
+document.getElementById("notifyBtn").addEventListener("click", async () => {
+  document.getElementById("settingsSheet").style.display = "none";
+  let cfg = { webhookUrl: "", emails: {} };
+  try {
+    const d = await fbDb.collection("config").doc("notifications").get();
+    if (d.exists) cfg = { webhookUrl: d.data().webhookUrl || "", emails: d.data().emails || {} };
+  } catch (e) { toast("Couldn't load settings (are the latest rules published?)"); }
+  document.getElementById("notifyUrlInp").value = cfg.webhookUrl;
+  // Prefill a line per desk member so the format is obvious and nobody is missed.
+  document.getElementById("notifyEmailsInp").value = HOME_MEMBERS
+    .map(m => m + ": " + (cfg.emails[m] || "")).join("\n");
+  document.getElementById("notifySheet").style.display = "flex";
+});
+document.getElementById("notifySaveBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("notifySaveBtn");
+  const url = document.getElementById("notifyUrlInp").value.trim();
+  if (url && !/^https:\/\//i.test(url)) { toast("That URL should start with https://"); return; }
+  const emails = {};
+  document.getElementById("notifyEmailsInp").value.split("\n").forEach(line => {
+    const m = line.match(/^\s*([^:]+?)\s*:\s*(\S+@\S+\.\S+)\s*$/);
+    if (m) emails[m[1]] = m[2].toLowerCase();
+  });
+  btn.disabled = true; btn.textContent = "Saving…";
+  try {
+    await fbDb.collection("config").doc("notifications").set({ webhookUrl: url, emails, updatedAt: Date.now() });
+    toast(url ? "Saved. " + Object.keys(emails).length + " recipient(s)" : "Saved. Notifications are off");
+    document.getElementById("notifySheet").style.display = "none";
+  } catch (e) { toast("Couldn't save (are the latest rules published?)"); }
+  btn.disabled = false; btn.textContent = "Save";
+});
+document.getElementById("notifyTestBtn").addEventListener("click", () => {
+  const url = document.getElementById("notifyUrlInp").value.trim();
+  const emails = {};
+  document.getElementById("notifyEmailsInp").value.split("\n").forEach(line => {
+    const m = line.match(/^\s*([^:]+?)\s*:\s*(\S+@\S+\.\S+)\s*$/);
+    if (m) emails[m[1]] = m[2].toLowerCase();
+  });
+  const mine = (currentUser && currentUser.email || "").toLowerCase();
+  const to = Object.values(emails).find(e => e === mine) || Object.values(emails)[0];
+  if (!url || !to) { toast("Add the URL and at least one email first"); return; }
+  fetch(url, { method: "POST", mode: "cors", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: to, text: 'NCM Events Guide test notification. If you can read this, show alerts are working. <a href="' + APP_LINK + '">Open the home dashboard</a>' }) })
+    .then(r => toast(r.ok ? "Test sent to " + to : "Flow answered " + r.status))
+    .catch(() => toast("Couldn't reach the flow (check the URL)"));
+});
+document.getElementById("notifyClose").addEventListener("click", () => {
+  document.getElementById("notifySheet").style.display = "none";
+});
+document.getElementById("notifySheet").addEventListener("click", e => {
+  if (e.target.id === "notifySheet") e.currentTarget.style.display = "none";
+});
 // Admin: event codes + install/join QRs (master only). Renders straight from
 // the live BRANDS/EVENTS/MEDIA/MASTER_BRANDS registries in this build, so it
 // can never go stale. QR lib loads on demand (masters only ever pay for it).
@@ -4553,6 +4690,7 @@ if (fbReady) {
         subscribeHomeFlags();
         subscribeHomeSchedules();
         subscribeHomeVideoStatus();
+        subscribeNotifyConfig();
         renderHomeDashboard();
         return;
       }
@@ -4578,6 +4716,7 @@ if (fbReady) {
       syncMyNotesToCloud();
       subscribeTeam();
       subscribeMyVideoStatus();
+      subscribeNotifyConfig();
       updateMediaBtn();
       render();
     } else {
