@@ -1857,10 +1857,8 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
-      <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
-      <div class="settings-dbx-note">Starting a new show saves your current show (<strong id="curShowName">this show</strong>) to your old-show data as a CSV, then resets your booths, notes and schedule for the new one.</div>
-      <input class="settings-dbx-input" id="newShowCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="New event code" style="margin-top:10px;">
-      <button class="settings-dbx-btn settings-stack-btn primary" id="startNewShowBtn" type="button">Start new show</button>
+      <div class="settings-dbx-note">You're on <strong id="curShowName">this show</strong>. When this brand moves to its next show, this one is saved to your old show data automatically and your booths, notes and schedule reset. Nothing for you to do.</div>
+      <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button" style="margin-top:12px;">Access old show data</button>
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
@@ -1923,19 +1921,6 @@ body.home-mode .user-chip-gear { display: none !important; }
   </div>
 </div>
 
-<!-- ── Start-new-show confirm ── -->
-<div id="newShowConfirm" class="settings-sheet" style="display:none">
-  <div class="settings-card">
-    <div class="settings-title">Start a new show?</div>
-    <p class="share-prompt-text">Your current show (<strong id="rolloverFrom">—</strong>) will be saved to <em>Access old show data</em> as a CSV, then your booths, notes and schedule reset for <strong id="rolloverTo">—</strong>.</p>
-    <div class="auth-error" id="newShowError"></div>
-    <div class="share-prompt-actions">
-      <button class="settings-done share-secondary" id="newShowCancel" type="button">Cancel</button>
-      <button class="settings-done" id="newShowConfirmBtn" type="button">Archive &amp; start</button>
-    </div>
-  </div>
-</div>
-
 <!-- ── Old show data (archived CSVs) ── -->
 <div id="oldDataSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
@@ -1976,8 +1961,10 @@ body.home-mode .user-chip-gear { display: none !important; }
         <input id="authName" type="text" autocomplete="name" placeholder="Jane Smith">
       </div>
       <div class="auth-field" data-only="signup">
-        <label>Event Code</label>
-        <input id="authEvent" type="text" autocomplete="off" autocapitalize="characters" placeholder="e.g. LPGAS-2026">
+        <label>Your Brand</label>
+        <select id="authBrand">
+          <option value="">Choose…</option>
+        </select>
       </div>
       <div class="auth-field" data-only="signup">
         <label>Your Team</label>
@@ -1998,7 +1985,7 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="auth-error" id="authError"></div>
       <button type="submit" class="auth-submit" id="authSubmit">Sign In</button>
     </form>
-    <div class="auth-foot" id="authFoot">Field reps: create an account with your show's event code.</div>
+    <div class="auth-foot" id="authFoot">Field reps: create an account and pick your brand.</div>
     <div class="auth-divider"><span>or</span></div>
     <button type="button" class="auth-home-btn" id="homeTeamBtn">Enter as Home Team</button>
   </div>
@@ -2311,11 +2298,29 @@ function showDayToday(code) {
   const i = ds.indexOf(today);
   return i === -1 ? null : i + 1;
 }
-// THE definitive list of event codes this app accepts — signup, Start new
-// show and the master switcher are all locked to these five. Nothing outside
-// this list can join or exist. Adding a future show = add it here + an EVENTS
-// entry (booth list) + the whitelist in firestore.rules (then republish).
+// THE definitive list of event codes this app accepts. Nothing outside this
+// list can join or exist. Adding a future show = add it here + an EVENTS
+// entry (booth list + dates) + MEDIA links + CURRENT_SHOW below + the
+// whitelist in firestore.rules (then republish).
 const VALID_EVENT_CODES = ["LPGAS-2026", "GOLFDOM-2026", "LM-2026", "PMP-2026", "PQ-2026"];
+// Reps never type a show code: they pick a BRAND at signup and the app
+// follows that brand's current show from here. Rolling a brand to its next
+// show = point it at the new code (with the pieces listed above). Every rep
+// on that brand rolls over automatically on their next open: the finished
+// show is archived to their Old show data and their booths, notes and
+// schedule reset for the new one.
+const CURRENT_SHOW = {
+  lpgas:   "LPGAS-2026",
+  golfdom: "GOLFDOM-2026",
+  lm:      "LM-2026",
+  pmp:     "PMP-2026",
+  pq:      "PQ-2026",
+};
+const SIGNUP_BRANDS = ["lpgas", "golfdom", "lm", "pmp", "pq"];   // picker order
+function brandOfCode(code) { return (resolveEvent(code) || {}).brand || ""; }
+// A profile's brand, falling back to the brand of its stored event code so
+// accounts made before the brand picker keep working untouched.
+function userBrand(u) { return !u ? "" : (u.brand || brandOfCode(u.eventCode) || ""); }
 // Per-show media: ALL photos + videos live in the team Dropbox (not Firestore,
 // which keeps the app 100% free and handles hours of video). MEDIA is a
 // separate registry from EVENTS on purpose: an event code here gets working
@@ -2467,7 +2472,10 @@ function isHome() {
 }
 function currentEventCode() {
   if (masterEventOverride) return masterEventOverride;
-  return (currentUser && currentUser.eventCode) || null;
+  if (!currentUser) return null;
+  // The brand's current show wins over whatever the profile last stored, so a
+  // rollover takes effect the moment the rep opens the app.
+  return CURRENT_SHOW[userBrand(currentUser)] || currentUser.eventCode || null;
 }
 
 // STATE — booth/notes/meals/off-site per event. The LP Gas / default event
@@ -2593,6 +2601,51 @@ async function syncMyScheduleToCloud() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   } catch (e) { /* offline — Firestore persistence will retry */ }
+}
+// Automatic show rollover. A profile remembers the show the rep was last on;
+// when their brand has moved on, the finished show is archived to their Old
+// show data and their booths, notes and schedule reset for the new one. Runs
+// BEFORE hydrate/sync so the old show's data never bleeds into the new one.
+async function rolloverIfShowChanged() {
+  if (!fbReady || !currentUser || isHome()) return false;
+  const brand = userBrand(currentUser);
+  const nowCode = CURRENT_SHOW[brand], wasCode = currentUser.eventCode;
+  if (!nowCode || !wasCode || nowCode === wasCode) return false;
+  const oldEv = resolveEvent(wasCode);
+  // storeKey() already points at the NEW show, so name the old bucket directly.
+  const oldBucket = (wasCode === "LPGAS-2026") ? STORE : STORE + "__" + wasCode;
+  let csv = "";
+  try {
+    if (localStorage.getItem(oldBucket)) {
+      const prevCO = CO, prevOverride = masterEventOverride;
+      CO = (oldEv.booths && oldEv.booths.length) ? oldEv.booths : [];
+      masterEventOverride = wasCode;      // makes storeKey()/buildShowCsv() read the finished show
+      csv = buildShowCsv();
+      masterEventOverride = prevOverride; CO = prevCO;
+    }
+  } catch (e) {}
+  if (csv) {
+    try {
+      await fbDb.collection("archives").add({
+        uid: currentUser.uid, name: currentUser.name || "",
+        eventCode: wasCode, show: oldEv.show || wasCode,
+        brand: (BRANDS[oldEv.brand] || BRANDS.ncm).name,
+        csv, ts: Date.now()
+      });
+    } catch (e) { return false; }   // offline: keep everything, retry next open
+  }
+  try {
+    localStorage.removeItem(oldBucket);
+    const uid = currentUser.uid;
+    await fbDb.collection("schedules").doc(uid).delete().catch(() => {});
+    await fbDb.collection("notes").doc(uid).delete().catch(() => {});
+    await fbDb.collection("schedules").doc(uid + "__" + wasCode).delete().catch(() => {});
+    await fbDb.collection("notes").doc(uid + "__" + wasCode).delete().catch(() => {});
+  } catch (e) {}
+  currentUser.eventCode = nowCode;
+  try { await fbDb.collection("users").doc(currentUser.uid).set({ eventCode: nowCode, brand }, { merge: true }); } catch (e) {}
+  toast("New show: " + (resolveEvent(nowCode).show || nowCode) + ". Your last show was saved to Old show data");
+  return true;
 }
 // New-device continuity: if this device has no local data for the current
 // event but the cloud has this rep's schedule/notes, rebuild local state from
@@ -4420,7 +4473,7 @@ const authEls = {
   overlay:  document.getElementById("authOverlay"),
   form:     document.getElementById("authForm"),
   name:     document.getElementById("authName"),
-  event:    document.getElementById("authEvent"),
+  brand:    document.getElementById("authBrand"),
   email:    document.getElementById("authEmail"),
   pass:     document.getElementById("authPass"),
   err:      document.getElementById("authError"),
@@ -4459,7 +4512,7 @@ function setAuthMode(mode) {
   authEls.submit.textContent = mode === "signup" ? "Create Account" : "Sign In";
   authEls.pass.autocomplete = mode === "signup" ? "new-password" : "current-password";
   authEls.foot.textContent = mode === "signup"
-    ? "Field reps: create an account with your show's event code."
+    ? "Field reps: create an account and pick your brand."
     : "Welcome back. Sign in to sync with your team.";
 }
 function authErr(msg) { authEls.err.textContent = msg || ""; }
@@ -4494,18 +4547,17 @@ authEls.form.addEventListener("submit", async (e) => {
       await fbAuth.signInWithEmailAndPassword(HOME_TEAM_EMAIL, pass);
     } else if (authMode === "signup") {
       const name = authEls.name.value.trim();
-      const eventCode = authEls.event.value.trim().toUpperCase();
+      const brand = authEls.brand.value;
       const dept = document.getElementById("authDept").value;
-      if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
-      if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
-      if (!dept)      { authErr("Pick your team (Sales or Editorial)."); authEls.submit.disabled = false; return; }
-      if (!VALID_EVENT_CODES.includes(eventCode)) {
-        authErr("That event code doesn't exist. Double-check it with your team and enter a valid code.");
-        authEls.submit.disabled = false; return;
-      }
+      if (!name)  { authErr("Please enter your name.");   authEls.submit.disabled = false; return; }
+      if (!brand) { authErr("Pick your brand.");          authEls.submit.disabled = false; return; }
+      if (!dept)  { authErr("Pick your team (Sales or Editorial)."); authEls.submit.disabled = false; return; }
+      // The brand's current show, not a code anyone typed.
+      const eventCode = CURRENT_SHOW[brand];
+      if (!eventCode) { authErr("That brand has no show set up yet. Check with Nate."); authEls.submit.disabled = false; return; }
       const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
       await fbDb.collection("users").doc(cred.user.uid).set({
-        name, email, eventCode, dept, role: "field",
+        name, email, brand, eventCode, dept, role: "field",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } else {
@@ -4536,7 +4588,6 @@ function currentShowLabel() {
 function prepSettings() {
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
-  document.getElementById("newShowCode").value = "";
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
 }
 function renderSettingsView() {
@@ -4632,23 +4683,6 @@ document.getElementById("oldDataList").addEventListener("click", e => {
   if (a) downloadCsv(a.csv, csvFileName(a.code));
 });
 
-// Start a new show: archive the current one to the cloud, then reset onto the new code
-document.getElementById("startNewShowBtn").addEventListener("click", () => {
-  const newCode = (document.getElementById("newShowCode").value || "").trim().toUpperCase();
-  if (!newCode) { toast("Enter the new event code"); return; }
-  if (!VALID_EVENT_CODES.includes(newCode)) { toast("That event code doesn't exist"); return; }
-  if (newCode === currentEventCode()) { toast("You're already on that show"); return; }
-  document.getElementById("rolloverFrom").textContent = currentShowLabel();
-  const nb = BRANDS[resolveEvent(newCode).brand] || BRANDS.ncm;
-  document.getElementById("rolloverTo").textContent = nb.name + " (" + newCode + ")";
-  document.getElementById("newShowError").textContent = "";
-  document.getElementById("newShowConfirm").dataset.newCode = newCode;
-  document.getElementById("settingsSheet").style.display = "none";
-  document.getElementById("newShowConfirm").style.display = "flex";
-});
-document.getElementById("newShowCancel").addEventListener("click", () => {
-  document.getElementById("newShowConfirm").style.display = "none";
-});
 // Admin: Teams notification setup (master only). Writes config/notifications
 // so the flow URL can be rotated or cleared without a redeploy.
 document.getElementById("notifyBtn").addEventListener("click", async () => {
@@ -4853,48 +4887,6 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
   catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
   renderCleanupList();
 });
-document.getElementById("newShowConfirmBtn").addEventListener("click", async () => {
-  const errEl = document.getElementById("newShowError");
-  const newCode = document.getElementById("newShowConfirm").dataset.newCode;
-  if (!newCode || !VALID_EVENT_CODES.includes(newCode)) { errEl.textContent = "That event code doesn't exist."; return; }
-  if (!fbReady || !currentUser) { errEl.textContent = "Not signed in."; return; }
-  const btn = document.getElementById("newShowConfirmBtn");
-  btn.disabled = true;
-  const oldCode = currentEventCode();
-  const oldDocId = myScheduleDocId();
-  const oldStoreKey = storeKey();
-  // 1) archive the current show as a CSV in the cloud
-  try {
-    const ev = resolveEvent(oldCode);
-    await fbDb.collection("archives").add({
-      uid: currentUser.uid, name: currentUser.name || "",
-      eventCode: oldCode, show: ev.show || oldCode,
-      brand: (BRANDS[ev.brand] || BRANDS.ncm).name,
-      csv: buildShowCsv(), ts: Date.now()
-    });
-  } catch (e) { errEl.textContent = "Couldn't archive — check your connection."; btn.disabled = false; return; }
-  // 2) clear the old show's data (local bucket + its cloud schedule/notes)
-  try {
-    localStorage.removeItem(oldStoreKey);
-    await fbDb.collection("schedules").doc(oldDocId).delete().catch(() => {});
-    await fbDb.collection("notes").doc(oldDocId).delete().catch(() => {});
-  } catch (e) {}
-  // 3) move this user onto the new show + reset the view
-  masterEventOverride = null;
-  currentUser.eventCode = newCode;
-  try { await fbDb.collection("users").doc(currentUser.uid).set({ eventCode: newCode }, { merge: true }); } catch (e) {}
-  applyEvent(newCode);
-  if (typeof setupBrandSwitcher === "function") setupBrandSwitcher();
-  subscribeTeam();
-  subscribeMyVideoStatus();
-  updateMediaBtn();
-  setBottomTab("schedule"); schedDay = showDayToday(currentEventCode()) || 1; allOpen = false; viewedScheduleUid = null;
-  notesOpen.clear(); fabOpen = false; schedAddBooth = false;
-  render();
-  btn.disabled = false;
-  document.getElementById("newShowConfirm").style.display = "none";
-  toast("Archived. You're now on " + newCode);
-});
 document.getElementById("deptSelect").addEventListener("change", async e => {
   if (!currentUser || !e.target.value) return;
   currentUser.dept = e.target.value;
@@ -4921,14 +4913,23 @@ function showSignedIn(profile) {
   authEls.submit.disabled = false;
   authEls.pass.value = "";
 }
-// QR deep link: the admin guide (guide.html) makes per-show QRs that open the
-// app as ?code=<EVENTCODE>. Prefill signup with it so reps can't typo the code.
-// Called both at startup and from showSignedOut(), because the auth check
-// resolves after startup and showSignedOut() resets the form to sign-in.
+// Fill the signup brand picker from the registry (labels come from BRANDS).
+function setupBrandPicker() {
+  const sel = authEls.brand;
+  if (!sel) return;
+  sel.innerHTML = `<option value="">Choose…</option>` +
+    SIGNUP_BRANDS.map(b => `<option value="${b}">${esc((BRANDS[b] || {}).name || b)}</option>`).join("");
+}
+// QR deep link: the admin guide makes per-show QRs that open the app as
+// ?code=<EVENTCODE>. Reps no longer type anything, so this just preselects
+// that code's brand. Called at startup and from showSignedOut(), because the
+// auth check resolves after startup and showSignedOut() resets the form.
 function applyQrPrefill() {
   const qrCode = new URLSearchParams(location.search).get("code");
-  if (qrCode && authEls.event) {
-    authEls.event.value = qrCode.trim().toUpperCase();
+  if (!qrCode || !authEls.brand) return;
+  const brand = brandOfCode(qrCode.trim().toUpperCase());
+  if (brand && SIGNUP_BRANDS.includes(brand)) {
+    authEls.brand.value = brand;
     setAuthMode("signup");
   }
 }
@@ -4960,17 +4961,20 @@ function showSignedOut() {
   currentUser = null;
   masterEventOverride = null;
   setAuthMode("signin");
+  setupBrandPicker();
   applyQrPrefill();
   applyBrand("ncm");   // login screen uses NCM neutral colors
 }
 // Brands a master can jump between (label + the event code that drives it).
+// Masters jump between brands; each entry follows that brand's current show,
+// so this never needs touching when a show rolls over.
 const MASTER_BRANDS = [
-  { code:"LPGAS-2026",   label:"LP Gas" },
-  { code:"GOLFDOM-2026", label:"Golfdom" },
-  { code:"LM-2026",      label:"LM" },
-  { code:"PMP-2026",     label:"PMP" },
-  { code:"PQ-2026",      label:"P&Q" },
-];
+  { brand:"lpgas",   label:"LP Gas" },
+  { brand:"golfdom", label:"Golfdom" },
+  { brand:"lm",      label:"LM" },
+  { brand:"pmp",     label:"PMP" },
+  { brand:"pq",      label:"P&Q" },
+].map(b => ({ ...b, code: CURRENT_SHOW[b.brand] }));
 function setupBrandSwitcher() {
   const row = document.getElementById("brandSwitchRow");
   const sel = document.getElementById("brandSwitch");
@@ -5030,6 +5034,16 @@ if (fbReady) {
           .forEach(k => localStorage.removeItem(k));
       }
       localStorage.setItem("lpgas_owner_uid", user.uid);
+      // Brand moved to a new show? Archive the finished one and reset first.
+      await rolloverIfShowChanged();
+      // Backfill `brand` on profiles created before the brand picker.
+      if (!currentUser.brand) {
+        const b = userBrand(currentUser);
+        if (b) {
+          currentUser.brand = b;
+          try { await fbDb.collection("users").doc(user.uid).set({ brand: b }, { merge: true }); } catch (e) {}
+        }
+      }
       // Theme + booth list for this user's event/brand.
       applyEvent(currentEventCode());
       // During the show itself, open on today's day rather than Day 1.
@@ -5060,6 +5074,7 @@ if (fbReady) {
   showSignedIn({ name: "Offline" });
 }
 setAuthMode("signin");
+setupBrandPicker();
 applyQrPrefill();
 
 // Updates are fully silent: HTML is network-first so every launch runs the

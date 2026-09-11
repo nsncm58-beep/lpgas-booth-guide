@@ -8,7 +8,12 @@ service cloud.firestore {
     // The app is locked to exactly these events. Because a profile's eventCode
     // must be on this list, myEvent() is always valid too, and everything that
     // validates against myEvent() (schedules, notes) inherits the lock.
-    // Adding a future show = add its code here AND in index.html, republish.
+    // Reps pick a BRAND at signup and the app assigns that brand's current
+    // show, so these codes are never typed by anyone — but they still gate
+    // what can be written. Rolling a brand to a new show = add its code here
+    // AND to CURRENT_SHOW/EVENTS/MEDIA in index.html, then republish these
+    // rules (a rep's automatic rollover writes the new code to their profile,
+    // and that write fails until the code is listed here).
     function validEvent(c) { return c in ['LPGAS-2026', 'GOLFDOM-2026', 'LM-2026', 'PMP-2026', 'PQ-2026']; }
 
     // Profiles hold names + emails, so reads are limited to yourself, masters
