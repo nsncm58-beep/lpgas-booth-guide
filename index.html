@@ -483,8 +483,8 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   flex-wrap: wrap;
 }
 .visit-btn {
-  padding: 0 12px;
-  height: 32px;
+  padding: 0 13px;
+  height: 38px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
   background: var(--surface);
@@ -560,8 +560,8 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 
 /* Schedule select */
 .sched-sel {
-  padding: 0 26px 0 10px;
-  height: 32px;
+  padding: 0 26px 0 11px;
+  height: 38px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
   background-color: var(--surface);
@@ -586,8 +586,8 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 
 /* Video flag toggle (edit/digital reps): footage for the home team */
 .video-btn {
-  padding: 0 11px;
-  height: 32px;
+  padding: 0 12px;
+  height: 38px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
   background: var(--surface);
@@ -625,6 +625,8 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .bn-btn.active { color: var(--blue); }
 body.has-nav { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)); }
 body.home-mode .bottom-nav { display: none !important; }
+/* Home keeps few header controls, so its name never needs truncating. */
+body.home-mode .user-chip-name { max-width: none; }
 /* With the bottom bar carrying Videos and Settings, the header keeps only
    the logo and who you are. (The buttons stay in the DOM: the nav clicks
    them, and the home dashboard still uses its own header controls.) */
@@ -636,7 +638,7 @@ body.has-nav .user-chip-gear { display: none !important; }
    boxes. The toggle shows a one-line preview when there's something written. */
 .notes-toggle {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  margin-top: 10px; padding: 8px 0 0;
+  margin-top: 10px; padding: 12px 0 10px; min-height: 42px;
   border: none; border-top: 1px dashed var(--border); background: none;
   font-family: var(--ft); font-size: 0.74rem; color: var(--muted);
   text-align: left; cursor: pointer;
@@ -760,7 +762,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 
 /* ── FOOTER ── */
 .app-footer {
-  padding: 18px 16px calc(36px + env(safe-area-inset-bottom, 0));
+  /* Deep bottom padding keeps the hint line clear of the floating add button,
+     which hovers about 124px above the bottom of the viewport. */
+  padding: 18px 16px calc(104px + env(safe-area-inset-bottom, 0));
   text-align: center;
   color: var(--muted);
   font-size: 0.7rem;
@@ -953,8 +957,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .sched-slot-card .co-card { margin-bottom: 0; }
 .sched-rm-link {
   display: block;
-  margin: 4px auto 0;
-  padding: 6px 12px;
+  margin: 2px auto 0;
+  padding: 11px 14px;
   background: none;
   border: none;
   color: var(--maroon);
@@ -1009,6 +1013,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .who-sub { font-size: 0.72rem; color: var(--muted); }
 .who-tick { margin-left: auto; color: var(--blue); font-weight: 700; }
 .who-empty { font-size: 0.8rem; color: var(--muted); padding: 6px 2px 2px; }
+
+.sched-tail { height: 14px; }   /* the footer's bottom padding clears the FAB */
 
 /* ── FLOATING ADD (schedule view) ── */
 .fab-wrap {
@@ -1222,8 +1228,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   justify-content: center;
 }
 .meal-act-btn {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 7px;
   border: 1.5px solid var(--border);
   background: var(--surface);
@@ -1538,6 +1544,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 18px 14px 24px; min-height: 100%;
 }
 .settings-card.as-view .settings-done { background: var(--border); color: var(--text-2); }
+body.in-settings .app-footer { display: none; }   /* the hint points at Settings */
 .settings-title { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 14px; }
 .settings-row { display: flex; align-items: center; gap: 14px; justify-content: space-between; }
 .settings-row-text strong { display: block; font-size: 0.9rem; color: var(--text); }
@@ -1799,8 +1806,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 <datalist id="co-datalist"></datalist>
 
 <div class="app-footer">
-  Notes save automatically. Use Schedule on any booth to plan a meeting.<br>
-  Export your notes as a CSV from Settings.
+  Notes save automatically. Export your show data from Settings.
 </div>
 
 <!-- Bottom navigation (field app only; the home dashboard is a desktop view) -->
@@ -3757,6 +3763,9 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
       html += `</div>`;
     });
   }
+  // Clearance so a full day's last card never ends up under the floating
+  // button, which hovers about 124px above the bottom of the viewport.
+  html += `<div class="sched-tail"></div>`;
   // Everything you can add to a day lives behind one thumb-reachable button
   // instead of a search box plus two dashed buttons stacked above the agenda.
   html += `
@@ -4528,9 +4537,11 @@ function renderSettingsView() {
   el.innerHTML = "";
   card.classList.add("as-view");
   el.appendChild(card);
+  document.body.classList.add("in-settings");   // the footer hint points here
 }
 // Put the card back in its sheet whenever another view renders.
 function parkSettingsCard() {
+  document.body.classList.remove("in-settings");
   const card = document.getElementById("settingsCard");
   const sheet = document.getElementById("settingsSheet");
   if (card && sheet && card.parentElement !== sheet) {
