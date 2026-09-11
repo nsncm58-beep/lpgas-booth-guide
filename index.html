@@ -1843,6 +1843,10 @@ body.home-mode .user-chip-gear { display: none !important; }
 <div id="settingsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card" id="settingsCard">
     <div class="settings-title">Settings</div>
+    <div class="settings-dbx-title">My brand</div>
+    <select id="brandSelect" class="settings-dbx-input"></select>
+    <div class="settings-dbx-note">Moving to another brand saves this show to your old show data, then sets you up on that brand's current show.</div>
+    <div class="settings-danger">
     <div class="settings-dbx-title">My team</div>
     <select id="deptSelect" class="settings-dbx-input">
       <option value="">Choose…</option>
@@ -1850,6 +1854,7 @@ body.home-mode .user-chip-gear { display: none !important; }
       <option value="sales">Sales</option>
     </select>
     <div class="settings-dbx-note">Editorial team: your notes and schedule are shared with the home team automatically. Sales: nothing is shared with the home team.</div>
+    </div>
     <div class="settings-danger">
       <div class="settings-dbx-title">Export</div>
       <button class="settings-dbx-btn settings-stack-btn" id="exportBtn" type="button">Download show data (CSV)</button>
@@ -2287,7 +2292,10 @@ function isPastShow(code) { return !!PAST_SHOWS[code]; }
 // that day instead of always Day 1. Omit `dates` and it just opens on Day 1.
 // (Ask for these whenever a booth list is loaded for a show.)
 const EVENTS = {
-  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: [], dates: ["2026-09-01","2026-09-02","2026-09-03"] },
+  // Retired (see PAST_SHOWS), but the booth list STAYS LOADED: it is what maps
+  // saved booth data back to company names, so CSV exports and existing notes
+  // keep working. The Booths tab hides itself for past shows instead.
+  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS, dates: ["2026-09-01","2026-09-02","2026-09-03"] },
 };
 // Which show day is today? 1/2/3 during the show, else null.
 function showDayToday(code) {
@@ -3469,6 +3477,16 @@ function render() {
   filterBar?.classList.remove("hidden");
   boothsSearch?.classList.remove("hidden");
 
+  // A wrapped show keeps its booth list loaded (exports and old notes depend
+  // on it) but stops offering the floor to walk.
+  if (isPastShow(currentEventCode())) {
+    filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
+    el.innerHTML = `<div class="empty-wrap"><h3>This show has wrapped</h3>
+      <p>${esc(currentShowLabel())} is finished, so the booth list is closed. Your notes and schedule are still here, and you can download everything from Settings. The next show's booths appear when it opens.</p></div>`;
+    updateStats(state);
+    return;
+  }
   if (!CO.length) {
     el.innerHTML = `<div class="empty-wrap"><h3>No booth list yet</h3>
       <p>This event doesn't have an exhibitor list loaded yet. Your schedule, meals, and notes still work — booths will appear once the list is added.</p></div>`;
@@ -4586,6 +4604,9 @@ function currentShowLabel() {
 // the content area rather than duplicated, so every listener bound to the
 // controls inside it keeps working.
 function prepSettings() {
+  const bs = document.getElementById("brandSelect");
+  bs.innerHTML = SIGNUP_BRANDS.map(b => `<option value="${b}">${esc((BRANDS[b] || {}).name || b)}</option>`).join("");
+  bs.value = userBrand(currentUser) || "";
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
@@ -4643,12 +4664,17 @@ async function renderOldData() {
   const past = Object.keys(PAST_SHOWS).map(code => {
     const ev = resolveEvent(code);
     const b = BRANDS[ev.brand] || BRANDS.ncm;
+    // If this wrapped show is still the rep's current one, their data is on
+    // the device (not archived yet), so offer a live export of it.
+    const live = code === currentEventCode();
     return `<div class="cleanup-row">
       <div class="cleanup-row-main">
         <div class="cleanup-row-name">${esc(b.name)} ${esc(ev.show || "")}</div>
         <div class="cleanup-row-meta">${esc(code)} · wrapped ${esc(PAST_SHOWS[code].ended)}</div>
       </div>
-      <span class="cleanup-row-meta">Closed</span>
+      ${live
+        ? `<button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>`
+        : `<span class="cleanup-row-meta">Closed</span>`}
     </div>`;
   }).join("");
   const pastBlock = past ? `<div class="cleanup-head">Past shows</div>${past}<div class="cleanup-head">Your archived data</div>` : "";
@@ -4677,6 +4703,10 @@ document.getElementById("oldDataClose").addEventListener("click", () => {
   document.getElementById("oldDataSheet").style.display = "none";
 });
 document.getElementById("oldDataList").addEventListener("click", e => {
+  // A wrapped show that's still the rep's current one exports live from the
+  // device; anything genuinely archived comes from the stored CSV.
+  const live = e.target.closest("[data-past-dl]");
+  if (live) { downloadCsv(buildShowCsv(), csvFileName(live.dataset.pastDl)); toast("CSV downloaded"); return; }
   const btn = e.target.closest("[data-arch-id]");
   if (!btn) return;
   const a = _archiveCache[btn.dataset.archId];
@@ -4886,6 +4916,41 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
   }
   catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
   renderCleanupList();
+});
+// Moving between brands (e.g. Golfdom to LM). Same deal as a show rollover:
+// the show you're leaving is archived to Old show data, then you land on the
+// new brand's current show with a clean slate.
+document.getElementById("brandSelect").addEventListener("change", async e => {
+  const newBrand = e.target.value;
+  const oldBrand = userBrand(currentUser);
+  if (!currentUser || !newBrand || newBrand === oldBrand) return;
+  const newCode = CURRENT_SHOW[newBrand];
+  const newName = (BRANDS[newBrand] || {}).name || newBrand;
+  if (!newCode) { toast("That brand has no show set up yet"); e.target.value = oldBrand; return; }
+  if (!confirm("Move to " + newName + "?\n\n" + currentShowLabel() +
+               " will be saved to your old show data, then your booths, notes and schedule reset for " + newName + ".")) {
+    e.target.value = oldBrand; return;
+  }
+  const sel = e.target; sel.disabled = true;
+  // Point the profile at the new brand, then let the rollover routine do the
+  // archive/clear/switch exactly as it would for an automatic show change.
+  currentUser.brand = newBrand;
+  const ok = await rolloverIfShowChanged();
+  if (!ok && currentUser.eventCode !== newCode) {
+    currentUser.brand = oldBrand; sel.value = oldBrand; sel.disabled = false;
+    toast("Couldn't switch — check your connection and try again");
+    return;
+  }
+  try { await fbDb.collection("users").doc(currentUser.uid).set({ brand: newBrand, eventCode: newCode }, { merge: true }); } catch (err) {}
+  masterEventOverride = null;
+  applyEvent(currentEventCode());
+  if (typeof setupBrandSwitcher === "function") setupBrandSwitcher();
+  subscribeTeam(); subscribeMyVideoStatus(); updateMediaBtn();
+  setBottomTab("schedule"); schedDay = showDayToday(currentEventCode()) || 1;
+  notesOpen.clear(); fabOpen = false; schedAddBooth = false; viewedScheduleUid = null;
+  sel.disabled = false;
+  render();
+  toast("You're now on " + newName);
 });
 document.getElementById("deptSelect").addEventListener("change", async e => {
   if (!currentUser || !e.target.value) return;
