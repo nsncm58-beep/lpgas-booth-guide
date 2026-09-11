@@ -1532,6 +1532,12 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   background: #fff; border-radius: 16px; padding: 20px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
 }
+/* Settings rendered as a page rather than a modal: it scrolls with the app. */
+.settings-card.as-view {
+  max-width: none; border-radius: 0; box-shadow: none;
+  padding: 18px 14px 24px; min-height: 100%;
+}
+.settings-card.as-view .settings-done { background: var(--border); color: var(--text-2); }
 .settings-title { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 14px; }
 .settings-row { display: flex; align-items: center; gap: 14px; justify-content: space-between; }
 .settings-row-text strong { display: block; font-size: 0.9rem; color: var(--text); }
@@ -1811,7 +1817,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M22 8.5l-7 3.5 7 3.5z" fill="currentColor" stroke="none"/></svg>
     <span>Videos</span>
   </button>
-  <button class="bn-btn" type="button" id="bnSettings">
+  <button class="bn-btn" type="button" id="bnSettings" data-v="settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11A1.6 1.6 0 0 0 4.57 8.8a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg>
     <span>Settings</span>
   </button>
@@ -1820,15 +1826,15 @@ body.home-mode .user-chip-gear { display: none !important; }
 
 <!-- ── Settings sheet ── -->
 <div id="settingsSheet" class="settings-sheet" style="display:none">
-  <div class="settings-card">
+  <div class="settings-card" id="settingsCard">
     <div class="settings-title">Settings</div>
     <div class="settings-dbx-title">My team</div>
     <select id="deptSelect" class="settings-dbx-input">
       <option value="">Choose…</option>
-      <option value="edit">Editorial / Digital</option>
+      <option value="edit">Editorial team</option>
       <option value="sales">Sales</option>
     </select>
-    <div class="settings-dbx-note">Editorial / Digital: your notes and schedule are shared with the home team automatically. Sales: nothing is shared with the home team.</div>
+    <div class="settings-dbx-note">Editorial team: your notes and schedule are shared with the home team automatically. Sales: nothing is shared with the home team.</div>
     <div class="settings-danger">
       <div class="settings-dbx-title">Export</div>
       <button class="settings-dbx-btn settings-stack-btn" id="exportBtn" type="button">Download show data (CSV)</button>
@@ -1962,7 +1968,7 @@ body.home-mode .user-chip-gear { display: none !important; }
         <label>Your Team</label>
         <select id="authDept">
           <option value="">Choose…</option>
-          <option value="edit">Editorial / Digital</option>
+          <option value="edit">Editorial team</option>
           <option value="sales">Sales</option>
         </select>
       </div>
@@ -2879,7 +2885,7 @@ function buildHomeReminders() {
   }
   h += `<div class="home-rem-card">
     <div class="home-rem-title">Reminders<span class="home-rem-count">${pending.length}</span></div>
-    <div class="home-rem-sub">Booth videos flagged by Editorial / Digital reps land here once the booth is visited. Mark each done as you finish it; the rep sees it on their booth card.</div>`;
+    <div class="home-rem-sub">Booth videos flagged by the editorial team land here once the booth is visited. Mark each done as you finish it; the rep sees it on their booth card.</div>`;
   h += pending.length ? pending.map(itemHtml).join("")
     : `<div class="home-rem-empty">Nothing waiting. Reps flag footage with the Video button on a booth; it lands here once that booth is visited.</div>`;
   if (done.length) {
@@ -3173,7 +3179,7 @@ function buildHomeSchedView() {
   if (homeBrandFilter) entries = entries.filter(([id, s]) => resolveEvent(s.eventCode).brand === homeBrandFilter);
   entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
   if (!entries.length) {
-    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows Editorial / Digital team schedules (set under Settings &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
+    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows editorial team schedules (set under Settings &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
   }
   let h = `<div class="home-search-box">
     <input class="home-search-input hs-search-input" type="text" placeholder="Search this brand&#39;s agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
@@ -3351,6 +3357,9 @@ function buildCard(c, state) {
 }
 
 function render() {
+  // Always first: the Settings card is a real DOM node living in #content
+  // while its tab is open, and any other view's innerHTML would destroy it.
+  parkSettingsCard();
   if (isHome()) { renderHomeDashboard(); return; }
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
@@ -3377,6 +3386,12 @@ function render() {
   const filterBar = document.querySelector(".filter-bar");
 
   const boothsSearch = document.querySelector(".booths-search");
+  if (activeView === "settings") {
+    filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
+    renderSettingsView();
+    return;
+  }
   if (activeView === "schedule") {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
@@ -4254,7 +4269,6 @@ document.getElementById("bottomNav").addEventListener("click", e => {
     return;
   }
   if (e.target.closest("#bnVideos")) { document.getElementById("mediaBtn").click(); return; }
-  if (e.target.closest("#bnSettings")) { document.getElementById("settingsBtn").click(); return; }
 });
 function setBottomTab(v) {
   activeView = v;
@@ -4342,9 +4356,15 @@ function updateMediaBtn() {
   const m = (currentUser && !isHome()) ? eventMedia(currentEventCode()) : null;
   const show = !!(m && m.request);
   btn.style.display = show ? "" : "none";
-  // The bottom nav's Videos tab is a shortcut to the same sheet.
+  // The bottom nav's Videos tab is a shortcut to the same sheet. Sales reps
+  // shoot booth photos more than footage, so it reads "Videos/Pics" for them
+  // (same upload folder either way; only the wording differs).
   const nav = document.getElementById("bnVideos");
-  if (nav) nav.style.display = show ? "" : "none";
+  if (nav) {
+    nav.style.display = show ? "" : "none";
+    const lbl = nav.querySelector("span");
+    if (lbl) lbl.textContent = myNotesAutoShare() ? "Videos" : "Videos/Pics";
+  }
 }
 function mediaIsMicrosoft(m) { return /sharepoint\.com|office\.com/i.test((m && (m.request || m.folder)) || ""); }
 document.getElementById("mediaBtn").addEventListener("click", () => {
@@ -4460,7 +4480,7 @@ authEls.form.addEventListener("submit", async (e) => {
       const dept = document.getElementById("authDept").value;
       if (!name)      { authErr("Please enter your name.");       authEls.submit.disabled = false; return; }
       if (!eventCode) { authErr("Please enter your event code."); authEls.submit.disabled = false; return; }
-      if (!dept)      { authErr("Pick your team (Sales or Editorial / Digital)."); authEls.submit.disabled = false; return; }
+      if (!dept)      { authErr("Pick your team (Sales or Editorial)."); authEls.submit.disabled = false; return; }
       if (!VALID_EVENT_CODES.includes(eventCode)) {
         authErr("That event code doesn't exist. Double-check it with your team and enter a valid code.");
         authEls.submit.disabled = false; return;
@@ -4491,15 +4511,40 @@ function currentShowLabel() {
   const b = BRANDS[ev.brand] || BRANDS.ncm;
   return (b.name || "this show") + (currentEventCode() ? " (" + currentEventCode() + ")" : "");
 }
-document.getElementById("settingsBtn").addEventListener("click", () => {
+// Settings is a full view (its own bottom-nav tab), not a modal, so long
+// sections scroll normally. The card is MOVED between its hidden sheet and
+// the content area rather than duplicated, so every listener bound to the
+// controls inside it keeps working.
+function prepSettings() {
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("newShowCode").value = "";
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
-  document.getElementById("settingsSheet").style.display = "flex";
+}
+function renderSettingsView() {
+  const el = document.getElementById("content");
+  const card = document.getElementById("settingsCard");
+  prepSettings();
+  el.innerHTML = "";
+  card.classList.add("as-view");
+  el.appendChild(card);
+}
+// Put the card back in its sheet whenever another view renders.
+function parkSettingsCard() {
+  const card = document.getElementById("settingsCard");
+  const sheet = document.getElementById("settingsSheet");
+  if (card && sheet && card.parentElement !== sheet) {
+    card.classList.remove("as-view");
+    sheet.appendChild(card);
+  }
+}
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  setBottomTab("settings");
+  render();
 });
 document.getElementById("settingsClose").addEventListener("click", () => {
-  document.getElementById("settingsSheet").style.display = "none";
+  setBottomTab("schedule");
+  render();
 });
 // Settings > Account > Sign out: close the sheet, then run the same flow as
 // the home team's header button (authEls.signOut keeps the shared handler).
@@ -4837,7 +4882,7 @@ document.getElementById("deptSelect").addEventListener("change", async e => {
   queueScheduleSync();   // restamp the cloud schedule with the new team
   queueNotesSync();      // edit -> start auto-sharing notes (sales -> no-op, nothing deleted)
   render();              // status picker/filters are sales-only, swap them in or out now
-  toast(currentUser.dept === "edit" ? "Set to Editorial / Digital" : "Set to Sales");
+  toast(currentUser.dept === "edit" ? "Set to Editorial team" : "Set to Sales");
 });
 async function loadUserDoc(uid) {
   try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
@@ -4875,6 +4920,7 @@ function showSignedOut() {
   document.getElementById("mediaBtn").style.display = "none";
   document.getElementById("bottomNav").style.display = "none";
   document.body.classList.remove("home-mode", "has-nav");
+  parkSettingsCard();
   notesOpen.clear();
   fabOpen = false; schedAddBooth = false;
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
