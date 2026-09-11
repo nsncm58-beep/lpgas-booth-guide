@@ -1471,6 +1471,13 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .user-chip-name.chip-admin:active { opacity: 0.75;
 }
+/* Marks the two master accounts (Nate, Rachel) in the header */
+.admin-tag {
+  flex-shrink: 0; padding: 3px 7px; border-radius: 5px;
+  background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35);
+  color: #fff; font-family: var(--fd); font-size: 0.54rem; font-weight: 700;
+  letter-spacing: 0.7px; text-transform: uppercase;
+}
 /* Home-team identity chip: shows who's at the desk, tap to switch */
 .user-chip-member {
   border: 1px solid rgba(255,255,255,0.45);
@@ -1789,6 +1796,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="user-chip" id="userChip" style="display:none">
       <span class="brand-switch-row" id="brandSwitchRow" style="display:none"><select class="brand-switch" id="brandSwitch" title="Switch brand"></select></span>
       <span class="user-chip-name" id="userChipName"></span>
+      <span class="admin-tag" id="adminTag" style="display:none">Admin</span>
       <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
       <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
@@ -1867,8 +1875,8 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
-      <div class="settings-dbx-note">Event codes, install and join QR codes, plus tools for clearing stray records across all brands.</div>
-      <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Event codes &amp; install QRs</button>
+      <div class="settings-dbx-note">QR codes for installing the app and joining a brand, plus tools for clearing stray records across all brands.</div>
+      <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Install &amp; join QR codes</button>
       <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button" style="margin-top:8px;">Clean up team data</button>
       <button class="settings-dbx-btn admin-btn" id="notifyBtn" type="button" style="margin-top:8px;">Teams notifications</button>
     </div>
@@ -1883,7 +1891,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 <!-- ── Admin: event codes + install/join QRs (master only) ── -->
 <div id="guideSheet" class="settings-sheet" style="display:none">
   <div class="settings-card guide-card">
-    <div class="settings-title">Event codes &amp; install</div>
+    <div class="settings-title">Install &amp; join QRs</div>
     <div id="guideBody"></div>
     <button class="settings-done" id="guideClose" type="button">Done</button>
   </div>
@@ -4801,34 +4809,36 @@ async function openGuideSheet() {
   document.getElementById("settingsSheet").style.display = "none";
   document.getElementById("guideSheet").style.display = "flex";
   const body = document.getElementById("guideBody");
-  const codes = [...new Set([].concat(
-    VALID_EVENT_CODES, Object.keys(EVENTS), Object.keys(MEDIA)))];
-  let h = `<div class="guide-note">Reads straight from this build, so it's always current. Each show's QR opens the app with that event code prefilled on the signup form.</div>
+  let h = `<div class="guide-note">Reads straight from this build, so it's always current. Reps don't type a code any more: they pick a brand at signup. Each brand's QR opens the app with that brand already selected.</div>
     <div class="guide-install">
       <div class="guide-qr-lg" id="gqrInstall"></div>
       <div class="guide-url">${esc(GUIDE_APP_URL)}</div>
       <div class="guide-note" style="margin:6px 0 0">Scan to open. iPhone: Share &rarr; Add to Home Screen. Android: menu &rarr; Install app.</div>
     </div>`;
-  codes.forEach((code, i) => {
+  SIGNUP_BRANDS.forEach(brand => {
+    const code = CURRENT_SHOW[brand];
     const ev = EVENTS[code];
-    const b = BRANDS[ev ? ev.brand : inferBrand(code)] || BRANDS.ncm;
+    const b = BRANDS[brand] || BRANDS.ncm;
     const med = MEDIA[code] || {};
+    const nBooths = ev ? (ev.booths || []).length : 0;
     const bits = [
-      "Signup open",
-      ev ? ((ev.booths || []).length + " booths") : "booth list not loaded yet",
-      (med.request && med.folder) ? "Photos & videos wired" : "no media links yet"
+      isPastShow(code) ? "Wrapped" : "Running",
+      nBooths ? (nBooths + " booths") : "booth list not loaded yet",
+      (ev && ev.dates && ev.dates.length) ? "dates set" : "no dates yet",
+      (med.request && med.folder) ? "media wired" : "no media links yet"
     ];
     h += `<div class="guide-ev">
       <div class="guide-ev-bar" style="background:${b.p.blue}">${esc(b.name)}</div>
       <div class="guide-ev-body">
         <div class="guide-ev-info">
-          <div class="guide-ev-code">${esc(code)}</div>
+          <div class="guide-ev-code">${esc(code || "no show set")}</div>
           <div class="guide-ev-meta">${bits.map(esc).join(" · ")}</div>
         </div>
         <div class="guide-ev-qr" data-gqr="${esc(GUIDE_APP_URL + "?code=" + code)}"></div>
       </div>
     </div>`;
   });
+  h += `<div class="guide-note" style="margin-top:12px">Show codes are internal now, shown here for reference only. Rolling a brand onto its next show takes a new exhibitor list and its dates, plus a republish of the Firestore rules so the new code is accepted. Reps roll over on their own the next time they open the app.</div>`;
   body.innerHTML = h;
   try {
     await loadQrLib();
@@ -4971,6 +4981,7 @@ function showSignedIn(profile) {
   authEls.chip.style.display = "";
   const nm = (profile && profile.name) || "Signed in";
   authEls.chipName.textContent = isHome() ? nm : (nm.trim().split(/\s+/)[0] || nm);
+  document.getElementById("adminTag").style.display = isMaster() ? "" : "none";
   // The bottom nav is the field app's navigation; home is a desktop dashboard.
   const nav = document.getElementById("bottomNav");
   nav.style.display = isHome() ? "none" : "flex";
@@ -5005,6 +5016,7 @@ function showSignedOut() {
   document.getElementById("brandSwitchRow").style.display = "none";
   document.getElementById("mediaBtn").style.display = "none";
   document.getElementById("bottomNav").style.display = "none";
+  document.getElementById("adminTag").style.display = "none";
   document.body.classList.remove("home-mode", "has-nav");
   parkSettingsCard();
   notesOpen.clear();
