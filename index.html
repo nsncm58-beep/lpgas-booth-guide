@@ -209,15 +209,24 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 
 /* Shared settings-section field styles (class names are historical — the
    personal-Dropbox section that coined them was removed) */
-.settings-dbx-title { font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.settings-dbx-title {
+  font-family: var(--fd); font-size: 0.68rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.9px; margin-bottom: 10px;
+}
+/* Helper copy under a control. This had NO rule at all, so it inherited the
+   body size and rendered larger than the headings above it. */
+.settings-dbx-note {
+  font-size: 0.76rem; line-height: 1.55; color: var(--muted);
+  margin: 8px 0 0;
+}
 .settings-dbx-input {
-  width: 100%; padding: 9px 11px; margin-bottom: 8px;
+  width: 100%; padding: 11px; margin: 0;
   border: 1.5px solid var(--border); border-radius: 8px;
   font-family: var(--ft); font-size: 0.85rem; color: var(--text); background: #fff;
 }
 .settings-dbx-input:focus { outline: none; border-color: var(--blue); }
 /* Settings section container (name is historical; the Shows section uses it) */
-.settings-danger { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.settings-danger { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
 .admin-btn {
   width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
   border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
@@ -240,13 +249,13 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .guide-ev-qr img, .guide-ev-qr canvas, .guide-qr-lg img, .guide-qr-lg canvas { width: 100% !important; height: 100% !important; display: block; }
 
 .settings-stack-btn {
-  width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
+  width: 100%; margin-top: 10px; padding: 13px; border-radius: 10px; cursor: pointer;
   border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
   font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
 }
 .settings-stack-btn.primary { background: var(--blue); color: #fff; }
 .settings-stack-btn:active { opacity: 0.9; }
-.settings-admin { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+.settings-admin { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
 .cleanup-list { max-height: 50vh; overflow-y: auto; margin: 10px 0 4px; }
 .cleanup-row { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border-soft); }
 .cleanup-row-main { min-width: 0; }
@@ -1545,7 +1554,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .settings-card.as-view .settings-done { background: var(--border); color: var(--text-2); }
 body.in-settings .app-footer { display: none; }   /* the hint points at Settings */
-.settings-title { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 14px; }
+.settings-title { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 18px; }
 .settings-row { display: flex; align-items: center; gap: 14px; justify-content: space-between; }
 .settings-row-text strong { display: block; font-size: 0.9rem; color: var(--text); }
 .settings-row-text small { display: block; font-size: 0.76rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
@@ -1849,8 +1858,8 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
       <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button">Access old show data</button>
-      <div class="settings-dbx-note" style="margin-top:14px;">Starting a new show saves your current show (<strong id="curShowName">this show</strong>) to your old-show data as a CSV, then resets your booths, notes and schedule for the new one.</div>
-      <input class="settings-dbx-input" id="newShowCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="New event code" style="margin-top:8px;">
+      <div class="settings-dbx-note">Starting a new show saves your current show (<strong id="curShowName">this show</strong>) to your old-show data as a CSV, then resets your booths, notes and schedule for the new one.</div>
+      <input class="settings-dbx-input" id="newShowCode" type="text" autocapitalize="characters" autocomplete="off" placeholder="New event code" style="margin-top:10px;">
       <button class="settings-dbx-btn settings-stack-btn primary" id="startNewShowBtn" type="button">Start new show</button>
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
