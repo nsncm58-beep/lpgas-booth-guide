@@ -252,6 +252,11 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .cleanup-row-main { min-width: 0; }
 .cleanup-row-name { font-weight: 700; font-size: 0.84rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cleanup-row-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.cleanup-head {
+  font-family: var(--fd); font-size: 0.66rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.8px; margin: 12px 0 6px;
+}
+.cleanup-head:first-child { margin-top: 0; }
 .cleanup-del { flex-shrink: 0; border: 1.5px solid #B3261E; background: #fff; color: #B3261E; border-radius: 7px; padding: 5px 11px; font-family: var(--fd); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; cursor: pointer; }
 .cleanup-del:active { background: #FBE9E8; }
 .cleanup-empty { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
@@ -1877,7 +1882,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 <div id="oldDataSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title">Old show data</div>
-    <p class="settings-dbx-note">Shows you've archived. Download any past show's CSV.</p>
+    <p class="settings-dbx-note">Shows that have wrapped, plus any data you've archived. Download a past show's CSV anytime.</p>
     <div id="oldDataList" class="cleanup-list"></div>
     <button class="settings-done" id="oldDataClose" type="button">Done</button>
   </div>
@@ -2223,8 +2228,17 @@ const BRANDS = {
 // Registered events: code -> { brand, show, booths }. Add a show here once its
 // exhibitor list is in hand. Unregistered codes still theme by prefix (below)
 // but show an empty booth list until configured.
+// Shows that have wrapped. They stay valid event codes (reps still on them
+// keep their notes, schedules and archives) but carry no booth list, so the
+// app shows the "no booth list yet" empty state until next year's exhibitor
+// list arrives. The old list stays in the file: reviving a show is a one-line
+// change back to `booths: LPGAS_BOOTHS`.
+const PAST_SHOWS = {
+  "LPGAS-2026": { ended: "September 2026", listName: "LPGAS_BOOTHS", count: LPGAS_BOOTHS.length },
+};
+function isPastShow(code) { return !!PAST_SHOWS[code]; }
 const EVENTS = {
-  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS },
+  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: [] },
 };
 // THE definitive list of event codes this app accepts — signup, Start new
 // show and the master switcher are all locked to these five. Nothing outside
@@ -2452,6 +2466,10 @@ async function syncMyNotesToCloud() {
   if (!fbReady || !myNotesAutoShare()) return;
   const code = currentEventCode();
   if (!code) return;
+  // A show with no booth list (retired, or not loaded yet) can't produce any
+  // items, so writing would blank a rep's shared notes and empty the home
+  // team's Videos tab. Never push nothing over something.
+  if (!CO.length) return;
   try {
     await fbDb.collection("notes").doc(myScheduleDocId()).set({
       uid: currentUser.uid, name: currentUser.name || "", eventCode: code,
@@ -2490,6 +2508,10 @@ async function syncMyScheduleToCloud() {
   if (!fbReady || !currentUser) return;
   const code = currentEventCode();
   if (!code) return;
+  // Same protection as notes: a retired show's booth list is gone, so a write
+  // here would strip the rep's booth meetings out of their cloud agenda.
+  // (Shows whose list simply hasn't loaded yet still sync meals/off-site.)
+  if (isPastShow(code) && !CO.length) return;
   try {
     await fbDb.collection("schedules").doc(myScheduleDocId()).set({
       uid: currentUser.uid,
@@ -4427,8 +4449,25 @@ async function renderOldData() {
     snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
   } catch (e) {}
   docs.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  if (!docs.length) { el.innerHTML = `<div class="cleanup-empty">No archived shows yet. When you start a new show, the current one is saved here.</div>`; return; }
-  el.innerHTML = docs.map(d => {
+  // Shows that have wrapped, whether or not this rep archived their own copy.
+  // Their booth lists are retired, so the app shows the empty state for them.
+  const past = Object.keys(PAST_SHOWS).map(code => {
+    const ev = resolveEvent(code);
+    const b = BRANDS[ev.brand] || BRANDS.ncm;
+    return `<div class="cleanup-row">
+      <div class="cleanup-row-main">
+        <div class="cleanup-row-name">${esc(b.name)} ${esc(ev.show || "")}</div>
+        <div class="cleanup-row-meta">${esc(code)} · wrapped ${esc(PAST_SHOWS[code].ended)}</div>
+      </div>
+      <span class="cleanup-row-meta">Closed</span>
+    </div>`;
+  }).join("");
+  const pastBlock = past ? `<div class="cleanup-head">Past shows</div>${past}<div class="cleanup-head">Your archived data</div>` : "";
+  if (!docs.length) {
+    el.innerHTML = pastBlock + `<div class="cleanup-empty">No archived shows yet. When you start a new show, the current one is saved here.</div>`;
+    return;
+  }
+  el.innerHTML = pastBlock + docs.map(d => {
     _archiveCache[d.id] = { csv: d.csv || "", code: d.eventCode || "show" };
     const when = d.ts ? new Date(d.ts).toLocaleDateString() : "";
     return `<div class="cleanup-row">
