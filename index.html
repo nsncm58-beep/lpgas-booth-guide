@@ -984,6 +984,32 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 /* Meal/off-site add buttons stay tucked away until the rep taps the
    "Search to add" field (or already has one of the forms open). */
+/* ── "Nate's Schedule" title + people picker ── */
+.sched-title {
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 12px 14px 10px; border: none; background: none; cursor: pointer; text-align: left;
+}
+.st-name {
+  font-family: var(--fd); font-weight: 800; font-size: 1.12rem; color: var(--text);
+}
+.st-chev { color: var(--muted); font-size: 0.8rem; }
+.st-count {
+  margin-left: auto; font-size: 0.68rem; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.sched-title:active { opacity: 0.7; }
+.who-list { max-height: 60vh; overflow-y: auto; }
+.who-row {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 13px 12px; margin-bottom: 6px; cursor: pointer; text-align: left;
+  border: 1.5px solid var(--border); border-radius: 10px; background: #fff;
+}
+.who-row.active { border-color: var(--blue); background: var(--blue-light); }
+.who-name { font-family: var(--fd); font-weight: 700; font-size: 0.92rem; color: var(--text); }
+.who-sub { font-size: 0.72rem; color: var(--muted); }
+.who-tick { margin-left: auto; color: var(--blue); font-weight: 700; }
+.who-empty { font-size: 0.8rem; color: var(--muted); padding: 6px 2px 2px; }
+
 /* ── FLOATING ADD (schedule view) ── */
 .fab-wrap {
   position: fixed; right: 16px; z-index: 140;
@@ -1817,8 +1843,9 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
-      <div class="settings-dbx-note">Review and delete any stray records (test accounts, old entries) across all brands. Tip: tap your name in the header for event codes &amp; install QRs.</div>
-      <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button">Clean up team data</button>
+      <div class="settings-dbx-note">Event codes, install and join QR codes, plus tools for clearing stray records across all brands.</div>
+      <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Event codes &amp; install QRs</button>
+      <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button" style="margin-top:8px;">Clean up team data</button>
       <button class="settings-dbx-btn admin-btn" id="notifyBtn" type="button" style="margin-top:8px;">Teams notifications</button>
     </div>
     <div class="settings-danger">
@@ -1835,6 +1862,16 @@ body.home-mode .user-chip-gear { display: none !important; }
     <div class="settings-title">Event codes &amp; install</div>
     <div id="guideBody"></div>
     <button class="settings-done" id="guideClose" type="button">Done</button>
+  </div>
+</div>
+
+<!-- ── Whose schedule am I looking at? ── -->
+<div id="whoSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">View a schedule</div>
+    <p class="settings-dbx-note">Your own schedule is editable. Teammates' are view only.</p>
+    <div id="whoList" class="who-list"></div>
+    <button class="settings-done" id="whoClose" type="button">Done</button>
   </div>
 </div>
 
@@ -2237,9 +2274,22 @@ const PAST_SHOWS = {
   "LPGAS-2026": { ended: "September 2026", listName: "LPGAS_BOOTHS", count: LPGAS_BOOTHS.length },
 };
 function isPastShow(code) { return !!PAST_SHOWS[code]; }
+// Show dates, newest list wins. `dates` is Day 1/2/3 as "YYYY-MM-DD" in the
+// show's local time. When today is one of them, the Schedule view opens on
+// that day instead of always Day 1. Omit `dates` and it just opens on Day 1.
+// (Ask for these whenever a booth list is loaded for a show.)
 const EVENTS = {
-  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: [] },
+  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: [], dates: ["2026-09-01","2026-09-02","2026-09-03"] },
 };
+// Which show day is today? 1/2/3 during the show, else null.
+function showDayToday(code) {
+  const ds = (resolveEvent(code) || {}).dates;
+  if (!Array.isArray(ds) || !ds.length) return null;
+  const n = new Date();
+  const today = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+  const i = ds.indexOf(today);
+  return i === -1 ? null : i + 1;
+}
 // THE definitive list of event codes this app accepts — signup, Start new
 // show and the master switcher are all locked to these five. Nothing outside
 // this list can join or exist. Adding a future show = add it here + an EVENTS
@@ -3491,21 +3541,47 @@ function roCardHtml(it) {
   </div>`;
 }
 
-function buildTeamBar() {
+// Whose schedule is on screen, as a header title: "Nate's Schedule". Tapping
+// it opens the people picker (replaces the old row of teammate chips).
+function schedOwnerLabel() {
+  if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
+    const n = (teamSchedules[viewedScheduleUid].name || "Teammate").trim().split(/\s+/)[0];
+    return n + "'s Schedule";
+  }
+  const me = ((currentUser && currentUser.name) || "My").trim().split(/\s+/)[0];
+  return me + "'s Schedule";
+}
+function buildSchedTitle() {
+  const mine = currentUser ? currentUser.uid : null;
+  const others = Object.values(teamSchedules).filter(s => s.uid !== mine).length;
+  return `<button class="sched-title" type="button" data-sched-who>
+    <span class="st-name">${esc(schedOwnerLabel())}</span>
+    <span class="st-chev">▾</span>
+    ${others ? `<span class="st-count">${others + 1} on the team</span>` : ""}
+  </button>`;
+}
+// The people picker: your own schedule plus every teammate sharing one.
+function buildWhoSheet() {
   const mine = currentUser ? currentUser.uid : null;
   const teammates = Object.values(teamSchedules)
     .filter(s => s.uid !== mine)
     .sort((a,b) => (a.name||"").localeCompare(b.name||""));
-  if (!teammates.length) return "";
-  return `<div class="team-bar">
-    <button class="team-chip${!viewedScheduleUid?" active":""}" data-team-uid="">My Schedule</button>
-    ${teammates.map(s => `<button class="team-chip${viewedScheduleUid===s.uid?" active":""}" data-team-uid="${esc(s.uid)}">${esc(s.name||"Teammate")}</button>`).join("")}
-  </div>`;
+  const row = (uid, name, sub, active) => `<button class="who-row${active?" active":""}" type="button" data-team-uid="${esc(uid)}">
+    <span class="who-name">${esc(name)}</span>${sub ? `<span class="who-sub">${esc(sub)}</span>` : ""}
+    ${active ? '<span class="who-tick">✓</span>' : ""}
+  </button>`;
+  let h = row("", ((currentUser && currentUser.name) || "Me"), "Your schedule", !viewedScheduleUid);
+  h += teammates.map(s => {
+    const n = (Array.isArray(s.items) ? s.items : []).length;
+    return row(s.uid, s.name || "Teammate", n + (n === 1 ? " item" : " items") + " · view only", viewedScheduleUid === s.uid);
+  }).join("");
+  if (!teammates.length) h += `<div class="who-empty">No teammates are sharing a schedule for this show yet.</div>`;
+  return h;
 }
 
 function renderScheduleView(state) {
   const el = document.getElementById("content");
-  const teamBar = buildTeamBar();
+  const teamBar = buildSchedTitle();
 
   // ── Viewing a teammate's schedule (read-only) ──
   if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
@@ -3810,12 +3886,9 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  const teamChip = e.target.closest("[data-team-uid]");
-  if (teamChip) {
-    viewedScheduleUid = teamChip.dataset.teamUid || null;
-    schedSearchQ = "";
-    mealFormOpen = false; offFormOpen = false;
-    render();
+  if (e.target.closest("[data-sched-who]")) {
+    document.getElementById("whoList").innerHTML = buildWhoSheet();
+    document.getElementById("whoSheet").style.display = "flex";
     return;
   }
 
@@ -4558,6 +4631,22 @@ document.getElementById("notifyTestBtn").addEventListener("click", () => {
     .then(r => toast(r.ok ? "Test sent to " + to : "Flow answered " + r.status))
     .catch(() => toast("Couldn't reach the flow (check the URL)"));
 });
+// People picker: switch whose schedule is on screen.
+document.getElementById("whoList").addEventListener("click", e => {
+  const row = e.target.closest("[data-team-uid]");
+  if (!row) return;
+  viewedScheduleUid = row.dataset.teamUid || null;
+  schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
+  fabOpen = false; schedAddBooth = false;
+  document.getElementById("whoSheet").style.display = "none";
+  render();
+});
+document.getElementById("whoClose").addEventListener("click", () => {
+  document.getElementById("whoSheet").style.display = "none";
+});
+document.getElementById("whoSheet").addEventListener("click", e => {
+  if (e.target.id === "whoSheet") e.currentTarget.style.display = "none";
+});
 document.getElementById("notifyClose").addEventListener("click", () => {
   document.getElementById("notifySheet").style.display = "none";
 });
@@ -4622,11 +4711,10 @@ async function openGuideSheet() {
       '<div class="guide-note">QR codes need a connection. The links and codes above still work.</div>';
   }
 }
-// The guide hangs off the admin's own name in the header (masters only) —
-// tap "Nate"/"Rachel" to open it. Field reps' names aren't tappable.
-document.getElementById("userChipName").addEventListener("click", () => {
-  if (isMaster()) openGuideSheet();
-});
+// The guide lives in Settings > Admin (masters only). It used to hang off the
+// admin's own name in the header; the header now shows whose schedule you're
+// viewing instead, so it moved here with the rest of the admin tools.
+document.getElementById("guideBtn").addEventListener("click", openGuideSheet);
 document.getElementById("guideClose").addEventListener("click", () => {
   document.getElementById("guideSheet").style.display = "none";
 });
@@ -4735,7 +4823,7 @@ document.getElementById("newShowConfirmBtn").addEventListener("click", async () 
   subscribeTeam();
   subscribeMyVideoStatus();
   updateMediaBtn();
-  setBottomTab("schedule"); schedDay = 1; allOpen = false; viewedScheduleUid = null;
+  setBottomTab("schedule"); schedDay = showDayToday(currentEventCode()) || 1; allOpen = false; viewedScheduleUid = null;
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   render();
   btn.disabled = false;
@@ -4761,9 +4849,6 @@ function showSignedIn(profile) {
   authEls.chip.style.display = "";
   const nm = (profile && profile.name) || "Signed in";
   authEls.chipName.textContent = isHome() ? nm : (nm.trim().split(/\s+/)[0] || nm);
-  // Masters' names are tappable — they open the event codes & QR guide.
-  authEls.chipName.classList.toggle("chip-admin", isMaster());
-  authEls.chipName.title = isMaster() ? "Event codes & install QRs" : "";
   // The bottom nav is the field app's navigation; home is a desktop dashboard.
   const nav = document.getElementById("bottomNav");
   nav.style.display = isHome() ? "none" : "flex";
@@ -4837,6 +4922,7 @@ document.getElementById("brandSwitch").addEventListener("change", e => {
   setBottomTab("schedule");
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   applyEvent(masterEventOverride);
+  schedDay = showDayToday(masterEventOverride) || 1;
   subscribeTeam();              // listen to the new brand's team
   subscribeMyVideoStatus();
   updateMediaBtn();
@@ -4880,6 +4966,8 @@ if (fbReady) {
       localStorage.setItem("lpgas_owner_uid", user.uid);
       // Theme + booth list for this user's event/brand.
       applyEvent(currentEventCode());
+      // During the show itself, open on today's day rather than Day 1.
+      schedDay = showDayToday(currentEventCode()) || 1;
       setupBrandSwitcher();
       showSignedIn(profile);
       // Pull cloud data down first if this device is empty, THEN push (which
