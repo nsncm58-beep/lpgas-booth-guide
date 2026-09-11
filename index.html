@@ -600,12 +600,56 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .video-btn:active { transform: scale(0.94); }
 .video-btn.on { border-color: var(--maroon); color: var(--maroon); background: var(--maroon-light); }
 
-/* ── NOTES PANEL ── */
-.notes-content {
-  padding: 12px 0 2px;
-  border-top: 1px dashed var(--border);
-  margin-top: 12px;
+/* ── BOTTOM NAV (field app) ── */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
+  display: flex; background: #fff;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 14px rgba(0, 40, 70, 0.09);
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
+.bn-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px 7px; border: none; background: none; color: var(--muted);
+  font-family: var(--fd); font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.4px; text-transform: uppercase; cursor: pointer;
+  -webkit-user-select: none; user-select: none;
+}
+.bn-btn svg { width: 21px; height: 21px; }
+.bn-btn:active { opacity: 0.6; }
+.bn-btn.active { color: var(--blue); }
+body.has-nav { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)); }
+body.home-mode .bottom-nav { display: none !important; }
+/* With the bottom bar carrying Videos and Settings, the header keeps only
+   the logo and who you are. (The buttons stay in the DOM: the nav clicks
+   them, and the home dashboard still uses its own header controls.) */
+body.has-nav .hdr-photos,
+body.has-nav .user-chip-gear { display: none !important; }
+
+/* ── NOTES PANEL ── */
+/* Collapsed by default: 226 cards x two open textareas was a wall of empty
+   boxes. The toggle shows a one-line preview when there's something written. */
+.notes-toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  margin-top: 10px; padding: 8px 0 0;
+  border: none; border-top: 1px dashed var(--border); background: none;
+  font-family: var(--ft); font-size: 0.74rem; color: var(--muted);
+  text-align: left; cursor: pointer;
+}
+.nt-lbl { font-weight: 700; flex-shrink: 0; }
+.notes-toggle.has .nt-lbl { color: var(--blue-dark); }
+.nt-prev {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: var(--text-2);
+}
+.nt-chev { flex-shrink: 0; transition: transform 0.15s; font-size: 0.7rem; }
+.nt-chev.open { transform: rotate(180deg); }
+.notes-content {
+  display: none;
+  padding: 12px 0 2px;
+  margin-top: 4px;
+}
+.notes-content.open { display: block; }
 .note-group { margin-bottom: 10px; }
 .note-group:last-child { margin-bottom: 0; }
 .note-label {
@@ -935,7 +979,32 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 /* Meal/off-site add buttons stay tucked away until the rep taps the
    "Search to add" field (or already has one of the forms open). */
-.sched-add-tools.hide { display: none; }
+/* ── FLOATING ADD (schedule view) ── */
+.fab-wrap {
+  position: fixed; right: 16px; z-index: 140;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0));
+  display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+}
+.fab {
+  width: 54px; height: 54px; border-radius: 50%; border: none;
+  background: var(--blue); color: #fff; font-size: 1.9rem; line-height: 1;
+  box-shadow: 0 4px 14px rgba(0, 40, 70, 0.3); cursor: pointer;
+  transition: transform 0.18s;
+}
+.fab-wrap.open .fab { transform: rotate(45deg); }
+.fab:active { transform: scale(0.93); }
+.fab-wrap.open .fab:active { transform: rotate(45deg) scale(0.93); }
+.fab-menu {
+  display: none; flex-direction: column; align-items: flex-end; gap: 8px;
+}
+.fab-wrap.open .fab-menu { display: flex; animation: fadeUp 0.16s ease; }
+.fab-item {
+  padding: 11px 16px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: #fff; color: var(--blue-dark);
+  font-family: var(--fd); font-size: 0.76rem; font-weight: 700;
+  box-shadow: 0 3px 10px rgba(0, 40, 70, 0.16); cursor: pointer; white-space: nowrap;
+}
+.fab-item:active { background: var(--blue-light); }
 .meal-add-btn {
   padding: 9px 18px;
   border-radius: 10px;
@@ -1672,10 +1741,6 @@ body.home-mode .user-chip-gear { display: none !important; }
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
   </div>
-  <div class="view-tabs">
-    <button class="v-tab active" data-v="schedule">My Schedule</button>
-    <button class="v-tab"        data-v="booths">Booths</button>
-  </div>
   <div class="booths-search hidden">
     <div class="search-wrap">
       <input id="searchInput" type="text" placeholder="Search company or booth" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -1698,8 +1763,28 @@ body.home-mode .user-chip-gear { display: none !important; }
 
 <div class="app-footer">
   Notes save automatically. Use Schedule on any booth to plan a meeting.<br>
-  Export your notes as a CSV from Settings (the ⚙ up top).
+  Export your notes as a CSV from Settings.
 </div>
+
+<!-- Bottom navigation (field app only; the home dashboard is a desktop view) -->
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="bn-btn active" type="button" data-v="schedule">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+    <span>Schedule</span>
+  </button>
+  <button class="bn-btn" type="button" data-v="booths">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/></svg>
+    <span>Booths</span>
+  </button>
+  <button class="bn-btn" type="button" id="bnVideos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M22 8.5l-7 3.5 7 3.5z" fill="currentColor" stroke="none"/></svg>
+    <span>Videos</span>
+  </button>
+  <button class="bn-btn" type="button" id="bnSettings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11A1.6 1.6 0 0 0 4.57 8.8a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
 <div id="toast"></div>
 
 <!-- ── Settings sheet ── -->
@@ -2896,7 +2981,6 @@ function renderHomeDashboard() {
   }
 }
 
-// The Notes view: search + media links + per-brand sections with collapsible
 // The Videos view: one flat list of every video-flagged booth across every
 // Editorial/Digital rep. Reps who flagged the SAME booth share one card (a
 // video only needs making once); its done button covers all of them. Ready-
@@ -3104,11 +3188,13 @@ let activeView   = "schedule";   // "schedule" | "booths" (schedule is the landi
 // Booth rows render lazily: headers always, cards only when a row is opened.
 // (226 cards x ~200 <option>s each was tens of thousands of hidden elements.)
 const rowOpen = new Set();       // row keys the user has expanded (survives re-renders)
+const notesOpen = new Set();     // booth indices with their notes panel expanded
 let _rowGroups = {};             // rk -> current filtered companies, for lazy fill
 let activeFilter = "all";
 let allOpen      = false;
 let schedSearchQ = "";
-let schedAddVisible = false;   // add-meal/off-site buttons show after the search field is tapped
+let fabOpen = false;           // floating add menu (schedule view)
+let schedAddBooth = false;     // the add-a-booth search box, opened from the FAB
 let schedDay     = 1;
 let mealFormOpen   = false;
 let mealFormType   = "lunch";
@@ -3134,6 +3220,9 @@ function buildCard(c, state) {
   // Customer / Non-Cust / Unsure is a sales-team concept. Editorial/Digital
   // reps never classify booths, so their cards skip the picker and the
   // colored accent (any previously stored status stays in storage untouched).
+  const nOpen = notesOpen.has(c.i);
+  const noteText = ((s.post || "") + (s.pre || "")).trim();
+  const notePrev = nOpen ? "" : ((s.post || s.pre || "").trim().replace(/\s+/g, " ").slice(0, 80));
   const salesView = !myNotesAutoShare();
   const statusCls = !salesView ? ""
                   : status === "customer" ? " s-customer"
@@ -3171,7 +3260,12 @@ function buildCard(c, state) {
           ${timeOpts}
         </select>
       </div>
-      <div class="notes-content" id="${npId}">
+      <button class="notes-toggle${noteText ? " has" : ""}" type="button" data-notes="${c.i}">
+        <span class="nt-lbl">${noteText ? "Notes" : "Add notes"}</span>
+        <span class="nt-prev">${esc(notePrev)}</span>
+        <span class="nt-chev${nOpen ? " open" : ""}">▾</span>
+      </button>
+      <div class="notes-content${nOpen ? " open" : ""}" id="${npId}">
         <div class="note-group">
           <div class="note-label pre">Pre-Visit</div>
           <textarea class="nf pre" data-i="${c.i}" data-f="pre" placeholder="Background, talking points, what to ask…">${esc(s.pre||"")}</textarea>
@@ -3489,24 +3583,12 @@ function renderScheduleView(state) {
 
   let html = teamBar + `
 <div class="sched-day-tabs">${dayTabs}</div>
-<div class="sched-search-box">
+${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
-</div>
-<div class="sched-add-tools${(schedAddVisible || mealFormOpen || offFormOpen || schedSearchQ) ? "" : " hide"}">
-<div class="meal-add-row">
-  ${mealFormOpen
-    ? ""
-    : `<button class="meal-add-btn" data-meal-open>+ Add Breakfast / Lunch / Dinner</button>`}
-</div>
+</div>` : ""}
 ${mealFormOpen ? buildMealForm() : ""}
-<div class="meal-add-row">
-  ${offFormOpen
-    ? ""
-    : `<button class="meal-add-btn offsite" data-off-open>+ Add Off-Site Meeting</button>`}
-</div>
-${offFormOpen ? buildOffsiteForm() : ""}
-</div>`;
+${offFormOpen ? buildOffsiteForm() : ""}`;
 
   if (!hasAny) {
     html += `<div class="sched-empty">
@@ -3562,13 +3644,24 @@ ${offFormOpen ? buildOffsiteForm() : ""}
       html += `</div>`;
     });
   }
+  // Everything you can add to a day lives behind one thumb-reachable button
+  // instead of a search box plus two dashed buttons stacked above the agenda.
+  html += `
+<div class="fab-wrap${fabOpen ? " open" : ""}">
+  <div class="fab-menu">
+    <button class="fab-item" type="button" data-fab-booth>Add booth</button>
+    <button class="fab-item" type="button" data-meal-open>Add breakfast / lunch / dinner</button>
+    <button class="fab-item" type="button" data-off-open>Add off-site meeting</button>
+  </div>
+  <button class="fab" type="button" data-fab-toggle aria-label="Add to this day">+</button>
+</div>`;
   el.innerHTML = html;
   // Refresh the company autocomplete options (cheap; only when this view renders).
   const dl = document.getElementById("co-datalist");
   if (dl && !dl.childElementCount) {
     dl.innerHTML = CO.map(c => `<option value="${esc(c.n)}">`).join("");
   }
-  if (schedSearchQ) document.querySelector(".sched-search-input")?.focus();
+  if (schedAddBooth || schedSearchQ) document.querySelector(".sched-search-input")?.focus();
   updateStats(state);
 }
 
@@ -3730,7 +3823,41 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  // ── floating add menu ──
+  if (e.target.closest("[data-fab-toggle]")) {
+    fabOpen = !fabOpen;
+    document.querySelector(".fab-wrap")?.classList.toggle("open", fabOpen);
+    return;
+  }
+  if (e.target.closest("[data-fab-booth]")) {
+    fabOpen = false; schedAddBooth = true;
+    render();
+    document.querySelector(".sched-search-input")?.focus();
+    return;
+  }
+  const ntBtn = e.target.closest("[data-notes]");
+  if (ntBtn) {
+    const i = parseInt(ntBtn.dataset.notes);
+    const opening = !notesOpen.has(i);
+    if (opening) notesOpen.add(i); else notesOpen.delete(i);
+    const panel = document.getElementById("np" + i);
+    panel?.classList.toggle("open", opening);
+    ntBtn.querySelector(".nt-chev")?.classList.toggle("open", opening);
+    // Refresh the collapsed preview from whatever was just typed.
+    const prev = ntBtn.querySelector(".nt-prev");
+    if (prev) {
+      const post = panel?.querySelector(".nf.post")?.value || "";
+      const pre  = panel?.querySelector(".nf.pre")?.value || "";
+      const txt  = (post || pre).trim().replace(/\s+/g, " ").slice(0, 80);
+      prev.textContent = opening ? "" : txt;
+      ntBtn.classList.toggle("has", !!(post || pre).trim());
+      ntBtn.querySelector(".nt-lbl").textContent = (post || pre).trim() ? "Notes" : "Add notes";
+    }
+    if (opening) panel?.querySelector(".nf.pre")?.focus();
+    return;
+  }
   if (e.target.closest("[data-meal-open]")) {
+    fabOpen = false;
     mealFormOpen = true;
     mealEditingId = null;
     mealFormType = "lunch";
@@ -3801,6 +3928,7 @@ document.getElementById("content").addEventListener("click", e => {
   }
 
   if (e.target.closest("[data-off-open]")) {
+    fabOpen = false;
     offFormOpen = true; offEditingId = null;
     offFormTime = OFFSITE_DEFAULT_TIME;
     offFormTitle = ""; offFormCompany = ""; offFormLocation = ""; offFormNotes = "";
@@ -4021,14 +4149,22 @@ document.getElementById("content").addEventListener("change", e => {
   }
 });
 
-document.querySelector(".view-tabs").addEventListener("click", e => {
-  const tab = e.target.closest(".v-tab");
-  if (!tab) return;
-  document.querySelectorAll(".v-tab").forEach(t => t.classList.remove("active"));
-  tab.classList.add("active");
-  activeView = tab.dataset.v;
-  render();
+// Bottom nav: Schedule/Booths switch views, Videos and Settings open sheets
+// (only the two view tabs ever take the active state).
+document.getElementById("bottomNav").addEventListener("click", e => {
+  const tab = e.target.closest("[data-v]");
+  if (tab) {
+    setBottomTab(tab.dataset.v);
+    render();
+    return;
+  }
+  if (e.target.closest("#bnVideos")) { document.getElementById("mediaBtn").click(); return; }
+  if (e.target.closest("#bnSettings")) { document.getElementById("settingsBtn").click(); return; }
 });
+function setBottomTab(v) {
+  activeView = v;
+  document.querySelectorAll("#bottomNav [data-v]").forEach(t => t.classList.toggle("active", t.dataset.v === v));
+}
 
 document.querySelector(".filter-bar").addEventListener("click", e => {
   const pill = e.target.closest(".f-pill");
@@ -4039,26 +4175,11 @@ document.querySelector(".filter-bar").addEventListener("click", e => {
   render();
 });
 
-// The schedule's add-meal/off-site buttons reveal when the rep taps into
-// "Search to add to Day N" and tuck away again on a tap anywhere else.
-// Class toggles (no re-render) so the keyboard and focus are undisturbed.
-document.addEventListener("focusin", e => {
-  if (e.target.classList && e.target.classList.contains("sched-search-input") && !schedAddVisible) {
-    schedAddVisible = true;
-    document.querySelector(".sched-add-tools")?.classList.remove("hide");
-  }
-});
+// Tapping anywhere outside the floating add menu closes it.
 document.addEventListener("pointerdown", e => {
-  const inSearch = e.target.closest(".sched-search-box");
-  const inTools  = e.target.closest(".sched-add-tools");
-  if (inSearch && !schedAddVisible) {   // the tap itself reveals (focusin can lag on touch)
-    schedAddVisible = true;
-    document.querySelector(".sched-add-tools")?.classList.remove("hide");
-    return;
-  }
-  if (!schedAddVisible || mealFormOpen || offFormOpen || inSearch || inTools) return;
-  schedAddVisible = false;
-  document.querySelector(".sched-add-tools")?.classList.add("hide");
+  if (!fabOpen || e.target.closest(".fab-wrap")) return;
+  fabOpen = false;
+  document.querySelector(".fab-wrap")?.classList.remove("open");
 });
 
 let _st;
@@ -4124,7 +4245,11 @@ function updateMediaBtn() {
   const btn = document.getElementById("mediaBtn");
   if (!btn) return;
   const m = (currentUser && !isHome()) ? eventMedia(currentEventCode()) : null;
-  btn.style.display = (m && m.request) ? "" : "none";
+  const show = !!(m && m.request);
+  btn.style.display = show ? "" : "none";
+  // The bottom nav's Videos tab is a shortcut to the same sheet.
+  const nav = document.getElementById("bnVideos");
+  if (nav) nav.style.display = show ? "" : "none";
 }
 function mediaIsMicrosoft(m) { return /sharepoint\.com|office\.com/i.test((m && (m.request || m.folder)) || ""); }
 document.getElementById("mediaBtn").addEventListener("click", () => {
@@ -4571,7 +4696,8 @@ document.getElementById("newShowConfirmBtn").addEventListener("click", async () 
   subscribeTeam();
   subscribeMyVideoStatus();
   updateMediaBtn();
-  activeView = "schedule"; schedDay = 1; allOpen = false; viewedScheduleUid = null;
+  setBottomTab("schedule"); schedDay = 1; allOpen = false; viewedScheduleUid = null;
+  notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   render();
   btn.disabled = false;
   document.getElementById("newShowConfirm").style.display = "none";
@@ -4599,6 +4725,10 @@ function showSignedIn(profile) {
   // Masters' names are tappable — they open the event codes & QR guide.
   authEls.chipName.classList.toggle("chip-admin", isMaster());
   authEls.chipName.title = isMaster() ? "Event codes & install QRs" : "";
+  // The bottom nav is the field app's navigation; home is a desktop dashboard.
+  const nav = document.getElementById("bottomNav");
+  nav.style.display = isHome() ? "none" : "flex";
+  document.body.classList.toggle("has-nav", !isHome());
   authEls.submit.disabled = false;
   authEls.pass.value = "";
 }
@@ -4619,7 +4749,10 @@ function showSignedOut() {
   authEls.chip.style.display = "none";
   document.getElementById("brandSwitchRow").style.display = "none";
   document.getElementById("mediaBtn").style.display = "none";
-  document.body.classList.remove("home-mode");
+  document.getElementById("bottomNav").style.display = "none";
+  document.body.classList.remove("home-mode", "has-nav");
+  notesOpen.clear();
+  fabOpen = false; schedAddBooth = false;
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
   if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
@@ -4662,7 +4795,8 @@ function setupBrandSwitcher() {
 document.getElementById("brandSwitch").addEventListener("change", e => {
   masterEventOverride = e.target.value;
   viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
-  activeView = "schedule";
+  setBottomTab("schedule");
+  notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   applyEvent(masterEventOverride);
   subscribeTeam();              // listen to the new brand's team
   subscribeMyVideoStatus();
