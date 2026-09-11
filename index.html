@@ -4862,43 +4862,65 @@ document.getElementById("guideSheet").addEventListener("click", e => {
 });
 
 // Admin cleanup (master only)
+// One row per PERSON per show, not per document. A rep has a schedules doc
+// and a notes doc (masters get a pair per brand), so listing raw documents
+// made the same name appear several times. Deleting a row removes everything
+// that person has for that show in one go.
 async function renderCleanupList() {
   const el = document.getElementById("cleanupList");
   el.innerHTML = `<div class="cleanup-empty">Loading…</div>`;
-  const rows = [];
-  try {
-    const sc = await fbDb.collection("schedules").get();
-    sc.forEach(d => rows.push({ coll: "schedules", id: d.id, name: d.data().name || "(no name)", event: d.data().eventCode || "", items: (d.data().items||[]).length }));
-  } catch (e) {}
-  try {
-    const nt = await fbDb.collection("notes").get();
-    nt.forEach(d => rows.push({ coll: "notes", id: d.id, name: d.data().name || "(no name)", event: d.data().eventCode || "", items: (d.data().items||[]).length }));
-  } catch (e) {}
-  try {
-    const vd = await fbDb.collection("videoStatus").get();
-    const vgroups = {};
-    vd.forEach(d => { const ev = (d.data() || {}).eventCode || "(unknown)"; (vgroups[ev] = vgroups[ev] || []).push(d.id); });
-    Object.entries(vgroups).forEach(([ev, ids]) =>
-      rows.push({ coll: "videoStatus", id: ids.join(","), name: "Video pipeline records", event: ev, items: ids.length }));
-  } catch (e) {}
-  try {
-    // Home-team flags, grouped per event into one deletable row.
-    const fl = await fbDb.collection("homeFlags").get();
-    const groups = {};
-    fl.forEach(d => { const ev = (d.data() || {}).eventCode || "(unknown)"; (groups[ev] = groups[ev] || []).push(d.id); });
-    Object.entries(groups).forEach(([ev, ids]) =>
-      rows.push({ coll: "homeFlags", id: ids.join(","), name: "Home team flags", event: ev, items: ids.length }));
-  } catch (e) {}
-  if (!rows.length) { el.innerHTML = `<div class="cleanup-empty">Nothing here.</div>`; return; }
-  rows.sort((a,b) => (a.event||"").localeCompare(b.event||"") || a.name.localeCompare(b.name));
-  el.innerHTML = rows.map(r =>
-    `<div class="cleanup-row">
+  const people = {};   // "<uid>|<event>" -> { name, event, refs[], sched, notes }
+  const add = (coll, d) => {
+    const x = d.data() || {};
+    const uid = String(d.id).split("__")[0];
+    const event = x.eventCode || "(no show)";
+    const k = uid + "|" + event;
+    const p = people[k] = people[k] || { name: x.name || "(no name)", event, uid, refs: [], sched: 0, notes: 0 };
+    if (x.name) p.name = x.name;
+    p.refs.push(coll + "/" + d.id);
+    if (coll === "schedules") p.sched += (x.items || []).length;
+    else p.notes += (x.items || []).length;
+  };
+  try { (await fbDb.collection("schedules").get()).forEach(d => add("schedules", d)); } catch (e) {}
+  try { (await fbDb.collection("notes").get()).forEach(d => add("notes", d)); } catch (e) {}
+  // Shared records aren't owned by one person, so they stay grouped per show.
+  const shared = [];
+  const groupBy = async (coll, label) => {
+    try {
+      const snap = await fbDb.collection(coll).get();
+      const g = {};
+      snap.forEach(d => { const ev = (d.data() || {}).eventCode || "(unknown)"; (g[ev] = g[ev] || []).push(coll + "/" + d.id); });
+      Object.entries(g).forEach(([ev, refs]) => shared.push({ name: label, event: ev, refs }));
+    } catch (e) {}
+  };
+  await groupBy("videoStatus", "Video done records");
+  await groupBy("homeFlags", "Home team flags");
+
+  const list = Object.values(people)
+    .sort((a,b) => a.event.localeCompare(b.event) || a.name.localeCompare(b.name));
+  if (!list.length && !shared.length) { el.innerHTML = `<div class="cleanup-empty">Nothing here.</div>`; return; }
+  const row = (name, meta, refs) => `<div class="cleanup-row">
       <div class="cleanup-row-main">
-        <div class="cleanup-row-name">${esc(r.name)}</div>
-        <div class="cleanup-row-meta">${r.coll} · ${esc(r.event||"—")} · ${r.items} item${r.items===1?"":"s"}</div>
+        <div class="cleanup-row-name">${esc(name)}</div>
+        <div class="cleanup-row-meta">${esc(meta)}</div>
       </div>
-      <button class="cleanup-del" data-cl-coll="${r.coll}" data-cl-id="${esc(r.id)}">Delete</button>
-    </div>`).join("");
+      <button class="cleanup-del" data-cl-refs="${esc(refs.join(","))}">Delete</button>
+    </div>`;
+  let h = "";
+  if (list.length) {
+    h += `<div class="cleanup-head">People</div>`;
+    h += list.map(p => {
+      const bits = [p.event];
+      bits.push(p.sched + " scheduled");
+      bits.push(p.notes + " booth note" + (p.notes === 1 ? "" : "s"));
+      return row(p.name, bits.join(" · "), p.refs);
+    }).join("");
+  }
+  if (shared.length) {
+    h += `<div class="cleanup-head">Shared records</div>`;
+    h += shared.map(s => row(s.name, s.event + " · " + s.refs.length + " record" + (s.refs.length === 1 ? "" : "s"), s.refs)).join("");
+  }
+  el.innerHTML = h;
 }
 document.getElementById("cleanupBtn").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
@@ -4909,17 +4931,21 @@ document.getElementById("cleanupClose").addEventListener("click", () => {
   document.getElementById("cleanupSheet").style.display = "none";
 });
 document.getElementById("cleanupList").addEventListener("click", async e => {
-  const btn = e.target.closest("[data-cl-id]");
+  const btn = e.target.closest("[data-cl-refs]");
   if (!btn) return;
-  const coll = btn.dataset.clColl, id = btn.dataset.clId;
-  const ids = id.split(",").filter(Boolean);
-  const what = ids.length > 1 ? ids.length + " " + coll + " records" : "this " + coll.slice(0,-1) + " record";
-  if (!confirm("Delete " + what + "? This can't be undone.")) return;
+  // Each row carries every document it covers as "collection/docId".
+  const refs = btn.dataset.clRefs.split(",").filter(Boolean);
+  const who = btn.closest(".cleanup-row").querySelector(".cleanup-row-name").textContent;
+  const meta = btn.closest(".cleanup-row").querySelector(".cleanup-row-meta").textContent;
+  if (!confirm("Delete everything for " + who + "?\n\n" + meta + "\n\nThis can't be undone.")) return;
   btn.disabled = true; btn.textContent = "…";
   try {
-    for (let i = 0; i < ids.length; i += 400) {
+    for (let i = 0; i < refs.length; i += 400) {
       const batch = fbDb.batch();
-      ids.slice(i, i + 400).forEach(x => batch.delete(fbDb.collection(coll).doc(x)));
+      refs.slice(i, i + 400).forEach(ref => {
+        const cut = ref.indexOf("/");
+        batch.delete(fbDb.collection(ref.slice(0, cut)).doc(ref.slice(cut + 1)));
+      });
       await batch.commit();
     }
     toast("Deleted");
