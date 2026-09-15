@@ -3227,6 +3227,301 @@ const LM_BOOTHS = [
   {n:"Zhejiang Xinhao Rehabilitation Equipment Co., LTD.", b:"42143"},
   {n:"Zhong Xiang Rubber Products Co.,Ltd", b:"42228"},
 ];
+// PestWorld 2026 exhibitors (PMP's show), from the official Map Your Show
+// directory 2026-09-15: 290 companies, hall sold out. CB-## booths are the
+// Compelling Booths corridor; they group under Other locations.
+const PMP_BOOTHS = [
+  {n:"A.R.M Solutions", b:"1318"},
+  {n:"AAC Distributing, LLC", b:"335"},
+  {n:"Adrian Steel", b:"101"},
+  {n:"Affiniti - NPMA Business Mastercard", b:"115"},
+  {n:"AGS Fleet", b:"1525"},
+  {n:"Airofog USA", b:"808"},
+  {n:"All Talentz LLC", b:"514"},
+  {n:"Alliance Fleet", b:"122"},
+  {n:"Amcan Bugstop Inc", b:"1838"},
+  {n:"AMVAC Chemical Corporation", b:"530"},
+  {n:"Animal Traps and Supplies", b:"1840"},
+  {n:"AP&G Co., Inc.", b:"231"},
+  {n:"Applause Technology Inc.", b:"1300 / 1519"},
+  {n:"Aprilaire", b:"623"},
+  {n:"Apruv Inc", b:"325"},
+  {n:"ArcSite", b:"118"},
+  {n:"AROD", b:"731"},
+  {n:"AskNicely", b:"1715"},
+  {n:"ATC Thermal", b:"1742"},
+  {n:"ATMOX", b:"210"},
+  {n:"Atrix", b:"1719"},
+  {n:"Atticus, LLC", b:"1320"},
+  {n:"Avian Enterprises, LLC", b:"1032"},
+  {n:"Avitrol Corporation", b:"1018"},
+  {n:"Avoca", b:"431"},
+  {n:"AXN Growth Partners LLC", b:"1338"},
+  {n:"Azuga", b:"1011"},
+  {n:"B&G Equipment Company / Pelsis, LLC", b:"819"},
+  {n:"Ballantyne Gear Inc", b:"726"},
+  {n:"BASF", b:"1019"},
+  {n:"Baton Leads, Inc", b:"1036"},
+  {n:"Bed Bug Heat Doctor/Prevsol", b:"707"},
+  {n:"Bell Labs, Inc.", b:"1419"},
+  {n:"Bentz Jaz USA", b:"1031"},
+  {n:"BILL", b:"1043"},
+  {n:"Bin Hero, LLC", b:"942"},
+  {n:"Birchmeier/ITB Co., Inc.", b:"507"},
+  {n:"Bird Barrier America, Inc.", b:"1113"},
+  {n:"Bird-X Inc.", b:"408"},
+  {n:"Blevins, Inc.", b:"1134"},
+  {n:"Briostack Software", b:"519"},
+  {n:"Bug Bux", b:"313"},
+  {n:"BURRTEC CO LTD", b:"110"},
+  {n:"BWI Companies, Inc.", b:"1430"},
+  {n:"Cardinal Professional Products", b:"919"},
+  {n:"Catapult tech", b:"534"},
+  {n:"Catrak Technologies", b:"1737"},
+  {n:"Central Life Sciences/Zoecon", b:"607"},
+  {n:"Cetane Associates", b:"1607"},
+  {n:"CFV Innovations", b:"1500"},
+  {n:"Cinch", b:"619"},
+  {n:"Circle K Pro", b:"536"},
+  {n:"Clarke", b:"1531"},
+  {n:"Cleanrth Products LLC", b:"1636"},
+  {n:"Click to Buy Services", b:"1700"},
+  {n:"Clicki Referrals", b:"132"},
+  {n:"Coalmarch Marketing", b:"713"},
+  {n:"Coast", b:"921"},
+  {n:"Comercial Química Massó S.A.", b:"236"},
+  {n:"Container Manufacturing, Inc.", b:"1106"},
+  {n:"Continental Tire the Americas, LLC", b:"1826"},
+  {n:"Control Equipment Pty Ltd", b:"1142"},
+  {n:"Control Solutions, Inc.", b:"1431"},
+  {n:"Convex, A ServiceTitan Company", b:"1221"},
+  {n:"Corteva Agriscience - Indianapolis, IN", b:"1407"},
+  {n:"Coverbait LLC", b:"1041"},
+  {n:"Crawl Space Door Systems, Inc", b:"1112"},
+  {n:"Crawlspace Depot", b:"412"},
+  {n:"CRE8TEC PTE LTD", b:"1725"},
+  {n:"CSG Forte", b:"1341"},
+  {n:"CTP Solutions", b:"1143"},
+  {n:"Dagmar Marketing", b:"926"},
+  {n:"Dash", b:"1734"},
+  {n:"DATAMAN GROUP DIRECT MARKETING", b:"842"},
+  {n:"Denaro AI", b:"134"},
+  {n:"Design Collective by Cintas", b:"1138"},
+  {n:"DETOUR®", b:"1526"},
+  {n:"Dijital Karma Inc.", b:"1126"},
+  {n:"Douglas Products & Packaging", b:"1224"},
+  {n:"Draeger", b:"102"},
+  {n:"DREAM Field Service Software", b:"501 / 900"},
+  {n:"Driven", b:"1337"},
+  {n:"Drumroll", b:"738"},
+  {n:"Duong Industrial Co., Ltd.", b:"311"},
+  {n:"EarthCare Products", b:"1219"},
+  {n:"EcoVenger", b:"1812"},
+  {n:"Ekommerce", b:"225"},
+  {n:"Ensystex, Inc.", b:"1107"},
+  {n:"Entomological Society of America", b:"931"},
+  {n:"Enviro Protection Industries Company, Inc.", b:"939"},
+  {n:"ENVU", b:"807"},
+  {n:"EnVue Telematics", b:"1633"},
+  {n:"Enzy", b:"709"},
+  {n:"Eurofins Agroscience Services", b:"1201"},
+  {n:"Evolve", b:"243"},
+  {n:"EZ Smart Co", b:"1102"},
+  {n:"FieldRoutes, a ServiceTitan company", b:"1319"},
+  {n:"Fieldwork Software, LLC", b:"1301"},
+  {n:"Flamesh Co., Limited", b:"1731"},
+  {n:"Fleet Hoster", b:"1342"},
+  {n:"Fleetio", b:"137"},
+  {n:"Flock Free Bird Control Systems & Services", b:"1206"},
+  {n:"FlowZone (WESSOL, LLC)", b:"418"},
+  {n:"Focus Virtual Assistants", b:"1712"},
+  {n:"FORSHAW Inc", b:"913"},
+  {n:"Foshan GreenYellow Electric Technology Co., Ltd.", b:"641"},
+  {n:"Fral-USA Inc", b:"1709"},
+  {n:"FRAXN", b:"1711"},
+  {n:"Garage Door Jamb Wraps", b:"107"},
+  {n:"Gardner Products", b:"1225"},
+  {n:"Gilbert Professional Insect Light Traps", b:"1009"},
+  {n:"GlassHouse", b:"133"},
+  {n:"GorillaDesk Software", b:"714"},
+  {n:"Green Drain INC", b:"1608"},
+  {n:"Green tech heat solutions", b:"100"},
+  {n:"Grit PPO", b:"1331"},
+  {n:"Gulf States Toyota - Upfitting", b:"125"},
+  {n:"GutterGate Inc.", b:"1834"},
+  {n:"GUTTERLOCK ENTERPRISES, LLC", b:"112"},
+  {n:"Hatch", b:"136"},
+  {n:"HEBEI CROWN WEALTH METAL PRODUCTS CO., LTD", b:"430"},
+  {n:"Heritage Landscape Supply Group", b:"234"},
+  {n:"Hibu", b:"109"},
+  {n:"Homswell (Thailand) Co. Ltd", b:"1114"},
+  {n:"Hugh Kendoit Emporium", b:"1800"},
+  {n:"HY-C Company", b:"318"},
+  {n:"Hyphen X Solutions", b:"1539"},
+  {n:"IdealTraits Inc.", b:"835"},
+  {n:"IGEBA Geraetebau GmbH", b:"1008"},
+  {n:"Incline Marketing", b:"1343"},
+  {n:"Independent Truck Upfitters", b:"1721"},
+  {n:"INDUSTRIAS LAFORD S.A. DE C.V.", b:"1802"},
+  {n:"Infinity Business Services Pvt Ltd", b:"324"},
+  {n:"Innovative Pest Control Products", b:"1020"},
+  {n:"Insects Limited, Inc.", b:"1130"},
+  {n:"InsulPC", b:"130"},
+  {n:"IntelliShift", b:"537"},
+  {n:"Interval AI", b:"1033"},
+  {n:"INZECTO", b:"1109"},
+  {n:"IPP Brands", b:"1302"},
+  {n:"J.F. Oakes Sales & Marketing, LLC", b:"1314"},
+  {n:"J.T. Eaton Co., Inc.", b:"1101"},
+  {n:"Jacto Inc.", b:"601"},
+  {n:"KickCharge Creative", b:"1643"},
+  {n:"Kness MFG. Co., Inc.", b:"1401"},
+  {n:"KProSource", b:"406"},
+  {n:"Kukbo Science Co.", b:"1137"},
+  {n:"LabelSDS.com", b:"806"},
+  {n:"LaunchPad", b:"902"},
+  {n:"LettrLabs", b:"435"},
+  {n:"Linxup", b:"502"},
+  {n:"Lion CX Management", b:"1243"},
+  {n:"Liphatech, Inc.", b:"419"},
+  {n:"Lizard Marketing", b:"801"},
+  {n:"Maruyama U.S., Inc.", b:"643"},
+  {n:"MasterClean Hygiene Solution Limited", b:"1442"},
+  {n:"Mattress Safe, Inc", b:"1013"},
+  {n:"Messinas", b:"837"},
+  {n:"MGK", b:"1231"},
+  {n:"Mosqitter Inc", b:"322"},
+  {n:"MOSQUITO AND COOLING SYSTEMS LLC (MCS Products, LLC)", b:"1739"},
+  {n:"Motive", b:"221"},
+  {n:"Mr Remodel", b:"212"},
+  {n:"Mylva USA Corp", b:"128"},
+  {n:"Natural Environmental Solutions, Inc", b:"1642"},
+  {n:"Nature-Cide", b:"1443"},
+  {n:"Neogen", b:"1313"},
+  {n:"Netic", b:"113"},
+  {n:"Netradyne", b:"936"},
+  {n:"New Mountain Innovations, Inc.", b:"230"},
+  {n:"Nifty Marketing", b:"636"},
+  {n:"Nissan Commercial Fleet", b:"207"},
+  {n:"Nisus Corporation", b:"407"},
+  {n:"Nixalite of America, Inc.", b:"1006"},
+  {n:"No-Pest Vent", b:"1735"},
+  {n:"NPD Products, Ltd.", b:"1606"},
+  {n:"NWCOA", b:"CB-19"},
+  {n:"OLDHAM CHEMICALS", b:"1007 / 531"},
+  {n:"One Step GPS", b:"1637"},
+  {n:"OpSync", b:"1241"},
+  {n:"Overit", b:"1208"},
+  {n:"Paraclipse Systems, LLC", b:"1601"},
+  {n:"PCO Bookkeepers & M&A Specialists", b:"925"},
+  {n:"PCOpro Insurance Program from Brownyard Group", b:"1611"},
+  {n:"PelGar", b:"1307"},
+  {n:"Pest AI", b:"1223"},
+  {n:"Pest Control Business Coach", b:"741"},
+  {n:"Pest Control Insulation", b:"631"},
+  {n:"Pest Control Technology", b:"830 / 831"},
+  {n:"Pest Management Professional Magazine", b:"1610"},
+  {n:"Pest Pro University", b:"1001"},
+  {n:"Pest Sales and Office Solutions (Pest SOS)", b:"300"},
+  {n:"Pestnet", b:"1108"},
+  {n:"PestPac by WorkWave", b:"719"},
+  {n:"PestSure", b:"1125"},
+  {n:"PestWest", b:"907"},
+  {n:"Pesty Marketing", b:"301"},
+  {n:"Pi Chi Omega", b:"CB-18"},
+  {n:"Plaibook", b:"941"},
+  {n:"Plante & Moran, PLLC", b:"1832"},
+  {n:"Plastdiversity Lda", b:"812"},
+  {n:"Polaris Pest Group", b:"1242"},
+  {n:"Polo Epo Enterprise", b:"338"},
+  {n:"Polti USA, Inc. - Cimex Eradicator", b:"1100"},
+  {n:"Precision Fleet Gear", b:"341"},
+  {n:"Pro-Pell", b:"833"},
+  {n:"Program Brokerage Corporation", b:"701"},
+  {n:"Purdue University Online", b:"CB-14"},
+  {n:"Purecare", b:"114"},
+  {n:"Pyranha, Inc.", b:"1034"},
+  {n:"Quinn", b:"131"},
+  {n:"Real Fleet Solutions, LLC", b:"1701"},
+  {n:"RealTruck, Inc.", b:"1619"},
+  {n:"Remote Team Solutions", b:"1324"},
+  {n:"RepCard", b:"307"},
+  {n:"RevHawk", b:"1326"},
+  {n:"RLI", b:"743"},
+  {n:"RoadFlex Fleet Cards", b:"1631"},
+  {n:"Rockwell Labs Ltd", b:"718"},
+  {n:"RodeXit", b:"843"},
+  {n:"Rook Pest", b:"1136"},
+  {n:"Route Guardian LLC", b:"1502"},
+  {n:"Route Hero", b:"938"},
+  {n:"RUPIPEST", b:"930"},
+  {n:"Safe Haven Avian Group and Wildlife Removal", b:"1236"},
+  {n:"Sales Ask", b:"1702"},
+  {n:"SalesDraft", b:"1706"},
+  {n:"Sameday.AI", b:"1110"},
+  {n:"Scorpion", b:"737"},
+  {n:"Seaira Global", b:"1730"},
+  {n:"SEEMESIGN", b:"1537"},
+  {n:"Sellify AI", b:"1717 / 933"},
+  {n:"Semco Co. Ltd.", b:"1509"},
+  {n:"SenesTech, Inc.", b:"1132"},
+  {n:"Serve AI", b:"1635"},
+  {n:"Sewer Assassin", b:"314"},
+  {n:"Sharda USA", b:"1738"},
+  {n:"SHENZHEN LONGRAY TECHNOLOGY CO., LTD.", b:"500"},
+  {n:"Shenzhen Visson Technology Co., Ltd.", b:"302"},
+  {n:"SimplyHR Consulting", b:"138"},
+  {n:"SiteOne Landscape Supply", b:"1816"},
+  {n:"Skyhawk Trapmate", b:"224"},
+  {n:"Smarter Launch", b:"1513"},
+  {n:"SO Good", b:"702"},
+  {n:"Solea AI", b:"104"},
+  {n:"Solo Incorporated", b:"208"},
+  {n:"Spectrum 3d", b:"1638"},
+  {n:"SPM Global", b:"1538"},
+  {n:"Stocker", b:"214"},
+  {n:"Suzhou Crosstec Co.,Ltd", b:"116"},
+  {n:"Syngenta", b:"1207"},
+  {n:"Tactacam", b:"543"},
+  {n:"Target Specialty Products", b:"1501"},
+  {n:"Technicide", b:"1030"},
+  {n:"Termatrac Pty Ltd", b:"1406"},
+  {n:"Terrier Technologies", b:"638"},
+  {n:"Texas A&M AgriLife Research & Extension, Department of Entomology", b:"CB-20"},
+  {n:"The Bancorp Bank", b:"1736"},
+  {n:"The Contractors Edge", b:"111"},
+  {n:"The Mahoney Group Insurance", b:"1810"},
+  {n:"Thermal Flow Technologies, LLC", b:"401"},
+  {n:"Tidal Professional Products", b:"443"},
+  {n:"Tomahawk Live Trap, LLC", b:"625"},
+  {n:"TrapSensor", b:"135"},
+  {n:"Tratper", b:"223"},
+  {n:"Trece, Inc.", b:"606"},
+  {n:"TRUCE Software", b:"1728"},
+  {n:"Truly Nolen of America, Inc.", b:"1614"},
+  {n:"Truwear", b:"119"},
+  {n:"UNICHEM", b:"1035"},
+  {n:"UNIE", b:"140"},
+  {n:"US Fleet Tracking", b:"937"},
+  {n:"Vectorfog", b:"232"},
+  {n:"Veseris", b:"901"},
+  {n:"Viking Product Supply LLC", b:"1707"},
+  {n:"VM Products Inc", b:"1131"},
+  {n:"Voice For Pest", b:"1119 / 1507 / 331"},
+  {n:"Vortex Duster", b:"219"},
+  {n:"Web-Cote Industries", b:"539"},
+  {n:"Wildlife Control Supplies", b:"319"},
+  {n:"Wisetack", b:"1732"},
+  {n:"WOHLER USA INC.", b:"309"},
+  {n:"WolfPack Advising", b:"326"},
+  {n:"Woodstream", b:"513"},
+  {n:"WP Supply", b:"932"},
+  {n:"x-rai labs", b:"1543"},
+  {n:"Xcluder", b:"1212"},
+  {n:"Yard Gard Deterrents", b:"201"},
+  {n:"Your Crawlspace, Inc.", b:"1806"},
+  {n:"Zhongshan Glee Electricals Manufacturing Co.,Ltd", b:"206"},
+];
 
 // ── BRANDS + EVENTS (multi-brand theming) ───────────────────────────────
 // One app, many NCM brands. Each event code resolves to a brand (palette +
@@ -3268,6 +3563,7 @@ function isPastShow(code) { return !!PAST_SHOWS[code]; }
 // (Ask for these whenever a booth list is loaded for a show.)
 const EVENTS = {
   "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"] },
+  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-20","2026-10-21","2026-10-22","2026-10-23"] },
   // Retired (see PAST_SHOWS), but the booth list STAYS LOADED: it is what maps
   // saved booth data back to company names, so CSV exports and existing notes
   // keep working. The Booths tab hides itself for past shows instead.
@@ -3281,6 +3577,15 @@ function showDayToday(code) {
   const today = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
   const i = ds.indexOf(today);
   return i === -1 ? null : i + 1;
+}
+// How many days a show runs: driven by its dates (Equip = 3 floor days,
+// PestWorld = 4 exhibit-hall days); 3 when a show has no dates loaded yet.
+function showDayCount(code) {
+  const ds = (resolveEvent(code) || {}).dates;
+  return (Array.isArray(ds) && ds.length >= 2) ? Math.min(ds.length, 6) : 3;
+}
+function showDays(code) {
+  return Array.from({ length: showDayCount(code) }, (_, i) => i + 1);
 }
 // The show that matters most right now: one that's live today wins outright,
 // otherwise the next one to start. Wrapped shows and shows without dates
@@ -4278,9 +4583,11 @@ function buildHomeSchedView() {
   h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
     `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(s.eventCode||"")}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
   const items = (Array.isArray(sel.items) ? sel.items : []).filter(vOnly);
-  const dc = [0,0,0,0];
-  items.forEach(it => { if (it.day>=1 && it.day<=3) dc[it.day]++; });
-  h += `<div class="sched-day-tabs">` + [1,2,3].map(d => `
+  const nDays = showDayCount(sel.eventCode);
+  const dc = Array(nDays + 1).fill(0);
+  items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
+  if (homeSchedDay > nDays) homeSchedDay = 1;
+  h += `<div class="sched-day-tabs">` + showDays(sel.eventCode).map(d => `
     <button class="sched-day-tab${homeSchedDay===d?" active":""}" data-hs-day="${d}">
       <span class="stdt-day">Day ${d}</span>
       <span class="stdt-count">${dc[d]} booked</span>
@@ -4375,7 +4682,7 @@ function buildCard(c, state) {
   const schedTag = scheduled
     ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}</span>`
     : "";
-  const timeOpts = [1,2,3].map(d =>
+  const timeOpts = showDays(currentEventCode()).map(d =>
     `<optgroup label="Day ${d}">${TIME_SLOTS.map(t =>
       `<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${t}</option>`
     ).join("")}</optgroup>`
@@ -4679,9 +4986,11 @@ function renderScheduleView(state) {
   if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
     const tm = teamSchedules[viewedScheduleUid];
     const items = Array.isArray(tm.items) ? tm.items : [];
-    const dc = [0,0,0,0];
-    items.forEach(it => { if (it.day>=1 && it.day<=3) dc[it.day]++; });
-    const dayTabs = [1,2,3].map(d => `
+    const nDays = showDayCount(currentEventCode());
+    if (schedDay > nDays) schedDay = 1;
+    const dc = Array(nDays + 1).fill(0);
+    items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
+    const dayTabs = showDays(currentEventCode()).map(d => `
       <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
         <span class="stdt-day">Day ${d}</span>
         <span class="stdt-count">${dc[d]} booked</span>
@@ -4715,17 +5024,19 @@ function renderScheduleView(state) {
   const meals = loadMeals();
   const offsite = loadOffsite();
 
-  const dayCount = [0,0,0,0];
+  const nDays = showDayCount(currentEventCode());
+  if (schedDay > nDays) schedDay = 1;
+  const dayCount = Array(nDays + 1).fill(0);
   CO.forEach((c,i) => {
     const sv = state[key(i)]?.scheduled;
     if (!sv) return;
     const d = parseInt(sv.split("|")[0]);
-    if (d>=1 && d<=3) dayCount[d]++;
+    if (d>=1 && d<=nDays) dayCount[d]++;
   });
-  meals.forEach(m => { if (m.day>=1 && m.day<=3) dayCount[m.day]++; });
-  offsite.forEach(o => { if (o.day>=1 && o.day<=3) dayCount[o.day]++; });
+  meals.forEach(m => { if (m.day>=1 && m.day<=nDays) dayCount[m.day]++; });
+  offsite.forEach(o => { if (o.day>=1 && o.day<=nDays) dayCount[o.day]++; });
 
-  const dayTabs = [1,2,3].map(d => `
+  const dayTabs = showDays(currentEventCode()).map(d => `
     <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
       <span class="stdt-day">Day ${d}</span>
       <span class="stdt-count">${dayCount[d]} booked</span>
