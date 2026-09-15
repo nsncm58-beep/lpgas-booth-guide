@@ -97,7 +97,10 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { overscroll-behavior: none; }
+/* `contain` keeps the rubber-band bounce, so reaching the end of a long list
+   eases to a stop instead of hitting a wall, while still blocking scroll
+   chaining and pull-to-refresh. `none` removed the bounce entirely. */
+html, body { overscroll-behavior-y: contain; }
 body {
   font-family: var(--ft);
   background: var(--bg);
@@ -1471,6 +1474,32 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .user-chip-name.chip-admin:active { opacity: 0.75;
 }
+/* ── INSTALL PROMPT (phones only) ── */
+.install-gate {
+  position: fixed; inset: 0; z-index: 3000;
+  background: linear-gradient(160deg, var(--blue-deeper, #0b2d45), var(--blue));
+  color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 26px calc(32px + env(safe-area-inset-bottom, 0));
+  text-align: center; overflow-y: auto;
+}
+.install-logo { width: 148px; max-width: 60%; margin-bottom: 20px; filter: brightness(0) invert(1); }
+.install-title { font-family: var(--fd); font-weight: 800; font-size: 1.32rem; margin-bottom: 8px; }
+.install-sub { font-size: 0.86rem; line-height: 1.55; opacity: 0.88; max-width: 340px; margin-bottom: 22px; }
+.install-steps {
+  background: rgba(255,255,255,0.13); border-radius: 14px; padding: 18px 20px;
+  max-width: 360px; width: 100%; text-align: left; font-size: 0.9rem; line-height: 1.75;
+}
+.install-steps b { font-weight: 700; }
+.install-steps-head { font-family: var(--fd); font-weight: 700; margin-bottom: 8px; }
+.install-hint { font-size: 0.78rem; opacity: 0.75; margin: 2px 0 4px 16px; }
+.install-share {
+  display: inline-flex; vertical-align: middle; padding: 3px 7px;
+  background: rgba(255,255,255,0.2); border-radius: 5px;
+}
+.install-skip {
+  margin-top: 26px; border: none; background: none; color: #fff; opacity: 0.78;
+  font-family: var(--ft); font-size: 0.84rem; text-decoration: underline; cursor: pointer;
+}
 /* Marks the two master accounts (Nate, Rachel) in the header */
 .admin-tag {
   flex-shrink: 0; padding: 3px 7px; border-radius: 5px;
@@ -1878,7 +1907,6 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="settings-dbx-note">QR codes for installing the app and joining a brand, plus tools for clearing stray records across all brands.</div>
       <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Install &amp; join QR codes</button>
       <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button" style="margin-top:8px;">Clean up team data</button>
-      <button class="settings-dbx-btn admin-btn" id="notifyBtn" type="button" style="margin-top:8px;">Teams notifications</button>
     </div>
     <div class="settings-danger">
       <div class="settings-dbx-title">Account</div>
@@ -1904,23 +1932,6 @@ body.home-mode .user-chip-gear { display: none !important; }
     <p class="settings-dbx-note">Your own schedule is editable. Teammates' are view only.</p>
     <div id="whoList" class="who-list"></div>
     <button class="settings-done" id="whoClose" type="button">Done</button>
-  </div>
-</div>
-
-<!-- ── Admin: Teams notification setup (master only) ── -->
-<div id="notifySheet" class="settings-sheet" style="display:none">
-  <div class="settings-card">
-    <div class="settings-title">Teams notifications</div>
-    <p class="settings-dbx-note">The home team gets a Flow bot DM when a video is ready to produce and when one is marked done. Leave the URL blank to switch notifications off.</p>
-    <div class="settings-dbx-title" style="margin-top:14px;">Power Automate webhook URL</div>
-    <input class="settings-dbx-input" id="notifyUrlInp" type="url" autocomplete="off" spellcheck="false" placeholder="https://…/triggers/manual/paths/invoke?…sig=…">
-    <div class="settings-dbx-note">Reuses the Marketing Projects assignment flow (it accepts an email and message). Stored in Firestore, never in the app's public source.</div>
-    <div class="settings-dbx-title" style="margin-top:14px;">Home team emails</div>
-    <textarea class="settings-dbx-input" id="notifyEmailsInp" rows="6" spellcheck="false" placeholder="Sydney: sherbruck@northcoastmedia.net"></textarea>
-    <div class="settings-dbx-note">One per line, <strong>Name: email</strong>. The name must match the desk picker. Anyone left blank is skipped.</div>
-    <button class="settings-dbx-btn settings-stack-btn primary" id="notifySaveBtn" type="button">Save</button>
-    <button class="settings-dbx-btn settings-stack-btn" id="notifyTestBtn" type="button">Send me a test DM</button>
-    <button class="settings-done" id="notifyClose" type="button">Done</button>
   </div>
 </div>
 
@@ -1953,6 +1964,15 @@ body.home-mode .user-chip-gear { display: none !important; }
     <button class="settings-done" id="mediaUploadOpen" type="button">Open uploader</button>
     <button class="settings-done share-secondary" id="mediaSheetClose" type="button">Close</button>
   </div>
+</div>
+
+<!-- ── Install prompt (phones only; skipped once installed or for home team) ── -->
+<div id="installGate" class="install-gate" style="display:none">
+  <img src="./ncm-logo.png" alt="North Coast Media" class="install-logo" onerror="this.style.display='none'">
+  <div class="install-title">Install the Events Guide</div>
+  <div class="install-sub">Add it to your home screen so it opens in one tap on the show floor, works offline, and keeps you signed in.</div>
+  <div class="install-steps" id="installSteps"></div>
+  <button class="install-skip" id="installSkip" type="button">Continue in browser for now</button>
 </div>
 
 <!-- ── Auth gate (shown until a user is signed in) ── -->
@@ -2778,10 +2798,19 @@ function subscribeNotifyConfig() {
 // a rep tapping Mark Visit on a show floor with flaky wifi.
 // mode:'cors' is required — 'no-cors' downgrades Content-Type to text/plain
 // and the flow trigger rejects it (TriggerInputSchemaMismatch).
+// Duplicate guard: toggling a booth's Visit or Video button off and on again
+// would otherwise re-send the same alert every time. Keyed per event+booth+
+// kind for this session, cleared on sign-out.
+const _notified = new Set();
+function notifyOnce(key) {
+  if (_notified.has(key)) return false;
+  _notified.add(key);
+  return true;
+}
 function notifyHome(text, skipMember) {
   if (!notifyCfg.url) return;
   const targets = Object.entries(notifyCfg.emails)
-    .filter(([name, email]) => email && name !== skipMember);
+    .filter(([name, email]) => email && !(skipMember && sameMember(name, skipMember)));
   targets.forEach(([name, email]) => {
     try {
       fetch(notifyCfg.url, {
@@ -2800,6 +2829,7 @@ const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
 // button at all).
 function notifyVideoReady(i, state) {
   const c = CO[i]; if (!c) return;
+  if (!notifyOnce("ready|" + currentEventCode() + "|" + c.b)) return;
   const s = state[key(i)] || {};
   const who = (currentUser && currentUser.name) || "A rep";
   const when = fmtExact(s.vts || Date.now());
@@ -2813,8 +2843,6 @@ function notifyVideoReady(i, state) {
 // home account across devices; masters can read + clean up.
 let homeFlags = {};            // docId -> { state: "star" | "covered", ... } or { member }
 let _homeFlagsUnsub = null;
-let _homeCopyIndex = {};       // eventCode -> { brandName, reps: [{name, items}] } from the last render
-function flagId(code, uid, boothNum) { return code + "__" + uid + "__" + boothNum; }
 function subscribeHomeFlags() {
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
   homeFlags = {};
@@ -2824,16 +2852,6 @@ function subscribeHomeFlags() {
     snap.forEach(d => { const x = d.data(); if (x) homeFlags[d.id] = x; });
     if (isHome()) renderHomeDashboard();
   }, () => {});
-}
-function toggleHomeFlag(id, state, meta) {
-  if (!fbReady) return;
-  const cur = homeFlags[id] && homeFlags[id].state;
-  const op = (cur === state)
-    ? fbDb.collection("homeFlags").doc(id).delete()
-    : fbDb.collection("homeFlags").doc(id).set({
-        state, eventCode: meta.code, repUid: meta.uid,
-        boothNum: meta.b, boothName: meta.n, ts: Date.now() });
-  op.catch(() => toast("Couldn't save the flag (are the latest Firestore rules published?)"));
 }
 // ── VIDEO PIPELINE ───────────────────────────────────────────────────────
 // Edit/digital booth visits become home-team "Reminders"; the home team
@@ -2885,6 +2903,7 @@ function toggleVideoDone(id, meta) {
 // Home side: announce a finished video to the rest of the desk (the person
 // who marked it is skipped — they already know).
 function notifyVideoDone(code, boothNum, boothName) {
+  if (!notifyOnce("done|" + code + "|" + boothNum)) return;
   const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
   const me = homeMember() || "Someone";
   notifyHome(brand + " show, video finished: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
@@ -2897,7 +2916,7 @@ function notifyVideoDone(code, boothNum, boothName) {
 function toggleWorkingOn(code, boothNum) {
   if (!fbReady) return;
   const id = "work__" + code + "__" + boothNum;
-  const mine = homeFlags[id] && homeFlags[id].member === homeMember();
+  const mine = homeFlags[id] && sameMember(homeFlags[id].member, homeMember());
   const op = mine
     ? fbDb.collection("homeFlags").doc(id).delete()
     : fbDb.collection("homeFlags").doc(id).set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now() });
@@ -3039,9 +3058,20 @@ let homeShowDoneVids = false;     // Videos view: completed section expanded?
 const homeVidNotesOpen = new Set();  // "<code>__<booth#>" videos with editor notes expanded
 // The home login is shared, so each device picks WHO is at it once; the name
 // shows on videos they claim via the "Working on" button.
-const HOME_MEMBERS = ["Test", "Sydney", "Mason", "Will", "Payton", "Edit"];
-function homeMember() { try { return localStorage.getItem("home_member") || ""; } catch (e) { return ""; } }
-const homeOpenReps = new Set();   // "<code>|<uid>" keys of expanded rep sections
+const HOME_MEMBERS = ["Test", "Sydney", "Mason", "Will", "Payton", "Editorial"];
+function homeMember() {
+  try {
+    let m = localStorage.getItem("home_member") || "";
+    // "Edit" was renamed to "Editorial"; migrate the device's saved pick.
+    if (m === "Edit") { m = "Editorial"; localStorage.setItem("home_member", m); }
+    return m;
+  } catch (e) { return ""; }
+}
+// Claims saved before the rename still say "Edit", so compare by the new name.
+function sameMember(a, b) {
+  const norm = x => (x === "Edit" ? "Editorial" : (x || ""));
+  return norm(a) === norm(b);
+}
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
 let homeSchedRep = null;          // selected schedules docId
@@ -3062,35 +3092,6 @@ function subscribeHomeSchedules() {
     snap.forEach(d => { const x = d.data(); if (x && x.uid) homeSchedules[d.id] = x; });
     if (isHome() && homeView === "sched") renderHomeDashboard();
   }, () => {});
-}
-// Copy-for-content: clean plain text of what's on screen, ready to paste
-// into a draft. Respects the current search/filter/hide-covered view.
-function notesToText(items) {
-  let t = "";
-  items.forEach(it => {
-    const tags = [
-      it.video ? "Video" : "",
-      it.visited ? "Visited" : ""
-    ].filter(Boolean).join(", ");
-    t += it.boothName + " (Booth " + it.boothNum + ")" + (tags ? "  [" + tags + "]" : "") + "\n";
-    if (it.pre)  t += "  Pre-visit: "  + it.pre  + "\n";
-    if (it.post) t += "  Post-visit: " + it.post + "\n";
-    t += "\n";
-  });
-  return t;
-}
-function copyToClipboard(t) {
-  const done = () => toast("Copied to clipboard");
-  const fallback = () => {
-    const ta = document.createElement("textarea");
-    ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch (e) { toast("Couldn't copy"); }
-    ta.remove();
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(t).then(done).catch(fallback);
-  } else fallback();
 }
 
 function buildHomeFilter() {
@@ -3182,7 +3183,7 @@ function buildHomeVideosView() {
   const itemHtml = v => {
     // "Working on" claim: whoever at the home desk grabbed this video.
     const wk = homeFlags["work__" + v.code + "__" + v.boothNum];
-    const wkMine = wk && wk.member === homeMember();
+    const wkMine = wk && sameMember(wk.member, homeMember());
     const workBtn = v.done ? "" :
       `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
     // Editors' booth notes, tucked behind a toggle per video.
@@ -3859,7 +3860,7 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
   html += `
 <div class="fab-wrap${fabOpen ? " open" : ""}">
   <div class="fab-menu">
-    <button class="fab-item" type="button" data-fab-booth>Add booth</button>
+    ${isPastShow(currentEventCode()) ? "" : `<button class="fab-item" type="button" data-fab-booth>Add booth</button>`}
     <button class="fab-item" type="button" data-meal-open>Add breakfast / lunch / dinner</button>
     <button class="fab-item" type="button" data-off-open>Add off-site meeting</button>
   </div>
@@ -3879,14 +3880,6 @@ function updateStats(state) {
   const total = CO.length;
   const vis = Object.values(state).filter(s => s?.visited).length;
   const pct = total > 0 ? (vis/total)*100 : 0;
-  const hv  = document.getElementById("hdrVisited");
-  const text = `${vis} / ${total}`;
-  if (hv && hv.textContent !== text) {
-    hv.textContent = text;
-    hv.classList.remove("pop");
-    void hv.offsetWidth;
-    hv.classList.add("pop");
-  }
   const bar = document.getElementById("progBar");
   if (bar) bar.style.width = pct + "%";
 }
@@ -3904,33 +3897,6 @@ let _dt = {};
 
 document.getElementById("content").addEventListener("click", e => {
   const state = load();
-
-  const cpBrand = e.target.closest("[data-copy-brand]");
-  if (cpBrand) {
-    const code = cpBrand.dataset.copyBrand;
-    const ix = _homeCopyIndex[code];
-    if (ix) {
-      let t = ix.brandName + " (" + code + ") shared field notes\n\n";
-      ix.reps.forEach(rp => { t += "===== " + rp.name + " =====\n" + notesToText(rp.items); });
-      copyToClipboard(t);
-    }
-    return;
-  }
-  const cpRep = e.target.closest("[data-copy-rep]");
-  if (cpRep) {
-    const parts = cpRep.dataset.copyRep.split("|");
-    const rp = (_homeCopyIndex[parts[0]] || { reps: [] }).reps[parseInt(parts[1])];
-    if (rp) copyToClipboard(rp.name + " (" + parts[0] + ") shared field notes\n\n" + notesToText(rp.items));
-    return;
-  }
-  const flagBtn = e.target.closest("[data-flag]");
-  if (flagBtn) {
-    toggleHomeFlag(flagBtn.dataset.flag, flagBtn.dataset.flagState, {
-      code: flagBtn.dataset.flagCode, uid: flagBtn.dataset.flagUid,
-      b: flagBtn.dataset.flagB, n: flagBtn.dataset.flagN
-    });
-    return;
-  }
 
   const vd = e.target.closest("[data-vd]");
   if (vd) {
@@ -3958,13 +3924,6 @@ document.getElementById("content").addEventListener("click", e => {
 
   const hv = e.target.closest("[data-home-view]");
   if (hv) { homeView = hv.dataset.homeView; renderHomeDashboard(); return; }
-  const rt = e.target.closest("[data-rep-toggle]");
-  if (rt) {
-    const k = rt.dataset.repToggle;
-    if (homeOpenReps.has(k)) homeOpenReps.delete(k); else homeOpenReps.add(k);
-    renderHomeDashboard();
-    return;
-  }
   const hsr = e.target.closest("[data-hs-rep]");
   if (hsr) { homeSchedRep = hsr.dataset.hsRep; renderHomeDashboard(); return; }
   const hsd = e.target.closest("[data-hs-day]");
@@ -4721,53 +4680,6 @@ document.getElementById("oldDataList").addEventListener("click", e => {
   if (a) downloadCsv(a.csv, csvFileName(a.code));
 });
 
-// Admin: Teams notification setup (master only). Writes config/notifications
-// so the flow URL can be rotated or cleared without a redeploy.
-document.getElementById("notifyBtn").addEventListener("click", async () => {
-  document.getElementById("settingsSheet").style.display = "none";
-  let cfg = { webhookUrl: "", emails: {} };
-  try {
-    const d = await fbDb.collection("config").doc("notifications").get();
-    if (d.exists) cfg = { webhookUrl: d.data().webhookUrl || "", emails: d.data().emails || {} };
-  } catch (e) { toast("Couldn't load settings (are the latest rules published?)"); }
-  document.getElementById("notifyUrlInp").value = cfg.webhookUrl;
-  // Prefill a line per desk member so the format is obvious and nobody is missed.
-  document.getElementById("notifyEmailsInp").value = HOME_MEMBERS
-    .map(m => m + ": " + (cfg.emails[m] || "")).join("\n");
-  document.getElementById("notifySheet").style.display = "flex";
-});
-document.getElementById("notifySaveBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("notifySaveBtn");
-  const url = document.getElementById("notifyUrlInp").value.trim();
-  if (url && !/^https:\/\//i.test(url)) { toast("That URL should start with https://"); return; }
-  const emails = {};
-  document.getElementById("notifyEmailsInp").value.split("\n").forEach(line => {
-    const m = line.match(/^\s*([^:]+?)\s*:\s*(\S+@\S+\.\S+)\s*$/);
-    if (m) emails[m[1]] = m[2].toLowerCase();
-  });
-  btn.disabled = true; btn.textContent = "Saving…";
-  try {
-    await fbDb.collection("config").doc("notifications").set({ webhookUrl: url, emails, updatedAt: Date.now() });
-    toast(url ? "Saved. " + Object.keys(emails).length + " recipient(s)" : "Saved. Notifications are off");
-    document.getElementById("notifySheet").style.display = "none";
-  } catch (e) { toast("Couldn't save (are the latest rules published?)"); }
-  btn.disabled = false; btn.textContent = "Save";
-});
-document.getElementById("notifyTestBtn").addEventListener("click", () => {
-  const url = document.getElementById("notifyUrlInp").value.trim();
-  const emails = {};
-  document.getElementById("notifyEmailsInp").value.split("\n").forEach(line => {
-    const m = line.match(/^\s*([^:]+?)\s*:\s*(\S+@\S+\.\S+)\s*$/);
-    if (m) emails[m[1]] = m[2].toLowerCase();
-  });
-  const mine = (currentUser && currentUser.email || "").toLowerCase();
-  const to = Object.values(emails).find(e => e === mine) || Object.values(emails)[0];
-  if (!url || !to) { toast("Add the URL and at least one email first"); return; }
-  fetch(url, { method: "POST", mode: "cors", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: to, text: 'NCM Events Guide test notification. If you can read this, show alerts are working. <a href="' + APP_LINK + '">Open the home dashboard</a>' }) })
-    .then(r => toast(r.ok ? "Test sent to " + to : "Flow answered " + r.status))
-    .catch(() => toast("Couldn't reach the flow (check the URL)"));
-});
 // People picker: switch whose schedule is on screen.
 document.getElementById("whoList").addEventListener("click", e => {
   const row = e.target.closest("[data-team-uid]");
@@ -4783,12 +4695,6 @@ document.getElementById("whoClose").addEventListener("click", () => {
 });
 document.getElementById("whoSheet").addEventListener("click", e => {
   if (e.target.id === "whoSheet") e.currentTarget.style.display = "none";
-});
-document.getElementById("notifyClose").addEventListener("click", () => {
-  document.getElementById("notifySheet").style.display = "none";
-});
-document.getElementById("notifySheet").addEventListener("click", e => {
-  if (e.target.id === "notifySheet") e.currentTarget.style.display = "none";
 });
 // Admin: event codes + install/join QRs (master only). Renders straight from
 // the live BRANDS/EVENTS/MEDIA/MASTER_BRANDS registries in this build, so it
@@ -4831,8 +4737,8 @@ async function openGuideSheet() {
       <div class="guide-ev-bar" style="background:${b.p.blue}">${esc(b.name)}</div>
       <div class="guide-ev-body">
         <div class="guide-ev-info">
-          <div class="guide-ev-code">${esc(code || "no show set")}</div>
-          <div class="guide-ev-meta">${bits.map(esc).join(" · ")}</div>
+          <div class="guide-ev-code">${esc((ev && ev.show) || code || "No show set")}</div>
+          <div class="guide-ev-meta">${bits.map(esc).join(" · ")}${code ? " · " + esc(code) : ""}</div>
         </div>
         <div class="guide-ev-qr" data-gqr="${esc(GUIDE_APP_URL + "?code=" + code)}"></div>
       </div>
@@ -5015,6 +4921,46 @@ function showSignedIn(profile) {
   authEls.submit.disabled = false;
   authEls.pass.value = "";
 }
+// ── INSTALL PROMPT ───────────────────────────────────────────────────────
+// Reps live in this app on a phone all show, so nudge them to install it.
+// Only on iPhone/Android browsers: desktop can't add to a home screen, and
+// the home team runs the dashboard on a computer anyway. Skipped once the
+// app IS installed (display-mode: standalone) and for the home account.
+// "Continue in browser" hides it for this session only, so it returns next
+// visit until they actually install.
+function installPlatform() {
+  try {
+    const ua = navigator.userAgent;
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true) return null;
+    if (sessionStorage.getItem("ncm-a2hs-skip") === "1") return null;
+    if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return "ios";
+    // Android tablets omit "Mobile", but they install the same way.
+    if (/Android/i.test(ua)) return "android";
+    return null;
+  } catch (e) { return null; }
+}
+function maybeShowInstallPrompt() {
+  const gate = document.getElementById("installGate");
+  if (!gate) return;
+  if (isHome()) { gate.style.display = "none"; return; }   // home runs on a desktop
+  const p = installPlatform();
+  if (!p) { gate.style.display = "none"; return; }
+  document.getElementById("installSteps").innerHTML = p === "ios"
+    ? `<div class="install-steps-head">On iPhone (use Safari):</div>
+       <div>1. Tap <b>Share</b> <span class="install-share"><svg width="13" height="15" viewBox="0 0 24 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v14M7 6l5-5 5 5M5 12H4v14h16V12h-1"/></svg></span> at the bottom of Safari</div>
+       <div class="install-hint">See a <b>&#8943;</b> button instead? Tap that first, then <b>Share</b>.</div>
+       <div>2. Scroll down and tap <b>Add to Home Screen</b></div>
+       <div>3. Tap <b>Add</b>, then open it from your home screen</div>`
+    : `<div class="install-steps-head">On Android (use Chrome):</div>
+       <div>1. Tap the <b>&#8942;</b> menu, top right</div>
+       <div>2. Tap <b>Add to Home screen</b> (or <b>Install app</b>)</div>
+       <div>3. Confirm, then open it from your home screen</div>`;
+  gate.style.display = "flex";
+}
+document.getElementById("installSkip").addEventListener("click", () => {
+  try { sessionStorage.setItem("ncm-a2hs-skip", "1"); } catch (e) {}
+  document.getElementById("installGate").style.display = "none";
+});
 // Fill the signup brand picker from the registry (labels come from BRANDS).
 function setupBrandPicker() {
   const sel = authEls.brand;
@@ -5046,6 +4992,7 @@ function showSignedOut() {
   document.body.classList.remove("home-mode", "has-nav");
   parkSettingsCard();
   notesOpen.clear();
+  _notified.clear();
   fabOpen = false; schedAddBooth = false;
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
@@ -5060,12 +5007,12 @@ function showSignedOut() {
   homeView = "videos"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
   homeVideosOnly = false; homeShowDoneVids = false;
   homeVidNotesOpen.clear();
-  homeOpenReps.clear();
   currentUser = null;
   masterEventOverride = null;
   setAuthMode("signin");
   setupBrandPicker();
   applyQrPrefill();
+  maybeShowInstallPrompt();
   applyBrand("ncm");   // login screen uses NCM neutral colors
 }
 // Brands a master can jump between (label + the event code that drives it).
@@ -5162,6 +5109,7 @@ if (fbReady) {
       subscribeMyVideoStatus();
       subscribeNotifyConfig();
       updateMediaBtn();
+      maybeShowInstallPrompt();   // reps on a phone; home team is excluded inside
       render();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
