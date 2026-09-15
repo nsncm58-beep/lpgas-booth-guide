@@ -4074,7 +4074,7 @@ function subscribeNotifyConfig() {
   if (!fbReady || !currentUser) return;
   _notifyCfgUnsub = fbDb.collection("config").doc("notifications").onSnapshot(d => {
     const x = (d.exists && d.data()) || {};
-    notifyCfg = { url: x.webhookUrl || "", emails: x.emails || {} };
+    notifyCfg = { url: x.webhookUrl || "", emails: x.emails || {}, testMode: !!x.testMode };
   }, () => {});
 }
 // One DM per home member. Fire-and-forget: a failed webhook must never block
@@ -4092,8 +4092,15 @@ function notifyOnce(key) {
 }
 function notifyHome(text, skipMember) {
   if (!notifyCfg.url) return;
-  const targets = Object.entries(notifyCfg.emails)
-    .filter(([name, email]) => email && !(skipMember && sameMember(name, skipMember)));
+  // testMode: the full roster stays saved in the map, but every alert routes
+  // ONLY to the "Test" entry (Nate) so deliveries can be verified before the
+  // desk goes live. Flip the config doc's testMode to false to go live —
+  // takes effect instantly, no deploy. In test mode the skip-the-actor rule
+  // is ignored so Test sees every event fire, including their own.
+  const targets = notifyCfg.testMode
+    ? Object.entries(notifyCfg.emails).filter(([name, email]) => email && name === "Test")
+    : Object.entries(notifyCfg.emails)
+        .filter(([name, email]) => email && !(skipMember && sameMember(name, skipMember)));
   targets.forEach(([name, email]) => {
     try {
       fetch(notifyCfg.url, {
