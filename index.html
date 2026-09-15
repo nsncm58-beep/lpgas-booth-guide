@@ -1500,6 +1500,17 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   margin-top: 26px; border: none; background: none; color: #fff; opacity: 0.78;
   font-family: var(--ft); font-size: 0.84rem; text-decoration: underline; cursor: pointer;
 }
+/* Profile > My brands checkboxes */
+.brand-checks { display: flex; flex-direction: column; gap: 2px; }
+.bc-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 4px; font-size: 0.88rem; color: var(--text); cursor: pointer;
+  border-bottom: 1px solid var(--border-soft);
+}
+.bc-row:last-child { border-bottom: none; }
+.bc-row input { width: 19px; height: 19px; accent-color: var(--blue); flex-shrink: 0; }
+.bc-home { font-style: normal; font-size: 0.68rem; color: var(--muted); font-weight: 600; }
+
 /* Marks the two master accounts (Nate, Rachel) in the header */
 .admin-tag {
   flex-shrink: 0; padding: 3px 7px; border-radius: 5px;
@@ -1880,9 +1891,9 @@ body.home-mode .user-chip-gear { display: none !important; }
 <div id="settingsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card" id="settingsCard">
     <div class="settings-title">Profile</div>
-    <div class="settings-dbx-title">My brand</div>
-    <select id="brandSelect" class="settings-dbx-input"></select>
-    <div class="settings-dbx-note">Moving to another brand saves this show to your old show data, then sets you up on that brand's current show.</div>
+    <div class="settings-dbx-title">My brands</div>
+    <div id="brandChecks" class="brand-checks"></div>
+    <div class="settings-dbx-note">Check every brand you cover. The app opens on whichever of your brands has a show running or next up, and when you're on more than one, a brand switcher appears in the header.</div>
     <div class="settings-danger">
     <div class="settings-dbx-title">My team</div>
     <select id="deptSelect" class="settings-dbx-input">
@@ -3271,6 +3282,27 @@ function showDayToday(code) {
   const i = ds.indexOf(today);
   return i === -1 ? null : i + 1;
 }
+// The show that matters most right now: one that's live today wins outright,
+// otherwise the next one to start. Wrapped shows and shows without dates
+// never win. Masters land here at sign-in instead of on their own brand,
+// which may have finished months ago.
+function nearestShowCode(brandPool) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let best = null, bestScore = Infinity;
+  (brandPool || SIGNUP_BRANDS).forEach(b => {
+    const code = CURRENT_SHOW[b];
+    const ev = EVENTS[code];
+    if (!code || isPastShow(code) || !ev || !Array.isArray(ev.dates) || !ev.dates.length) return;
+    const start = new Date(ev.dates[0] + "T00:00:00");
+    const end = new Date(ev.dates[ev.dates.length - 1] + "T23:59:59");
+    let score;
+    if (today >= start && today <= end) score = -1;              // happening now
+    else if (start > today) score = (start - today) / 86400000;  // days until it starts
+    else return;                                                 // over (not yet marked wrapped)
+    if (score < bestScore) { bestScore = score; best = code; }
+  });
+  return best;
+}
 // THE definitive list of event codes this app accepts. Nothing outside this
 // list can join or exist. Adding a future show = add it here + an EVENTS
 // entry (booth list + dates) + MEDIA links + CURRENT_SHOW below + the
@@ -3294,6 +3326,15 @@ function brandOfCode(code) { return (resolveEvent(code) || {}).brand || ""; }
 // A profile's brand, falling back to the brand of its stored event code so
 // accounts made before the brand picker keep working untouched.
 function userBrand(u) { return !u ? "" : (u.brand || brandOfCode(u.eventCode) || ""); }
+// Every brand a person covers (some reps work two, e.g. Golfdom + LM). Their
+// home brand is always included; the rest come from the profile's `brands`.
+function userBrands(u) {
+  const set = [];
+  const add = b => { if (b && SIGNUP_BRANDS.includes(b) && !set.includes(b)) set.push(b); };
+  add(userBrand(u));
+  ((u && u.brands) || []).forEach(add);
+  return set;
+}
 // Per-show media: ALL photos + videos live in the team Dropbox (not Firestore,
 // which keeps the app 100% free and handles hours of video). MEDIA is a
 // separate registry from EVENTS on purpose: an event code here gets working
@@ -5526,9 +5567,9 @@ function currentShowLabel() {
 // the content area rather than duplicated, so every listener bound to the
 // controls inside it keeps working.
 function prepSettings() {
-  const bs = document.getElementById("brandSelect");
-  bs.innerHTML = SIGNUP_BRANDS.map(b => `<option value="${b}">${esc((BRANDS[b] || {}).name || b)}</option>`).join("");
-  bs.value = userBrand(currentUser) || "";
+  const mine = userBrands(currentUser);
+  document.getElementById("brandChecks").innerHTML = SIGNUP_BRANDS.map(b =>
+    `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}${b === userBrand(currentUser) ? " disabled" : ""}><span>${esc((BRANDS[b] || {}).name || b)}${b === userBrand(currentUser) ? ' <em class="bc-home">home brand</em>' : ""}</span></label>`).join("");
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
@@ -5814,40 +5855,19 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
   catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
   renderCleanupList();
 });
-// Moving between brands (e.g. Golfdom to LM). Same deal as a show rollover:
-// the show you're leaving is archived to Old show data, then you land on the
-// new brand's current show with a clean slate.
-document.getElementById("brandSelect").addEventListener("change", async e => {
-  const newBrand = e.target.value;
-  const oldBrand = userBrand(currentUser);
-  if (!currentUser || !newBrand || newBrand === oldBrand) return;
-  const newCode = CURRENT_SHOW[newBrand];
-  const newName = (BRANDS[newBrand] || {}).name || newBrand;
-  if (!newCode) { toast("That brand has no show set up yet"); e.target.value = oldBrand; return; }
-  if (!confirm("Move to " + newName + "?\n\n" + currentShowLabel() +
-               " will be saved to your old show data, then your booths, notes and schedule reset for " + newName + ".")) {
-    e.target.value = oldBrand; return;
-  }
-  const sel = e.target; sel.disabled = true;
-  // Point the profile at the new brand, then let the rollover routine do the
-  // archive/clear/switch exactly as it would for an automatic show change.
-  currentUser.brand = newBrand;
-  const ok = await rolloverIfShowChanged();
-  if (!ok && currentUser.eventCode !== newCode) {
-    currentUser.brand = oldBrand; sel.value = oldBrand; sel.disabled = false;
-    toast("Couldn't switch — check your connection and try again");
-    return;
-  }
-  try { await fbDb.collection("users").doc(currentUser.uid).set({ brand: newBrand, eventCode: newCode }, { merge: true }); } catch (err) {}
-  masterEventOverride = null;
-  applyEvent(currentEventCode());
-  if (typeof setupBrandSwitcher === "function") setupBrandSwitcher();
-  subscribeTeam(); subscribeMyVideoStatus(); updateMediaBtn();
-  setBottomTab("schedule"); schedDay = showDayToday(currentEventCode()) || 1;
-  notesOpen.clear(); fabOpen = false; schedAddBooth = false; viewedScheduleUid = null;
-  sel.disabled = false;
-  render();
-  toast("You're now on " + newName);
+// Profile > My brands: reps who cover several brands (e.g. Golfdom + LM)
+// check them here. Nothing is archived or reset — each show keeps its own
+// bucket, exactly like the master switcher — this only controls which brands
+// the header switcher offers and where the app lands at sign-in.
+document.getElementById("brandChecks").addEventListener("change", async () => {
+  if (!currentUser) return;
+  const picked = [...document.querySelectorAll("#brandChecks input:checked")].map(i => i.value);
+  const home = userBrand(currentUser);
+  if (home && !picked.includes(home)) picked.unshift(home);   // home brand can't be dropped
+  currentUser.brands = picked;
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ brands: picked }, { merge: true }); } catch (err) {}
+  setupBrandSwitcher();
+  toast(picked.length > 1 ? "You're on " + picked.length + " brands. Use the header switcher to jump" : "Saved");
 });
 document.getElementById("deptSelect").addEventListener("change", async e => {
   if (!currentUser || !e.target.value) return;
@@ -5983,12 +6003,16 @@ const MASTER_BRANDS = [
 function setupBrandSwitcher() {
   const row = document.getElementById("brandSwitchRow");
   const sel = document.getElementById("brandSwitch");
-  if (!isMaster()) { row.style.display = "none"; return; }
-  sel.innerHTML = MASTER_BRANDS.map(b => `<option value="${b.code}">${b.label}</option>`).join("");
-  // The switcher is locked to the five valid codes — legacy/unknown codes
-  // (e.g. the old LPG2026 typo) are never added as phantom entries.
+  // Masters jump across all five brands; a rep covering several (Profile >
+  // My brands) gets the same switcher scoped to theirs. Single-brand reps
+  // see nothing. Data stays separate per show, nothing is archived by a jump.
+  const list = isMaster() ? MASTER_BRANDS
+    : MASTER_BRANDS.filter(b => userBrands(currentUser).includes(b.brand));
+  if (list.length < 2) { row.style.display = "none"; return; }
+  sel.innerHTML = list.map(b => `<option value="${b.code}">${b.label}</option>`).join("");
+  // Locked to the five valid codes — legacy/unknown codes are never added.
   const cur = currentEventCode();
-  sel.value = MASTER_BRANDS.some(b => b.code === cur) ? cur : "LPGAS-2026";
+  sel.value = list.some(b => b.code === cur) ? cur : list[0].code;
   row.style.display = "";
 }
 document.getElementById("brandSwitch").addEventListener("change", e => {
@@ -6047,6 +6071,19 @@ if (fbReady) {
         if (b) {
           currentUser.brand = b;
           try { await fbDb.collection("users").doc(user.uid).set({ brand: b }, { merge: true }); } catch (e) {}
+        }
+      }
+      // Anyone on more than one brand (masters see all five; some reps cover
+      // two, e.g. Golfdom + LM) opens on whichever of their shows is live or
+      // next up, rather than a brand whose show may have wrapped. The header
+      // switcher still jumps anywhere; this only picks the landing spot.
+      {
+        const mine = userBrands(currentUser);
+        const pool = isMaster() ? null : (mine.length > 1 ? mine : null);
+        if (isMaster() || pool) {
+          const near = nearestShowCode(pool);
+          const own = CURRENT_SHOW[userBrand(currentUser)] || currentUser.eventCode;
+          if (near && near !== own) masterEventOverride = near;
         }
       }
       // Theme + booth list for this user's event/brand.
