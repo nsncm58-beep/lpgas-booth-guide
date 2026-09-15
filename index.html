@@ -1827,7 +1827,7 @@ body.home-mode .user-chip-gear { display: none !important; }
       <span class="user-chip-name" id="userChipName"></span>
       <span class="admin-tag" id="adminTag" style="display:none">Admin</span>
       <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
-      <button class="user-chip-gear" id="settingsBtn" type="button" title="Settings" aria-label="Settings">⚙</button>
+      <button class="user-chip-gear" id="settingsBtn" type="button" title="Profile" aria-label="Profile">⚙</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
   </div>
@@ -1852,7 +1852,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 <datalist id="co-datalist"></datalist>
 
 <div class="app-footer">
-  Notes save automatically. Export your show data from Settings.
+  Notes save automatically. Export your show data from your Profile.
 </div>
 
 <!-- Bottom navigation (field app only; the home dashboard is a desktop view) -->
@@ -1870,8 +1870,8 @@ body.home-mode .user-chip-gear { display: none !important; }
     <span>Videos</span>
   </button>
   <button class="bn-btn" type="button" id="bnSettings" data-v="settings">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11A1.6 1.6 0 0 0 4.57 8.8a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg>
-    <span>Settings</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.2" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></svg>
+    <span>Profile</span>
   </button>
 </nav>
 <div id="toast"></div>
@@ -1879,7 +1879,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 <!-- ── Settings sheet ── -->
 <div id="settingsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card" id="settingsCard">
-    <div class="settings-title">Settings</div>
+    <div class="settings-title">Profile</div>
     <div class="settings-dbx-title">My brand</div>
     <select id="brandSelect" class="settings-dbx-input"></select>
     <div class="settings-dbx-note">Moving to another brand saves this show to your old show data, then sets you up on that brand's current show.</div>
@@ -4201,7 +4201,7 @@ function buildHomeSchedView() {
   if (homeBrandFilter) entries = entries.filter(([id, s]) => resolveEvent(s.eventCode).brand === homeBrandFilter);
   entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
   if (!entries.length) {
-    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows editorial team schedules (set under Settings &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
+    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows editorial team schedules (set under Profile &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
   }
   let h = `<div class="home-search-box">
     <input class="home-search-input hs-search-input" type="text" placeholder="Search this brand&#39;s agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
@@ -4433,7 +4433,7 @@ function render() {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
     el.innerHTML = `<div class="empty-wrap"><h3>This show has wrapped</h3>
-      <p>${esc(currentShowLabel())} is finished, so the booth list is closed. Your notes and schedule are still here, and you can download everything from Settings. The next show's booths appear when it opens.</p></div>`;
+      <p>${esc(currentShowLabel())} is finished, so the booth list is closed. Your notes and schedule are still here, and you can download everything from your Profile. The next show's booths appear when it opens.</p></div>`;
     updateStats(state);
     return;
   }
@@ -5286,6 +5286,20 @@ document.addEventListener("pointerdown", e => {
   if (!fabOpen || e.target.closest(".fab-wrap")) return;
   fabOpen = false;
   document.querySelector(".fab-wrap")?.classList.remove("open");
+});
+
+// Show floors have terrible service. The app already works without it — the
+// phone's local copy is the source of truth and Firestore queues writes — so
+// these just say so out loud, and re-push local data once service returns.
+window.addEventListener("offline", () => {
+  if (currentUser && !isHome()) toast("No service. Everything still works and saves to this phone");
+});
+window.addEventListener("online", () => {
+  if (currentUser && !isHome()) {
+    toast("Back online — syncing your notes and schedule");
+    queueScheduleSync();
+    queueNotesSync();
+  }
 });
 
 let _st;

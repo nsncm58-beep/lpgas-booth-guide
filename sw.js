@@ -3,7 +3,7 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v99';
+const CACHE_NAME = 'ncm-events-guide-v100';
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './favicon.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
@@ -38,20 +38,36 @@ self.addEventListener('fetch', event => {
     const host = new URL(req.url).hostname;
     if (host.endsWith('googleapis.com') || host.endsWith('firebaseapp.com')) return;
     if (req.destination === 'document' || req.url.endsWith('.html')) {
-        event.respondWith(
-            // no-cache: revalidate with the server every time, so a relaunch
-            // never serves the CDN's up-to-10-minute-stale copy of the app.
-            fetch(req, { cache: 'no-cache' }).then(res => {
-                const clone = res.clone();
-                caches.open(CACHE_NAME).then(c => c.put(req, clone));
+        // Network-first with a short leash. Show-floor connections often hang
+        // rather than fail, so if the network hasn't answered in 3 seconds the
+        // cached app opens immediately; the network response (when it finally
+        // lands) still refreshes the cache for the next launch. Fully offline,
+        // the fetch rejects fast and the cache serves. Only 200s are cached —
+        // caching an error page once poisoned every later offline launch.
+        event.respondWith((async () => {
+            const cache = await caches.open(CACHE_NAME);
+            const network = fetch(req, { cache: 'no-cache' }).then(res => {
+                if (res && res.ok) cache.put(req, res.clone());
                 return res;
-            }).catch(() => caches.match(req))
-        );
+            });
+            const timedOut = Symbol();
+            const winner = await Promise.race([
+                network.catch(() => null),
+                new Promise(r => setTimeout(() => r(timedOut), 3000))
+            ]);
+            if (winner && winner !== timedOut && winner.ok) return winner;
+            const cached = await cache.match(req);
+            if (cached) { network.catch(() => {}); return cached; }
+            // Nothing cached yet (first ever visit): give the network its shot.
+            return network.then(res => res || cached).catch(() => cached);
+        })());
     } else {
         event.respondWith(
             caches.match(req).then(cached => cached || fetch(req).then(res => {
-                const clone = res.clone();
-                caches.open(CACHE_NAME).then(c => c.put(req, clone));
+                if (res && res.ok) {
+                    const clone = res.clone();
+                    caches.open(CACHE_NAME).then(c => c.put(req, clone));
+                }
                 return res;
             }))
         );
