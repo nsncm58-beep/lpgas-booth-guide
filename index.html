@@ -1887,10 +1887,17 @@ body.home-mode .user-chip-gear { display: none !important; }
    which is exactly where animation turns into jank. Everything is opacity/
    transform only, so it stays on the GPU. */
 
-/* iOS rubber-band: pulling down past the top of the page used to stretch a
-   white gap open above the brand header. This bleed extends the header's own
-   color 600px up into that zone — it rides the sticky header, so it moves
-   with the bounce and re-themes with every brand switch for free. */
+/* iOS rubber-band: pulling down past the top used to stretch a white gap
+   open above the brand header. The header bleed below helps on desktop,
+   but iOS paints the overscroll zone with the ROOT CANVAS (the html
+   background) rather than with document content, so the real fix is the
+   canvas itself: brand color across its top half (top bounce), page gray
+   across its bottom half (bottom bounce stays clean behind the nav).
+   Both halves re-theme through the same vars on every brand switch. */
+html {
+  background: linear-gradient(to bottom,
+    var(--blue) 0%, var(--blue) 50%, var(--bg) 50%, var(--bg) 100%);
+}
 .app-header::before {
   content: "";
   position: absolute;
@@ -2038,7 +2045,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v110</div>
+      <div class="settings-dbx-note">NCM Events Guide · v111</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
