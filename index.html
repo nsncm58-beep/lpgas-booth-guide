@@ -2050,7 +2050,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v112</div>
+      <div class="settings-dbx-note">NCM Events Guide · v113</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4290,14 +4290,26 @@ function subscribeUploadConfig() {
   if (!fbReady || !currentUser) return;
   _uploadCfgUnsub = fbDb.collection("config").doc("uploads").onSnapshot(d => {
     const x = (d.exists && d.data()) || {};
-    uploadCfg = (x.clientId && x.tenantId && x.folderUrl && !x.disabled)
-      ? { clientId: String(x.clientId).trim(), tenantId: String(x.tenantId).trim(), folderUrl: String(x.folderUrl).trim() }
+    uploadCfg = (x.clientId && x.tenantId && !x.disabled)
+      ? { clientId: String(x.clientId).trim(), tenantId: String(x.tenantId).trim(),
+          folderUrl: String(x.folderUrl || "").trim() }   // optional global override
       : null;
     msBootstrap();
   }, () => {});
 }
+// Uploads land in the CURRENT SHOW's folder — the same per-show MEDIA link
+// the Photos button opens — so LM footage files under LM-2026, PestWorld
+// under PMP-2026, and a future show inherits routing the moment its MEDIA
+// entry exists. config/uploads.folderUrl, when present, overrides all shows
+// (escape hatch); normally the config doc is just { clientId, tenantId }.
+function msUploadFolderUrl() {
+  if (uploadCfg && uploadCfg.folderUrl) return uploadCfg.folderUrl;
+  const m = eventMedia(currentEventCode());
+  return (m && m.folder) || "";
+}
 function msUploadsActive() {
-  return !!(uploadCfg && currentUser && !isHome() && myNotesAutoShare() && !isPastShow(currentEventCode()));
+  return !!(uploadCfg && currentUser && !isHome() && myNotesAutoShare()
+            && !isPastShow(currentEventCode()) && msUploadFolderUrl());
 }
 function msRedirectUri() {
   // Must byte-match the SPA redirect URI registered in Entra (the Pages root).
@@ -4397,17 +4409,20 @@ async function msGraph(path, opts, token) {
   if (!r.ok) throw new Error("graph-" + r.status);
   return r.json();
 }
-// The config stores the folder's normal browser URL; Graph's shares API
-// resolves it to a concrete drive + folder id. Cached per URL on-device.
+// The current show's folder link (a SharePoint sharing URL) resolves to a
+// concrete drive + folder id through Graph's shares API. Cached per URL
+// on-device, so brand switches re-resolve and repeat uploads don't.
 async function msResolveFolder(token) {
+  const url = msUploadFolderUrl();
+  if (!url) throw new Error("no-folder");
   try {
     const c = JSON.parse(localStorage.getItem("ncm_ms_drive") || "null");
-    if (c && c.url === uploadCfg.folderUrl && c.driveId && c.itemId) return c;
+    if (c && c.url === url && c.driveId && c.itemId) return c;
   } catch (e) {}
-  const enc = "u!" + btoa(unescape(encodeURIComponent(uploadCfg.folderUrl)))
+  const enc = "u!" + btoa(unescape(encodeURIComponent(url)))
     .replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
   const item = await msGraph("/shares/" + enc + "/driveItem?$select=id,name,parentReference", null, token);
-  const out = { url: uploadCfg.folderUrl, driveId: item.parentReference.driveId, itemId: item.id };
+  const out = { url: url, driveId: item.parentReference.driveId, itemId: item.id };
   localStorage.setItem("ncm_ms_drive", JSON.stringify(out));
   return out;
 }
