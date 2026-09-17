@@ -760,7 +760,25 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .home-aside-media-main { font-family: var(--fd); font-weight: 800; font-size: 0.95rem; line-height: 1.25; min-width: 0; }
 .home-aside-media-sub { display: block; font-family: var(--ft); font-weight: 600; font-size: 0.66rem; opacity: 0.85; margin-top: 3px; }
 
-@keyframes ncmspin { to { transform: rotate(360deg); } }
+/* NCM skyline loader: the three towers from the logo mark rise in rhythm
+   over a still baseline. Replaces the stock ring spinner everywhere. */
+.ncm-loader { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.ncm-loader-towers { display: flex; align-items: flex-end; gap: 7px; height: 38px; }
+.ncm-loader-towers span {
+  width: 9px;
+  border-radius: 5px 5px 1px 1px;
+  background: #fff;
+  transform-origin: bottom;
+  animation: ncmRise 1.15s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.ncm-loader-towers span:nth-child(1) { height: 21px; }
+.ncm-loader-towers span:nth-child(2) { height: 36px; animation-delay: 0.16s; }
+.ncm-loader-towers span:nth-child(3) { height: 27px; animation-delay: 0.32s; }
+.ncm-loader-base { width: 55px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.45); }
+@keyframes ncmRise {
+  0%, 100% { transform: scaleY(0.42); opacity: 0.45; }
+  42%      { transform: scaleY(1);    opacity: 1; }
+}
 
 /* ── EMPTY STATE ── */
 .empty-wrap {
@@ -1364,13 +1382,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .auth-loading { display: none; }
 .auth-overlay.checking .auth-loading { display: flex; align-items: center; justify-content: center; }
 .auth-overlay.checking .auth-card { display: none; }
-.auth-spinner {
-  width: 38px; height: 38px;
-  border: 3px solid rgba(255,255,255,0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: ncmspin 0.7s linear infinite;
-}
+/* (ring spinner retired; the veil shows the .ncm-loader skyline instead) */
 .auth-card {
   width: 100%;
   max-width: 380px;
@@ -1856,6 +1868,44 @@ body.home-mode .user-chip-gear { display: none !important; }
 @media (max-width: 380px) {
   .brand-logo { max-width: 48px; }
 }
+
+/* ── SMOOTHNESS PASS (keep at stylesheet END: later equal-specificity rules
+      win ties, and these deliberately override earlier per-element bits) ──
+   Rules: animate ONLY discrete moments (tab/day/filter changes, sheets
+   opening) — never per-keystroke re-renders or per-card in 900-booth lists,
+   which is exactly where animation turns into jank. Everything is opacity/
+   transform only, so it stays on the GPU. */
+
+/* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
+   tab, day tab, filter pill, home tab/brand). render() calls on the same
+   screen — visit taps, note syncs, search keystrokes — never replay it. */
+#content.view-in { animation: viewIn 0.18s ease-out; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+
+/* Bottom sheets: backdrop fades while the card slides up with a soft
+   spring. display:none -> flex replays these on every open for free. */
+.settings-sheet { animation: fadeIn 0.18s ease-out; }
+.settings-sheet .settings-card { animation: sheetUp 0.26s cubic-bezier(0.26, 1.04, 0.44, 1); }
+@keyframes sheetUp { from { opacity: 0; transform: translateY(26px) scale(0.98); } to { opacity: 1; transform: none; } }
+.install-gate { animation: fadeIn 0.3s ease-out; }
+
+/* Tap feedback: state flips (active pills, visit/video toggles, :active
+   scales) ease instead of snapping. transform stays fast so presses feel
+   immediate; colors trail just behind. */
+.visit-btn, .video-btn, .upload-btn, .status-btn, .f-pill, .bn-btn,
+.sched-day-tab, .home-rem-btn, .settings-dbx-btn, .team-chip, .notes-toggle,
+.fab-item, .meal-act-btn, .auth-btn, .sched-rm-link, .home-note {
+  transition: background-color 0.16s ease, border-color 0.16s ease,
+              color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -2027,7 +2077,12 @@ body.home-mode .user-chip-gear { display: none !important; }
 
 <!-- ── Auth gate (shown until a user is signed in) ── -->
 <div id="authOverlay" class="auth-overlay checking">
-  <div class="auth-loading" id="authLoading"><div class="auth-spinner"></div></div>
+  <div class="auth-loading" id="authLoading">
+    <div class="ncm-loader" role="status" aria-label="Loading">
+      <div class="ncm-loader-towers"><span></span><span></span><span></span></div>
+      <div class="ncm-loader-base"></div>
+    </div>
+  </div>
   <div class="auth-card">
     <div class="auth-brand">
       <img src="./ncm-logo.png" alt="North Coast Media" class="auth-logo" onerror="this.style.display='none'">
@@ -4696,6 +4751,7 @@ function buildHomeFilter() {
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   updateHomeMemberChip();
+  viewTransition("h:" + homeView + ":" + homeBrandFilter + ":" + (homeSchedRep || "") + ":" + schedDay);
   // Shared login, individual people: each device picks a name once before
   // anything else, so "Working on" claims are attributable.
   if (!homeMember()) {
@@ -5079,11 +5135,26 @@ function buildCard(c, state) {
     </div>`;
 }
 
+// Replays the #content enter animation, but ONLY when the screen actually
+// changes (key = which view/tab/day/filter is showing). The countless same-
+// screen render() calls — visit taps, sync refreshes, search keystrokes —
+// keep the same key and paint instantly, so nothing flickers mid-use.
+let _paintKey = null;
+function viewTransition(key) {
+  const el = document.getElementById("content");
+  if (!el || _paintKey === key) return;
+  _paintKey = key;
+  el.classList.remove("view-in");
+  void el.offsetWidth;                    // restart the CSS animation
+  el.classList.add("view-in");
+}
 function render() {
   // Always first: the Settings card is a real DOM node living in #content
   // while its tab is open, and any other view's innerHTML would destroy it.
   parkSettingsCard();
   if (isHome()) { renderHomeDashboard(); return; }
+  viewTransition("f:" + activeView + ":" + activeFilter
+    + (activeView === "schedule" ? ":" + schedDay + ":" + (viewedScheduleUid || "") : ""));
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
 
