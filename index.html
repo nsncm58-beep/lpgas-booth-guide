@@ -11,6 +11,17 @@
 <meta name="apple-mobile-web-app-title" content="NCM Events"><!-- home-screen icon label; kept short on purpose (full name: NCM Events Guide) -->
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" href="favicon.png?v=2">
+<!-- Brand fonts race the first paint at launch: without these, display-font
+     text renders one frame in a fallback and visibly flickers as the woff2s
+     swap in. Preloading starts the fetches during HTML parse (instant once
+     the service worker has them cached). Camber isn't here: it only appears
+     after a P&Q login resolves, behind the boot veil. -->
+<link rel="preload" href="Forza-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="Forza-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="Forza-Black.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="Gotham-Book.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="Gotham-Medium.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="Gotham-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 /* ── LP Gas brand fonts: Forza (display) + Gotham (text) ── */
 @font-face {
@@ -2027,7 +2038,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v109</div>
+      <div class="settings-dbx-note">NCM Events Guide · v110</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -6681,8 +6692,10 @@ async function loadUserDoc(uid) {
   catch (e) { return null; }
 }
 function showSignedIn(profile) {
-  authEls.overlay.classList.remove("checking");
-  authEls.overlay.classList.add("hidden");
+  liftVeil(() => {
+    authEls.overlay.classList.remove("checking");
+    authEls.overlay.classList.add("hidden");
+  });
   authEls.chip.style.display = "";
   const nm = (profile && profile.name) || "Signed in";
   authEls.chipName.textContent = isHome() ? nm : (nm.trim().split(/\s+/)[0] || nm);
@@ -6754,8 +6767,18 @@ function applyQrPrefill() {
     setAuthMode("signup");
   }
 }
+// The boot veil doesn't lift until the brand fonts are paint-ready, so the
+// reveal can never catch text mid-swap (the launch flicker). With the head
+// preloads plus the service worker cache this is a same-tick no-op; the
+// 600ms race is a first-ever-visit safety valve so one slow font file can't
+// hold the app hostage.
+function liftVeil(reveal) {
+  if (document.fonts && document.fonts.status !== "loaded")
+    Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 600))]).then(reveal);
+  else reveal();
+}
 function showSignedOut() {
-  authEls.overlay.classList.remove("checking");
+  liftVeil(() => authEls.overlay.classList.remove("checking"));
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
   document.getElementById("brandSwitchRow").style.display = "none";
