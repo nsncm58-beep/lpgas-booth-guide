@@ -1887,31 +1887,35 @@ body.home-mode .user-chip-gear { display: none !important; }
    which is exactly where animation turns into jank. Everything is opacity/
    transform only, so it stays on the GPU. */
 
-/* iOS rubber-band: pulling down past the top used to stretch a white gap
-   open above the brand header. The header bleed below helps on desktop,
-   but iOS paints the overscroll zone with the ROOT CANVAS (the html
-   background) rather than with document content, so the real fix is the
-   canvas itself: brand color across its top half (top bounce), page gray
-   across its bottom half (bottom bounce stays clean behind the nav).
-   Both halves re-theme through the same vars on every brand switch. */
-html {
-  background: linear-gradient(to bottom,
-    var(--blue) 0%, var(--blue) 50%, var(--bg) 50%, var(--bg) 100%);
-}
-.app-header::before {
-  content: "";
-  position: absolute;
-  left: 0; right: 0;
-  top: -600px;
-  height: 600px;
+/* iOS rubber-band, third and final approach. History: a bleed above the
+   header (v109) never shows because iOS doesn't render document content
+   above y=0 during a bounce; a root-canvas gradient (v111) works but only
+   AFTER the first scroll, because WebKit tiles that canvas zone lazily.
+   This is a real fixed element parked just above the viewport: fixed
+   layers ride the layout viewport, which is exactly what bounces, so the
+   brand color slides down into the gap — and being composited from the
+   first frame, it needs no scroll warm-up. The html canvas goes page-gray
+   so the bottom bounce (and any exotic fallback) stays soft, not white. */
+html { background: var(--bg); }
+#topBleed {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 110vh;
+  transform: translateY(-100%) translateZ(0);
   background: var(--blue);
+  pointer-events: none;
+  z-index: 400;
 }
 
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
    screen — visit taps, note syncs, search keystrokes — never replay it. */
-#content.view-in { animation: viewIn 0.18s ease-out; }
-@keyframes viewIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+#content.view-in { animation: viewIn 0.15s ease-out; }
+/* Opacity-only, and from 0.3 rather than 0: a slide would repaint the whole
+   (sometimes 900-booth) content layer against the sticky header, and a full
+   blink from 0 reads as flicker when you're tapping between tabs quickly.
+   This is a soft crossfade the compositor handles for free. */
+@keyframes viewIn { from { opacity: 0.3; } to { opacity: 1; } }
 
 /* Bottom sheets: backdrop fades while the card slides up with a soft
    spring. display:none -> flex replays these on every open for free. */
@@ -1925,7 +1929,7 @@ html {
    immediate; colors trail just behind. */
 .visit-btn, .video-btn, .upload-btn, .status-btn, .f-pill, .bn-btn,
 .sched-day-tab, .home-rem-btn, .settings-dbx-btn, .team-chip, .notes-toggle,
-.fab-item, .meal-act-btn, .auth-btn, .sched-rm-link, .home-note {
+.fab-item, .meal-act-btn, .auth-btn, .sched-rm-link {
   transition: background-color 0.16s ease, border-color 0.16s ease,
               color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
@@ -1940,6 +1944,7 @@ html {
 </style>
 </head>
 <body>
+<div id="topBleed" aria-hidden="true"></div>
 
 <header class="app-header">
   <div class="header-top">
@@ -2045,7 +2050,7 @@ html {
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v111</div>
+      <div class="settings-dbx-note">NCM Events Guide · v112</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
