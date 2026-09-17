@@ -2012,7 +2012,6 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="settings-dbx-title">Account</div>
       <button class="settings-dbx-btn settings-stack-btn" id="settingsSignOut" type="button">Sign out</button>
     </div>
-    <button class="settings-done" id="settingsClose" type="button">Done</button>
   </div>
 </div>
 
@@ -2058,9 +2057,9 @@ body.home-mode .user-chip-gear { display: none !important; }
 <!-- ── Show photos & videos (all media goes to the team Dropbox) ── -->
 <div id="mediaSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
-    <div class="settings-title">Show photos &amp; videos</div>
+    <div class="settings-title" id="mediaSheetTitle">Show photos &amp; videos</div>
     <p class="share-prompt-text" id="mediaSheetInfo">Photos and videos upload straight to the shared team folder, where the home team can view them.</p>
-    <p class="share-prompt-text"><strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
+    <p class="share-prompt-text" id="mediaSheetTip"><strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
     <button class="settings-done" id="mediaUploadOpen" type="button">Open uploader</button>
     <button class="settings-done share-secondary" id="mediaSheetClose" type="button">Close</button>
   </div>
@@ -6163,12 +6162,11 @@ function updateMediaBtn() {
   const m = (currentUser && !isHome()) ? eventMedia(currentEventCode()) : null;
   const show = !!(m && m.request);
   btn.style.display = show ? "" : "none";
-  // The bottom nav's Videos tab is a shortcut to the same sheet. Sales reps
-  // shoot booth photos more than footage, so it reads "Videos/Pics" for them
-  // (same upload folder either way; only the wording differs). Once in-app
-  // uploads are live for an edit rep, booth videos have their own path, so
-  // the old tab stops competing for the word "Videos" and becomes Photos.
-  const label = msUploadsActive() ? "Photos" : (myNotesAutoShare() ? "Videos" : "Videos/Pics");
+  // The bottom nav's folder tab is a shortcut to the same sheet. For edit
+  // reps booth videos have their own path (the booth card's Upload button),
+  // so their tab reads Photos and never competes for the word "Videos".
+  // Sales reps keep "Videos/Pics": the folder is their path for both.
+  const label = myNotesAutoShare() ? "Photos" : "Videos/Pics";
   const nav = document.getElementById("bnVideos");
   if (nav) {
     nav.style.display = show ? "" : "none";
@@ -6180,14 +6178,21 @@ function updateMediaBtn() {
 }
 function mediaIsMicrosoft(m) { return /sharepoint\.com|office\.com/i.test((m && (m.request || m.folder)) || ""); }
 document.getElementById("mediaBtn").addEventListener("click", () => {
-  // The explainer matches the show's storage provider (Dropbox vs Microsoft 365),
-  // and once in-app uploads are live it steers booth videos to the new path.
+  // Edit reps: this sheet is the PHOTOS home, and it points booth videos to
+  // their own path (the booth card's Upload button). Sales reps keep the
+  // provider-aware photos-and-videos wording — the folder is their path for
+  // everything.
   const m = eventMedia(currentEventCode());
-  document.getElementById("mediaSheetInfo").textContent = msUploadsActive()
-    ? "Booth videos: use the Upload button on the booth's card — it names the file, drops it in the right place and links it for the home team automatically. This shared folder is for photos, or for browsing everything in one spot. Please add files only; don't move or delete what's there."
+  const edit = myNotesAutoShare();
+  document.getElementById("mediaSheetTitle").textContent = edit ? "Show photos" : "Show photos & videos";
+  document.getElementById("mediaSheetInfo").textContent = edit
+    ? "This shared folder is for photos, or for browsing everything in one spot. Booth videos have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the home team automatically."
     : mediaIsMicrosoft(m)
     ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the home team can view them (it also appears in the brand's Teams channel). No sign-in needed: tap Upload and pick files from your camera roll. Please add files only; don't move or delete what's there."
     : "Photos and videos upload straight to the shared team Dropbox, where the home team can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.";
+  document.getElementById("mediaSheetTip").innerHTML = edit
+    ? "<strong>Tip:</strong> include the company or booth number in photo file names so the home team knows what they're looking at. Please add files only; don't move or delete what's there."
+    : "<strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.";
   document.getElementById("mediaSheet").style.display = "flex";
 });
 document.getElementById("mediaUploadOpen").addEventListener("click", () => {
@@ -6361,10 +6366,7 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
   setBottomTab("settings");
   render();
 });
-document.getElementById("settingsClose").addEventListener("click", () => {
-  setBottomTab("schedule");
-  render();
-});
+// (Profile's old Done button is gone: the bottom nav is how you leave the tab.)
 // Settings > Account > Sign out: close the sheet, then run the same flow as
 // the home team's header button (authEls.signOut keeps the shared handler).
 document.getElementById("settingsSignOut").addEventListener("click", () => {
