@@ -642,6 +642,13 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .upload-btn.done { border-color: #BCDDC6; background: #EDF7F0; color: #2D7140; }
 .home-vid-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 .home-rem-btn.watch { text-decoration: none; display: inline-flex; align-items: center; }
+/* Bullpen: flat list of every clip uploaded from the app */
+.home-clips { margin: 4px 0 12px; }
+.home-clip { display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; margin-bottom: 7px; }
+.home-clip .home-rem-btn.watch { flex-shrink: 0; }
+.home-clip-body { min-width: 0; }
+.home-clip-file { font-weight: 700; font-size: 0.8rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-clip-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
 
 /* ── BOTTOM NAV (field app) ── */
 .bottom-nav {
@@ -4237,6 +4244,7 @@ function msAccount() {
 // if it isn't opened inside the tap gesture).
 async function msBootstrap() {
   updateMsSection();
+  updateMediaBtn();   // the old Videos tab relabels to Photos once uploads go live
   if (!uploadCfg || _msBooted) return;
   const hasCache = Object.keys(localStorage).some(k => k.indexOf("msal.") === 0);
   const pending = sessionStorage.getItem("ncm_ms_signin") || /[#&](code|error)=/.test(location.hash);
@@ -4637,6 +4645,7 @@ function buildHomeOverview() {
 let homeView = "videos";          // "videos" | "sched" (videos is the default view)
 let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged booths
 let homeShowDoneVids = false;     // Videos view: completed section expanded?
+let homeShowFootage = false;      // Videos view: uploaded-footage list expanded?
 const homeVidNotesOpen = new Set();  // "<code>__<booth#>" videos with editor notes expanded
 // The home login is shared, so each device picks WHO is at it once; the name
 // shows on videos they claim via the "Working on" button.
@@ -4809,6 +4818,38 @@ function buildHomeVideosView() {
   if (vids.length && !q) {
     const nDone = vids.filter(v => v.done).length;
     html += `<div class="home-vids-summary">${vids.length} video${vids.length===1?"":"s"} flagged · ${nDone} done · ${vids.length - nDone} to go</div>`;
+  }
+  // Every clip uploaded from the app, one flat list — the whole point is that
+  // nobody digs through SharePoint folders. (Files sent through the old
+  // anonymous upload page can't appear here; SharePoint tells us nothing
+  // about that folder.) Searching auto-expands so footage is findable by
+  // company, booth, rep or file name.
+  const clips = [];
+  Object.values(homeNotes)
+    .filter(d => effectiveDept(d.uid, d.dept) === "edit")
+    .forEach(d => {
+      if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
+      (d.items || []).forEach(it => {
+        if (!it.vlink) return;
+        clips.push({ rep: d.name || "Rep", boothName: it.boothName || "", boothNum: it.boothNum || "",
+                     vlink: it.vlink, vfile: it.vfile || "clip", vupAt: it.vupAt || 0 });
+      });
+    });
+  const shownClips = clips.filter(c => !q || (c.boothName + " " + c.boothNum + " " + c.rep + " " + c.vfile).toLowerCase().includes(q))
+    .sort((a, b) => b.vupAt - a.vupAt);
+  if (clips.length) {
+    const open = homeShowFootage || (q && shownClips.length > 0);
+    html += `<div class="home-rem-donehead" data-footage-toggle>${open ? "▾" : "▸"} Uploaded footage (${q ? shownClips.length + " of " + clips.length : clips.length})</div>`;
+    if (open) {
+      html += `<div class="home-clips">` + (shownClips.length ? shownClips.map(c => `
+        <div class="home-clip">
+          <a class="home-rem-btn watch" href="${esc(c.vlink)}" target="_blank" rel="noopener">▶ Watch</a>
+          <div class="home-clip-body">
+            <div class="home-clip-file">${esc(c.vfile)}</div>
+            <div class="home-clip-meta">${esc(c.boothName)} (Booth ${esc(c.boothNum)}) · ${esc(c.rep)}${c.vupAt ? " · " + esc(fmtExact(c.vupAt)) : ""}</div>
+          </div>
+        </div>`).join("") : `<div class="home-rem-empty">No uploads match "${esc(homeSearchQ)}".</div>`) + `</div>`;
+    }
   }
   if (!vids.length) {
     html += `<div class="empty-wrap"><h3>No videos flagged yet</h3><p>Every booth a rep flags with the Video button lands here, whether or not they've visited it yet.</p></div>`;
@@ -5514,6 +5555,7 @@ document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-home-member-switch]")) { try { localStorage.removeItem("home_member"); } catch (err) {} renderHomeDashboard(); return; }
   if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-footage-toggle]")) { homeShowFootage = !homeShowFootage; renderHomeDashboard(); return; }
   const vn = e.target.closest("[data-vid-notes]");
   if (vn) {
     const k = vn.dataset.vidNotes;
@@ -6052,19 +6094,27 @@ function updateMediaBtn() {
   btn.style.display = show ? "" : "none";
   // The bottom nav's Videos tab is a shortcut to the same sheet. Sales reps
   // shoot booth photos more than footage, so it reads "Videos/Pics" for them
-  // (same upload folder either way; only the wording differs).
+  // (same upload folder either way; only the wording differs). Once in-app
+  // uploads are live for an edit rep, booth videos have their own path, so
+  // the old tab stops competing for the word "Videos" and becomes Photos.
+  const label = msUploadsActive() ? "Photos" : (myNotesAutoShare() ? "Videos" : "Videos/Pics");
   const nav = document.getElementById("bnVideos");
   if (nav) {
     nav.style.display = show ? "" : "none";
     const lbl = nav.querySelector("span");
-    if (lbl) lbl.textContent = myNotesAutoShare() ? "Videos" : "Videos/Pics";
+    if (lbl) lbl.textContent = label;
   }
+  // Header pill (desktop) carries the same word: svg icon + a text node.
+  btn.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = label; });
 }
 function mediaIsMicrosoft(m) { return /sharepoint\.com|office\.com/i.test((m && (m.request || m.folder)) || ""); }
 document.getElementById("mediaBtn").addEventListener("click", () => {
-  // The explainer matches the show's storage provider (Dropbox vs Microsoft 365).
+  // The explainer matches the show's storage provider (Dropbox vs Microsoft 365),
+  // and once in-app uploads are live it steers booth videos to the new path.
   const m = eventMedia(currentEventCode());
-  document.getElementById("mediaSheetInfo").textContent = mediaIsMicrosoft(m)
+  document.getElementById("mediaSheetInfo").textContent = msUploadsActive()
+    ? "Booth videos: use the Upload button on the booth's card — it names the file, drops it in the right place and links it for the home team automatically. This shared folder is for photos, or for browsing everything in one spot. Please add files only; don't move or delete what's there."
+    : mediaIsMicrosoft(m)
     ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the home team can view them (it also appears in the brand's Teams channel). No sign-in needed: tap Upload and pick files from your camera roll. Please add files only; don't move or delete what's there."
     : "Photos and videos upload straight to the shared team Dropbox, where the home team can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.";
   document.getElementById("mediaSheet").style.display = "flex";
@@ -6636,7 +6686,7 @@ function showSignedOut() {
   homeVideoStatus = {};
   myVideoDone = {};
   homeView = "videos"; homeSchedRep = null; homeSchedDay = 1; homeSchedQ = "";
-  homeVideosOnly = false; homeShowDoneVids = false;
+  homeVideosOnly = false; homeShowDoneVids = false; homeShowFootage = false;
   homeVidNotesOpen.clear();
   currentUser = null;
   masterEventOverride = null;
@@ -6778,6 +6828,11 @@ if (fbReady) {
 setAuthMode("signin");
 setupBrandPicker();
 applyQrPrefill();
+// The home desk runs on laptops; on a phone the "Enter as Home Team" button
+// is just signup-screen clutter. Pure UA check (installPlatform() goes null
+// in installed PWAs and after a skip, which isn't what "is a phone" means).
+if (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent))
+  document.getElementById("homeTeamBtn").style.display = "none";
 
 // Updates are fully silent: HTML is network-first so every launch runs the
 // newest deploy, AND a long-running session self-updates — when a new build
