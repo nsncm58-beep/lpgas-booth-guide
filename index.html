@@ -1876,6 +1876,19 @@ body.home-mode .user-chip-gear { display: none !important; }
    which is exactly where animation turns into jank. Everything is opacity/
    transform only, so it stays on the GPU. */
 
+/* iOS rubber-band: pulling down past the top of the page used to stretch a
+   white gap open above the brand header. This bleed extends the header's own
+   color 600px up into that zone — it rides the sticky header, so it moves
+   with the bounce and re-themes with every brand switch for free. */
+.app-header::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: -600px;
+  height: 600px;
+  background: var(--blue);
+}
+
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
    screen — visit taps, note syncs, search keystrokes — never replay it. */
@@ -2014,7 +2027,7 @@ body.home-mode .user-chip-gear { display: none !important; }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v108</div>
+      <div class="settings-dbx-note">NCM Events Guide · v109</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
