@@ -617,6 +617,32 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .video-btn:active { transform: scale(0.94); }
 .video-btn.on { border-color: var(--maroon); color: var(--maroon); background: var(--maroon-light); }
 
+/* In-app SharePoint upload (appears on video-flagged booths once a master
+   creates the config/uploads doc and the rep connects their MS account) */
+.upload-btn {
+  padding: 0 12px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--blue);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  text-decoration: none;
+  -webkit-user-select: none; user-select: none;
+}
+.upload-btn:active { transform: scale(0.94); }
+.upload-btn.busy { opacity: 0.7; pointer-events: none; }
+.upload-btn.done { border-color: #BCDDC6; background: #EDF7F0; color: #2D7140; }
+.home-vid-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.home-rem-btn.watch { text-decoration: none; display: inline-flex; align-items: center; }
+
 /* ── BOTTOM NAV (field app) ── */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
@@ -1867,6 +1893,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 </div>
 
 <!-- Bottom navigation (field app only; the home dashboard is a desktop view) -->
+<input type="file" id="vidFileInput" accept="video/*" style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="bn-btn active" type="button" data-v="schedule">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
@@ -1912,6 +1939,11 @@ body.home-mode .user-chip-gear { display: none !important; }
       <div class="settings-dbx-title">Shows</div>
       <div class="settings-dbx-note">You're on <strong id="curShowName">this show</strong>. When this brand moves to its next show, this one is saved to your old show data automatically and your booths, notes and schedule reset. Nothing for you to do.</div>
       <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button" style="margin-top:12px;">Access old show data</button>
+    </div>
+    <div class="settings-danger" id="settingsMs" style="display:none">
+      <div class="settings-dbx-title">Video uploads</div>
+      <div class="settings-dbx-note" id="msStatus">Not connected yet.</div>
+      <button class="settings-dbx-btn settings-stack-btn" id="msConnectBtn" type="button">Connect Microsoft account</button>
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
@@ -3844,7 +3876,8 @@ function buildSharedNotes() {
     // A bare Video flag shares too, so the home team's videos-only view
     // sees every planned video even before the rep visits or writes notes.
     if (!s.visited && !pre && !post && !s.status && !s.video) return;
-    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post });
+    items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post,
+      vlink: s.vlink || "", vfile: s.vfile || "", vupAt: s.vupAt || 0 });
   });
   return items;
 }
@@ -3986,7 +4019,8 @@ async function hydrateFromCloud() {
       const i = byBooth[it.boothNum + "||" + it.boothName];
       if (i == null) return;
       fresh["c"+i] = { visited: !!it.visited, video: !!it.video, vts: it.vts || 0,
-        status: it.status || "", pre: it.pre || "", post: it.post || "" };
+        status: it.status || "", pre: it.pre || "", post: it.post || "",
+        vlink: it.vlink || "", vfile: it.vfile || "", vupAt: it.vupAt || 0 };
     });
     if (sd.exists) {
       const meals = [], offs = [];
@@ -4127,6 +4161,264 @@ function notifyVideoReady(i, state) {
   notifyHome(brand + " show, video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
     "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the home dashboard</a>');
 }
+// ── IN-APP VIDEO UPLOADS (Microsoft Graph) ──────────────────────────────
+// Dormant until a master creates Firestore doc config/uploads =
+// { clientId, tenantId, folderUrl } (IDs are public identifiers, but they
+// live in Firestore like the notify webhook so the repo stays clean; an
+// optional `disabled: true` turns the whole feature off without a deploy).
+// Reps connect their NCM Microsoft account once (MSAL redirect — popups
+// die in installed PWAs); each video-flagged booth then gets an Upload
+// button that streams the clip into the show's SharePoint folder through
+// a resumable upload session (10 MiB chunks, survives show-floor wifi),
+// auto-named Company_Booth_Rep. The file's SharePoint link rides the
+// booth's notes item (vlink) to the bullpen, which renders Watch footage.
+let uploadCfg = null;
+let _uploadCfgUnsub = null;
+let msalApp = null;            // created lazily, after msal-browser.min.js loads
+let _msalLoadP = null;
+let _msBooted = false;
+const upProg = {};             // c.i -> percent while that booth's upload runs
+let msUploadTarget = null;     // c.i the file picker was opened for
+const MS_SCOPES = ["Files.ReadWrite.All"];
+
+function subscribeUploadConfig() {
+  if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
+  uploadCfg = null; _msBooted = false;
+  if (!fbReady || !currentUser) return;
+  _uploadCfgUnsub = fbDb.collection("config").doc("uploads").onSnapshot(d => {
+    const x = (d.exists && d.data()) || {};
+    uploadCfg = (x.clientId && x.tenantId && x.folderUrl && !x.disabled)
+      ? { clientId: String(x.clientId).trim(), tenantId: String(x.tenantId).trim(), folderUrl: String(x.folderUrl).trim() }
+      : null;
+    msBootstrap();
+  }, () => {});
+}
+function msUploadsActive() {
+  return !!(uploadCfg && currentUser && !isHome() && myNotesAutoShare() && !isPastShow(currentEventCode()));
+}
+function msRedirectUri() {
+  // Must byte-match the SPA redirect URI registered in Entra (the Pages root).
+  return location.origin + location.pathname.replace(/index\.html$/, "");
+}
+function loadMsalLib() {
+  if (window.msal) return Promise.resolve();
+  if (_msalLoadP) return _msalLoadP;
+  _msalLoadP = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "./msal-browser.min.js";
+    s.onload = res;
+    s.onerror = () => { _msalLoadP = null; rej(new Error("msal-load")); };
+    document.head.appendChild(s);
+  });
+  return _msalLoadP;
+}
+async function ensureMsalApp() {
+  if (!uploadCfg) throw new Error("uploads-off");
+  await loadMsalLib();
+  if (msalApp) return msalApp;
+  msalApp = new msal.PublicClientApplication({
+    auth: {
+      clientId: uploadCfg.clientId,
+      authority: "https://login.microsoftonline.com/" + uploadCfg.tenantId,
+      redirectUri: msRedirectUri(),
+    },
+    cache: { cacheLocation: "localStorage" },
+  });
+  await msalApp.initialize();
+  return msalApp;
+}
+function msAccount() {
+  try { return (msalApp && msalApp.getAllAccounts()[0]) || null; } catch (e) { return null; }
+}
+// Runs once per sign-in, as soon as the config lands: finishes a pending
+// login redirect (the auth code comes back in the URL hash) and warms the
+// MSAL instance when this device already holds cached tokens, so the first
+// Upload tap can open the file picker synchronously (iOS drops the picker
+// if it isn't opened inside the tap gesture).
+async function msBootstrap() {
+  updateMsSection();
+  if (!uploadCfg || _msBooted) return;
+  const hasCache = Object.keys(localStorage).some(k => k.indexOf("msal.") === 0);
+  const pending = sessionStorage.getItem("ncm_ms_signin") || /[#&](code|error)=/.test(location.hash);
+  if (!hasCache && !pending) return;
+  _msBooted = true;
+  try {
+    await ensureMsalApp();
+    const resp = await msalApp.handleRedirectPromise();
+    if (resp && resp.account) msalApp.setActiveAccount(resp.account);
+    if (sessionStorage.getItem("ncm_ms_signin")) {
+      sessionStorage.removeItem("ncm_ms_signin");
+      if (msAccount()) toast("Microsoft account connected — tap Upload on a booth to send footage");
+    }
+  } catch (e) { sessionStorage.removeItem("ncm_ms_signin"); }
+  updateMsSection();
+  if (!isHome() && currentUser) render();
+}
+async function msSignIn() {
+  await ensureMsalApp();
+  sessionStorage.setItem("ncm_ms_signin", "1");
+  await msalApp.loginRedirect({ scopes: MS_SCOPES, prompt: "select_account" });
+}
+function msDisconnect() {
+  // Device-local forget (like the desk-member choice): tokens + resolved folder.
+  Object.keys(localStorage).filter(k => k.indexOf("msal.") === 0 || k === "ncm_ms_drive")
+    .forEach(k => localStorage.removeItem(k));
+  msalApp = null; _msBooted = false;
+  updateMsSection(); render();
+  toast("Microsoft account disconnected on this device");
+}
+async function msToken(interactiveOk) {
+  await ensureMsalApp();
+  const acct = msAccount();
+  if (!acct) {
+    if (interactiveOk) { await msSignIn(); }   // navigates away
+    throw new Error("no-account");
+  }
+  try {
+    const r = await msalApp.acquireTokenSilent({ scopes: MS_SCOPES, account: acct });
+    return r.accessToken;
+  } catch (e) {
+    if (interactiveOk) {
+      sessionStorage.setItem("ncm_ms_signin", "1");
+      await msalApp.acquireTokenRedirect({ scopes: MS_SCOPES, account: acct });
+    }
+    throw e;
+  }
+}
+async function msGraph(path, opts, token) {
+  const r = await fetch("https://graph.microsoft.com/v1.0" + path, {
+    ...(opts || {}),
+    headers: { Authorization: "Bearer " + token, ...((opts || {}).headers || {}) },
+  });
+  if (!r.ok) throw new Error("graph-" + r.status);
+  return r.json();
+}
+// The config stores the folder's normal browser URL; Graph's shares API
+// resolves it to a concrete drive + folder id. Cached per URL on-device.
+async function msResolveFolder(token) {
+  try {
+    const c = JSON.parse(localStorage.getItem("ncm_ms_drive") || "null");
+    if (c && c.url === uploadCfg.folderUrl && c.driveId && c.itemId) return c;
+  } catch (e) {}
+  const enc = "u!" + btoa(unescape(encodeURIComponent(uploadCfg.folderUrl)))
+    .replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
+  const item = await msGraph("/shares/" + enc + "/driveItem?$select=id,name,parentReference", null, token);
+  const out = { url: uploadCfg.folderUrl, driveId: item.parentReference.driveId, itemId: item.id };
+  localStorage.setItem("ncm_ms_drive", JSON.stringify(out));
+  return out;
+}
+// Company_Booth_Rep.ext — the folder sorts itself alphabetically by company
+// and the home team can tell every file's booth at a glance. SharePoint's
+// conflictBehavior:rename suffixes repeat takes (" 1", " 2") automatically.
+function msFileName(c, file) {
+  const clean = s => String(s || "").replace(/[^\w &-]+/g, " ").replace(/\s+/g, " ").trim().replace(/ /g, "-").slice(0, 48);
+  const co = clean(c.n) || "Company";
+  const booth = clean(String(c.b).split("/")[0]) || "0";
+  const rep = clean(((currentUser && currentUser.name) || "Rep").split(/\s+/)[0]) || "Rep";
+  let ext = (file.name && (file.name.match(/\.[A-Za-z0-9]{2,5}$/) || [])[0] || "").toLowerCase();
+  if (!ext) ext = file.type === "video/mp4" ? ".mp4" : ".mov";
+  return co + "_B" + booth + "_" + rep + ext;
+}
+const UP_CHUNK = 10 * 1024 * 1024;   // multiple of 320 KiB per Graph's rules
+async function msUploadFile(c, file, onPct) {
+  const token = await msToken(true);
+  const folder = await msResolveFolder(token);
+  const name = msFileName(c, file);
+  const sess = await msGraph(
+    "/drives/" + folder.driveId + "/items/" + folder.itemId + ":/" + encodeURIComponent(name) + ":/createUploadSession",
+    { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) },
+    token);
+  let pos = 0, stalls = 0;
+  while (true) {
+    const end = Math.min(pos + UP_CHUNK, file.size);
+    let r = null;
+    try {
+      r = await fetch(sess.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Range": "bytes " + pos + "-" + (end - 1) + "/" + file.size },
+        body: file.slice(pos, end),
+      });
+    } catch (e) {}                                  // wifi hiccup — resume below
+    if (r && (r.status === 200 || r.status === 201)) return r.json();
+    if (r && r.status === 202) {
+      const j = await r.json().catch(() => ({}));
+      pos = parseInt(String((j.nextExpectedRanges || [])[0] || end + "-").split("-")[0], 10);
+      stalls = 0;
+    } else {
+      if (++stalls > 4) throw new Error("upload-failed" + (r ? "-" + r.status : ""));
+      await new Promise(res => setTimeout(res, 1200 * stalls));
+      try {                                          // ask the session where to resume
+        const st = await fetch(sess.uploadUrl);
+        if (st.ok) {
+          const j = await st.json();
+          pos = parseInt(String((j.nextExpectedRanges || [])[0] || pos + "-").split("-")[0], 10);
+        }
+      } catch (e) {}
+    }
+    if (onPct) onPct(Math.min(99, Math.round(pos / file.size * 100)));
+  }
+}
+async function startVideoUpload(i, file) {
+  const c = CO[i]; if (!c) return;
+  if (!file || !file.size) { toast("That file looks empty — try picking it again"); return; }
+  upProg[i] = 0; render();
+  const onPct = p => {
+    upProg[i] = p;
+    const btn = document.querySelector('[data-upprog="' + i + '"]');
+    if (btn) btn.textContent = "Uploading " + p + "%";
+  };
+  try {
+    const item = await msUploadFile({ ...c, i }, file, onPct);
+    delete upProg[i];
+    const st = load(); const k = key(i);
+    const s = st[k] = st[k] || {};
+    s.vlink = item.webUrl || ""; s.vfile = item.name || ""; s.vupAt = Date.now();
+    s.video = true;                                  // footage exists; keep it in the pipeline
+    save(st); render();
+    toast("Uploaded to the show folder ✓");
+    if (notifyOnce("upload|" + currentEventCode() + "|" + c.b)) {
+      const who = (currentUser && currentUser.name) || "A rep";
+      const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
+      notifyHome(brand + " show, footage uploaded: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
+        ") by " + esc(who) + " — " + esc(item.name || "") +
+        (item.webUrl ? '. <a href="' + item.webUrl + '">Watch it</a>' : ""));
+    }
+  } catch (e) {
+    delete upProg[i]; render();
+    if (String(e && e.message) !== "no-account")
+      toast("Upload didn't finish — check your connection and try again");
+  }
+}
+// Upload controls on a video-flagged booth card. States: plain Upload,
+// mid-upload progress (pointer-events off), and Uploaded (opens the file)
+// with a slim button beside it for extra takes.
+function uploadCtlHtml(c, s) {
+  if (!msUploadsActive() || !s.video) return "";
+  if (upProg[c.i] != null)
+    return `<button class="upload-btn busy" type="button" data-upprog="${c.i}">Uploading ${upProg[c.i]}%</button>`;
+  const up = `<button class="upload-btn" type="button" data-upv="${c.i}" title="Send this booth's video to the show folder">
+      <svg width="12" height="14" viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 25V6"/><path d="M4 13l8-8 8 8"/></svg>${s.vlink ? "More" : "Upload video"}</button>`;
+  const view = s.vlink
+    ? `<a class="upload-btn done" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the uploaded file")}">▶ Uploaded</a>`
+    : "";
+  return view + up;
+}
+function updateMsSection() {
+  const sec = document.getElementById("settingsMs");
+  if (!sec) return;
+  const on = msUploadsActive();
+  sec.style.display = on ? "" : "none";
+  if (!on) return;
+  const acct = msAccount();
+  const status = document.getElementById("msStatus");
+  const btn = document.getElementById("msConnectBtn");
+  if (status) status.innerHTML = acct
+    ? "Connected as <strong>" + esc(acct.username || acct.name || "your NCM account") + "</strong>. Every video-flagged booth has an Upload button; clips land in the show folder named and linked automatically."
+    : "Connect once with your NCM Microsoft account (same login as Outlook) and every video-flagged booth gets an Upload button. Clips land in the shared show folder, named and linked automatically.";
+  if (btn) btn.textContent = acct ? "Disconnect on this device" : "Connect Microsoft account";
+}
+
 // ── SHARED HOME FLAGS ────────────────────────────────────────────────────
 // Legacy "Follow up"/"Covered" note flags (UI removed; docs kept) plus the
 // Videos tab's "Working on" claims. One doc per flag, shared by the whole
@@ -4452,6 +4744,7 @@ function buildHomeVideosView() {
         const g = groups[gk] = groups[gk] || { code: d.eventCode, boothNum: it.boothNum, boothName: it.boothName, reps: [] };
         g.reps.push({ name: d.name || "Rep", visited: !!it.visited, vts: it.vts || 0,
           pre: it.pre || "", post: it.post || "",
+          vlink: it.vlink || "", vfile: it.vfile || "", vupAt: it.vupAt || 0,
           done: !!homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum] });
       });
     });
@@ -4476,6 +4769,12 @@ function buildHomeVideosView() {
     const wkMine = wk && sameMember(wk.member, homeMember());
     const workBtn = v.done ? "" :
       `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
+    // Footage uploaded from the floor: one Watch link per rep who sent a clip.
+    const links = v.reps.filter(r => r.vlink);
+    const linksHtml = links.length
+      ? `<div class="home-vid-links">${links.map(r =>
+          `<a class="home-rem-btn watch" href="${esc(r.vlink)}" target="_blank" rel="noopener" title="${esc(r.vfile || "Open the uploaded file")}">▶ Watch footage${links.length > 1 ? " · " + esc((r.name || "").split(/\s+/)[0]) : ""}</a>`).join("")}</div>`
+      : "";
     // Editors' booth notes, tucked behind a toggle per video.
     const gk = v.code + "__" + v.boothNum;
     const noted = v.reps.filter(r => r.pre || r.post);
@@ -4494,6 +4793,7 @@ function buildHomeVideosView() {
     return `<div class="home-note${v.done ? " vid-done" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
     <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}</div>
+    ${linksHtml}
     <div class="home-note-flags">
       <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
       ${workBtn}
@@ -4714,6 +5014,7 @@ function buildCard(c, state) {
         ${myNotesAutoShare() ? `<button class="video-btn${s.video?" on":""}" data-video="${c.i}" title="Flag this booth's video for the home team">
           <svg width="14" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>
           Video</button>` : ""}
+        ${uploadCtlHtml(c, s)}
         <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" title="Schedule">
           <option value="">Schedule…</option>
           ${timeOpts}
@@ -5281,7 +5582,7 @@ document.getElementById("content").addEventListener("click", e => {
       // Cancelling a planned visit cancels its video plan too, so the home
       // team stops waiting on it. A visited booth keeps its flag — that
       // footage was already shot.
-      if (state[k].video && !state[k].visited) { state[k].video = false; clearedVideo = true; }
+      if (state[k].video && !state[k].visited && !state[k].vlink) { state[k].video = false; clearedVideo = true; }
     }
     save(state);
     toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
@@ -5449,6 +5750,27 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  const upBtn = e.target.closest("[data-upv]");
+  if (upBtn) {
+    const i = parseInt(upBtn.dataset.upv);
+    if (upProg[i] != null) return;
+    if (msalApp && msAccount()) {
+      // Synchronous .click() only: iOS drops the picker if it opens outside
+      // the tap gesture. The token is fetched silently after the pick.
+      msUploadTarget = i;
+      document.getElementById("vidFileInput").click();
+    } else {
+      toast("One-time Microsoft sign-in — you'll come right back here");
+      msToken(true).then(() => {
+        // Cached tokens existed but MSAL wasn't warm yet: ready now,
+        // no redirect happened, so ask for one more tap.
+        updateMsSection();
+        toast("Connected — tap Upload again to pick the video");
+      }).catch(() => {});
+    }
+    return;
+  }
+
   const vidBtn = e.target.closest("[data-video]");
   if (vidBtn) {
     const i = parseInt(vidBtn.dataset.video);
@@ -5462,6 +5784,8 @@ document.getElementById("content").addEventListener("click", e => {
     toast(state[k].video
       ? (state[k].visited ? "Video flagged for the home team" : "Video flagged. It reaches the home team once you mark the booth visited")
       : "Video flag removed");
+    // The Upload button rides the flag, so this card needs a rebuild.
+    if (msUploadsActive()) render();
     return;
   }
 
@@ -5590,7 +5914,7 @@ document.getElementById("content").addEventListener("change", e => {
     // Same rule as the Remove button: unscheduling an unvisited booth
     // withdraws its video plan from the home team's Videos tab.
     let clearedVideo = false;
-    if (!v && state[k].video && !state[k].visited) { state[k].video = false; clearedVideo = true; }
+    if (!v && state[k].video && !state[k].visited && !state[k].vlink) { state[k].video = false; clearedVideo = true; }
     save(state);
     sel.classList.toggle("scheduled", !!v);
     if (v) { const [d,t] = v.split("|"); toast(`Day ${d} · ${t}`); }
@@ -5891,6 +6215,7 @@ function prepSettings() {
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
+  updateMsSection();
 }
 function renderSettingsView() {
   const el = document.getElementById("content");
@@ -5927,6 +6252,19 @@ document.getElementById("settingsSignOut").addEventListener("click", () => {
 });
 document.getElementById("settingsSheet").addEventListener("click", e => {
   if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
+});
+// Profile > Video uploads: connect (login redirect) or forget this device.
+document.getElementById("msConnectBtn").addEventListener("click", () => {
+  if (msAccount()) { msDisconnect(); return; }
+  msSignIn().catch(() => toast("Couldn't reach Microsoft sign-in — try again in a minute"));
+});
+// The picker for booth video uploads (opened by a card's Upload button).
+document.getElementById("vidFileInput").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  const i = msUploadTarget; msUploadTarget = null;
+  if (!f || i == null) return;
+  startVideoUpload(i, f);
 });
 // Access old show data (archived CSVs)
 let _archiveCache = {};
@@ -6418,12 +6756,15 @@ if (fbReady) {
       subscribeTeam();
       subscribeMyVideoStatus();
       subscribeNotifyConfig();
+      subscribeUploadConfig();
       updateMediaBtn();
       maybeShowInstallPrompt();   // reps on a phone; home team is excluded inside
       render();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
+      if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
+      uploadCfg = null; _msBooted = false;   // MS tokens stay: device-level, like home_member
       teamSchedules = {};
       myVideoDone = {};
       viewedScheduleUid = null;
