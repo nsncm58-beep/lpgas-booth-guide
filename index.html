@@ -2063,7 +2063,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v115</div>
+      <div class="settings-dbx-note">NCM Events Guide · v116</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4724,9 +4724,6 @@ function buildHomeOverview() {
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
     const schedDocs = Object.values(homeSchedules).filter(d =>
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
-    const reps = new Set();
-    notesDocs.forEach(d => reps.add(d.uid));
-    schedDocs.forEach(d => reps.add(d.uid));
     let visited = 0, vidTotal = 0, vidDone = 0, last = 0;
     notesDocs.forEach(d => {
       last = Math.max(last, homeDocTs(d));
@@ -4749,7 +4746,6 @@ function buildHomeOverview() {
       <div class="home-ov-body">
         <div class="home-ov-code">${esc(code)}</div>
         <div class="home-ov-stats">
-          <div class="home-ov-stat"><strong>${reps.size}</strong><span>rep${reps.size===1?"":"s"} active</span></div>
           <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
           <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
         </div>
@@ -4905,6 +4901,7 @@ function buildHomeVideosView() {
       `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
     // Footage uploaded from the floor: one Watch link per rep who sent a clip.
     const links = v.reps.filter(r => r.vlink);
+    const lastUp = links.length ? Math.max(...links.map(r => r.vupAt || 0)) : 0;
     const linksHtml = links.length
       ? `<div class="home-vid-links">${links.map(r =>
           `<a class="home-rem-btn watch" href="${esc(r.vlink)}" target="_blank" rel="noopener" title="${esc(r.vfile || "Open the uploaded file")}">▶ Watch footage${links.length > 1 ? " · " + esc((r.name || "").split(/\s+/)[0]) : ""}</a>`).join("")}</div>`
@@ -4926,7 +4923,7 @@ function buildHomeVideosView() {
       : "";
     return `<div class="home-note${v.done ? " vid-done" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
-    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}</div>
+    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${lastUp ? " · footage uploaded " + esc(fmtExact(lastUp)) : ""}</div>
     ${linksHtml}
     <div class="home-note-flags">
       <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
@@ -4955,7 +4952,9 @@ function buildHomeVideosView() {
     .forEach(d => {
       if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
       (d.items || []).forEach(it => {
-        if (!it.vlink) return;
+        // Gate on the flag too: unflagging a booth pulls it out of the
+        // bullpen everywhere, including this list (test-clip cleanup).
+        if (!it.vlink || !it.video) return;
         clips.push({ rep: d.name || "Rep", boothName: it.boothName || "", boothNum: it.boothNum || "",
                      vlink: it.vlink, vfile: it.vfile || "clip", vupAt: it.vupAt || 0 });
       });
