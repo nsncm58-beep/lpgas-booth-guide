@@ -668,7 +668,15 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 14px rgba(0, 40, 70, 0.09);
   padding-bottom: env(safe-area-inset-bottom, 0);
+  transform: translateZ(0);   /* own compositor layer: no repaint lag on fast scrolls */
 }
+/* While the on-screen keyboard is up, iOS lifts every fixed element above
+   it — the nav and the + button floated mid-screen during note typing.
+   Hidden while a text field has focus (touch devices only; see the
+   focusin/focusout wiring). */
+/* !important: the login flow toggles the nav via inline style, which would
+   otherwise outrank this class no matter the selector. */
+body.kb-open .bottom-nav, body.kb-open .fab-wrap { display: none !important; }
 .bn-btn {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 8px 4px 7px; border: none; background: none; color: var(--muted);
@@ -2050,7 +2058,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v113</div>
+      <div class="settings-dbx-note">NCM Events Guide · v114</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -6123,6 +6131,28 @@ function setBottomTab(v) {
   activeView = v;
   document.querySelectorAll("#bottomNav [data-v]").forEach(t => t.classList.toggle("active", t.dataset.v === v));
 }
+
+// iOS lifts position:fixed elements above the on-screen keyboard, so the
+// bottom nav and the FAB floated mid-screen while typing booth notes. Hide
+// them while any text field has focus — touch devices only (a laptop's
+// keyboard doesn't cover the screen, and the vanishing bar reads as a bug
+// there). The 80ms grace stops a flash when focus hops field to field.
+const _isTouchDevice = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+const _isTypingEl = el => !!(el && el.matches
+  && el.matches("input[type='text'], input[type='email'], input[type='password'], input[type='search'], input:not([type]), textarea"));
+let _kbTimer = null;
+document.addEventListener("focusin", e => {
+  if (!_isTouchDevice || !_isTypingEl(e.target)) return;
+  clearTimeout(_kbTimer);
+  document.body.classList.add("kb-open");
+});
+document.addEventListener("focusout", () => {
+  if (!_isTouchDevice) return;
+  clearTimeout(_kbTimer);
+  _kbTimer = setTimeout(() => {
+    if (!_isTypingEl(document.activeElement)) document.body.classList.remove("kb-open");
+  }, 80);
+});
 
 document.querySelector(".filter-bar").addEventListener("click", e => {
   const pill = e.target.closest(".f-pill");
