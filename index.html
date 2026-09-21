@@ -2078,10 +2078,20 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v120</div>
+      <div class="settings-dbx-note">NCM Events Guide · v121</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
+  </div>
+</div>
+
+<!-- ── One-time nudge: connect Microsoft right after app sign-in ── -->
+<div id="msPromptSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">One more sign-in, one time only</div>
+    <p class="settings-dbx-note">Connect your NCM Microsoft account (same login as Outlook) and every booth you flag for video gets an Upload button. Clips land in the show folder named, filed and linked for the home team automatically.</p>
+    <button class="settings-done" id="msPromptConnect" type="button">Connect Microsoft account</button>
+    <button class="settings-done share-secondary" id="msPromptLater" type="button">Later (it's in your Profile)</button>
   </div>
 </div>
 
@@ -4399,6 +4409,24 @@ async function msBootstrap() {
   } catch (e) { sessionStorage.removeItem("ncm_ms_signin"); }
   updateMsSection();
   if (!isHome() && currentUser) render();
+  maybeShowMsPrompt();
+}
+// Right after app sign-in (once per device): editorial reps with uploads
+// live get offered the Microsoft connect immediately, so the one-time
+// sign-in happens on hotel wifi instead of ambushing them mid-task on the
+// show floor. Skipped while the install gate covers the screen — it shows
+// on the next launch instead, after the app is on their home screen.
+let _msPromptedThisSession = false;
+function maybeShowMsPrompt() {
+  if (_msPromptedThisSession) return;
+  if (!msUploadsActive() || msAccount()) return;
+  if (Object.keys(localStorage).some(k => k.indexOf("msal.") === 0)) return;   // has tokens, just not warmed
+  try { if (localStorage.getItem("ncm_ms_prompted")) return; } catch (e) {}
+  const gate = document.getElementById("installGate");
+  if (gate && gate.style.display !== "none") return;
+  _msPromptedThisSession = true;
+  try { localStorage.setItem("ncm_ms_prompted", "1"); } catch (e) {}
+  document.getElementById("msPromptSheet").style.display = "flex";
 }
 async function msSignIn() {
   await ensureMsalApp();
@@ -6496,6 +6524,18 @@ document.getElementById("settingsSheet").addEventListener("click", e => {
 document.getElementById("msConnectBtn").addEventListener("click", () => {
   if (msAccount()) { msDisconnect(); return; }
   msSignIn().catch(() => toast("Couldn't reach Microsoft sign-in. Try again in a minute"));
+});
+// The post-sign-in connect nudge (one time per device).
+document.getElementById("msPromptConnect").addEventListener("click", () => {
+  document.getElementById("msPromptSheet").style.display = "none";
+  msSignIn().catch(() => toast("Couldn't reach Microsoft sign-in. Try again in a minute"));
+});
+document.getElementById("msPromptLater").addEventListener("click", () => {
+  document.getElementById("msPromptSheet").style.display = "none";
+  toast("Anytime: Profile, then Connect Microsoft account");
+});
+document.getElementById("msPromptSheet").addEventListener("click", e => {
+  if (e.target.id === "msPromptSheet") e.currentTarget.style.display = "none";
 });
 // The picker for booth video uploads (opened by a card's Upload button).
 document.getElementById("vidFileInput").addEventListener("change", e => {
