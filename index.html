@@ -766,6 +766,11 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   transition: transform 0.12s, box-shadow 0.12s;
 }
 .home-aside-media:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.18); }
+/* Full-width variant: the shared-folder banner under the brand view tabs */
+.home-folder-wide { margin: 2px 0 16px; padding: 18px 20px; }
+.home-folder-wide .home-aside-media-main { font-size: 1.08rem; }
+.home-folder-wide .home-aside-media-sub { font-size: 0.7rem; }
+.home-folder-wide .home-aside-media-play { width: 42px; height: 42px; }
 .home-aside-media-play {
   flex-shrink: 0;
   width: 36px; height: 36px;
@@ -2078,7 +2083,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v121</div>
+      <div class="settings-dbx-note">NCM Events Guide · v122</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4713,22 +4718,10 @@ function toggleVideoDoneGroup(code, boothNum) {
   if (!allDone) notifyVideoDone(code, boothNum, members[0].it.boothName);
   Promise.all(ops).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
-// The right rail: just the selected brand's show-media box now. (The old
-// Reminders list lived here too — retired at Nate's request 2026-09-21; the
-// Videos tab IS the pipeline, with the same Mark-video-done ids.) Returns
-// nothing on the All-Brands landing, and the grid collapses to one column.
-function buildHomeReminders() {
-  if (!homeBrandFilter) return "";
-  const mc = Object.keys(MEDIA).find(c => resolveEvent(c).brand === homeBrandFilter && (eventMedia(c) || {}).folder);
-  if (!mc) return "";
-  const b = BRANDS[homeBrandFilter];
-  return `<aside class="home-aside">
-    <a class="home-aside-media" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
-      <span class="home-aside-media-play"><svg width="13" height="15" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
-      <span class="home-aside-media-main">Show photos &amp; videos<span class="home-aside-media-sub">${esc(mc)} · ${mediaIsMicrosoft(eventMedia(mc)) ? "opens the shared Microsoft 365 folder" : "opens the team Dropbox"}</span></span>
-    </a>
-  </aside>`;
-}
+// (The right rail is gone entirely: Reminders retired 2026-09-21, and the
+// shared-folder button moved inline under the brand view tabs as a wide
+// banner. The .home-wrap grid only engages when an aside exists, so every
+// home view is single-column now.)
 
 // All-Brands landing: one live status card per brand (mission control).
 // Picking a brand (card or chip) opens its notes/schedules/search.
@@ -4884,11 +4877,21 @@ function renderHomeDashboard() {
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
       ${homeView==="sched" ? `<button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>` : ""}
     </div>`;
+    // The show's shared folder, full width under the tabs (the old right
+    // rail is gone; this button was the only thing left living in it).
+    const mc = Object.keys(MEDIA).find(c => resolveEvent(c).brand === homeBrandFilter && (eventMedia(c) || {}).folder);
+    if (mc) {
+      const b = BRANDS[homeBrandFilter];
+      html += `<a class="home-aside-media home-folder-wide" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
+        <span class="home-aside-media-play"><svg width="15" height="17" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
+        <span class="home-aside-media-main">View shared folder<span class="home-aside-media-sub">${esc(mc)} · every photo and video, on Microsoft 365</span></span>
+      </a>`;
+    }
     html += (homeView === "sched") ? buildHomeSchedView() : buildHomeVideosView();
   } else {
     html += buildHomeOverview();
   }
-  html += `</div>` + buildHomeReminders() + `</div>`;
+  html += `</div></div>`;
   el.innerHTML = html;
   const activeQ = homeView === "sched" ? homeSchedQ : homeSearchQ;
   if (activeQ.trim()) {
