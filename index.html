@@ -1947,6 +1947,13 @@ html { background: var(--bg); }
               color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
 
+/* With the Reminders rail retired, the All-Brands landing has no aside at
+   all — let the overview cards take the full width instead of leaving a
+   hollow 340px column. */
+@media (min-width: 1040px) {
+  .home-wrap:not(:has(.home-aside)) { display: block; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -2063,7 +2070,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v116</div>
+      <div class="settings-dbx-note">NCM Events Guide · v117</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4573,7 +4580,6 @@ function subscribeHomeFlags() {
 // on the floor sees a live "Video done" chip on that booth card.
 let homeVideoStatus = {};      // docId -> doc (home side, all)
 let _homeVdUnsub = null;
-let homeShowDoneRem = false;   // "Completed" group expanded?
 let myVideoDone = {};          // boothNum -> true (rep side, own+current event)
 let _myVdUnsub = null;
 function subscribeHomeVideoStatus() {
@@ -4664,53 +4670,21 @@ function toggleVideoDoneGroup(code, boothNum) {
   if (!allDone) notifyVideoDone(code, boothNum, members[0].it.boothName);
   Promise.all(ops).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
-// The Reminders panel: every visited booth from an edit/digital rep, newest
-// first, with a Video-done toggle. Rendered beside the dashboard on desktop.
+// The right rail: just the selected brand's show-media box now. (The old
+// Reminders list lived here too — retired at Nate's request 2026-09-21; the
+// Videos tab IS the pipeline, with the same Mark-video-done ids.) Returns
+// nothing on the All-Brands landing, and the grid collapses to one column.
 function buildHomeReminders() {
-  const rem = [];
-  Object.values(homeNotes)
-    .filter(d => effectiveDept(d.uid, d.dept) === "edit")
-    .forEach(d => {
-      if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
-      (d.items || []).forEach(it => {
-        if (!it.visited || !it.video) return;   // reps flag videos explicitly
-        const id = d.eventCode + "__" + d.uid + "__" + it.boothNum;
-        rem.push({ id, code: d.eventCode, uid: d.uid, name: d.name || "Rep",
-          boothName: it.boothName, boothNum: it.boothNum, vts: it.vts || 0,
-          done: !!homeVideoStatus[id] });
-      });
-    });
-  rem.sort((a, b) => b.vts - a.vts);
-  const pending = rem.filter(r => !r.done);
-  const done    = rem.filter(r => r.done);
-  const itemHtml = r => `<div class="home-rem-item${r.done ? " isdone" : ""}">
-      <div class="home-rem-co">${esc(r.boothName)} <span class="home-note-booth">Booth ${esc(r.boothNum)}</span></div>
-      <div class="home-rem-meta">visited by ${esc(r.name)}${r.vts ? " · " + esc(fmtExact(r.vts)) : ""}</div>
-      <button class="home-rem-btn${r.done ? " done" : ""}" type="button" data-vd="${esc(r.id)}" data-vd-code="${esc(r.code)}" data-vd-uid="${esc(r.uid)}" data-vd-name="${esc(r.name)}" data-vd-b="${esc(r.boothNum)}" data-vd-n="${esc(r.boothName)}">${r.done ? "✓ Video done · undo" : "Mark video done"}</button>
-    </div>`;
-  let h = `<aside class="home-aside">`;
-  // The selected brand's show media, front and center above the reminders.
-  if (homeBrandFilter) {
-    const mc = Object.keys(MEDIA).find(c => resolveEvent(c).brand === homeBrandFilter && (eventMedia(c) || {}).folder);
-    if (mc) {
-      const b = BRANDS[homeBrandFilter];
-      h += `<a class="home-aside-media" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
-        <span class="home-aside-media-play"><svg width="13" height="15" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
-        <span class="home-aside-media-main">Show photos &amp; videos<span class="home-aside-media-sub">${esc(mc)} · ${mediaIsMicrosoft(eventMedia(mc)) ? "opens the shared Microsoft 365 folder" : "opens the team Dropbox"}</span></span>
-      </a>`;
-    }
-  }
-  h += `<div class="home-rem-card">
-    <div class="home-rem-title">Reminders<span class="home-rem-count">${pending.length}</span></div>
-    <div class="home-rem-sub">Booth videos flagged by the editorial team land here once the booth is visited. Mark each done as you finish it; the rep sees it on their booth card.</div>`;
-  h += pending.length ? pending.map(itemHtml).join("")
-    : `<div class="home-rem-empty">Nothing waiting. Reps flag footage with the Video button on a booth; it lands here once that booth is visited.</div>`;
-  if (done.length) {
-    h += `<div class="home-rem-donehead" data-rem-done-toggle>${homeShowDoneRem ? "▾" : "▸"} Completed (${done.length})</div>`;
-    if (homeShowDoneRem) h += done.map(itemHtml).join("");
-  }
-  h += `</div></aside>`;
-  return h;
+  if (!homeBrandFilter) return "";
+  const mc = Object.keys(MEDIA).find(c => resolveEvent(c).brand === homeBrandFilter && (eventMedia(c) || {}).folder);
+  if (!mc) return "";
+  const b = BRANDS[homeBrandFilter];
+  return `<aside class="home-aside">
+    <a class="home-aside-media" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
+      <span class="home-aside-media-play"><svg width="13" height="15" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
+      <span class="home-aside-media-main">Show photos &amp; videos<span class="home-aside-media-sub">${esc(mc)} · ${mediaIsMicrosoft(eventMedia(mc)) ? "opens the shared Microsoft 365 folder" : "opens the team Dropbox"}</span></span>
+    </a>
+  </aside>`;
 }
 
 // All-Brands landing: one live status card per brand (mission control).
@@ -5692,7 +5666,6 @@ document.getElementById("content").addEventListener("click", e => {
   const hm = e.target.closest("[data-home-member]");
   if (hm) { try { localStorage.setItem("home_member", hm.dataset.homeMember); } catch (err) {} renderHomeDashboard(); return; }
   if (e.target.closest("[data-home-member-switch]")) { try { localStorage.removeItem("home_member"); } catch (err) {} renderHomeDashboard(); return; }
-  if (e.target.closest("[data-rem-done-toggle]")) { homeShowDoneRem = !homeShowDoneRem; renderHomeDashboard(); return; }
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-footage-toggle]")) { homeShowFootage = !homeShowFootage; renderHomeDashboard(); return; }
   const vn = e.target.closest("[data-vid-notes]");
