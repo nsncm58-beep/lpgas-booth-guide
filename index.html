@@ -2070,7 +2070,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v117</div>
+      <div class="settings-dbx-note">NCM Events Guide · v118</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4000,7 +4000,8 @@ function buildSharedNotes() {
     // sees every planned video even before the rep visits or writes notes.
     if (!s.visited && !pre && !post && !s.status && !s.video) return;
     items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post,
-      vlink: s.vlink || "", vfile: s.vfile || "", vupAt: s.vupAt || 0 });
+      vlink: s.vlink || "", vfile: s.vfile || "", vupAt: s.vupAt || 0,
+      vclips: Array.isArray(s.vclips) ? s.vclips : [] });
   });
   return items;
 }
@@ -4143,7 +4144,8 @@ async function hydrateFromCloud() {
       if (i == null) return;
       fresh["c"+i] = { visited: !!it.visited, video: !!it.video, vts: it.vts || 0,
         status: it.status || "", pre: it.pre || "", post: it.post || "",
-        vlink: it.vlink || "", vfile: it.vfile || "", vupAt: it.vupAt || 0 };
+        vlink: it.vlink || "", vfile: it.vfile || "", vupAt: it.vupAt || 0,
+        vclips: Array.isArray(it.vclips) ? it.vclips : [] };
     });
     if (sd.exists) {
       const meals = [], offs = [];
@@ -4512,6 +4514,10 @@ async function startVideoUpload(i, file) {
     delete upProg[i];
     const st = load(); const k = key(i);
     const s = st[k] = st[k] || {};
+    // Shows want multiple angles: every upload APPENDS to the booth's clip
+    // list (capped well under Firestore's doc limit). vlink/vfile/vupAt stay
+    // as "the latest" for the field chip and older readers.
+    s.vclips = (s.vclips || []).concat([{ u: item.webUrl || "", f: item.name || "", t: Date.now() }]).slice(-12);
     s.vlink = item.webUrl || ""; s.vfile = item.name || ""; s.vupAt = Date.now();
     s.video = true;                                  // footage exists; keep it in the pipeline
     save(st); render();
@@ -4538,8 +4544,9 @@ function uploadCtlHtml(c, s) {
     return `<button class="upload-btn busy" type="button" data-upprog="${c.i}">Uploading ${upProg[c.i]}%</button>`;
   const up = `<button class="upload-btn" type="button" data-upv="${c.i}" title="Send this booth's video to the show folder">
       <svg width="12" height="14" viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 25V6"/><path d="M4 13l8-8 8 8"/></svg>${s.vlink ? "More" : "Upload video"}</button>`;
+  const nClips = (s.vclips && s.vclips.length) || (s.vlink ? 1 : 0);
   const view = s.vlink
-    ? `<a class="upload-btn done" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the uploaded file")}">▶ Uploaded</a>`
+    ? `<a class="upload-btn done" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the uploaded file")}">▶ Uploaded${nClips > 1 ? " (" + nClips + ")" : ""}</a>`
     : "";
   return view + up;
 }
@@ -4848,7 +4855,8 @@ function buildHomeVideosView() {
         const g = groups[gk] = groups[gk] || { code: d.eventCode, boothNum: it.boothNum, boothName: it.boothName, reps: [] };
         g.reps.push({ name: d.name || "Rep", visited: !!it.visited, vts: it.vts || 0,
           pre: it.pre || "", post: it.post || "",
-          vlink: it.vlink || "", vfile: it.vfile || "", vupAt: it.vupAt || 0,
+          clips: (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips
+               : (it.vlink ? [{ u: it.vlink, f: it.vfile || "", t: it.vupAt || 0 }] : []),
           done: !!homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum] });
       });
     });
@@ -4873,12 +4881,22 @@ function buildHomeVideosView() {
     const wkMine = wk && sameMember(wk.member, homeMember());
     const workBtn = v.done ? "" :
       `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
-    // Footage uploaded from the floor: one Watch link per rep who sent a clip.
-    const links = v.reps.filter(r => r.vlink);
-    const lastUp = links.length ? Math.max(...links.map(r => r.vupAt || 0)) : 0;
-    const linksHtml = links.length
-      ? `<div class="home-vid-links">${links.map(r =>
-          `<a class="home-rem-btn watch" href="${esc(r.vlink)}" target="_blank" rel="noopener" title="${esc(r.vfile || "Open the uploaded file")}">▶ Watch footage${links.length > 1 ? " · " + esc((r.name || "").split(/\s+/)[0]) : ""}</a>`).join("")}</div>`
+    // Footage from the floor: one Watch chip per CLIP (multiple reps shoot
+    // the same booth, and one rep shoots multiple angles). The ledger line
+    // below the names says how much is in and who hasn't sent anything yet.
+    const repsIn = v.reps.filter(r => r.clips.length);
+    const allClips = repsIn.flatMap(r => r.clips.map((c, ci) => ({ ...c, rep: r.name || "Rep", ci, of: r.clips.length })));
+    const lastUp = allClips.length ? Math.max(...allClips.map(c => c.t || 0)) : 0;
+    const waiting = v.done ? [] : v.reps.filter(r => !r.clips.length).map(r => (r.name || "Rep").split(/\s+/)[0]);
+    const ledger = allClips.length
+      ? " · " + (v.reps.length > 1
+          ? allClips.length + " clip" + (allClips.length === 1 ? "" : "s") + " in from " + repsIn.length + " of " + v.reps.length + " reps"
+          : (allClips.length > 1 ? allClips.length + " clips in, latest " : "footage uploaded ") + fmtExact(lastUp))
+        + (waiting.length ? " · may still be waiting on " + waiting.join(", ") : "")
+      : "";
+    const linksHtml = allClips.length
+      ? `<div class="home-vid-links">${allClips.map(c =>
+          `<a class="home-rem-btn watch" href="${esc(c.u)}" target="_blank" rel="noopener" title="${esc(c.f || "Open the uploaded file")}">▶ ${allClips.length === 1 ? "Watch footage" : esc((c.rep).split(/\s+/)[0]) + (c.of > 1 ? " · " + (c.ci + 1) : "")}</a>`).join("")}</div>`
       : "";
     // Editors' booth notes, tucked behind a toggle per video.
     const gk = v.code + "__" + v.boothNum;
@@ -4897,7 +4915,7 @@ function buildHomeVideosView() {
       : "";
     return `<div class="home-note${v.done ? " vid-done" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
-    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${lastUp ? " · footage uploaded " + esc(fmtExact(lastUp)) : ""}</div>
+    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${esc(ledger)}</div>
     ${linksHtml}
     <div class="home-note-flags">
       <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
@@ -4928,9 +4946,11 @@ function buildHomeVideosView() {
       (d.items || []).forEach(it => {
         // Gate on the flag too: unflagging a booth pulls it out of the
         // bullpen everywhere, including this list (test-clip cleanup).
-        if (!it.vlink || !it.video) return;
-        clips.push({ rep: d.name || "Rep", boothName: it.boothName || "", boothNum: it.boothNum || "",
-                     vlink: it.vlink, vfile: it.vfile || "clip", vupAt: it.vupAt || 0 });
+        if (!it.video) return;
+        const list = (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips
+                   : (it.vlink ? [{ u: it.vlink, f: it.vfile || "", t: it.vupAt || 0 }] : []);
+        list.forEach(cl => clips.push({ rep: d.name || "Rep", boothName: it.boothName || "", boothNum: it.boothNum || "",
+                     vlink: cl.u, vfile: cl.f || "clip", vupAt: cl.t || 0 }));
       });
     });
   const shownClips = clips.filter(c => !q || (c.boothName + " " + c.boothNum + " " + c.rep + " " + c.vfile).toLowerCase().includes(q))
