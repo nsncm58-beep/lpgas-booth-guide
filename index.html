@@ -1736,19 +1736,32 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
 /* Home dashboard: All-Brands overview cards */
-.home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; }
+.home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
 .home-ov-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
 .home-ov-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.12); }
 .home-ov-bar { padding: 12px 14px; display: flex; align-items: center; min-height: 50px; }
 .home-ov-bar img { height: 26px; display: block; }
 .home-ov-body { padding: 12px 14px 14px; }
 .home-ov-code { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 10px; }
-.home-ov-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-bottom: 12px; }
+.home-ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin-bottom: 12px; }
 .home-ov-stat strong { display: block; font-family: var(--fd); font-weight: 900; font-size: 1.25rem; color: var(--text); line-height: 1.1; }
 .home-ov-stat span { font-size: 0.66rem; color: var(--muted); font-weight: 600; }
 .home-ov-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-soft); padding-top: 10px; font-size: 0.68rem; color: var(--muted); }
 .home-ov-media { font-weight: 700; color: var(--blue); text-decoration: none; white-space: nowrap; }
 .home-ov-hint { text-align: center; font-size: 0.74rem; color: var(--muted); margin-top: 18px; }
+/* Overview card anatomy: show name + live/upcoming badge + dates line */
+.home-ov-showrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+.home-ov-show { font-family: var(--fd); font-weight: 800; font-size: 1.02rem; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-ov-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; background: #EEF2F6; color: var(--muted); flex-shrink: 0; }
+.home-ov-badge.live { background: #EDF7F0; color: #2D7140; }
+.home-ov-badge.soon { background: #EAF2FA; color: #23639C; }
+.hl-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2D9E55; animation: hlPulse 1.6s ease-in-out infinite; }
+@keyframes hlPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+/* All-Brands landing: latest clips across every show */
+.home-latest { margin-top: 26px; }
+.home-latest-title { font-family: var(--fd); font-weight: 800; font-size: 1rem; color: var(--text); margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px; }
+.home-latest-sub { font-family: var(--ft); font-size: 0.68rem; font-weight: 600; color: var(--muted); }
+.hl-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
 /* Home dashboard: reminders aside (video pipeline) */
 .home-aside { margin: 16px 0 0; }
@@ -2070,7 +2083,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v118</div>
+      <div class="settings-dbx-note">NCM Events Guide · v119</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4705,10 +4718,11 @@ function buildHomeOverview() {
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
     const schedDocs = Object.values(homeSchedules).filter(d =>
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
-    let visited = 0, vidTotal = 0, vidDone = 0, last = 0;
+    let visited = 0, vidTotal = 0, vidDone = 0, clips = 0, last = 0;
     notesDocs.forEach(d => {
       last = Math.max(last, homeDocTs(d));
       (d.items || []).forEach(it => {
+        if (it.video) clips += (Array.isArray(it.vclips) && it.vclips.length) || (it.vlink ? 1 : 0);
         if (!it.visited) return;
         visited++;
         if (!it.video) return;   // only rep-flagged videos count in the pipeline
@@ -4720,15 +4734,22 @@ function buildHomeOverview() {
     const vidPending = vidTotal - vidDone;
     const media = codes.map(c => eventMedia(c)).find(m => m && m.folder);
     const code = codes[0] || "";
+    const ev = EVENTS[code] || {};
+    const st = showOvStatus(code);
     h += `<div class="home-ov-card" data-home-brand="${esc(bk)}" role="button" tabindex="0">
       <div class="home-ov-bar" style="background:${brand.p.blue}">
         <img src="./${esc(brand.logo)}" alt="${esc(brand.name)}" onerror="this.style.display='none'">
       </div>
       <div class="home-ov-body">
-        <div class="home-ov-code">${esc(code)}</div>
+        <div class="home-ov-showrow">
+          <span class="home-ov-show">${esc(ev.show || brand.name)}</span>
+          <span class="home-ov-badge ${st.k}">${st.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(st.label)}</span>
+        </div>
+        <div class="home-ov-code">${esc(code)}${(ev.dates && ev.dates.length) ? " · " + esc(fmtShowDates(ev.dates)) : ""}</div>
         <div class="home-ov-stats">
           <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
           <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
+          <div class="home-ov-stat"><strong>${clips}</strong><span>clip${clips === 1 ? "" : "s"} uploaded</span></div>
         </div>
         <div class="home-ov-foot">
           <span>${last ? "active " + esc(fmtAgo(last)) : "no activity yet"}</span>
@@ -4737,8 +4758,62 @@ function buildHomeOverview() {
       </div>
     </div>`;
   });
-  h += `</div><div class="home-ov-hint">Pick a brand for its videos, schedules and search.</div>`;
+  h += `</div>`;
+  // Latest footage across every show: fills the landing with the thing the
+  // desk actually checks, and it matters most when two shows overlap.
+  const latest = [];
+  Object.values(homeNotes)
+    .filter(d => effectiveDept(d.uid, d.dept) === "edit")
+    .forEach(d => {
+      const bk = resolveEvent(d.eventCode).brand;
+      (d.items || []).forEach(it => {
+        if (!it.video) return;
+        const list = (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips
+                   : (it.vlink ? [{ u: it.vlink, f: it.vfile || "", t: it.vupAt || 0 }] : []);
+        list.forEach(cl => latest.push({ bk, u: cl.u, f: cl.f || "clip", t: cl.t || 0,
+          co: it.boothName || "", b: it.boothNum || "", rep: d.name || "Rep" }));
+      });
+    });
+  latest.sort((a, b) => b.t - a.t);
+  if (latest.length) {
+    h += `<div class="home-latest">
+      <div class="home-latest-title">Latest footage<span class="home-latest-sub">newest first, across every show</span></div>
+      <div class="home-clips">` + latest.slice(0, 6).map(c => `
+        <div class="home-clip">
+          <span class="hl-dot" style="background:${(BRANDS[c.bk] || BRANDS.ncm).p.blue}" title="${esc((BRANDS[c.bk] || {}).name || "")}"></span>
+          <a class="home-rem-btn watch" href="${esc(c.u)}" target="_blank" rel="noopener">▶ Watch</a>
+          <div class="home-clip-body">
+            <div class="home-clip-file">${esc(c.f)}</div>
+            <div class="home-clip-meta">${esc(c.co)} (Booth ${esc(c.b)}) · ${esc(c.rep)}${c.t ? " · " + esc(fmtExact(c.t)) : ""}</div>
+          </div>
+        </div>`).join("") + `</div></div>`;
+  }
+  h += `<div class="home-ov-hint">Pick a brand for its videos, schedules and search.</div>`;
   return h;
+}
+// A show's at-a-glance state for the overview cards.
+function showOvStatus(code) {
+  const ev = EVENTS[code] || {};
+  if (isPastShow(code)) return { k: "quiet", label: "Wrapped" };
+  const ds = ev.dates || [];
+  if (!ds.length) return { k: "quiet", label: "Dates TBD" };
+  const now = new Date();
+  const t0 = new Date(ds[0] + "T00:00:00");
+  const t1 = new Date(ds[ds.length - 1] + "T23:59:59");
+  if (now >= t0 && now <= t1) return { k: "live", label: "Live · Day " + (showDayToday(code) || 1) };
+  if (now < t0) {
+    const days = Math.ceil((t0 - now) / 864e5);
+    return { k: "soon", label: days === 1 ? "Starts tomorrow" : "Starts in " + days + " days" };
+  }
+  return { k: "quiet", label: "Show ended" };
+}
+// "Oct 21-23" (or "Oct 30-Nov 2" across a month boundary).
+function fmtShowDates(ds) {
+  if (!ds || !ds.length) return "";
+  const d0 = new Date(ds[0] + "T12:00:00"), d1 = new Date(ds[ds.length - 1] + "T12:00:00");
+  const mon = d => d.toLocaleDateString("en-US", { month: "short" });
+  if (ds[0] === ds[ds.length - 1]) return mon(d0) + " " + d0.getDate();
+  return mon(d0) + " " + d0.getDate() + "-" + (mon(d0) === mon(d1) ? "" : mon(d1) + " ") + d1.getDate();
 }
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
