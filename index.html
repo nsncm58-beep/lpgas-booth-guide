@@ -2084,7 +2084,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v125</div>
+      <div class="settings-dbx-note">NCM Events Guide · v126</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -2098,6 +2098,16 @@ html { background: var(--bg); }
     <p class="settings-dbx-note" id="vidOffText"></p>
     <button class="settings-done" id="vidOffKeep" type="button">Keep it flagged</button>
     <button class="settings-done share-secondary" id="vidOffConfirm" type="button">Remove the flag</button>
+  </div>
+</div>
+
+<!-- ── Bullpen: confirm before deleting a removed card for good ── -->
+<div id="vidPurgeSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Delete this video from the bullpen for good?</div>
+    <p class="settings-dbx-note" id="vidPurgeText"></p>
+    <button class="settings-done" id="vidPurgeCancel" type="button">Keep it in Removed</button>
+    <button class="settings-done share-secondary" id="vidPurgeConfirm" type="button">Delete permanently</button>
   </div>
 </div>
 
@@ -4761,8 +4771,26 @@ function vidHideDoc(code, boothNum) { return homeFlags["hide__" + code + "__" + 
 function isVidHidden(g) {
   const h = vidHideDoc(g.code, g.boothNum);
   if (!h) return false;
+  if (h.gone) return true;                 // deleted from the bullpen: stays gone
   const newest = Math.max(0, ...g.reps.flatMap(r => (r.clips || []).map(c => c.t || 0)));
   return !(newest > (h.ts || 0));
+}
+// Same check for a single rep's item (overview counts).
+function itemHiddenFromBullpen(code, it) {
+  const h = vidHideDoc(code, it.boothNum);
+  if (!h) return false;
+  if (h.gone) return true;
+  return !(Math.max(0, ...(it.vclips || []).map(c => c.t || 0), it.vupAt || 0) > (h.ts || 0));
+}
+// Permanent: the card leaves every bullpen list and count and never
+// resurfaces. Rep data and SharePoint files are untouched (the bullpen
+// account can't reach either, and shouldn't).
+function purgeVideoGroup(code, boothNum) {
+  if (!fbReady) return;
+  fbDb.collection("homeFlags").doc("hide__" + code + "__" + boothNum)
+    .set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now(), gone: true })
+    .then(() => toast("Deleted from the bullpen"))
+    .catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 function hideVideoGroup(code, boothNum) {
   if (!fbReady) return;
@@ -4838,13 +4866,12 @@ function buildHomeOverview() {
     notesDocs.forEach(d => {
       last = Math.max(last, homeDocTs(d));
       (d.items || []).forEach(it => {
-        if (it.video) clips += (Array.isArray(it.vclips) && it.vclips.length) || (it.vlink ? 1 : 0);
+        // Cards the desk removed or deleted sit out of every count.
+        const offBullpen = it.video && itemHiddenFromBullpen(d.eventCode, it);
+        if (it.video && !offBullpen) clips += (Array.isArray(it.vclips) && it.vclips.length) || (it.vlink ? 1 : 0);
         if (!it.visited) return;
         visited++;
-        if (!it.video) return;   // only rep-flagged videos count in the pipeline
-        // Cards the desk removed (with no newer footage) sit out of the counts.
-        const hid = vidHideDoc(d.eventCode, it.boothNum);
-        if (hid && !(Math.max(0, ...(it.vclips || []).map(c => c.t || 0), it.vupAt || 0) > (hid.ts || 0))) return;
+        if (!it.video || offBullpen) return;   // only rep-flagged, still-live videos count
         vidTotal++;
         if (homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum]) vidDone++;
       });
@@ -5035,13 +5062,15 @@ function buildHomeVideosView() {
       visitor: latest ? latest.name : "",
       done: g.reps.every(r => r.done),
       hidden: isVidHidden(g),
+      gone: !!(vidHideDoc(g.code, g.boothNum) || {}).gone,
       names: g.reps.map(r => r.name).join(", ") };
   });
   // "Removed from the bullpen": a desk-side hide flag. The rep's data is
   // untouched; the card just leaves this view until restored (or until new
-  // footage lands, which resurfaces it automatically).
-  const hiddenVids = vids.filter(v => v.hidden);
-  const hiddenKeys = new Set(hiddenVids.map(v => v.code + "__" + v.boothNum));
+  // footage lands, which resurfaces it automatically). "Deleted" cards
+  // (gone: true) are out of every list and count for good.
+  const hiddenKeys = new Set(vids.filter(v => v.hidden).map(v => v.code + "__" + v.boothNum));
+  const hiddenVids = vids.filter(v => v.hidden && !v.gone);
   const visible = vids.filter(v => !v.hidden);
   const shown = visible.filter(v => !q || (v.boothName||"").toLowerCase().includes(q)
     || (v.boothNum||"").toLowerCase().includes(q) || v.names.toLowerCase().includes(q));
@@ -5088,7 +5117,8 @@ function buildHomeVideosView() {
           </div>`).join("")}</div>`
       : "";
     const actions = v.hidden
-      ? `<button class="home-rem-btn" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>`
+      ? `<button class="home-rem-btn" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>
+      <button class="home-rem-btn hide" type="button" data-vid-purge="${esc(gk)}" data-vid-purge-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Delete this card from the bullpen for good">Delete permanently</button>`
       : `<button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
       ${workBtn}
       ${notesBtn}
@@ -5107,9 +5137,9 @@ function buildHomeVideosView() {
     <div class="home-search-box">
       <input class="home-search-input" type="text" placeholder="Search videos: company, booth or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
     </div>`;
-  if (vids.length && !q) {
-    const nDone = vids.filter(v => v.done).length;
-    html += `<div class="home-vids-summary">${vids.length} video${vids.length===1?"":"s"} flagged · ${nDone} done · ${vids.length - nDone} to go</div>`;
+  if (visible.length && !q) {
+    const nDone = visible.filter(v => v.done).length;
+    html += `<div class="home-vids-summary">${visible.length} video${visible.length===1?"":"s"} flagged · ${nDone} done · ${visible.length - nDone} to go</div>`;
   }
   // Every clip uploaded from the app, one flat list — the whole point is that
   // nobody digs through SharePoint folders. (Files sent through the old
@@ -5147,7 +5177,8 @@ function buildHomeVideosView() {
         </div>`).join("") : `<div class="home-rem-empty">No uploads match "${esc(homeSearchQ)}".</div>`) + `</div>`;
     }
   }
-  if (!vids.length) {
+  if (!visible.length && !hiddenVids.length) {
+    // Nothing flagged, or everything the reps flagged has been deleted here.
     html += `<div class="empty-wrap"><h3>No videos flagged yet</h3><p>Every booth a rep flags with the Video button lands here, whether or not they've visited it yet.</p></div>`;
   } else if (!shown.length && q) {
     html += `<div class="empty-wrap"><h3>No matches</h3><p>No videos matching "${esc(homeSearchQ)}".</p></div>`;
@@ -5878,6 +5909,8 @@ document.getElementById("content").addEventListener("click", e => {
   if (vh) { openVidHideConfirm(vh.dataset.vidHide, vh.dataset.vidHideName); return; }
   const vu = e.target.closest("[data-vid-unhide]");
   if (vu) { const gk = vu.dataset.vidUnhide, cut = gk.indexOf("__"); unhideVideoGroup(gk.slice(0, cut), gk.slice(cut + 2)); return; }
+  const vp = e.target.closest("[data-vid-purge]");
+  if (vp) { openVidPurgeConfirm(vp.dataset.vidPurge, vp.dataset.vidPurgeName); return; }
   const vn = e.target.closest("[data-vid-notes]");
   if (vn) {
     const k = vn.dataset.vidNotes;
@@ -5888,7 +5921,7 @@ document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-vid-only]")) { homeVideosOnly = !homeVideosOnly; renderHomeDashboard(); return; }
 
   const hv = e.target.closest("[data-home-view]");
-  if (hv) { homeView = hv.dataset.homeView; renderHomeDashboard(); return; }
+  if (hv) { homeView = hv.dataset.homeView; try { localStorage.setItem("home_view", homeView); } catch (err) {} renderHomeDashboard(); return; }
   const hsr = e.target.closest("[data-hs-rep]");
   if (hsr) { homeSchedRep = hsr.dataset.hsRep; renderHomeDashboard(); return; }
   const hsd = e.target.closest("[data-hs-day]");
@@ -5899,6 +5932,7 @@ document.getElementById("content").addEventListener("click", e => {
     if (e.target.closest("a")) return;   // the card's Photos & videos link is just a link
     homeBrandFilter = homeBrand.dataset.homeBrand || null;
     homeSearchQ = ""; homeSchedQ = "";
+    try { localStorage.setItem("home_brand", homeBrandFilter || ""); } catch (err) {}   // survives reloads
     applyBrand(homeBrandFilter || "ncm");
     updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen");
     renderHomeDashboard();
@@ -6716,6 +6750,28 @@ document.getElementById("vidHideConfirm").addEventListener("click", () => {
 document.getElementById("vidHideSheet").addEventListener("click", e => {
   if (e.target.id === "vidHideSheet") { _vidHideTarget = null; e.currentTarget.style.display = "none"; }
 });
+// Bullpen "Delete permanently" confirm (from the Removed list).
+let _vidPurgeTarget = null;
+function openVidPurgeConfirm(gk, name) {
+  _vidPurgeTarget = gk;
+  document.getElementById("vidPurgeText").textContent = (name || "This booth") +
+    " leaves every bullpen list and count for good, and new footage will not bring it back. The rep's video flag stays, and any uploaded files remain in the SharePoint folder (delete those there if needed).";
+  document.getElementById("vidPurgeSheet").style.display = "flex";
+}
+document.getElementById("vidPurgeCancel").addEventListener("click", () => {
+  _vidPurgeTarget = null;
+  document.getElementById("vidPurgeSheet").style.display = "none";
+});
+document.getElementById("vidPurgeConfirm").addEventListener("click", () => {
+  const gk = _vidPurgeTarget; _vidPurgeTarget = null;
+  document.getElementById("vidPurgeSheet").style.display = "none";
+  if (!gk) return;
+  const cut = gk.indexOf("__");
+  purgeVideoGroup(gk.slice(0, cut), gk.slice(cut + 2));
+});
+document.getElementById("vidPurgeSheet").addEventListener("click", e => {
+  if (e.target.id === "vidPurgeSheet") { _vidPurgeTarget = null; e.currentTarget.style.display = "none"; }
+});
 // The post-sign-in connect nudge (one time per device).
 document.getElementById("msPromptConnect").addEventListener("click", () => {
   document.getElementById("msPromptSheet").style.display = "none";
@@ -7182,6 +7238,16 @@ if (fbReady) {
         applyBrand("ncm");
         updateHeaderBrand("ncm", "Bullpen");
         showSignedIn({ name: "Bullpen" });
+        // Pick up where this device left off: last brand and tab survive a
+        // reload (device-level, like the desk-member choice).
+        try {
+          const savedBrand = localStorage.getItem("home_brand") || "";
+          homeBrandFilter = HOME_FILTER_BRANDS.includes(savedBrand) ? savedBrand : "";
+          const savedView = localStorage.getItem("home_view");
+          if (savedView === "sched" || savedView === "videos") homeView = savedView;
+        } catch (e) {}
+        applyBrand(homeBrandFilter || "ncm");
+        updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen");
         subscribeHomeNotes();
         subscribeHomeFlags();
         subscribeHomeSchedules();
