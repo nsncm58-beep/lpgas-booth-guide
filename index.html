@@ -1747,7 +1747,6 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-ov-bar { padding: 12px 14px; display: flex; align-items: center; min-height: 50px; }
 .home-ov-bar img { height: 26px; display: block; }
 .home-ov-body { padding: 12px 14px 14px; }
-.home-ov-code { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 10px; }
 .home-ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin-bottom: 12px; }
 .home-ov-stat strong { display: block; font-family: var(--fd); font-weight: 900; font-size: 1.25rem; color: var(--text); line-height: 1.1; }
 .home-ov-stat span { font-size: 0.66rem; color: var(--muted); font-weight: 600; }
@@ -1878,7 +1877,8 @@ body.home-mode .user-chip-gear { display: none !important; }
 @media (max-width: 640px) {
   .header-top { gap: 8px; }
   .logo-block { gap: 8px; }
-  .brand-logo { max-width: 88px; }
+  .brand-logo { max-width: 230px; }   /* wide wordmarks (P&Q, LM, Golfdom) were being crushed by the old 88px cap;
+                                         the header lost its Photos/Export pills in v86, so there is room now */
   .hdr-photos { padding: 7px 11px; font-size: 0.62rem; letter-spacing: 0.4px; gap: 5px; }
   .user-chip { gap: 6px; }
   .user-chip-name { max-width: 50px; }
@@ -1887,7 +1887,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 }
 @media (max-width: 430px) {
   .logo-block { gap: 6px; }
-  .brand-logo { max-width: 64px; }
+  .brand-logo { max-width: 210px; }
   .hdr-photos { padding: 6px 9px; font-size: 0.6rem; }
   .user-chip { gap: 5px; }
   .user-chip-name { max-width: 40px; }
@@ -1895,7 +1895,7 @@ body.home-mode .user-chip-gear { display: none !important; }
   .user-chip-out, .user-chip-member { padding: 5px 7px; font-size: 0.56rem; }
 }
 @media (max-width: 380px) {
-  .brand-logo { max-width: 48px; }
+  .brand-logo { max-width: 200px; }
 }
 
 /* ── SMOOTHNESS PASS (keep at stylesheet END: later equal-specificity rules
@@ -2084,7 +2084,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v126</div>
+      <div class="settings-dbx-note">NCM Events Guide · v127</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -3745,13 +3745,13 @@ const BRANDS = {
              p:{ blue:"#103A5C", dark:"#0E2A3F", deeper:"#081C2B", light:"#E9EEF3", mid:"#B9C9D6", maroon:"#3A6EA5", maroonLight:"#E7EEF5" } },
   lpgas:   { name:"LP Gas",               show:"LPGas Show", font:"'Forza', sans-serif",  logo:"logo-lpgas.png",
              p:{ blue:"#005C8F", dark:"#00466E", deeper:"#00304C", light:"#E8F1F7", mid:"#BCD6E5", maroon:"#8B1538", maroonLight:"#F6E6EB" } },
-  golfdom: { name:"Golfdom",              show:"Golfdom", font:"'Gotham', sans-serif", logo:"logo-golfdom.png",
+  golfdom: { name:"Golfdom",              show:"Golfdom", font:"'Gotham', sans-serif", logo:"logo-golfdom.png", logoH:34,
              p:{ blue:"#094169", dark:"#06314F", deeper:"#042538", light:"#E7EEF3", mid:"#A9C2D3", maroon:"#2E7D32", maroonLight:"#E6F0E6" } },
-  lm:      { name:"Landscape Management", show:"Landscape Management", font:"'Gotham', sans-serif", logo:"logo-lm.png",
+  lm:      { name:"Landscape Management", show:"Landscape Management", font:"'Gotham', sans-serif", logo:"logo-lm.png", logoH:36,
              p:{ blue:"#A83616", dark:"#842810", deeper:"#5F1C0B", light:"#F7EAE4", mid:"#E0B6A6", maroon:"#4F7D2A", maroonLight:"#EAF1E3" } },
   pmp:     { name:"PMP",                  show:"Pest Management Professional", font:"'Forza', sans-serif", logo:"logo-pmp.png",
              p:{ blue:"#87080A", dark:"#6A0608", deeper:"#4C0405", light:"#F6E5E5", mid:"#D9A9AA", maroon:"#1F5C8B", maroonLight:"#E4EDF4" } },
-  pq:      { name:"Pit & Quarry",         show:"Pit & Quarry", font:"'Camber', sans-serif", logo:"logo-pq.png",
+  pq:      { name:"Pit & Quarry",         show:"Pit & Quarry", font:"'Camber', sans-serif", logo:"logo-pq.png", logoH:34,
              p:{ blue:"#9F2823", dark:"#7F201C", deeper:"#5F1815", light:"#F6E9E8", mid:"#D9ABA9", maroon:"#145971", maroonLight:"#E0EBEF" } },
 };
 // Registered events: code -> { brand, show, booths }. Add a show here once its
@@ -3922,7 +3922,10 @@ function applyBrand(brandKey) {
 function updateHeaderBrand(brandKey, show) {
   const b = BRANDS[brandKey] || BRANDS.ncm;
   const img = document.getElementById("brandLogo");
-  if (img) { img.src = "./" + b.logo; img.alt = b.name; }
+  // Per-brand height: the stacked LM monogram and the wide Golfdom / P&Q
+  // wordmarks have less ink per pixel of height than LP Gas / PMP, so they
+  // get a little more room to read the same size.
+  if (img) { img.src = "./" + b.logo; img.alt = b.name; img.style.height = (b.logoH || 30) + "px"; }
   updateHomeMemberChip();
 }
 // Header chip next to Sign out showing who's at the home desk; tap = switch.
@@ -4891,7 +4894,6 @@ function buildHomeOverview() {
           <span class="home-ov-show">${esc(ev.show || brand.name)}</span>
           <span class="home-ov-badge ${st.k}">${st.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(st.label)}</span>
         </div>
-        <div class="home-ov-code">${esc(code)}</div>
         <div class="home-ov-stats">
           <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
           <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
@@ -5015,7 +5017,7 @@ function renderHomeDashboard() {
       const b = BRANDS[homeBrandFilter];
       html += `<a class="home-aside-media home-folder-wide" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
         <span class="home-aside-media-play"><svg width="15" height="17" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
-        <span class="home-aside-media-main">View shared folder<span class="home-aside-media-sub">${esc(mc)} · every photo and video, on Microsoft 365</span></span>
+        <span class="home-aside-media-main">View shared folder<span class="home-aside-media-sub">every photo and video for this show, on Microsoft 365</span></span>
       </a>`;
     }
     html += (homeView === "sched") ? buildHomeSchedView() : buildHomeVideosView();
@@ -5249,7 +5251,7 @@ function buildHomeSchedView() {
       if (!hits.length) return;
       anyHit = true;
       h += `<div class="home-rep">
-        <div class="home-rep-name">${esc(s.name || "Rep")}<span class="home-rep-count">${hits.length} match${hits.length === 1 ? "" : "es"}</span><span class="home-rep-ago">${esc(s.eventCode || "")}</span></div>`;
+        <div class="home-rep-name">${esc(s.name || "Rep")}<span class="home-rep-count">${hits.length} match${hits.length === 1 ? "" : "es"}</span><span class="home-rep-ago">${esc(showLabelOf(s.eventCode))}</span></div>`;
       hits.forEach(it => {
         h += `<div class="hs-hit-meta">Day ${esc(String(it.day))} · ${esc(it.time || "")}</div>` + roCardHtml(it);
       });
@@ -5263,7 +5265,7 @@ function buildHomeSchedView() {
   if (!homeSchedRep || !entries.some(([id]) => id === homeSchedRep)) homeSchedRep = entries[0][0];
   const sel = homeSchedules[homeSchedRep];
   h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
-    `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(s.eventCode||"")}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
+    `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(showLabelOf(s.eventCode))}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
   const items = (Array.isArray(sel.items) ? sel.items : []).filter(vOnly);
   const nDays = showDayCount(sel.eventCode);
   const dc = Array(nDays + 1).fill(0);
@@ -5275,7 +5277,7 @@ function buildHomeSchedView() {
       <span class="stdt-count">${dc[d]} booked</span>
     </button>`).join("") + `</div>`;
   const ago = fmtAgo(homeDocTs(sel));
-  h += `<div class="ro-banner">Viewing <strong>${esc(sel.name||"rep")}</strong> (${esc(sel.eventCode||"")})${ago ? " · updated " + esc(ago) : ""} · view only</div>`;
+  h += `<div class="ro-banner">Viewing <strong>${esc(sel.name||"rep")}</strong> (${esc(showLabelOf(sel.eventCode))})${ago ? " · updated " + esc(ago) : ""} · view only</div>`;
   const byTime = {};
   items.filter(it => it.day === homeSchedDay).forEach(it => { (byTime[it.time] = byTime[it.time]||[]).push(it); });
   const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
@@ -6643,10 +6645,18 @@ document.getElementById("homeMemberBtn").addEventListener("click", () => {
 authEls.signOut.addEventListener("click", async () => {
   if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
 });
+// Human name for an event code, for every place the UI used to print the raw
+// code (LM-2026 → "Equip Expo"; a brand with no show loaded → the brand name).
+function showLabelOf(code) {
+  if (!code) return "";
+  const ev = EVENTS[code];
+  if (ev && ev.show) return ev.show;
+  const b = BRANDS[resolveEvent(code).brand];
+  return b ? b.name : code;
+}
 function currentShowLabel() {
-  const ev = resolveEvent(currentEventCode());
-  const b = BRANDS[ev.brand] || BRANDS.ncm;
-  return (b.name || "this show") + (currentEventCode() ? " (" + currentEventCode() + ")" : "");
+  // Show name only; the raw event code is an internal id nobody needs to see.
+  return showLabelOf(currentEventCode()) || "this show";
 }
 // Settings is a full view (its own bottom-nav tab), not a modal, so long
 // sections scroll normally. The card is MOVED between its hidden sheet and
@@ -6815,7 +6825,7 @@ async function renderOldData() {
     return `<div class="cleanup-row">
       <div class="cleanup-row-main">
         <div class="cleanup-row-name">${esc(b.name)} ${esc(ev.show || "")}</div>
-        <div class="cleanup-row-meta">${esc(code)} · wrapped ${esc(PAST_SHOWS[code].ended)}</div>
+        <div class="cleanup-row-meta">${esc(showLabelOf(code))} · wrapped ${esc(PAST_SHOWS[code].ended)}</div>
       </div>
       ${live
         ? `<button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>`
@@ -6833,7 +6843,7 @@ async function renderOldData() {
     return `<div class="cleanup-row">
       <div class="cleanup-row-main">
         <div class="cleanup-row-name">${esc(d.brand || d.show || d.eventCode || "Show")}</div>
-        <div class="cleanup-row-meta">${esc(d.eventCode || "n/a")}${when ? " · " + esc(when) : ""}</div>
+        <div class="cleanup-row-meta">${esc(d.eventCode ? showLabelOf(d.eventCode) : "n/a")}${when ? " · " + esc(when) : ""}</div>
       </div>
       <button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-arch-id="${esc(d.id)}">Download</button>
     </div>`;
@@ -6916,7 +6926,7 @@ async function openGuideSheet() {
       <div class="guide-ev-body">
         <div class="guide-ev-info">
           <div class="guide-ev-code">${esc((ev && ev.show) || code || "No show set")}</div>
-          <div class="guide-ev-meta">${bits.map(esc).join(" · ")}${code ? " · " + esc(code) : ""}</div>
+          <div class="guide-ev-meta">${bits.map(esc).join(" · ")}</div>
         </div>
         <div class="guide-ev-qr" data-gqr="${esc(GUIDE_APP_URL + "?code=" + code)}"></div>
       </div>
