@@ -181,7 +181,7 @@ body {
 .hdr-photos {
   flex-shrink: 0;
   display: inline-flex; align-items: center; gap: 6px;
-  background: #fff;
+  background: var(--surface);
   color: var(--blue-dark);
   border: none;
   border-radius: 999px;
@@ -236,14 +236,14 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .settings-dbx-input {
   width: 100%; padding: 11px; margin: 0;
   border: 1.5px solid var(--border); border-radius: 8px;
-  font-family: var(--ft); font-size: 0.85rem; color: var(--text); background: #fff;
+  font-family: var(--ft); font-size: 0.85rem; color: var(--text); background: var(--surface);
 }
 .settings-dbx-input:focus { outline: none; border-color: var(--blue); }
 /* Settings section container (name is historical; the Shows section uses it) */
 .settings-danger { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
 .admin-btn {
   width: 100%; margin-top: 10px; padding: 11px; border-radius: 10px; cursor: pointer;
-  border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
+  border: 1.5px solid var(--blue); background: var(--surface); color: var(--blue);
   font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
 }
 .admin-btn:active { background: var(--blue-light); }
@@ -264,7 +264,7 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 
 .settings-stack-btn {
   width: 100%; margin-top: 10px; padding: 13px; border-radius: 10px; cursor: pointer;
-  border: 1.5px solid var(--blue); background: #fff; color: var(--blue);
+  border: 1.5px solid var(--blue); background: var(--surface); color: var(--blue);
   font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.4px; text-transform: uppercase;
 }
 .settings-stack-btn.primary { background: var(--blue); color: #fff; }
@@ -280,7 +280,7 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   text-transform: uppercase; letter-spacing: 0.8px; margin: 12px 0 6px;
 }
 .cleanup-head:first-child { margin-top: 0; }
-.cleanup-del { flex-shrink: 0; border: 1.5px solid #B3261E; background: #fff; color: #B3261E; border-radius: 7px; padding: 5px 11px; font-family: var(--fd); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; cursor: pointer; }
+.cleanup-del { flex-shrink: 0; border: 1.5px solid #B3261E; background: var(--surface); color: #B3261E; border-radius: 7px; padding: 5px 11px; font-family: var(--fd); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; cursor: pointer; }
 .cleanup-del:active { background: #FBE9E8; }
 .cleanup-empty { font-size: 0.82rem; color: var(--muted); padding: 12px 0; }
 
@@ -655,7 +655,7 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .home-rem-btn.watch { text-decoration: none; display: inline-flex; align-items: center; }
 /* Bullpen: flat list of every clip uploaded from the app */
 .home-clips { margin: 4px 0 12px; }
-.home-clip { display: flex; align-items: center; gap: 10px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; margin-bottom: 7px; }
+.home-clip { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; margin-bottom: 7px; }
 .home-clip .home-rem-btn.watch { flex-shrink: 0; }
 .home-clip-body { min-width: 0; }
 .home-clip-file { font-weight: 700; font-size: 0.8rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -664,7 +664,7 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 /* ── BOTTOM NAV (field app) ── */
 .bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
-  display: flex; background: #fff;
+  display: flex; background: var(--surface);
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 14px rgba(0, 40, 70, 0.09);
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -747,7 +747,7 @@ textarea.nf {
   line-height: 1.45;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
-textarea.nf:focus { outline: none; background: #fff; }
+textarea.nf:focus { outline: none; background: var(--surface); }
 textarea.nf.pre:focus  { border-color: var(--blue);  box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(45,113,64,0.10); }
 
@@ -927,7 +927,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   outline: none;
   transition: border-color 0.15s, background-color 0.15s;
 }
-.sched-search-input:focus { border-color: var(--blue); background-color: #fff; }
+.sched-search-input:focus { border-color: var(--blue); background-color: var(--surface); }
 .sched-results { margin-top: 6px; }
 .sched-result-row {
   display: flex;
@@ -1098,7 +1098,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .who-row {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 13px 12px; margin-bottom: 6px; cursor: pointer; text-align: left;
-  border: 1.5px solid var(--border); border-radius: 10px; background: #fff;
+  border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface);
 }
 .who-row.active { border-color: var(--blue); background: var(--blue-light); }
 .who-name { font-family: var(--fd); font-weight: 700; font-size: 0.92rem; color: var(--text); }
@@ -1129,7 +1129,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .fab-wrap.open .fab-menu { display: flex; animation: fadeUp 0.16s ease; }
 .fab-item {
   padding: 11px 16px; border-radius: 10px;
-  border: 1.5px solid var(--border); background: #fff; color: var(--blue-dark);
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--blue-dark);
   font-family: var(--fd); font-size: 0.76rem; font-weight: 700;
   box-shadow: 0 3px 10px rgba(0, 40, 70, 0.16); cursor: pointer; white-space: nowrap;
 }
@@ -1201,7 +1201,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 9px 11px;
   border-radius: 8px;
   border: 1.5px solid var(--border);
-  background: #fff;
+  background: var(--surface);
   font-family: var(--ft);
   font-size: 0.85rem;
   color: var(--text);
@@ -1415,7 +1415,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .auth-card {
   width: 100%;
   max-width: 380px;
-  background: #fff;
+  background: var(--surface);
   border-radius: 18px;
   padding: 26px 22px 20px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
@@ -1454,7 +1454,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
 }
-.auth-tab.active { background: #fff; box-shadow: 0 2px 8px rgba(0,92,143,0.18); color: var(--blue); }
+.auth-tab.active { background: var(--surface); box-shadow: 0 2px 8px rgba(0,92,143,0.18); color: var(--blue); }
 .auth-field { margin-bottom: 12px; }
 .auth-field.hide { display: none; }
 .auth-field label {
@@ -1474,7 +1474,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   font-family: var(--ft);
   font-size: 0.92rem;
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
 }
 .auth-field input:focus, .auth-field select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,92,143,0.10); }
 .auth-error {
@@ -1510,7 +1510,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 12px;
   border: 1.5px solid var(--blue);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface);
   color: var(--blue);
   font-family: var(--fd);
   font-size: 0.8rem;
@@ -1665,7 +1665,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .settings-card {
   width: 100%; max-width: 400px;
-  background: #fff; border-radius: 16px; padding: 20px;
+  background: var(--surface); border-radius: 16px; padding: 20px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.3);
 }
 /* Settings rendered as a page rather than a modal: it scrolls with the app. */
@@ -1712,7 +1712,7 @@ body.home-mode .user-chip-gear { display: none !important; }
   font-family: var(--ft);
   font-size: 0.9rem;
   color: var(--text);
-  background-color: #fff;
+  background-color: var(--surface);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A98A8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: left 12px center;
@@ -1742,7 +1742,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
 /* Home dashboard: All-Brands overview cards */
 .home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
-.home-ov-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
+.home-ov-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
 .home-ov-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.12); }
 .home-ov-bar { padding: 12px 14px; display: flex; align-items: center; min-height: 50px; }
 .home-ov-bar img { height: 26px; display: block; }
@@ -1763,27 +1763,15 @@ body.home-mode .user-chip-gear { display: none !important; }
 .hl-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2D9E55; animation: hlPulse 1.6s ease-in-out infinite; }
 @keyframes hlPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-/* Home dashboard: reminders aside (video pipeline) */
-.home-aside { margin: 16px 0 0; }
-@media (min-width: 1040px) {
-  .home-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 30px; align-items: start; }
-  .home-aside { margin: 0; position: sticky; top: 16px; }
-  .home-rem-card { max-height: calc(100vh - 32px); overflow-y: auto; }
-}
-.home-rem-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: var(--shadow-sm); }
-.home-rem-title { font-family: var(--fd); font-weight: 800; font-size: 1rem; color: var(--text); display: flex; align-items: center; gap: 8px; }
-.home-rem-count { background: var(--maroon); color: #fff; border-radius: 999px; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; font-family: var(--ft); }
-.home-rem-sub { font-size: 0.7rem; color: var(--muted); line-height: 1.5; margin: 6px 0 10px; }
+/* Home dashboard video cards: shared pill buttons, meta and empty states
+   (the Reminders rail these were born in is gone; the Videos tab uses them) */
 .home-rem-empty { font-size: 0.75rem; color: var(--muted); padding: 8px 0; }
-.home-rem-item { border-top: 1px solid var(--border-soft); padding: 9px 0; }
-.home-rem-co { font-size: 0.8rem; font-weight: 700; color: var(--text); }
 .home-rem-meta { font-size: 0.68rem; color: var(--muted); margin: 2px 0 7px; }
-.home-rem-btn { font-family: var(--ft); font-size: 0.7rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1.5px solid #C5D0DC; background: #fff; color: var(--text-2); cursor: pointer; box-shadow: 0 1px 2px rgba(9,30,50,0.06); }
+.home-rem-btn { font-family: var(--ft); font-size: 0.7rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1.5px solid #C5D0DC; background: var(--surface); color: var(--text-2); cursor: pointer; box-shadow: 0 1px 2px rgba(9,30,50,0.06); }
 .home-rem-btn:active { opacity: 0.75; }
 /* Footage links read as brand-colored, so they stand apart from the actions */
 .home-rem-btn.watch { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
 .home-rem-btn.done { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
-.home-rem-item.isdone .home-rem-co { text-decoration: line-through; opacity: 0.6; }
 .home-rem-donehead { font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 10px 0 2px; cursor: pointer; -webkit-user-select: none; user-select: none; }
 /* Rep-side: the home team finished this booth's video */
 .video-done-chip { flex-shrink: 0; background: #EDF7F0; color: #2D7140; border: 1px solid #BCDDC6; padding: 3px 8px; border-radius: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px; }
@@ -1792,14 +1780,14 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-view-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
 .home-view-tab {
   flex: 1; padding: 10px; border-radius: 10px;
-  border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--muted);
   font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px;
   text-transform: uppercase; cursor: pointer;
 }
 .home-view-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
 .home-vid-toggle {
   flex: 0 0 auto; padding: 10px 16px; border-radius: 10px;
-  border: 1.5px solid var(--border); background: #fff; color: var(--muted);
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--muted);
   font-family: var(--fd); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.5px;
   text-transform: uppercase; cursor: pointer;
 }
@@ -1816,7 +1804,7 @@ body.home-mode .user-chip-gear { display: none !important; }
   font-family: var(--ft); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
 }
 .home-copy-btn:active { background: rgba(255,255,255,0.15); }
-.home-copy-btn.rep { border-color: var(--border); color: var(--muted); background: #fff; margin-left: auto; }
+.home-copy-btn.rep { border-color: var(--border); color: var(--muted); background: var(--surface); margin-left: auto; }
 .home-copy-btn.rep:active { background: var(--bg); }
 .home-rep-ago { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
 .home-chip { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 999px; }
@@ -1833,7 +1821,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 /* Videos tab: each video sits in its own white box so entries are easy to
    tell apart at a glance, with bigger, darker type than the old flat list. */
 .home-vids .home-note {
-  background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
   padding: 14px 16px; margin-bottom: 12px;
   box-shadow: 0 1px 3px rgba(16, 42, 67, 0.07);
 }
@@ -1850,7 +1838,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .hs-vtime { font-size: 0.7rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
 /* One-time "who's on the desk" picker for the shared home login */
 .home-member-pick {
-  background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px;
   padding: 26px 22px; text-align: center; margin-top: 8px;
 }
 .home-member-pick h3 { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 5px; }
@@ -1858,7 +1846,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-member-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .home-member-btn {
   padding: 13px 26px; border-radius: 12px; border: 1.5px solid var(--border);
-  background: #fff; font-family: var(--fd); font-weight: 700; font-size: 0.92rem;
+  background: var(--surface); font-family: var(--fd); font-weight: 700; font-size: 0.92rem;
   color: var(--text); cursor: pointer;
 }
 .home-member-btn:active { background: var(--blue); border-color: var(--blue); color: #fff; }
@@ -1870,7 +1858,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .flag-btn {
   font-family: var(--ft); font-size: 0.66rem; font-weight: 600;
   padding: 4px 10px; border-radius: 999px;
-  border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer;
 }
 .flag-btn:active { opacity: 0.75; }
 .flag-btn.on-star { color: #8A6D1A; border-color: #E8D9A8; background: #FBF6E7; }
@@ -1962,13 +1950,6 @@ html { background: var(--bg); }
               color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
 
-/* With the Reminders rail retired, the All-Brands landing has no aside at
-   all — let the overview cards take the full width instead of leaving a
-   hollow 340px column. */
-@media (min-width: 1040px) {
-  .home-wrap:not(:has(.home-aside)) { display: block; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -1976,6 +1957,22 @@ html { background: var(--bg); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── PALETTE EXPERIMENT (2026-09-23): warm paper instead of pure white ──
+   Nate wanted to see the app on off-white/beige for character. Every
+   surface (cards, sheets, inputs, nav, auth card) now reads --surface, so
+   this ONE block is the whole experiment: page goes parchment, surfaces go
+   paper, borders and shadows warm to match. Brand colors, header bars and
+   white-on-brand text are untouched. TO REVERT: delete this block. */
+:root {
+  --bg:          #F3EEE5;
+  --surface:     #FBF8F2;
+  --border:      #DED5C7;
+  --border-soft: #ECE5D9;
+  --shadow:      0 1px 3px rgba(70,52,24,0.07), 0 4px 14px rgba(70,52,24,0.05);
+  --shadow-sm:   0 1px 2px rgba(70,52,24,0.06);
+}
+.home-ov-badge { background: var(--border-soft); }
 </style>
 </head>
 <body>
@@ -2085,7 +2082,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v123</div>
+      <div class="settings-dbx-note">NCM Events Guide · v124</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -4630,7 +4627,7 @@ async function startVideoUpload(i, file) {
       const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
       notifyHome(brand + " show, footage uploaded: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
         ") by " + esc(who) + ": " + esc(item.name || "") +
-        (item.webUrl ? '. <a href="' + item.webUrl + '">Watch it</a>' : ""));
+        (item.webUrl ? '. <a href="' + esc(item.webUrl) + '">Watch it</a>' : ""));
     }
   } catch (e) {
     delete upProg[i]; render();
