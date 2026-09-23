@@ -1741,22 +1741,22 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-note-label.post { color: var(--green); }
 .home-note-text { font-size: 0.85rem; color: var(--text-2); line-height: 1.45; white-space: pre-wrap; }
 /* Home dashboard: All-Brands overview cards */
-.home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+.home-ov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 20px; }
 .home-ov-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; }
 .home-ov-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(9,30,50,0.12); }
-.home-ov-bar { padding: 12px 14px; display: flex; align-items: center; min-height: 50px; }
-.home-ov-bar img { height: 26px; display: block; }
-.home-ov-body { padding: 12px 14px 14px; }
-.home-ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin-bottom: 12px; }
-.home-ov-stat strong { display: block; font-family: var(--fd); font-weight: 900; font-size: 1.25rem; color: var(--text); line-height: 1.1; }
-.home-ov-stat span { font-size: 0.66rem; color: var(--muted); font-weight: 600; }
-.home-ov-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-soft); padding-top: 10px; font-size: 0.68rem; color: var(--muted); }
+.home-ov-bar { padding: 16px 20px; display: flex; align-items: center; min-height: 66px; }
+.home-ov-bar img { height: 34px; display: block; }
+.home-ov-body { padding: 18px 20px 20px; }
+.home-ov-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 10px; margin: 14px 0 16px; }
+.home-ov-stat strong { display: block; font-family: var(--fd); font-weight: 900; font-size: 1.7rem; color: var(--text); line-height: 1.1; }
+.home-ov-stat span { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+.home-ov-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--border-soft); padding-top: 12px; font-size: 0.76rem; color: var(--muted); }
 .home-ov-media { font-weight: 700; color: var(--blue); text-decoration: none; white-space: nowrap; }
 .home-ov-hint { text-align: center; font-size: 0.74rem; color: var(--muted); margin-top: 18px; }
 /* Overview card anatomy: show name + live/upcoming badge + dates line */
 .home-ov-showrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
-.home-ov-show { font-family: var(--fd); font-weight: 800; font-size: 1.02rem; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.home-ov-badge { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; background: #EEF2F6; color: var(--muted); flex-shrink: 0; }
+.home-ov-show { font-family: var(--fd); font-weight: 800; font-size: 1.22rem; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-ov-badge { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; background: #EEF2F6; color: var(--muted); flex-shrink: 0; }
 .home-ov-badge.live { background: #EDF7F0; color: #2D7140; }
 .home-ov-badge.soon { background: #EAF2FA; color: #23639C; }
 .hl-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2D9E55; animation: hlPulse 1.6s ease-in-out infinite; }
@@ -2084,7 +2084,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v127</div>
+      <div class="settings-dbx-note">NCM Events Guide · v128</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
