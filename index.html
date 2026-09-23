@@ -607,7 +607,7 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   background-color: var(--blue-light);
 }
 
-/* Video flag toggle (edit/digital reps): footage for the home team */
+/* Video flag toggle (edit/digital reps): footage for the bullpen */
 .video-btn {
   padding: 0 12px;
   height: 38px;
@@ -693,7 +693,7 @@ body.home-mode .bottom-nav { display: none !important; }
 body.home-mode .user-chip-name { max-width: none; }
 /* With the bottom bar carrying Videos and Settings, the header keeps only
    the logo and who you are. (The buttons stay in the DOM: the nav clicks
-   them, and the home dashboard still uses its own header controls.) */
+   them, and the bullpen still uses its own header controls.) */
 body.has-nav .hdr-photos,
 body.has-nav .user-chip-gear { display: none !important; }
 
@@ -1691,7 +1691,7 @@ body.in-settings .app-footer { display: none; }   /* the hint points at Settings
 .share-prompt-actions .settings-done { margin-top: 14px; }
 .share-secondary { background: var(--surface); border: 1.5px solid var(--border); color: var(--text-2); }
 
-/* ── Home Team mode: hide the field-app chrome ── */
+/* ── Bullpen mode: hide the field-app chrome ── */
 body.home-mode .booths-search,
 body.home-mode .view-tabs,
 body.home-mode .filter-bar,
@@ -1699,7 +1699,7 @@ body.home-mode .brand-switch-row,
 body.home-mode .app-footer,
 body.home-mode .user-chip-gear { display: none !important; }
 
-/* ── Home Team dashboard ── */
+/* ── Bullpen dashboard ── */
 .home-wrap { max-width: 1380px; margin: 0 auto; padding: 16px 14px 60px; }
 @media (min-width: 1040px) { .home-wrap { padding: 22px 30px 60px; } }
 .home-filter { padding: 0 0 12px; }
@@ -1771,9 +1771,11 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-rem-btn:active { opacity: 0.75; }
 /* Footage links read as brand-colored, so they stand apart from the actions */
 .home-rem-btn.watch { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+.home-rem-btn.hide { color: var(--muted); border-color: var(--border); box-shadow: none; margin-left: auto; }
+.home-note.vid-hidden { opacity: 0.72; }
 .home-rem-btn.done { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
 .home-rem-donehead { font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 10px 0 2px; cursor: pointer; -webkit-user-select: none; user-select: none; }
-/* Rep-side: the home team finished this booth's video */
+/* Rep-side: the bullpen finished this booth's video */
 .video-done-chip { flex-shrink: 0; background: #EDF7F0; color: #2D7140; border: 1px solid #BCDDC6; padding: 3px 8px; border-radius: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px; }
 
 /* Home dashboard: status chips, freshness, copy buttons, workflow flags */
@@ -2017,7 +2019,7 @@ html { background: var(--bg); }
   Notes save automatically. Export your show data from your Profile.
 </div>
 
-<!-- Bottom navigation (field app only; the home dashboard is a desktop view) -->
+<!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
 <input type="file" id="vidFileInput" accept="video/*" style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="bn-btn active" type="button" data-v="schedule">
@@ -2053,7 +2055,7 @@ html { background: var(--bg); }
       <option value="edit">Editorial team</option>
       <option value="sales">Sales</option>
     </select>
-    <div class="settings-dbx-note">Editorial team: your notes and schedule are shared with the home team automatically. Sales: nothing is shared with the home team.</div>
+    <div class="settings-dbx-note">Editorial team: your notes and schedule are shared with the bullpen automatically. Sales: nothing is shared with the bullpen.</div>
     </div>
     <div class="settings-danger">
       <div class="settings-dbx-title">Export</div>
@@ -2082,8 +2084,8 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v124</div>
-      <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
+      <div class="settings-dbx-note">NCM Events Guide · v125</div>
+      <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
   </div>
@@ -2099,11 +2101,21 @@ html { background: var(--bg); }
   </div>
 </div>
 
+<!-- ── Bullpen: confirm before removing a video card ── -->
+<div id="vidHideSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Remove this video from the bullpen?</div>
+    <p class="settings-dbx-note" id="vidHideText"></p>
+    <button class="settings-done" id="vidHideCancel" type="button">Keep it</button>
+    <button class="settings-done share-secondary" id="vidHideConfirm" type="button">Remove from the bullpen</button>
+  </div>
+</div>
+
 <!-- ── One-time nudge: connect Microsoft right after app sign-in ── -->
 <div id="msPromptSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title">One more sign-in, one time only</div>
-    <p class="settings-dbx-note">Connect your NCM Microsoft account (same login as Outlook) and every booth you flag for video gets an Upload button. Clips land in the show folder named, filed and linked for the home team automatically.</p>
+    <p class="settings-dbx-note">Connect your NCM Microsoft account (same login as Outlook) and every booth you flag for video gets an Upload button. Clips land in the show folder named, filed and linked for the bullpen automatically.</p>
     <button class="settings-done" id="msPromptConnect" type="button">Connect Microsoft account</button>
     <button class="settings-done share-secondary" id="msPromptLater" type="button">Later (it's in your Profile)</button>
   </div>
@@ -2152,14 +2164,14 @@ html { background: var(--bg); }
 <div id="mediaSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title" id="mediaSheetTitle">Show photos &amp; videos</div>
-    <p class="share-prompt-text" id="mediaSheetInfo">Photos and videos upload straight to the shared team folder, where the home team can view them.</p>
-    <p class="share-prompt-text" id="mediaSheetTip"><strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
+    <p class="share-prompt-text" id="mediaSheetInfo">Photos and videos upload straight to the shared team folder, where the bullpen can view them.</p>
+    <p class="share-prompt-text" id="mediaSheetTip"><strong>Tip:</strong> include the company or booth number in the file name so the bullpen knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
     <button class="settings-done" id="mediaUploadOpen" type="button">Open uploader</button>
     <button class="settings-done share-secondary" id="mediaSheetClose" type="button">Close</button>
   </div>
 </div>
 
-<!-- ── Install prompt (phones only; skipped once installed or for home team) ── -->
+<!-- ── Install prompt (phones only; skipped once installed or for bullpen) ── -->
 <div id="installGate" class="install-gate" style="display:none">
   <img src="./ncm-logo.png" alt="North Coast Media" class="install-logo" onerror="this.style.display='none'">
   <div class="install-title">Install the Events Guide</div>
@@ -2218,7 +2230,7 @@ html { background: var(--bg); }
     </form>
     <div class="auth-foot" id="authFoot">Field reps: create an account and pick your brand.</div>
     <div class="auth-divider"><span>or</span></div>
-    <button type="button" class="auth-home-btn" id="homeTeamBtn">Enter as Home Team</button>
+    <button type="button" class="auth-home-btn" id="homeTeamBtn">Enter the Bullpen</button>
   </div>
 </div>
 
@@ -3834,7 +3846,7 @@ function userBrands(u) {
 // valid signup code. Folders live in the corporate Dropbox under
 // "North Coast Media Team Folder/NCM Events Media/<CODE>". Per code:
 //   request: <Dropbox file-request URL: reps upload here, no account needed>
-//   folder:  <Dropbox share link for that code's subfolder: home team views here>
+//   folder:  <Dropbox share link for that code's subfolder: bullpen views here>
 // The field "Photos" button and the home-dashboard link appear automatically
 // once a code's URLs are set.
 const MEDIA = {
@@ -3956,7 +3968,7 @@ function timeToMin(t) {
 // booth list, team subscription, and which localStorage bucket is used.
 const MASTER_EMAILS = ["nstoltman@northcoastmedia.net", "rrosen@northcoastmedia.net"];
 // Sharing policy is team-based: Editorial/Digital ("edit") notes + schedules
-// flow to the home team automatically; Sales never do. Brian Kanaba predates
+// flow to the bullpen automatically; Sales never do. Brian Kanaba predates
 // the team field and is pinned to Sales here by the owner's explicit call —
 // this hides his notes/schedule from the home DISPLAY only; nothing of his
 // is ever deleted (his local data and existing cloud docs stay untouched).
@@ -4019,8 +4031,8 @@ let _schedSyncTimer   = null;
 let _notesSyncTimer   = null;
 
 // ── SHARED NOTES (Phase 2) ──────────────────────────────────────────────
-// When a rep turns on "share notes with home team", their booth notes
-// (visited/status/pre/post) sync to notes/{docId}; the home team reads them.
+// When a rep turns on "share notes with bullpen", their booth notes
+// (visited/status/pre/post) sync to notes/{docId}; the bullpen reads them.
 function buildSharedNotes() {
   const state = load();
   const items = [];
@@ -4028,7 +4040,7 @@ function buildSharedNotes() {
     const s = state[key(i)];
     if (!s) return;
     const pre = (s.pre||"").trim(), post = (s.post||"").trim();
-    // A bare Video flag shares too, so the home team's videos-only view
+    // A bare Video flag shares too, so the bullpen's videos-only view
     // sees every planned video even before the rep visits or writes notes.
     if (!s.visited && !pre && !post && !s.status && !s.video) return;
     items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post,
@@ -4049,7 +4061,7 @@ async function syncMyNotesToCloud() {
   // Editorial/Digital notes share automatically. For Sales/unclassified this
   // is a NO-OP by design: we never write, and we NEVER DELETE an existing
   // cloud notes doc (owner's requirement — e.g. Brian's notes must survive;
-  // the home dashboard simply doesn't display non-edit docs).
+  // the bullpen simply doesn't display non-edit docs).
   if (!fbReady || !myNotesAutoShare()) return;
   const code = currentEventCode();
   if (!code) return;
@@ -4240,7 +4252,7 @@ function fmtAgo(ts) {
   if (s < 86400) return Math.floor(s/3600)+"h ago";
   return Math.floor(s/86400)+"d ago";
 }
-// Exact visit clock time (vs fmtAgo's relative style): the home team matches
+// Exact visit clock time (vs fmtAgo's relative style): the bullpen matches
 // booth visits against SharePoint upload timestamps, so precision matters.
 function fmtExact(ts) {
   if (!ts) return "";
@@ -4316,7 +4328,7 @@ function notifyVideoReady(i, state) {
   const when = fmtExact(s.vts || Date.now());
   const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
   notifyHome(brand + " show, video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
-    "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the home dashboard</a>');
+    "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the bullpen</a>');
 }
 // ── IN-APP VIDEO UPLOADS (Microsoft Graph) ──────────────────────────────
 // Dormant until a master creates Firestore doc config/uploads =
@@ -4536,7 +4548,7 @@ async function msResolveFolder(token) {
   return out;
 }
 // Company_Booth_Rep.ext — the folder sorts itself alphabetically by company
-// and the home team can tell every file's booth at a glance. SharePoint's
+// and the bullpen can tell every file's booth at a glance. SharePoint's
 // conflictBehavior:rename suffixes repeat takes (" 1", " 2") automatically.
 function msFileName(c, file) {
   const clean = s => String(s || "").replace(/[^\w &-]+/g, " ").replace(/\s+/g, " ").trim().replace(/ /g, "-").slice(0, 48);
@@ -4687,7 +4699,7 @@ function subscribeHomeFlags() {
   }, () => {});
 }
 // ── VIDEO PIPELINE ───────────────────────────────────────────────────────
-// Edit/digital booth visits become home-team "Reminders"; the home team
+// Edit/digital booth visits become home-team "Reminders"; the bullpen
 // marks each video done in videoStatus/{event__repUid__booth#}, and the rep
 // on the floor sees a live "Video done" chip on that booth card.
 let homeVideoStatus = {};      // docId -> doc (home side, all)
@@ -4739,7 +4751,31 @@ function notifyVideoDone(code, boothNum, boothName) {
   const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
   const me = homeMember() || "Someone";
   notifyHome(brand + " show, video finished: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
-    "). Marked done by " + esc(me) + '. <a href="' + APP_LINK + '">Open the home dashboard</a>', me);
+    "). Marked done by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me);
+}
+// "Removed from the bullpen" lives in homeFlags too: hide__<code>__<booth#>
+// with the member who removed it and a timestamp. Reps' data is never
+// touched; the desk just stops seeing the card. Any clip uploaded AFTER the
+// removal outranks it, so fresh footage resurfaces the booth on its own.
+function vidHideDoc(code, boothNum) { return homeFlags["hide__" + code + "__" + boothNum] || null; }
+function isVidHidden(g) {
+  const h = vidHideDoc(g.code, g.boothNum);
+  if (!h) return false;
+  const newest = Math.max(0, ...g.reps.flatMap(r => (r.clips || []).map(c => c.t || 0)));
+  return !(newest > (h.ts || 0));
+}
+function hideVideoGroup(code, boothNum) {
+  if (!fbReady) return;
+  fbDb.collection("homeFlags").doc("hide__" + code + "__" + boothNum)
+    .set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now() })
+    .then(() => toast("Removed from the bullpen. Restore anytime from the Removed list"))
+    .catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+}
+function unhideVideoGroup(code, boothNum) {
+  if (!fbReady) return;
+  fbDb.collection("homeFlags").doc("hide__" + code + "__" + boothNum).delete()
+    .then(() => toast("Restored to the bullpen"))
+    .catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 // "Working on" claims live in the homeFlags collection (home/master already
 // read+write it) under their own id space: work__<code>__<booth#> with a
@@ -4806,6 +4842,9 @@ function buildHomeOverview() {
         if (!it.visited) return;
         visited++;
         if (!it.video) return;   // only rep-flagged videos count in the pipeline
+        // Cards the desk removed (with no newer footage) sit out of the counts.
+        const hid = vidHideDoc(d.eventCode, it.boothNum);
+        if (hid && !(Math.max(0, ...(it.vclips || []).map(c => c.t || 0), it.vupAt || 0) > (hid.ts || 0))) return;
         vidTotal++;
         if (homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum]) vidDone++;
       });
@@ -4864,6 +4903,7 @@ let homeView = "videos";          // "videos" | "sched" (videos is the default v
 let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged booths
 let homeShowDoneVids = false;     // Videos view: completed section expanded?
 let homeShowFootage = false;      // Videos view: uploaded-footage list expanded?
+let homeShowHiddenVids = false;   // Videos view: "Removed from the bullpen" list expanded?
 const homeVidNotesOpen = new Set();  // "<code>__<booth#>" videos with editor notes expanded
 // The home login is shared, so each device picks WHO is at it once; the name
 // shows on videos they claim via the "Working on" button.
@@ -4919,7 +4959,7 @@ function renderHomeDashboard() {
   // anything else, so "Working on" claims are attributable.
   if (!homeMember()) {
     el.innerHTML = `<div class="home-wrap"><div class="home-main">
-      <div class="home-head"><h2>Home Team Dashboard</h2><p>Quick one-time setup for this device.</p></div>
+      <div class="home-head"><h2>Bullpen</h2><p>Quick one-time setup for this device.</p></div>
       <div class="home-member-pick">
         <h3>Who's working the desk?</h3>
         <p>Your name shows on videos you claim with the Working on button, so the team knows who's on what.</p>
@@ -4933,7 +4973,7 @@ function renderHomeDashboard() {
     : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
                             : "Every video flagged by the field team: " + esc(filterName) + ".");
   let html = `<div class="home-wrap"><div class="home-main">
-    <div class="home-head"><h2>Home Team Dashboard</h2><p>${subtitle}</p></div>
+    <div class="home-head"><h2>Bullpen</h2><p>${subtitle}</p></div>
     ${buildHomeFilter()}`;
   if (homeBrandFilter) {
     html += `<div class="home-view-tabs">
@@ -4994,9 +5034,16 @@ function buildHomeVideosView() {
       vts: latest ? latest.vts : 0,
       visitor: latest ? latest.name : "",
       done: g.reps.every(r => r.done),
+      hidden: isVidHidden(g),
       names: g.reps.map(r => r.name).join(", ") };
   });
-  const shown = vids.filter(v => !q || (v.boothName||"").toLowerCase().includes(q)
+  // "Removed from the bullpen": a desk-side hide flag. The rep's data is
+  // untouched; the card just leaves this view until restored (or until new
+  // footage lands, which resurfaces it automatically).
+  const hiddenVids = vids.filter(v => v.hidden);
+  const hiddenKeys = new Set(hiddenVids.map(v => v.code + "__" + v.boothNum));
+  const visible = vids.filter(v => !v.hidden);
+  const shown = visible.filter(v => !q || (v.boothName||"").toLowerCase().includes(q)
     || (v.boothNum||"").toLowerCase().includes(q) || v.names.toLowerCase().includes(q));
   const rank = v => v.visited ? 0 : 1;
   shown.sort((a,b) => rank(a) - rank(b) || (b.vts - a.vts) || (a.boothName||"").localeCompare(b.boothName||""));
@@ -5040,14 +5087,18 @@ function buildHomeVideosView() {
             ${r.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(r.post)}</div>` : ""}
           </div>`).join("")}</div>`
       : "";
-    return `<div class="home-note${v.done ? " vid-done" : ""}">
+    const actions = v.hidden
+      ? `<button class="home-rem-btn" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>`
+      : `<button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
+      ${workBtn}
+      ${notesBtn}
+      <button class="home-rem-btn hide" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove</button>`;
+    return `<div class="home-note${v.done ? " vid-done" : ""}${v.hidden ? " vid-hidden" : ""}">
     <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
     <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${esc(ledger)}</div>
     ${linksHtml}
     <div class="home-note-flags">
-      <button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
-      ${workBtn}
-      ${notesBtn}
+      ${actions}
     </div>
     ${notesHtml}
   </div>`;
@@ -5073,7 +5124,7 @@ function buildHomeVideosView() {
       (d.items || []).forEach(it => {
         // Gate on the flag too: unflagging a booth pulls it out of the
         // bullpen everywhere, including this list (test-clip cleanup).
-        if (!it.video) return;
+        if (!it.video || hiddenKeys.has(d.eventCode + "__" + it.boothNum)) return;
         const list = (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips
                    : (it.vlink ? [{ u: it.vlink, f: it.vfile || "", t: it.vupAt || 0 }] : []);
         list.forEach(cl => clips.push({ rep: d.name || "Rep", boothName: it.boothName || "", boothNum: it.boothNum || "",
@@ -5098,7 +5149,7 @@ function buildHomeVideosView() {
   }
   if (!vids.length) {
     html += `<div class="empty-wrap"><h3>No videos flagged yet</h3><p>Every booth a rep flags with the Video button lands here, whether or not they've visited it yet.</p></div>`;
-  } else if (!shown.length) {
+  } else if (!shown.length && q) {
     html += `<div class="empty-wrap"><h3>No matches</h3><p>No videos matching "${esc(homeSearchQ)}".</p></div>`;
   } else {
     html += `<div class="home-vids">`;
@@ -5109,6 +5160,13 @@ function buildHomeVideosView() {
     if (done.length) {
       html += `<div class="home-rem-donehead" data-vids-done-toggle>${homeShowDoneVids ? "▾" : "▸"} Completed (${done.length})</div>`;
       if (homeShowDoneVids) html += done.map(itemHtml).join("");
+    }
+    if (!pending.length && !done.length && hiddenVids.length) {
+      html += `<div class="home-rem-empty">Nothing active. Removed cards are below.</div>`;
+    }
+    if (hiddenVids.length) {
+      html += `<div class="home-rem-donehead" data-hidden-vids-toggle>${homeShowHiddenVids ? "▾" : "▸"} Removed from the bullpen (${hiddenVids.length})</div>`;
+      if (homeShowHiddenVids) html += hiddenVids.map(itemHtml).join("");
     }
     html += `</div>`;
   }
@@ -5297,7 +5355,7 @@ function buildCard(c, state) {
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
           <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unsure</button>
         </div>` : ""}
-        ${myNotesAutoShare() ? `<button class="video-btn${s.video?" on":""}" data-video="${c.i}" title="Flag this booth's video for the home team">
+        ${myNotesAutoShare() ? `<button class="video-btn${s.video?" on":""}" data-video="${c.i}" title="Flag this booth's video for the bullpen">
           <svg width="14" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>
           Video</button>` : ""}
         ${uploadCtlHtml(c, s)}
@@ -5815,6 +5873,11 @@ document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-home-member-switch]")) { try { localStorage.removeItem("home_member"); } catch (err) {} renderHomeDashboard(); return; }
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-footage-toggle]")) { homeShowFootage = !homeShowFootage; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-hidden-vids-toggle]")) { homeShowHiddenVids = !homeShowHiddenVids; renderHomeDashboard(); return; }
+  const vh = e.target.closest("[data-vid-hide]");
+  if (vh) { openVidHideConfirm(vh.dataset.vidHide, vh.dataset.vidHideName); return; }
+  const vu = e.target.closest("[data-vid-unhide]");
+  if (vu) { const gk = vu.dataset.vidUnhide, cut = gk.indexOf("__"); unhideVideoGroup(gk.slice(0, cut), gk.slice(cut + 2)); return; }
   const vn = e.target.closest("[data-vid-notes]");
   if (vn) {
     const k = vn.dataset.vidNotes;
@@ -5837,7 +5900,7 @@ document.getElementById("content").addEventListener("click", e => {
     homeBrandFilter = homeBrand.dataset.homeBrand || null;
     homeSearchQ = ""; homeSchedQ = "";
     applyBrand(homeBrandFilter || "ncm");
-    updateHeaderBrand(homeBrandFilter || "ncm", "Home Team");
+    updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen");
     renderHomeDashboard();
     return;
   }
@@ -6083,7 +6146,7 @@ document.getElementById("content").addEventListener("click", e => {
     const i = parseInt(vidBtn.dataset.video);
     const k = key(i);
     if (!state[k]) state[k] = {};
-    // Turning the flag OFF pulls the booth out of the home team's video
+    // Turning the flag OFF pulls the booth out of the bullpen's video
     // list, so an accidental re-tap gets a confirm first (turning it on
     // stays a single tap).
     if (state[k].video) { openVidOffConfirm(i, state); return; }
@@ -6093,7 +6156,7 @@ document.getElementById("content").addEventListener("click", e => {
     // Flagging AFTER the visit completes the pair, so it pings here too.
     if (state[k].video && state[k].visited) notifyVideoReady(i, state);
     toast(state[k].video
-      ? (state[k].visited ? "Video flagged for the home team" : "Video flagged. It reaches the home team once you mark the booth visited")
+      ? (state[k].visited ? "Video flagged for the bullpen" : "Video flagged. It reaches the bullpen once you mark the booth visited")
       : "Video flag removed");
     // The Upload button rides the flag, so this card needs a rebuild.
     if (msUploadsActive()) render();
@@ -6223,7 +6286,7 @@ document.getElementById("content").addEventListener("change", e => {
     if (!state[k]) state[k] = {};
     state[k].scheduled = v || null;
     // Same rule as the Remove button: unscheduling an unvisited booth
-    // withdraws its video plan from the home team's Videos tab.
+    // withdraws its video plan from the bullpen's Videos tab.
     let clearedVideo = false;
     if (!v && state[k].video && !state[k].visited && !state[k].vlink) { state[k].video = false; clearedVideo = true; }
     save(state);
@@ -6407,13 +6470,13 @@ document.getElementById("mediaBtn").addEventListener("click", () => {
   const edit = myNotesAutoShare();
   document.getElementById("mediaSheetTitle").textContent = edit ? "Show photos" : "Show photos & videos";
   document.getElementById("mediaSheetInfo").textContent = edit
-    ? "This shared folder is for photos, or for browsing everything in one spot. Booth videos have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the home team automatically."
+    ? "This shared folder is for photos, or for browsing everything in one spot. Booth videos have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen automatically."
     : mediaIsMicrosoft(m)
-    ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the home team can view them (it also appears in the brand's Teams channel). No sign-in needed: tap Upload and pick files from your camera roll. Please add files only; don't move or delete what's there."
-    : "Photos and videos upload straight to the shared team Dropbox, where the home team can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.";
+    ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the bullpen can view them (it also appears in the brand's Teams channel). No sign-in needed: tap Upload and pick files from your camera roll. Please add files only; don't move or delete what's there."
+    : "Photos and videos upload straight to the shared team Dropbox, where the bullpen can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.";
   document.getElementById("mediaSheetTip").innerHTML = edit
-    ? "<strong>Tip:</strong> include the company or booth number in photo file names so the home team knows what they're looking at. Please add files only; don't move or delete what's there."
-    : "<strong>Tip:</strong> include the company or booth number in the file name so the home team knows what they're looking at. Upload big videos on hotel wifi at the end of the day.";
+    ? "<strong>Tip:</strong> include the company or booth number in photo file names so the bullpen knows what they're looking at. Please add files only; don't move or delete what's there."
+    : "<strong>Tip:</strong> include the company or booth number in the file name so the bullpen knows what they're looking at. Upload big videos on hotel wifi at the end of the day.";
   document.getElementById("mediaSheet").style.display = "flex";
 });
 document.getElementById("mediaUploadOpen").addEventListener("click", () => {
@@ -6466,9 +6529,9 @@ function setAuthMode(mode) {
     if (homeBtn) homeBtn.style.display = "none";
     document.querySelectorAll('.auth-field[data-only="signup"]').forEach(f => f.classList.add("hide"));
     if (emailField) emailField.classList.add("hide");
-    authEls.submit.textContent = "Enter as Home Team";
+    authEls.submit.textContent = "Enter the Bullpen";
     authEls.pass.autocomplete = "current-password";
-    authEls.foot.innerHTML = 'Enter the shared Home Team passcode. <a href="#" id="homeBack">Back</a>';
+    authEls.foot.innerHTML = 'Enter the shared Bullpen passcode. <a href="#" id="homeBack">Back</a>';
     return;
   }
   if (tabs) tabs.style.display = "";
@@ -6589,7 +6652,7 @@ document.getElementById("settingsBtn").addEventListener("click", () => {
 });
 // (Profile's old Done button is gone: the bottom nav is how you leave the tab.)
 // Settings > Account > Sign out: close the sheet, then run the same flow as
-// the home team's header button (authEls.signOut keeps the shared handler).
+// the bullpen's header button (authEls.signOut keeps the shared handler).
 document.getElementById("settingsSignOut").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
   authEls.signOut.click();
@@ -6610,7 +6673,7 @@ function openVidOffConfirm(i, state) {
   const n = (s.vclips && s.vclips.length) || (s.vlink ? 1 : 0);
   _vidOffTarget = i;
   document.getElementById("vidOffText").textContent =
-    c.n + " (Booth " + c.b + ") will drop off the home team's video list." +
+    c.n + " (Booth " + c.b + ") will drop off the bullpen's video list." +
     (n ? " The " + n + " clip" + (n === 1 ? " already uploaded stays" : "s already uploaded stay") + " in the show folder." : "");
   document.getElementById("vidOffSheet").style.display = "flex";
 }
@@ -6630,6 +6693,28 @@ document.getElementById("vidOffConfirm").addEventListener("click", () => {
 });
 document.getElementById("vidOffSheet").addEventListener("click", e => {
   if (e.target.id === "vidOffSheet") { _vidOffTarget = null; e.currentTarget.style.display = "none"; }
+});
+// Bullpen "Remove" confirm: the group key waits here while the sheet is open.
+let _vidHideTarget = null;
+function openVidHideConfirm(gk, name) {
+  _vidHideTarget = gk;
+  document.getElementById("vidHideText").textContent = (name || "This booth") +
+    " disappears from the bullpen for the whole desk. The rep's video flag and any uploaded clips are untouched. It can be restored from the Removed list, and new footage brings it back automatically.";
+  document.getElementById("vidHideSheet").style.display = "flex";
+}
+document.getElementById("vidHideCancel").addEventListener("click", () => {
+  _vidHideTarget = null;
+  document.getElementById("vidHideSheet").style.display = "none";
+});
+document.getElementById("vidHideConfirm").addEventListener("click", () => {
+  const gk = _vidHideTarget; _vidHideTarget = null;
+  document.getElementById("vidHideSheet").style.display = "none";
+  if (!gk) return;
+  const cut = gk.indexOf("__");
+  hideVideoGroup(gk.slice(0, cut), gk.slice(cut + 2));
+});
+document.getElementById("vidHideSheet").addEventListener("click", e => {
+  if (e.target.id === "vidHideSheet") { _vidHideTarget = null; e.currentTarget.style.display = "none"; }
 });
 // The post-sign-in connect nudge (one time per device).
 document.getElementById("msPromptConnect").addEventListener("click", () => {
@@ -6837,7 +6922,7 @@ async function renderCleanupList() {
     } catch (e) {}
   };
   await groupBy("videoStatus", "Video done records");
-  await groupBy("homeFlags", "Home team flags");
+  await groupBy("homeFlags", "Bullpen flags");
 
   const list = Object.values(people)
     .sort((a,b) => a.event.localeCompare(b.event) || a.name.localeCompare(b.name));
@@ -6942,7 +7027,7 @@ function showSignedIn(profile) {
 // ── INSTALL PROMPT ───────────────────────────────────────────────────────
 // Reps live in this app on a phone all show, so nudge them to install it.
 // Only on iPhone/Android browsers: desktop can't add to a home screen, and
-// the home team runs the dashboard on a computer anyway. Skipped once the
+// the bullpen runs the dashboard on a computer anyway. Skipped once the
 // app IS installed (display-mode: standalone) and for the home account.
 // "Continue in browser" hides it for this session only, so it returns next
 // visit until they actually install.
@@ -7095,8 +7180,8 @@ if (fbReady) {
         document.getElementById("brandSwitchRow").style.display = "none";
         homeBrandFilter = null; homeSearchQ = "";
         applyBrand("ncm");
-        updateHeaderBrand("ncm", "Home Team");
-        showSignedIn({ name: "Home Team" });
+        updateHeaderBrand("ncm", "Bullpen");
+        showSignedIn({ name: "Bullpen" });
         subscribeHomeNotes();
         subscribeHomeFlags();
         subscribeHomeSchedules();
@@ -7155,7 +7240,7 @@ if (fbReady) {
       subscribeNotifyConfig();
       subscribeUploadConfig();
       updateMediaBtn();
-      maybeShowInstallPrompt();   // reps on a phone; home team is excluded inside
+      maybeShowInstallPrompt();   // reps on a phone; bullpen is excluded inside
       render();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
@@ -7175,7 +7260,7 @@ if (fbReady) {
 setAuthMode("signin");
 setupBrandPicker();
 applyQrPrefill();
-// The home desk runs on laptops; on a phone the "Enter as Home Team" button
+// The home desk runs on laptops; on a phone the "Enter the Bullpen" button
 // is just signup-screen clutter. Pure UA check (installPlatform() goes null
 // in installed PWAs and after a skip, which isn't what "is a phone" means).
 if (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent))
