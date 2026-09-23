@@ -1778,8 +1778,10 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-rem-item { border-top: 1px solid var(--border-soft); padding: 9px 0; }
 .home-rem-co { font-size: 0.8rem; font-weight: 700; color: var(--text); }
 .home-rem-meta { font-size: 0.68rem; color: var(--muted); margin: 2px 0 7px; }
-.home-rem-btn { font-family: var(--ft); font-size: 0.66rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--muted); cursor: pointer; }
+.home-rem-btn { font-family: var(--ft); font-size: 0.7rem; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1.5px solid #C5D0DC; background: #fff; color: var(--text-2); cursor: pointer; box-shadow: 0 1px 2px rgba(9,30,50,0.06); }
 .home-rem-btn:active { opacity: 0.75; }
+/* Footage links read as brand-colored, so they stand apart from the actions */
+.home-rem-btn.watch { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
 .home-rem-btn.done { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
 .home-rem-item.isdone .home-rem-co { text-decoration: line-through; opacity: 0.6; }
 .home-rem-donehead { font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 10px 0 2px; cursor: pointer; -webkit-user-select: none; user-select: none; }
@@ -2083,10 +2085,20 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v122</div>
+      <div class="settings-dbx-note">NCM Events Guide · v123</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the home team and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
+  </div>
+</div>
+
+<!-- ── Confirm before un-flagging a booth's video (accidental re-taps) ── -->
+<div id="vidOffSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Remove the video flag?</div>
+    <p class="settings-dbx-note" id="vidOffText"></p>
+    <button class="settings-done" id="vidOffKeep" type="button">Keep it flagged</button>
+    <button class="settings-done share-secondary" id="vidOffConfirm" type="button">Remove the flag</button>
   </div>
 </div>
 
@@ -4407,15 +4419,54 @@ async function msBootstrap() {
     await ensureMsalApp();
     const resp = await msalApp.handleRedirectPromise();
     if (resp && resp.account) msalApp.setActiveAccount(resp.account);
-    if (sessionStorage.getItem("ncm_ms_signin")) {
+    const marker = sessionStorage.getItem("ncm_ms_signin");
+    if (marker) {
       sessionStorage.removeItem("ncm_ms_signin");
-      if (msAccount()) toast("Microsoft account connected. Tap Upload on a booth to send footage");
+      if (msAccount()) toast(marker === "refresh"
+        ? "Microsoft sign-in refreshed"
+        : "Microsoft account connected. Tap Upload on a booth to send footage");
     }
   } catch (e) { sessionStorage.removeItem("ncm_ms_signin"); }
   updateMsSection();
   if (!isHome() && currentUser) render();
   maybeShowMsPrompt();
+  msWarmToken();
 }
+// Token cache + freshness. Microsoft's browser sign-ins renew silently for
+// about 24 hours, then need a round trip to login.microsoftonline.com (no UI
+// when the session is alive, but it IS a page navigation — which is what ate
+// Nate's chosen file on 9/23). So: warm the token at launch and whenever the
+// app comes back to the foreground, and never open the picker unless a
+// fresh token is already in hand.
+let _msTok = null;                 // { token, exp }
+function msTokenFresh() { return !!(_msTok && _msTok.exp - Date.now() > 2 * 60e3); }
+async function msSilentToken() {
+  await ensureMsalApp();
+  const acct = msAccount();
+  if (!acct) throw new Error("no-account");
+  if (msTokenFresh()) return _msTok.token;
+  const r = await msalApp.acquireTokenSilent({ scopes: MS_SCOPES, account: acct });
+  _msTok = { token: r.accessToken, exp: r.expiresOn ? new Date(r.expiresOn).getTime() : Date.now() + 50 * 60e3 };
+  return r.accessToken;
+}
+let _msWarmTried = false;
+async function msWarmToken() {
+  if (!uploadCfg || !msAccount() || !navigator.onLine) return;
+  try { await msSilentToken(); }
+  catch (e) {
+    // Silent renewal is over (the 24h window): do the round trip NOW, at
+    // launch, while nobody is holding a video. Once per session, no loops.
+    if (_msWarmTried || sessionStorage.getItem("ncm_ms_relogin")) return;
+    _msWarmTried = true;
+    sessionStorage.setItem("ncm_ms_relogin", "1");
+    sessionStorage.setItem("ncm_ms_signin", "refresh");
+    try { await msalApp.acquireTokenRedirect({ scopes: MS_SCOPES, account: msAccount() }); } catch (e2) {}
+  }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && msalApp && msAccount() && !msTokenFresh())
+    msSilentToken().catch(() => {});   // quiet warm-up; the tap handler covers the rest
+});
 // Right after app sign-in (once per device): editorial reps with uploads
 // live get offered the Microsoft connect immediately, so the one-time
 // sign-in happens on hotel wifi instead of ambushing them mid-task on the
@@ -4442,7 +4493,7 @@ function msDisconnect() {
   // Device-local forget (like the desk-member choice): tokens + resolved folder.
   Object.keys(localStorage).filter(k => k.indexOf("msal.") === 0 || k === "ncm_ms_drive")
     .forEach(k => localStorage.removeItem(k));
-  msalApp = null; _msBooted = false;
+  msalApp = null; _msBooted = false; _msTok = null;
   updateMsSection(); render();
   toast("Microsoft account disconnected on this device");
 }
@@ -4453,12 +4504,10 @@ async function msToken(interactiveOk) {
     if (interactiveOk) { await msSignIn(); }   // navigates away
     throw new Error("no-account");
   }
-  try {
-    const r = await msalApp.acquireTokenSilent({ scopes: MS_SCOPES, account: acct });
-    return r.accessToken;
-  } catch (e) {
+  try { return await msSilentToken(); }
+  catch (e) {
     if (interactiveOk) {
-      sessionStorage.setItem("ncm_ms_signin", "1");
+      sessionStorage.setItem("ncm_ms_signin", "refresh");
       await msalApp.acquireTokenRedirect({ scopes: MS_SCOPES, account: acct });
     }
     throw e;
@@ -4502,8 +4551,25 @@ function msFileName(c, file) {
   return co + "_B" + booth + "_" + rep + ext;
 }
 const UP_CHUNK = 10 * 1024 * 1024;   // multiple of 320 KiB per Graph's rules
+// PUT one chunk with byte-level upload progress. fetch() can't report upload
+// progress, and per-chunk ticks made a 30 MB clip read 0% → 33% → done.
+function putChunk(url, blob, range, onLoaded) {
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Range", range);
+    xhr.upload.onprogress = ev => { if (onLoaded && ev.lengthComputable) onLoaded(ev.loaded); };
+    xhr.onload = () => resolve({ status: xhr.status,
+      json: () => { try { return Promise.resolve(JSON.parse(xhr.responseText || "{}")); } catch (e) { return Promise.resolve({}); } } });
+    xhr.onerror = xhr.ontimeout = xhr.onabort = () => resolve(null);   // wifi hiccup: resume below
+    xhr.send(blob);
+  });
+}
 async function msUploadFile(c, file, onPct) {
-  const token = await msToken(true);
+  // Never redirect from in here: a navigation now would drop the file. The
+  // tap handler only opens the picker with a fresh token, so this is rare.
+  let token;
+  try { token = await msSilentToken(); } catch (e) { throw new Error("token"); }
   const folder = await msResolveFolder(token);
   const name = msFileName(c, file);
   const sess = await msGraph(
@@ -4514,14 +4580,10 @@ async function msUploadFile(c, file, onPct) {
   let pos = 0, stalls = 0;
   while (true) {
     const end = Math.min(pos + UP_CHUNK, file.size);
-    let r = null;
-    try {
-      r = await fetch(sess.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Range": "bytes " + pos + "-" + (end - 1) + "/" + file.size },
-        body: file.slice(pos, end),
-      });
-    } catch (e) {}                                  // wifi hiccup — resume below
+    const base = pos;
+    const r = await putChunk(sess.uploadUrl, file.slice(pos, end),
+      "bytes " + pos + "-" + (end - 1) + "/" + file.size,
+      loaded => { if (onPct) onPct(Math.min(99, Math.floor((base + loaded) / file.size * 100))); });
     if (r && (r.status === 200 || r.status === 201)) return r.json();
     if (r && r.status === 202) {
       const j = await r.json().catch(() => ({}));
@@ -4572,8 +4634,13 @@ async function startVideoUpload(i, file) {
     }
   } catch (e) {
     delete upProg[i]; render();
-    if (String(e && e.message) !== "no-account")
+    const msg = String(e && e.message);
+    if (msg === "token") {
+      toast("Your Microsoft sign-in needs a refresh. One moment…");
+      msToken(true).catch(() => {});   // round trip now; they re-pick after it lands
+    } else if (msg !== "no-account") {
       toast("Upload didn't finish. Check your connection and try again");
+    }
   }
 }
 // Upload controls on a video-flagged booth card. States: plain Upload,
@@ -5991,11 +6058,17 @@ document.getElementById("content").addEventListener("click", e => {
   if (upBtn) {
     const i = parseInt(upBtn.dataset.upv);
     if (upProg[i] != null) return;
-    if (msalApp && msAccount()) {
+    if (msalApp && msAccount() && msTokenFresh()) {
       // Synchronous .click() only: iOS drops the picker if it opens outside
-      // the tap gesture. The token is fetched silently after the pick.
+      // the tap gesture. A fresh token is already cached, so the upload can
+      // never need a redirect after the pick.
       msUploadTarget = i;
       document.getElementById("vidFileInput").click();
+    } else if (msalApp && msAccount()) {
+      // Token went stale (long session, or the 24h renewal window closed):
+      // refresh BEFORE the picker so a round trip can't eat a chosen file.
+      toast("Refreshing your Microsoft sign-in…");
+      msToken(true).then(() => toast("Ready. Tap Upload again to pick the video")).catch(() => {});
     } else {
       toast("One-time Microsoft sign-in: you'll come right back here");
       msToken(true).then(() => {
@@ -6013,6 +6086,10 @@ document.getElementById("content").addEventListener("click", e => {
     const i = parseInt(vidBtn.dataset.video);
     const k = key(i);
     if (!state[k]) state[k] = {};
+    // Turning the flag OFF pulls the booth out of the home team's video
+    // list, so an accidental re-tap gets a confirm first (turning it on
+    // stays a single tap).
+    if (state[k].video) { openVidOffConfirm(i, state); return; }
     state[k].video = !state[k].video;
     save(state);
     vidBtn.classList.toggle("on", state[k].video);
@@ -6527,6 +6604,35 @@ document.getElementById("settingsSheet").addEventListener("click", e => {
 document.getElementById("msConnectBtn").addEventListener("click", () => {
   if (msAccount()) { msDisconnect(); return; }
   msSignIn().catch(() => toast("Couldn't reach Microsoft sign-in. Try again in a minute"));
+});
+// Un-flag confirm: the booth index waits here while the sheet is open.
+let _vidOffTarget = null;
+function openVidOffConfirm(i, state) {
+  const c = CO[i]; if (!c) return;
+  const s = state[key(i)] || {};
+  const n = (s.vclips && s.vclips.length) || (s.vlink ? 1 : 0);
+  _vidOffTarget = i;
+  document.getElementById("vidOffText").textContent =
+    c.n + " (Booth " + c.b + ") will drop off the home team's video list." +
+    (n ? " The " + n + " clip" + (n === 1 ? " already uploaded stays" : "s already uploaded stay") + " in the show folder." : "");
+  document.getElementById("vidOffSheet").style.display = "flex";
+}
+document.getElementById("vidOffKeep").addEventListener("click", () => {
+  _vidOffTarget = null;
+  document.getElementById("vidOffSheet").style.display = "none";
+});
+document.getElementById("vidOffConfirm").addEventListener("click", () => {
+  const i = _vidOffTarget; _vidOffTarget = null;
+  document.getElementById("vidOffSheet").style.display = "none";
+  if (i == null) return;
+  const state = load(); const k = key(i);
+  if (!state[k]) state[k] = {};
+  state[k].video = false;
+  save(state); render();
+  toast("Video flag removed");
+});
+document.getElementById("vidOffSheet").addEventListener("click", e => {
+  if (e.target.id === "vidOffSheet") { _vidOffTarget = null; e.currentTarget.style.display = "none"; }
 });
 // The post-sign-in connect nudge (one time per device).
 document.getElementById("msPromptConnect").addEventListener("click", () => {
