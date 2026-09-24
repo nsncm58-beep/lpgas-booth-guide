@@ -108,15 +108,17 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-/* The page scrolls normally, with NO rubber-band bounce. iOS drags every
-   position:fixed element along with the page's bounce, which is what made
-   the bottom bar move; `none` stops the bounce, so the header and the bar
-   stay put (list ends stop firmly instead of easing).
+/* The page scrolls normally with the soft rubber-band bounce (`contain`:
+   list ends ease to a stop, Nate's Sept. 11 ask; `none` made them stop dead,
+   which he rejected again after v135). iOS drags position:fixed elements
+   along with that bounce, so #topBleed and #bottomBleed (end of the
+   stylesheet) fill the strips a bounce uncovers above the header and below
+   the bottom bar.
    DON'T bring back the v133-v134 "app shell" (html/body locked to the screen
    with an inner scroller): on iOS 26 home-screen apps with the
    black-translucent status bar, WebKit bug 301108 sizes screen-filling
    layouts one status bar short, and the bar floated above the bottom edge. */
-html, body { overscroll-behavior-y: none; }
+html, body { overscroll-behavior-y: contain; }
 body {
   font-family: var(--ft);
   background: var(--bg);
@@ -2012,9 +2014,39 @@ body.home-mode .user-chip-gear { display: none !important; }
    which is exactly where animation turns into jank. Everything is opacity/
    transform only, so it stays on the GPU. */
 
-/* (The v109-v112 #topBleed bounce patches are gone: with the bounce off,
-   the header can't be pulled away from the top.) */
+/* iOS rubber-band, third and final approach. History: a bleed above the
+   header (v109) never shows because iOS doesn't render document content
+   above y=0 during a bounce; a root-canvas gradient (v111) works but only
+   AFTER the first scroll, because WebKit tiles that canvas zone lazily.
+   This is a real fixed element parked just above the viewport: fixed
+   layers ride the layout viewport, which is exactly what bounces, so the
+   brand color slides down into the gap, and being composited from the
+   first frame, it needs no scroll warm-up. */
 html { background: var(--bg); }
+#topBleed {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 110vh;
+  transform: translateY(-100%) translateZ(0);
+  background: var(--blue);
+  pointer-events: none;
+  z-index: 400;
+}
+/* The same trick at the bottom (v136). When the page bounces up at the end
+   of a list, iOS lifts the fixed bottom bar with it and a strip of page
+   showed underneath, which read as the bar coming loose. This bar-colored
+   layer waits just below the screen and rides up with the bar, so the bar
+   always reaches the bottom edge. Hidden wherever the bar is. */
+#bottomBleed {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 110vh;
+  transform: translateY(100%) translateZ(0);
+  background: var(--surface);
+  pointer-events: none;
+  z-index: 149;
+}
+body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bottomBleed { display: none; }
 
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
@@ -2093,6 +2125,8 @@ html { background: var(--bg); }
 </style>
 </head>
 <body>
+<div id="topBleed" aria-hidden="true"></div>
+<div id="bottomBleed" aria-hidden="true"></div>
 
 <header class="app-header">
   <div class="header-top">
@@ -2191,7 +2225,7 @@ html { background: var(--bg); }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v135</div>
+      <div class="pf-ver">NCM Events Guide · v136</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
