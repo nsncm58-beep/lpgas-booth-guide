@@ -251,16 +251,17 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 .guide-card { max-height: 86vh; overflow-y: auto; }
 .guide-note { font-size: 0.7rem; color: var(--muted); margin: 2px 0 12px; line-height: 1.5; }
 .guide-install { text-align: center; padding: 2px 0 14px; border-bottom: 1px solid var(--border-soft); margin-bottom: 14px; }
-.guide-install .guide-qr-lg { width: 150px; height: 150px; margin: 0 auto 8px; }
+.guide-install .guide-qr-lg { width: 170px; height: 170px; margin: 0 auto 8px; }
 .guide-url { font-size: 0.72rem; font-weight: 700; word-break: break-all; color: var(--text-2); }
-.guide-ev { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
-.guide-ev-bar { color: #fff; padding: 8px 12px; font-family: var(--fd); font-weight: 800; font-size: 0.85rem; letter-spacing: 0.3px; }
-.guide-ev-body { padding: 10px 12px; display: flex; gap: 12px; align-items: center; }
-.guide-ev-info { flex: 1; min-width: 0; }
-.guide-ev-code { font-family: var(--fd); font-weight: 900; font-size: 1.05rem; letter-spacing: 0.6px; color: var(--text); }
-.guide-ev-meta { font-size: 0.68rem; color: var(--muted); line-height: 1.5; margin-top: 3px; }
-.guide-ev-qr { width: 92px; height: 92px; flex-shrink: 0; }
-.guide-ev-qr img, .guide-ev-qr canvas, .guide-qr-lg img, .guide-qr-lg canvas { width: 100% !important; height: 100% !important; display: block; }
+.guide-qr-lg img, .guide-qr-lg canvas { width: 100% !important; height: 100% !important; display: block; }
+.guide-section-title { font-family: var(--fd); font-weight: 800; font-size: 0.8rem; color: var(--text); margin: 0 0 8px; }
+.guide-brand { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-top: 1px solid var(--border-soft); font-size: 0.78rem; color: var(--text); }
+.guide-brand:last-of-type { border-bottom: 1px solid var(--border-soft); }
+.guide-brand-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.guide-brand-meta { margin-left: auto; font-size: 0.66rem; color: var(--muted); text-align: right; }
+.guide-pass { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.guide-pass-lbl { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); }
+.guide-pass-val { font-family: ui-monospace, Menlo, monospace; font-weight: 700; font-size: 0.95rem; color: var(--text); flex: 1; -webkit-user-select: all; user-select: all; }
 
 .settings-stack-btn {
   width: 100%; margin-top: 10px; padding: 13px; border-radius: 10px; cursor: pointer;
@@ -2076,8 +2077,8 @@ html { background: var(--bg); }
     </div>
     <div class="settings-admin" id="settingsAdmin" style="display:none">
       <div class="settings-dbx-title">Admin</div>
-      <div class="settings-dbx-note">QR codes for installing the app and joining a brand, plus tools for clearing stray records across all brands.</div>
-      <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Install &amp; join QR codes</button>
+      <div class="settings-dbx-note">The one install QR for reps, the bullpen passcode, and tools for clearing stray records across all brands.</div>
+      <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Install QR &amp; bullpen passcode</button>
       <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button" style="margin-top:8px;">Clean up team data</button>
     </div>
     <div class="settings-danger">
@@ -2086,7 +2087,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v129</div>
+      <div class="settings-dbx-note">NCM Events Guide · v130</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -2136,7 +2137,7 @@ html { background: var(--bg); }
 <!-- ── Admin: event codes + install/join QRs (master only) ── -->
 <div id="guideSheet" class="settings-sheet" style="display:none">
   <div class="settings-card guide-card">
-    <div class="settings-title">Install &amp; join QRs</div>
+    <div class="settings-title">Install QR &amp; bullpen</div>
     <div id="guideBody"></div>
     <button class="settings-done" id="guideClose" type="button">Done</button>
   </div>
@@ -6926,45 +6927,71 @@ async function openGuideSheet() {
   document.getElementById("settingsSheet").style.display = "none";
   document.getElementById("guideSheet").style.display = "flex";
   const body = document.getElementById("guideBody");
-  let h = `<div class="guide-note">Reads straight from this build, so it's always current. Reps don't type a code any more: they pick a brand at signup. Each brand's QR opens the app with that brand already selected.</div>
-    <div class="guide-install">
-      <div class="guide-qr-lg" id="gqrInstall"></div>
-      <div class="guide-url">${esc(GUIDE_APP_URL)}</div>
-      <div class="guide-note" style="margin:6px 0 0">Scan to open. iPhone: Share &rarr; Add to Home Screen. Android: menu &rarr; Install app.</div>
-    </div>`;
-  SIGNUP_BRANDS.forEach(brand => {
+  // One QR for everyone: reps pick their brand (and team) when they create the
+  // account, and add more brands later under Profile > My brands. Show status
+  // per brand is a quick readiness glance, no codes.
+  const status = SIGNUP_BRANDS.map(brand => {
     const code = CURRENT_SHOW[brand];
     const ev = EVENTS[code];
     const b = BRANDS[brand] || BRANDS.ncm;
     const med = MEDIA[code] || {};
     const nBooths = ev ? (ev.booths || []).length : 0;
     const bits = [
-      isPastShow(code) ? "Wrapped" : "Running",
-      nBooths ? (nBooths + " booths") : "booth list not loaded yet",
+      isPastShow(code) ? "wrapped" : nBooths ? nBooths + " booths" : "booth list not loaded yet",
       (ev && ev.dates && ev.dates.length) ? "dates set" : "no dates yet",
-      (med.request && med.folder) ? "media wired" : "no media links yet"
+      (med.request && med.folder) ? "folder wired" : "no folder yet"
     ];
-    h += `<div class="guide-ev">
-      <div class="guide-ev-bar" style="background:${b.p.blue}">${esc(b.name)}</div>
-      <div class="guide-ev-body">
-        <div class="guide-ev-info">
-          <div class="guide-ev-code">${esc((ev && ev.show) || code || "No show set")}</div>
-          <div class="guide-ev-meta">${bits.map(esc).join(" · ")}</div>
-        </div>
-        <div class="guide-ev-qr" data-gqr="${esc(GUIDE_APP_URL + "?code=" + code)}"></div>
-      </div>
-    </div>`;
-  });
-  h += `<div class="guide-note" style="margin-top:12px">Show codes are internal now, shown here for reference only. Rolling a brand onto its next show takes a new exhibitor list and its dates, plus a republish of the Firestore rules so the new code is accepted. Reps roll over on their own the next time they open the app.</div>`;
-  body.innerHTML = h;
+    return `<div class="guide-brand"><span class="guide-brand-dot" style="background:${b.p.blue}"></span><strong>${esc((ev && ev.show) || b.name)}</strong><span class="guide-brand-meta">${esc(bits.join(" · "))}</span></div>`;
+  }).join("");
+  body.innerHTML = `
+    <div class="guide-install">
+      <div class="guide-qr-lg" id="gqrInstall"></div>
+      <div class="guide-url">${esc(GUIDE_APP_URL)}</div>
+      <div class="guide-note" style="margin:8px 0 0">One code for every rep and every brand. Scan, install (iPhone: Share &rarr; Add to Home Screen; Android: menu &rarr; Install app), then <strong>Create Account</strong> and pick your brand and team. Covering more than one brand? Profile &rarr; My brands.</div>
+    </div>
+    <div class="guide-section-title">Shows loaded right now</div>
+    ${status}
+    <div class="guide-section-title" style="margin-top:14px">Bullpen (laptops)</div>
+    <div class="guide-note" style="margin:0 0 8px">Same address in a browser, then <strong>Enter the Bullpen</strong>. It asks for the shared passcode, then who's working the desk.</div>
+    <div class="guide-pass" id="guidePass"><span class="guide-pass-lbl">Passcode</span><span class="guide-pass-val" id="guidePassVal">loading…</span><button class="home-rem-btn" type="button" id="guidePassCopy">Copy</button></div>
+    <div class="guide-note" style="margin:8px 0 0">Stored in Firestore where only admins can read it (this page's source is public), so it never sits in the app code.</div>`;
+  loadBullpenPasscode();
   try {
     await loadQrLib();
-    const mk = (el, text, size) => { el.innerHTML = ""; new QRCode(el, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); };
-    mk(document.getElementById("gqrInstall"), GUIDE_APP_URL, 150);
-    body.querySelectorAll("[data-gqr]").forEach(el => mk(el, el.dataset.gqr, 92));
+    const el = document.getElementById("gqrInstall");
+    el.innerHTML = "";
+    new QRCode(el, { text: GUIDE_APP_URL, width: 170, height: 170, correctLevel: QRCode.CorrectLevel.M });
   } catch (e) {
     document.getElementById("gqrInstall").innerHTML =
-      '<div class="guide-note">QR codes need a connection. The links and codes above still work.</div>';
+      '<div class="guide-note">The QR needs a connection. The link above still works.</div>';
+  }
+}
+// The bullpen passcode lives in Firestore config/admin (rules: masters only)
+// so it can be shown to Nate and Rachel here without ever touching the
+// public repo. Nate pastes it into the console once.
+async function loadBullpenPasscode() {
+  const val = document.getElementById("guidePassVal");
+  const btn = document.getElementById("guidePassCopy");
+  if (!val) return;
+  if (!fbReady || !isMaster()) { val.textContent = "admins only"; if (btn) btn.style.display = "none"; return; }
+  try {
+    const d = await fbDb.collection("config").doc("admin").get();
+    const pass = (d.exists && d.data().bullpenPasscode) || "";
+    if (!pass) {
+      val.textContent = "not set yet";
+      val.title = "Firestore console > config > add doc 'admin' with a string field bullpenPasscode";
+      if (btn) btn.style.display = "none";
+      return;
+    }
+    val.textContent = pass;
+    if (btn) btn.onclick = () => {
+      (navigator.clipboard ? navigator.clipboard.writeText(pass) : Promise.reject())
+        .then(() => toast("Passcode copied")).catch(() => toast("Copy blocked here; long-press the passcode to copy"));
+    };
+  } catch (e) {
+    val.textContent = "couldn't load";
+    val.title = "Publish the latest firestore.rules (config/admin is masters-only)";
+    if (btn) btn.style.display = "none";
   }
 }
 // The guide lives in Settings > Admin (masters only). It used to hang off the

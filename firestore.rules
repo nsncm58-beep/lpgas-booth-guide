@@ -55,8 +55,13 @@ service cloud.firestore {
     // own device is what fires the "video ready to produce" DM. Only masters
     // write it, via Settings > Admin > Teams notifications.
     match /config/{docId} {
-      allow read: if request.auth != null;
+      // config/admin holds the bullpen passcode for the Admin sheet: masters
+      // only. (Overlapping matches OR together, so the exclusion lives here.)
+      allow read: if request.auth != null && docId != "admin";
       allow create, update, delete: if isMaster();
+    }
+    match /config/admin {
+      allow read: if isMaster();
     }
 
     // Home-team workflow flags ("Follow up" / "Covered" on shared booth notes).
