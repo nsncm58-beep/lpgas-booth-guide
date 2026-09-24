@@ -114,8 +114,16 @@
    top of a full-height column, the bottom bar is fixed, and only #appScroll
    (the content between them) scrolls. It keeps its own soft bounce
    (`contain`), so list ends still ease to a stop (Nate's Sept. 11 ask). */
-html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html { height: 100%; overflow: hidden; overscroll-behavior: none; }
+/* The column is pinned to the screen box itself (the same box a fixed
+   element measures from) rather than a 100% height chain, and the bottom bar
+   is its LAST ROW instead of a separately fixed layer, so the bar can only
+   ever end at the bottom edge and the content always ends right on top of
+   it. v133 sized the page by percentages and pinned the bar separately, and
+   on iPhone the two disagreed, leaving the bar short of the bottom. */
 body {
+  position: fixed; inset: 0;
+  overflow: hidden; overscroll-behavior: none;
   display: flex; flex-direction: column;
   font-family: var(--ft);
   background: var(--bg);
@@ -673,12 +681,11 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 
 /* ── BOTTOM NAV (field app) ── */
 .bottom-nav {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
+  position: relative; flex: none; z-index: 150;   /* last row of the app column (see body) */
   display: flex; background: var(--surface);
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 14px rgba(0, 40, 70, 0.09);
   padding-bottom: env(safe-area-inset-bottom, 0);
-  transform: translateZ(0);   /* own compositor layer: no repaint lag on fast scrolls */
 }
 /* While the on-screen keyboard is up, iOS lifts every fixed element above
    it — the nav and the + button floated mid-screen during note typing.
@@ -697,7 +704,6 @@ body.kb-open .bottom-nav, body.kb-open .fab-wrap { display: none !important; }
 .bn-btn svg { width: 21px; height: 21px; }
 .bn-btn:active { opacity: 0.6; }
 .bn-btn.active { color: var(--blue); }
-body.has-nav { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)); }
 body.home-mode .bottom-nav { display: none !important; }
 /* Home keeps few header controls, so its name never needs truncating. */
 body.home-mode .user-chip-name { max-width: none; }
@@ -864,9 +870,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 
 /* ── FOOTER ── */
 .app-footer {
-  /* Deep bottom padding keeps the hint line clear of the floating add button,
-     which hovers about 124px above the bottom of the viewport. */
-  padding: 18px 16px calc(104px + env(safe-area-inset-bottom, 0));
+  /* Bottom padding keeps the hint line clear of the floating add button,
+     which overlaps the bottom ~75px of the scroll area. */
+  padding: 18px 16px 92px;
   text-align: center;
   color: var(--muted);
   font-size: 0.7rem;
@@ -1685,7 +1691,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 16px 14px 28px; min-height: 100%;
 }
 .settings-card.as-view .settings-done { background: var(--border); color: var(--text-2); }
-body.in-settings .app-footer { display: none; }   /* the hint points at Settings */
+body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /* the hint points at Settings */
 .settings-title { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); margin-bottom: 18px; }
 .settings-row { display: flex; align-items: center; gap: 14px; justify-content: space-between; }
 .settings-row-text strong { display: block; font-size: 0.9rem; color: var(--text); }
@@ -1741,6 +1747,20 @@ body.in-settings .app-footer { display: none; }   /* the hint points at Settings
 .pf-opt.locked { opacity: 0.55; cursor: default; }
 /* Sheet errors read as errors on every brand (--maroon is blue on PMP). */
 .settings-card .auth-error { color: #B3261E; }
+
+/* ── Photos tab ── */
+.ph-wrap { max-width: 560px; margin: 0 auto; padding: 16px 14px 8px; }
+.ph-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 22px 18px 18px; text-align: center; box-shadow: 0 1px 2px rgba(60,40,10,0.05); }
+.ph-icon { width: 54px; height: 54px; margin: 0 auto 10px; border-radius: 50%; background: var(--blue-light); color: var(--blue); display: flex; align-items: center; justify-content: center; }
+.ph-icon svg { width: 26px; height: 26px; }
+.ph-title { font-family: var(--fd); font-weight: 800; font-size: 1.2rem; color: var(--text); }
+.ph-show { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+.ph-text { font-size: 0.86rem; line-height: 1.5; color: var(--text-2); margin: 12px 4px 0; }
+.ph-btn { display: block; width: 100%; margin-top: 16px; padding: 14px; border: none; border-radius: 12px; background: var(--blue); color: #fff; font-family: var(--fd); font-weight: 700; font-size: 0.86rem; letter-spacing: 0.4px; text-transform: uppercase; cursor: pointer; }
+.ph-btn:active { opacity: 0.9; }
+.ph-btn-2 { margin-top: 10px; background: var(--surface); color: var(--blue); border: 1.5px solid var(--blue); }
+.ph-note { margin-top: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
+
 
 /* ── Admin > Accounts ── */
 .acct-card { max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow-y: auto; }
@@ -2003,8 +2023,11 @@ body.home-mode .user-chip-gear { display: none !important; }
    transform only, so it stays on the GPU. */
 
 /* (The v109-v112 #topBleed bounce patches are gone: with the app shell the
-   page never bounces, so the header can't be pulled away from the top.) */
-html { background: var(--bg); }
+   page never bounces, so the header can't be pulled away from the top.)
+   The canvas takes the bottom bar's color: if iOS ever leaves a sliver of
+   screen outside the layout (it has held back the home-indicator strip
+   before), that sliver reads as part of the bar, not a gap under it. */
+html { background: var(--surface); }
 
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
@@ -2138,8 +2161,8 @@ html { background: var(--bg); }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/></svg>
     <span>Booths</span>
   </button>
-  <button class="bn-btn" type="button" id="bnVideos">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M22 8.5l-7 3.5 7 3.5z" fill="currentColor" stroke="none"/></svg>
+  <button class="bn-btn" type="button" id="bnVideos" data-v="photos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></svg>
     <span>Videos</span>
   </button>
   <button class="bn-btn" type="button" id="bnSettings" data-v="settings">
@@ -2185,7 +2208,7 @@ html { background: var(--bg); }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v133</div>
+      <div class="pf-ver">NCM Events Guide · v134</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2329,16 +2352,7 @@ html { background: var(--bg); }
   </div>
 </div>
 
-<!-- ── Show photos & videos (all media goes to the team Dropbox) ── -->
-<div id="mediaSheet" class="settings-sheet" style="display:none">
-  <div class="settings-card">
-    <div class="settings-title" id="mediaSheetTitle">Show photos &amp; videos</div>
-    <p class="share-prompt-text" id="mediaSheetInfo">Photos and videos upload straight to the shared team folder, where the bullpen can view them.</p>
-    <p class="share-prompt-text" id="mediaSheetTip"><strong>Tip:</strong> include the company or booth number in the file name so the bullpen knows what they're looking at. Upload big videos on hotel wifi at the end of the day.</p>
-    <button class="settings-done" id="mediaUploadOpen" type="button">Open uploader</button>
-    <button class="settings-done share-secondary" id="mediaSheetClose" type="button">Close</button>
-  </div>
-</div>
+
 
 <!-- ── Install prompt (phones only; skipped once installed or for bullpen) ── -->
 <div id="installGate" class="install-gate" style="display:none">
@@ -5676,6 +5690,12 @@ function render() {
     renderSettingsView();
     return;
   }
+  if (activeView === "photos") {
+    filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
+    renderPhotosView();
+    return;
+  }
   if (activeView === "schedule") {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
@@ -6596,7 +6616,7 @@ function startFresh() {
   render();
   scrollAppTo(0);
 }
-// Bottom nav: Schedule/Booths/Profile switch views; Videos opens a sheet.
+// Bottom nav: every button is a tab (Schedule, Booths, Photos, Profile).
 document.getElementById("bottomNav").addEventListener("click", e => {
   const tab = e.target.closest("[data-v]");
   if (tab) {
@@ -6608,7 +6628,6 @@ document.getElementById("bottomNav").addEventListener("click", e => {
     scrollAppTo(tabScroll[v] || 0);
     return;
   }
-  if (e.target.closest("#bnVideos")) { document.getElementById("mediaBtn").click(); return; }
 });
 function setBottomTab(v) {
   activeView = v;
@@ -6750,7 +6769,7 @@ function updateMediaBtn() {
   const label = myNotesAutoShare() ? "Photos" : "Videos/Pics";
   const nav = document.getElementById("bnVideos");
   if (nav) {
-    nav.style.display = show ? "" : "none";
+    nav.style.display = (currentUser && !isHome()) ? "" : "none";   // always a tab; the page says if uploads aren't set up
     const lbl = nav.querySelector("span");
     if (lbl) lbl.textContent = label;
   }
@@ -6758,34 +6777,49 @@ function updateMediaBtn() {
   btn.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = label; });
 }
 function mediaIsMicrosoft(m) { return /sharepoint\.com|office\.com/i.test((m && (m.request || m.folder)) || ""); }
+// The header pill (laptops) goes to the same Photos tab.
 document.getElementById("mediaBtn").addEventListener("click", () => {
-  // Edit reps: this sheet is the PHOTOS home, and it points booth videos to
-  // their own path (the booth card's Upload button). Sales reps keep the
-  // provider-aware photos-and-videos wording — the folder is their path for
-  // everything.
+  document.querySelector('#bottomNav [data-v="photos"]').click();
+});
+// ── PHOTOS TAB ───────────────────────────────────────────────────────────
+// The show's shared upload folder as its own page (it used to be a pop-up).
+// Editorial/Digital and Events send booth VIDEOS from each flagged booth's
+// Upload button, so for them this is the photos home; Sales use it for both.
+const PH_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></svg>';
+function renderPhotosView() {
+  document.body.classList.add("in-photos");
+  const el = document.getElementById("content");
   const m = eventMedia(currentEventCode());
   const edit = myNotesAutoShare();
-  document.getElementById("mediaSheetTitle").textContent = edit ? "Show photos" : "Show photos & videos";
-  document.getElementById("mediaSheetInfo").textContent = edit
-    ? "This shared folder is for photos, or for browsing everything in one spot. Booth videos have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen automatically."
+  const head = `<div class="ph-icon">${PH_CAMERA}</div>
+      <div class="ph-title">${edit ? "Photos" : "Photos and videos"}</div>
+      <div class="ph-show">${esc(currentShowLabel())}</div>`;
+  if (!m || !m.request) {
+    el.innerHTML = `<div class="ph-wrap"><div class="ph-card">${head}
+      <p class="ph-text">Uploads aren't set up for this show yet. Once its shared folder is ready, the upload button appears here.</p></div></div>`;
+    return;
+  }
+  const info = edit
+    ? "Photos go straight to the show's shared folder, where the bullpen can see them."
     : mediaIsMicrosoft(m)
-    ? "Photos and videos upload straight to the team's shared Microsoft 365 folder, where the bullpen can view them (it also appears in the brand's Teams channel). No sign-in needed: tap Upload and pick files from your camera roll. Please add files only; don't move or delete what's there."
-    : "Photos and videos upload straight to the shared team Dropbox, where the bullpen can view them. No Dropbox account or login needed: just pick files from your camera roll. Dropbox tags each upload with your name.";
-  document.getElementById("mediaSheetTip").innerHTML = edit
-    ? "<strong>Tip:</strong> include the company or booth number in photo file names so the bullpen knows what they're looking at. Please add files only; don't move or delete what's there."
-    : "<strong>Tip:</strong> include the company or booth number in the file name so the bullpen knows what they're looking at. Upload big videos on hotel wifi at the end of the day.";
-  document.getElementById("mediaSheet").style.display = "flex";
-});
-document.getElementById("mediaUploadOpen").addEventListener("click", () => {
+    ? "Photos and videos go straight to the team's shared Microsoft 365 folder, where the bullpen can see them. No sign-in needed: tap Upload and pick files from your camera roll."
+    : "Photos and videos go straight to the shared team Dropbox, where the bullpen can see them. No account needed: just pick files from your camera roll.";
+  el.innerHTML = `<div class="ph-wrap">
+    <div class="ph-card">${head}
+      <p class="ph-text">${info}</p>
+      <button class="ph-btn" type="button" data-ph-upload>${edit ? "Upload photos" : "Upload photos and videos"}</button>
+      ${edit && m.folder ? `<button class="ph-btn ph-btn-2" type="button" data-ph-folder>Open the shared folder</button>` : ""}
+    </div>
+    ${edit ? `<div class="ph-note"><strong>Booth videos</strong> have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen.</div>` : ""}
+    <div class="ph-note"><strong>Tip:</strong> put the company or booth number in the file name so the bullpen knows what they're looking at.${edit ? "" : " Upload big videos on hotel wifi at the end of the day."} Please add files only; don't move or delete what's there.</div>
+  </div>`;
+}
+document.getElementById("content").addEventListener("click", e => {
+  const up = e.target.closest("[data-ph-upload]"), folder = e.target.closest("[data-ph-folder]");
+  if (!up && !folder) return;
   const m = eventMedia(currentEventCode());
-  if (m && m.request) window.open(m.request, "_blank", "noopener");
-  document.getElementById("mediaSheet").style.display = "none";
-});
-document.getElementById("mediaSheetClose").addEventListener("click", () => {
-  document.getElementById("mediaSheet").style.display = "none";
-});
-document.getElementById("mediaSheet").addEventListener("click", e => {
-  if (e.target.id === "mediaSheet") e.currentTarget.style.display = "none";
+  const url = m && (up ? m.request : m.folder);
+  if (url) window.open(url, "_blank", "noopener");
 });
 
 function toast(msg) {
@@ -7005,6 +7039,7 @@ function renderSettingsView() {
 // Put the card back in its sheet whenever another view renders.
 function parkSettingsCard() {
   document.body.classList.remove("in-settings");
+  document.body.classList.remove("in-photos");
   const card = document.getElementById("settingsCard");
   const sheet = document.getElementById("settingsSheet");
   if (card && sheet && card.parentElement !== sheet) {
