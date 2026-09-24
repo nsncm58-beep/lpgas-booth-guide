@@ -1671,8 +1671,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 /* Settings rendered as a page rather than a modal: it scrolls with the app. */
 .settings-card.as-view {
-  max-width: none; border-radius: 0; box-shadow: none;
-  padding: 18px 14px 24px; min-height: 100%;
+  max-width: 560px; margin: 0 auto; background: transparent;
+  border-radius: 0; box-shadow: none;
+  padding: 16px 14px 28px; min-height: 100%;
 }
 .settings-card.as-view .settings-done { background: var(--border); color: var(--text-2); }
 body.in-settings .app-footer { display: none; }   /* the hint points at Settings */
@@ -1691,6 +1692,88 @@ body.in-settings .app-footer { display: none; }   /* the hint points at Settings
 .share-prompt-actions { display: flex; gap: 10px; }
 .share-prompt-actions .settings-done { margin-top: 14px; }
 .share-secondary { background: var(--surface); border: 1.5px solid var(--border); color: var(--text-2); }
+
+/* ── Profile tab: summary card + grouped rows (iOS Settings style). Each
+   setting opens its own small sheet with a Save button. ── */
+.pf-head { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(60,40,10,0.05); }
+.pf-avatar { width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--blue); color: #fff; font-family: var(--fd); font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; }
+.pf-who { min-width: 0; }
+.pf-name { font-family: var(--fd); font-weight: 800; font-size: 1.1rem; color: var(--text); line-height: 1.2; }
+.pf-email { font-size: 0.78rem; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-sub { font-size: 0.78rem; font-weight: 600; color: var(--text-2); margin-top: 6px; }
+.pf-sub:empty { display: none; }
+.pf-label { font-family: var(--fd); font-size: 0.66rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.9px; margin: 22px 4px 8px; }
+.pf-group { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(60,40,10,0.05); }
+.pf-row { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 50px; margin: 0; padding: 12px 14px; background: none; border: none; border-top: 1px solid var(--border-soft); font-family: var(--ft); font-size: 0.9rem; color: var(--text); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.pf-row:first-child { border-top: none; }
+.pf-row:active { background: var(--blue-light); }
+.pf-k { font-weight: 600; flex-shrink: 0; }
+.pf-v { margin-left: auto; min-width: 0; font-size: 0.84rem; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-v.ok { color: var(--green); font-weight: 600; }
+.pf-v.act { color: var(--blue); font-weight: 700; }
+.pf-v.warn { color: #9A6200; font-weight: 600; }
+.pf-chev { width: 7px; height: 7px; flex-shrink: 0; margin: 0 3px 0 2px; border-top: 2px solid var(--muted); border-right: 2px solid var(--muted); transform: rotate(45deg); opacity: 0.6; }
+.pf-row.static { cursor: default; }
+.pf-row.static:active { background: none; }
+.pf-row.static .pf-chev { display: none; }
+.pf-signout { display: block; width: 100%; margin-top: 22px; padding: 14px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px; box-shadow: 0 1px 2px rgba(60,40,10,0.05); font-family: var(--fd); font-weight: 700; font-size: 0.86rem; color: #B3261E; cursor: pointer; }
+.pf-signout:active { background: #FBE9E8; }
+.pf-foot { margin: 22px 8px 0; text-align: center; font-size: 0.72rem; line-height: 1.55; color: var(--muted); }
+.pf-foot p { margin: 6px 0 0; }
+.pf-foot a { color: var(--text-2); font-weight: 600; }
+.pf-ver { font-weight: 700; color: var(--text-2); }
+.pf-sheet-intro { margin: -8px 0 12px; }
+.pf-opts { display: flex; flex-direction: column; gap: 10px; }
+.pf-opt { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; }
+.pf-opt input { width: 19px; height: 19px; margin: 1px 0 0; accent-color: var(--blue); flex-shrink: 0; }
+.pf-opt strong { display: block; font-size: 0.9rem; color: var(--text); }
+.pf-opt small { display: block; margin-top: 3px; font-size: 0.76rem; line-height: 1.45; color: var(--muted); }
+.pf-opt:has(input:checked) { border-color: var(--blue); background: var(--blue-light); }
+.pf-opt.locked { opacity: 0.55; cursor: default; }
+/* Sheet errors read as errors on every brand (--maroon is blue on PMP). */
+.settings-card .auth-error { color: #B3261E; }
+
+/* ── Admin > Accounts ── */
+.acct-card { max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow-y: auto; }
+.acct-top { flex-shrink: 0; }
+.acct-top .settings-title { margin-bottom: 6px; }
+.acct-sum { font-size: 0.76rem; line-height: 1.55; color: var(--text-2); margin-bottom: 12px; }
+.acct-search { margin-bottom: 10px; }
+.acct-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.acct-chip { border: 1.5px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 5px 11px; font-family: var(--ft); font-size: 0.74rem; font-weight: 600; cursor: pointer; }
+.acct-chip b { font-weight: 700; opacity: 0.55; margin-left: 2px; }
+.acct-chip.on { border-color: var(--blue); background: var(--blue); color: #fff; }
+.acct-chip.on b { opacity: 0.85; }
+.acct-list { flex: 1 1 auto; min-height: 140px; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0 -6px; padding: 0 6px; border-top: 1px solid var(--border-soft); }
+.acct-row { width: 100%; display: flex; align-items: center; gap: 12px; margin: 0; padding: 12px 4px; background: none; border: none; border-bottom: 1px solid var(--border-soft); font-family: var(--ft); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.acct-row:active { background: var(--blue-light); }
+.acct-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; align-self: flex-start; display: flex; align-items: center; justify-content: center; background: var(--blue-light); color: var(--blue); font-family: var(--fd); font-weight: 800; font-size: 0.8rem; }
+.acct-main { display: block; min-width: 0; flex: 1; }
+.acct-name { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+.acct-email { display: block; margin-top: 1px; font-size: 0.74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.acct-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: var(--border-soft); color: var(--text-2); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2px; }
+.acct-tag.team-edit { background: var(--blue-light); color: var(--blue); }
+.acct-tag.team-sales { background: #ECE3D3; color: #6B5B45; }
+.acct-tag.team-none { background: #FFF1CF; color: #8A5A00; }
+.acct-tag.ms-on { background: #E3F1E6; color: var(--green); }
+.acct-tag.ms-off { background: none; border: 1px dashed var(--border); color: var(--muted); }
+.acct-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.acct-admin { font-size: 0.56rem; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 5px; padding: 1px 5px; }
+.acct-empty { padding: 18px 4px; font-size: 0.82rem; color: var(--muted); }
+.acct-back { align-self: flex-start; margin: 0 0 14px; padding: 0; background: none; border: none; color: var(--blue); font-family: var(--ft); font-weight: 700; font-size: 0.84rem; cursor: pointer; }
+.acct-head { box-shadow: none; margin-bottom: 14px; }
+.acct-kv .pf-v { white-space: normal; }
+.acct-edit-link { align-self: center; margin: 18px 0 0; padding: 6px; background: none; border: none; color: var(--muted); font-family: var(--ft); font-size: 0.78rem; text-decoration: underline; cursor: pointer; }
+.acct-first-label { margin-top: 0; }
+.acct-review { border: 1px solid #EBCB8B; background: #FFF6E3; border-radius: 12px; padding: 2px 14px; }
+.acct-chg { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #F1DDB1; font-size: 0.84rem; line-height: 1.45; color: var(--text); }
+.acct-chg:first-child { border-top: none; }
+.acct-chg b { flex-shrink: 0; width: 56px; font-weight: 700; }
+.acct-chg i { font-style: normal; color: var(--muted); padding: 0 3px; }
+.acct-effects { margin: 12px 0 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
+.acct-effects li { margin-top: 4px; }
+
 
 /* ── Bullpen mode: hide the field-app chrome ── */
 body.home-mode .booths-search,
@@ -2068,54 +2151,88 @@ html { background: var(--bg); }
 </nav>
 <div id="toast"></div>
 
-<!-- ── Settings sheet ── -->
+<!-- ── Profile (its own bottom-nav tab; the card parks in this sheet otherwise) ── -->
 <div id="settingsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card" id="settingsCard">
-    <div class="settings-title">Profile</div>
-    <div class="settings-dbx-title">My brands</div>
-    <div id="brandChecks" class="brand-checks"></div>
-    <div class="settings-dbx-note">Check every brand you cover. The app opens on whichever of your brands has a show running or next up, and when you're on more than one, a brand switcher appears in the header.</div>
-    <div class="settings-danger">
-    <div class="settings-dbx-title">My team</div>
-    <select id="deptSelect" class="settings-dbx-input">
-      <option value="">Choose…</option>
-      <option value="edit">Editorial team</option>
-      <option value="sales">Sales</option>
-    </select>
-    <div class="settings-dbx-note">Editorial team: your notes and schedule are shared with the bullpen automatically. Sales: nothing is shared with the bullpen.</div>
+    <div class="pf-head">
+      <div class="pf-avatar" id="pfAvatar" aria-hidden="true"></div>
+      <div class="pf-who">
+        <div class="pf-name" id="pfName"></div>
+        <div class="pf-email" id="pfEmail"></div>
+        <div class="pf-sub" id="pfSub"></div>
+      </div>
     </div>
-    <div class="settings-danger">
-      <div class="settings-dbx-title">Export</div>
-      <button class="settings-dbx-btn settings-stack-btn" id="exportBtn" type="button">Download show data (CSV)</button>
-      <div class="settings-dbx-note">All booths with your visits, notes, meals and off-site meetings for this show.</div>
+
+    <div class="pf-label">Your setup</div>
+    <div class="pf-group">
+      <button class="pf-row" id="pfTeamRow" type="button"><span class="pf-k">Team</span><span class="pf-v" id="pfTeamVal"></span><span class="pf-chev" aria-hidden="true"></span></button>
+      <button class="pf-row" id="pfBrandsRow" type="button"><span class="pf-k">Brands</span><span class="pf-v" id="pfBrandsVal"></span><span class="pf-chev" aria-hidden="true"></span></button>
+      <button class="pf-row" id="pfMsRow" type="button" style="display:none"><span class="pf-k">Microsoft</span><span class="pf-v" id="pfMsVal"></span><span class="pf-chev" aria-hidden="true"></span></button>
     </div>
-    <div class="settings-danger" id="settingsShows">
-      <div class="settings-dbx-title">Shows</div>
-      <div class="settings-dbx-note">You're viewing <strong id="curShowName">this show</strong>. Every show keeps its own booths, notes and schedule, and nothing is ever deleted. When your brands have more than one show, a show button appears at the top of the app.</div>
-      <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button" style="margin-top:12px;">Download a show's data (CSV)</button>
+
+    <div class="pf-label">Shows</div>
+    <div class="pf-group">
+      <button class="pf-row" id="pfShowRow" type="button"><span class="pf-k">Current show</span><span class="pf-v" id="curShowName"></span><span class="pf-chev" aria-hidden="true"></span></button>
+      <button class="pf-row" id="oldDataBtn" type="button"><span class="pf-k">Download show data</span><span class="pf-v">CSV</span><span class="pf-chev" aria-hidden="true"></span></button>
     </div>
-    <div class="settings-danger" id="settingsMs" style="display:none">
-      <div class="settings-dbx-title">Video uploads</div>
-      <div class="settings-dbx-note" id="msStatus">Not connected yet.</div>
-      <button class="settings-dbx-btn settings-stack-btn" id="msConnectBtn" type="button">Connect Microsoft account</button>
+
+    <div id="settingsAdmin" style="display:none">
+      <div class="pf-label">Admin</div>
+      <div class="pf-group">
+        <button class="pf-row" id="accountsBtn" type="button"><span class="pf-k">Accounts</span><span class="pf-v" id="accountsCount"></span><span class="pf-chev" aria-hidden="true"></span></button>
+        <button class="pf-row" id="guideBtn" type="button"><span class="pf-k">Install QR and bullpen passcode</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
+      </div>
     </div>
-    <div class="settings-admin" id="settingsAdmin" style="display:none">
-      <div class="settings-dbx-title">Admin</div>
-      <div class="settings-dbx-note">The one install QR for reps, the bullpen passcode, and tools for clearing stray records across all brands.</div>
-      <button class="settings-dbx-btn admin-btn" id="guideBtn" type="button">Install QR &amp; bullpen passcode</button>
-      <button class="settings-dbx-btn admin-btn" id="cleanupBtn" type="button" style="margin-top:8px;">Clean up team data</button>
-    </div>
-    <div class="settings-danger">
-      <div class="settings-dbx-title">Account</div>
-      <button class="settings-dbx-btn settings-stack-btn" id="settingsSignOut" type="button">Sign out</button>
-    </div>
-    <div class="settings-danger" id="settingsAbout">
-      <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v131</div>
-      <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
-      <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
+
+    <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
+
+    <div class="pf-foot" id="settingsAbout">
+      <div class="pf-ver">NCM Events Guide · v132</div>
+      <p>Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
+      <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
   </div>
+</div>
+
+<!-- ── Profile > Team ── -->
+<div id="teamSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Your team</div>
+    <div class="pf-opts" id="teamOpts">
+      <label class="pf-opt"><input type="radio" name="teamPick" value="edit"><span><strong>Editorial team</strong><small>Your booth notes, schedule and videos go to the bullpen automatically.</small></span></label>
+      <label class="pf-opt"><input type="radio" name="teamPick" value="sales"><span><strong>Sales</strong><small>Your booth notes stay on your device, and nothing goes to the bullpen.</small></span></label>
+    </div>
+    <p class="settings-dbx-note" id="teamLockNote" style="display:none"></p>
+    <button class="settings-done" id="teamSave" type="button">Save</button>
+    <button class="settings-done share-secondary" id="teamCancel" type="button">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Profile > Brands ── -->
+<div id="brandsSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Your brands</div>
+    <p class="settings-dbx-note pf-sheet-intro">Check every brand you cover. You'll see all of their shows, and the app opens on the nearest one.</p>
+    <div id="brandChecks" class="brand-checks"></div>
+    <div class="auth-error" id="brandsErr"></div>
+    <button class="settings-done" id="brandsSave" type="button">Save</button>
+    <button class="settings-done share-secondary" id="brandsCancel" type="button">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Profile > Microsoft account (video uploads) ── -->
+<div id="msSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Microsoft account</div>
+    <p class="settings-dbx-note pf-sheet-intro" id="msStatus"></p>
+    <button class="settings-done" id="msSheetMain" type="button">Connect Microsoft account</button>
+    <button class="settings-done share-secondary" id="msConnectBtn" type="button">Not now</button>
+  </div>
+</div>
+
+<!-- ── Admin: every account, with guarded team and brand edits (master only) ── -->
+<div id="accountsSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card acct-card" id="acctCard"></div>
 </div>
 
 <!-- ── Confirm before un-flagging a booth's video (accidental re-taps) ── -->
@@ -2204,21 +2321,11 @@ html { background: var(--bg); }
   </div>
 </div>
 
-<!-- ── Admin: clean up team data (master only) ── -->
-<div id="cleanupSheet" class="settings-sheet" style="display:none">
-  <div class="settings-card">
-    <div class="settings-title">Clean up team data</div>
-    <p class="settings-dbx-note">Schedules &amp; shared notes across all brands. Delete any stray or test records.</p>
-    <div id="cleanupList" class="cleanup-list"></div>
-    <button class="settings-done" id="cleanupClose" type="button">Done</button>
-  </div>
-</div>
-
 <!-- ── Old show data (archived CSVs) ── -->
 <div id="oldDataSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title">Show data</div>
-    <p class="settings-dbx-note">Every show on your brands. Download any one's booths, notes and schedule as a CSV.</p>
+    <p class="settings-dbx-note">Every show on your brands. Each keeps its own booths, notes and schedule, and nothing is ever deleted. Download any one as a CSV.</p>
     <div id="oldDataList" class="cleanup-list"></div>
     <button class="settings-done" id="oldDataClose" type="button">Done</button>
   </div>
@@ -3914,6 +4021,8 @@ function showDays(code) {
 // folder link, then deploy. Any number of shows per brand; the Firestore
 // rules accept any code shaped BRAND-SOMETHING, so no rules republish.
 const SIGNUP_BRANDS = ["lpgas", "golfdom", "lm", "pmp", "pq"];   // picker order
+const BRAND_SHORT = { lpgas: "LP Gas", golfdom: "Golfdom", lm: "LM", pmp: "PMP", pq: "P&Q" };
+function brandShort(b) { return BRAND_SHORT[b] || ((BRANDS[b] || {}).name) || b; }
 function brandOfCode(code) { return (resolveEvent(code) || {}).brand || ""; }
 // A profile's brand, falling back to the brand of its stored event code so
 // accounts made before the brand picker keep working untouched.
@@ -4069,6 +4178,7 @@ function effectiveDept(uid, dept) { return DEPT_OVERRIDES[uid] || dept || ""; }
 // the passcode is typed once by the team and remembered by the browser.
 const HOME_TEAM_EMAIL = "hometeam@northcoastmedia.net";
 let masterEventOverride = null;   // the selected show: pinned at sign-in, changed by the show picker
+let _myProfUnsub = null;         // live listener on this person's own profile (admin edits land here)
 let showPickedManually = false;   // true once someone picks a show themselves this session
 function isMaster() {
   if (!currentUser) return false;
@@ -4485,6 +4595,7 @@ async function msBootstrap() {
     }
   } catch (e) { sessionStorage.removeItem("ncm_ms_signin"); }
   updateMsSection();
+  recordMsStatus();
   if (!isHome() && currentUser) render();
   maybeShowMsPrompt();
   msWarmToken();
@@ -4553,6 +4664,7 @@ function msDisconnect() {
     .forEach(k => localStorage.removeItem(k));
   msalApp = null; _msBooted = false; _msTok = null;
   updateMsSection(); render();
+  recordMsStatus();
   toast("Microsoft account disconnected on this device");
 }
 async function msToken(interactiveOk) {
@@ -4717,18 +4829,34 @@ function uploadCtlHtml(c, s) {
   return view + up;
 }
 function updateMsSection() {
-  const sec = document.getElementById("settingsMs");
-  if (!sec) return;
+  const row = document.getElementById("pfMsRow");
+  if (!row) return;
   const on = msUploadsActive();
-  sec.style.display = on ? "" : "none";
+  row.style.display = on ? "" : "none";
   if (!on) return;
   const acct = msAccount();
-  const status = document.getElementById("msStatus");
-  const btn = document.getElementById("msConnectBtn");
-  if (status) status.innerHTML = acct
-    ? "Connected as <strong>" + esc(acct.username || acct.name || "your NCM account") + "</strong>. Every video-flagged booth has an Upload button; clips land in the show folder named and linked automatically."
+  const v = document.getElementById("pfMsVal");
+  v.textContent = acct ? "Connected ✓" : "Connect";
+  v.className = "pf-v " + (acct ? "ok" : "act");
+  document.getElementById("msStatus").innerHTML = acct
+    ? "Connected as <strong>" + esc(acct.username || acct.name || "your NCM account") + "</strong> on this device. Every video-flagged booth has an Upload button, and clips land in the show folder named and linked automatically."
     : "Connect once with your NCM Microsoft account (same login as Outlook) and every video-flagged booth gets an Upload button. Clips land in the shared show folder, named and linked automatically.";
-  if (btn) btn.textContent = acct ? "Disconnect on this device" : "Connect Microsoft account";
+  document.getElementById("msSheetMain").textContent = acct ? "Done" : "Connect Microsoft account";
+  document.getElementById("msConnectBtn").textContent = acct ? "Disconnect on this device" : "Not now";
+}
+// Accounts shows who has connected Microsoft for uploads, so each device
+// reports what it knows. Written only when it changes.
+function recordMsStatus() {
+  if (!fbReady || !currentUser || isHome()) return;
+  const acct = msAccount();
+  const on = !!acct;
+  const email = on ? String(acct.username || "").toLowerCase() : (currentUser.msEmail || "");
+  if (!!currentUser.msConnected === on && (currentUser.msEmail || "") === email) return;
+  Object.assign(currentUser, { msConnected: on, msEmail: email });
+  const patch = on
+    ? { msConnected: true, msEmail: email, msAt: firebase.firestore.FieldValue.serverTimestamp() }
+    : { msConnected: false };
+  fbDb.collection("users").doc(currentUser.uid).set(patch, { merge: true }).catch(() => {});
 }
 
 // ── SHARED HOME FLAGS ────────────────────────────────────────────────────
@@ -6552,11 +6680,6 @@ function downloadCsv(csvText, filename) {
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
-document.getElementById("exportBtn").addEventListener("click", () => {
-  document.getElementById("settingsSheet").style.display = "none";  // it lives in Settings now
-  downloadCsv(buildShowCsv(), csvFileName(currentEventCode()));
-  toast("CSV downloaded");
-});
 
 // ── SHOW MEDIA (photos + videos → team Dropbox) ─────────────────────────
 // The header "Photos" button only shows when the active show has a Dropbox
@@ -6794,12 +6917,25 @@ function currentShowLabel() {
 // the content area rather than duplicated, so every listener bound to the
 // controls inside it keeps working.
 function prepSettings() {
-  const mine = userBrands(currentUser);
-  document.getElementById("brandChecks").innerHTML = SIGNUP_BRANDS.map(b =>
-    `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}><span>${esc((BRANDS[b] || {}).name || b)}</span></label>`).join("");
-  document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
+  const u = currentUser || {};
+  const nm = String(u.name || "").trim() || "Signed in";
+  document.getElementById("pfAvatar").textContent = initialsOf(nm);
+  document.getElementById("pfName").textContent = nm;
+  document.getElementById("pfEmail").textContent = u.email || "";
+  const dept = effectiveDept(u.uid, u.dept);
+  const brands = userBrands(u);
+  document.getElementById("pfSub").textContent =
+    [teamLabel(dept), brands.map(brandShort).join(", ")].filter(Boolean).join(" · ");
+  const tv = document.getElementById("pfTeamVal");
+  tv.textContent = teamLabel(dept) || "Choose";
+  tv.className = "pf-v" + (dept ? "" : " act");
+  const bv = document.getElementById("pfBrandsVal");
+  bv.textContent = brands.map(brandShort).join(", ") || "Choose";
+  bv.className = "pf-v" + (brands.length ? "" : " act");
   document.getElementById("curShowName").textContent = currentShowLabel();
+  document.getElementById("pfShowRow").classList.toggle("static", pickerShows().length < 2);
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
+  if (isMaster() && acctState === "idle") loadAccounts();   // fills the Accounts count, once
   updateMsSection();
 }
 function renderSettingsView() {
@@ -6835,10 +6971,24 @@ document.getElementById("settingsSignOut").addEventListener("click", () => {
 document.getElementById("settingsSheet").addEventListener("click", e => {
   if (e.target.id === "settingsSheet") e.currentTarget.style.display = "none";
 });
-// Profile > Video uploads: connect (login redirect) or forget this device.
-document.getElementById("msConnectBtn").addEventListener("click", () => {
-  if (msAccount()) { msDisconnect(); return; }
+// Profile > Microsoft: the sheet's main button connects (login redirect) or
+// just closes; the second one is "Not now" or "Disconnect on this device".
+document.getElementById("pfMsRow").addEventListener("click", () => {
+  updateMsSection();
+  document.getElementById("msSheet").style.display = "flex";
+});
+document.getElementById("msSheetMain").addEventListener("click", () => {
+  closeSheetById("msSheet");
+  if (msAccount()) return;
   msSignIn().catch(() => toast("Couldn't reach Microsoft sign-in. Try again in a minute"));
+});
+document.getElementById("msConnectBtn").addEventListener("click", () => {
+  closeSheetById("msSheet");
+  if (msAccount()) msDisconnect();
+});
+sheetBackdropCloses("msSheet");
+document.getElementById("pfShowRow").addEventListener("click", () => {
+  if (pickerShows().length > 1) openShowSheet();
 });
 // Un-flag confirm: the booth index waits here while the sheet is open.
 let _vidOffTarget = null;
@@ -6951,7 +7101,7 @@ async function renderOldData() {
   const past = codes.map(code => `<div class="cleanup-row">
       <div class="cleanup-row-main">
         <div class="cleanup-row-name">${esc(showLabelOf(code))}</div>
-        <div class="cleanup-row-meta">${esc(showStatusText(code))}</div>
+        <div class="cleanup-row-meta">${code === currentEventCode() ? "Viewing now · " : ""}${esc(showStatusText(code))}</div>
       </div>
       <button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>
     </div>`).join("");
@@ -7103,125 +7253,361 @@ document.getElementById("guideSheet").addEventListener("click", e => {
   if (e.target.id === "guideSheet") e.currentTarget.style.display = "none";
 });
 
-// Admin cleanup (master only)
-// One row per PERSON per show, not per document. A rep has a schedules doc
-// and a notes doc (masters get a pair per brand), so listing raw documents
-// made the same name appear several times. Deleting a row removes everything
-// that person has for that show in one go.
-async function renderCleanupList() {
-  const el = document.getElementById("cleanupList");
-  el.innerHTML = `<div class="cleanup-empty">Loading…</div>`;
-  const people = {};   // "<uid>|<event>" -> { name, event, refs[], sched, notes }
-  const add = (coll, d) => {
-    const x = d.data() || {};
-    const uid = String(d.id).split("__")[0];
-    const event = x.eventCode || "(no show)";
-    const k = uid + "|" + event;
-    const p = people[k] = people[k] || { name: x.name || "(no name)", event, uid, refs: [], sched: 0, notes: 0 };
-    if (x.name) p.name = x.name;
-    p.refs.push(coll + "/" + d.id);
-    if (coll === "schedules") p.sched += (x.items || []).length;
-    else p.notes += (x.items || []).length;
-  };
-  try { (await fbDb.collection("schedules").get()).forEach(d => add("schedules", d)); } catch (e) {}
-  try { (await fbDb.collection("notes").get()).forEach(d => add("notes", d)); } catch (e) {}
-  // Shared records aren't owned by one person, so they stay grouped per show.
-  const shared = [];
-  const groupBy = async (coll, label) => {
-    try {
-      const snap = await fbDb.collection(coll).get();
-      const g = {};
-      snap.forEach(d => { const ev = (d.data() || {}).eventCode || "(unknown)"; (g[ev] = g[ev] || []).push(coll + "/" + d.id); });
-      Object.entries(g).forEach(([ev, refs]) => shared.push({ name: label, event: ev, refs }));
-    } catch (e) {}
-  };
-  await groupBy("videoStatus", "Video done records");
-  await groupBy("homeFlags", "Bullpen flags");
-
-  const list = Object.values(people)
-    .sort((a,b) => a.event.localeCompare(b.event) || a.name.localeCompare(b.name));
-  if (!list.length && !shared.length) { el.innerHTML = `<div class="cleanup-empty">Nothing here.</div>`; return; }
-  const row = (name, meta, refs) => `<div class="cleanup-row">
-      <div class="cleanup-row-main">
-        <div class="cleanup-row-name">${esc(name)}</div>
-        <div class="cleanup-row-meta">${esc(meta)}</div>
-      </div>
-      <button class="cleanup-del" data-cl-refs="${esc(refs.join(","))}">Delete</button>
-    </div>`;
-  let h = "";
-  if (list.length) {
-    h += `<div class="cleanup-head">People</div>`;
-    h += list.map(p => {
-      const bits = [p.event];
-      bits.push(p.sched + " scheduled");
-      bits.push(p.notes + " booth note" + (p.notes === 1 ? "" : "s"));
-      return row(p.name, bits.join(" · "), p.refs);
-    }).join("");
-  }
-  if (shared.length) {
-    h += `<div class="cleanup-head">Shared records</div>`;
-    h += shared.map(s => row(s.name, s.event + " · " + s.refs.length + " record" + (s.refs.length === 1 ? "" : "s"), s.refs)).join("");
-  }
-  el.innerHTML = h;
+// ── PROFILE: TEAM AND BRANDS ────────────────────────────────────────────
+// Each opens its own sheet with a Save button, so a stray tap can't flip a
+// rep's team or drop a brand the way the old always-live controls could.
+function initialsOf(name) {
+  const w = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return "?";
+  return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase();
 }
-document.getElementById("cleanupBtn").addEventListener("click", () => {
-  document.getElementById("settingsSheet").style.display = "none";
-  document.getElementById("cleanupSheet").style.display = "flex";
-  renderCleanupList();
-});
-document.getElementById("cleanupClose").addEventListener("click", () => {
-  document.getElementById("cleanupSheet").style.display = "none";
-});
-document.getElementById("cleanupList").addEventListener("click", async e => {
-  const btn = e.target.closest("[data-cl-refs]");
-  if (!btn) return;
-  // Each row carries every document it covers as "collection/docId".
-  const refs = btn.dataset.clRefs.split(",").filter(Boolean);
-  const who = btn.closest(".cleanup-row").querySelector(".cleanup-row-name").textContent;
-  const meta = btn.closest(".cleanup-row").querySelector(".cleanup-row-meta").textContent;
-  if (!confirm("Delete everything for " + who + "?\n\n" + meta + "\n\nThis can't be undone.")) return;
-  btn.disabled = true; btn.textContent = "…";
-  try {
-    for (let i = 0; i < refs.length; i += 400) {
-      const batch = fbDb.batch();
-      refs.slice(i, i + 400).forEach(ref => {
-        const cut = ref.indexOf("/");
-        batch.delete(fbDb.collection(ref.slice(0, cut)).doc(ref.slice(cut + 1)));
-      });
-      await batch.commit();
-    }
-    toast("Deleted");
-  }
-  catch (err) { toast("Delete failed"); btn.disabled = false; btn.textContent = "Delete"; return; }
-  renderCleanupList();
-});
-// Profile > My brands: reps who cover several brands (e.g. Golfdom + LM)
-// check them here. Nothing is archived or reset — each show keeps its own
-// bucket, exactly like the master switcher — this only controls which brands
-// the header switcher offers and where the app lands at sign-in.
-document.getElementById("brandChecks").addEventListener("change", async e => {
+function teamLabel(dept) { return dept === "edit" ? "Editorial team" : dept === "sales" ? "Sales" : ""; }
+function closeSheetById(id) { document.getElementById(id).style.display = "none"; }
+function sheetBackdropCloses(id) {
+  document.getElementById(id).addEventListener("click", e => { if (e.target.id === id) closeSheetById(id); });
+}
+function openTeamSheet() {
   if (!currentUser) return;
-  const picked = [...document.querySelectorAll("#brandChecks input:checked")].map(i => i.value);
-  if (!picked.length) { e.target.checked = true; toast("Keep at least one brand"); return; }
-  const home = picked.includes(userBrand(currentUser)) ? userBrand(currentUser) : picked[0];
-  currentUser.brands = picked; currentUser.brand = home;
-  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ brands: picked, brand: home, brandsConfirmed: true }, { merge: true }); } catch (err) {}
-  // Dropped the brand of the show on screen? Move to their nearest remaining one.
-  if (!isMaster() && !picked.includes(brandOfCode(currentEventCode()))) {
-    await switchToShow(defaultShowFor(picked, home), false);
-    setBottomTab("settings"); render();
-  }
-  setupShowPicker();
-  toast(pickerShows().length > 1 ? "Saved. Switch shows with the button at the top" : "Saved");
-});
-document.getElementById("deptSelect").addEventListener("change", async e => {
-  if (!currentUser || !e.target.value) return;
-  currentUser.dept = e.target.value;
-  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ dept: currentUser.dept }, { merge: true }); } catch (err) {}
+  const locked = !!DEPT_OVERRIDES[currentUser.uid];
+  const cur = effectiveDept(currentUser.uid, currentUser.dept);
+  document.querySelectorAll('#teamOpts input[name="teamPick"]').forEach(r => {
+    r.checked = r.value === cur;
+    r.disabled = locked;
+    r.closest(".pf-opt").classList.toggle("locked", locked);
+  });
+  const note = document.getElementById("teamLockNote");
+  note.style.display = locked ? "" : "none";
+  note.textContent = locked ? "Your team is locked to Sales. Ask Nate if that needs to change." : "";
+  document.getElementById("teamSave").style.display = locked ? "none" : "";
+  document.getElementById("teamCancel").textContent = locked ? "Close" : "Cancel";
+  document.getElementById("teamSheet").style.display = "flex";
+}
+document.getElementById("pfTeamRow").addEventListener("click", openTeamSheet);
+document.getElementById("teamCancel").addEventListener("click", () => closeSheetById("teamSheet"));
+sheetBackdropCloses("teamSheet");
+document.getElementById("teamSave").addEventListener("click", async () => {
+  const pick = (document.querySelector('#teamOpts input[name="teamPick"]:checked') || {}).value || "";
+  if (!pick) { toast("Pick your team first"); return; }
+  closeSheetById("teamSheet");
+  if (!currentUser || pick === currentUser.dept) return;
+  currentUser.dept = pick;
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ dept: pick }, { merge: true }); } catch (err) {}
   queueScheduleSync();   // restamp the cloud schedule with the new team
   queueNotesSync();      // edit -> start auto-sharing notes (sales -> no-op, nothing deleted)
   render();              // status picker/filters are sales-only, swap them in or out now
-  toast(currentUser.dept === "edit" ? "Set to Editorial team" : "Set to Sales");
+  toast(pick === "edit" ? "Set to Editorial team" : "Set to Sales");
+});
+function openBrandsSheet() {
+  if (!currentUser) return;
+  const mine = userBrands(currentUser);
+  document.getElementById("brandChecks").innerHTML = SIGNUP_BRANDS.map(b =>
+    `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}><span>${esc((BRANDS[b] || {}).name || b)}</span></label>`).join("");
+  document.getElementById("brandsErr").textContent = "";
+  document.getElementById("brandsSheet").style.display = "flex";
+}
+document.getElementById("pfBrandsRow").addEventListener("click", openBrandsSheet);
+document.getElementById("brandChecks").addEventListener("change", () => { document.getElementById("brandsErr").textContent = ""; });
+document.getElementById("brandsCancel").addEventListener("click", () => closeSheetById("brandsSheet"));
+sheetBackdropCloses("brandsSheet");
+// Nothing is archived or reset: each show keeps its own bucket. Brands only
+// decide which shows the picker offers and where the app lands at sign-in.
+// (The profile's eventCode never changes: it keys the person's "home"
+// schedule and notes docs, see myScheduleDocId.)
+document.getElementById("brandsSave").addEventListener("click", async () => {
+  if (!currentUser) return;
+  const picked = [...document.querySelectorAll("#brandChecks input:checked")].map(i => i.value);
+  if (!picked.length) { document.getElementById("brandsErr").textContent = "Check at least one brand."; return; }
+  closeSheetById("brandsSheet");
+  if (picked.slice().sort().join() === userBrands(currentUser).slice().sort().join()) return;
+  const home = picked.includes(userBrand(currentUser)) ? userBrand(currentUser) : picked[0];
+  Object.assign(currentUser, { brands: picked, brand: home, brandsConfirmed: true });
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ brands: picked, brand: home, brandsConfirmed: true }, { merge: true }); } catch (err) {}
+  // Dropped the brand of the show on screen? Move to their nearest remaining one.
+  if (!isMaster() && !picked.includes(brandOfCode(currentEventCode()))) await switchToShow(defaultShowFor(picked, home), false);
+  setupShowPicker();
+  setBottomTab("settings"); render();
+  toast(pickerShows().length > 1 ? "Saved. Switch shows with the button at the top" : "Saved");
+});
+
+// Admin edits (or this person on another device) land here live, so a rep
+// moved to Editorial starts sharing without a relaunch. Our own saves set
+// currentUser first, so their echo compares equal and does nothing.
+function subscribeMyProfile() {
+  if (_myProfUnsub) { _myProfUnsub(); _myProfUnsub = null; }
+  if (!fbReady || !currentUser || isHome()) return;
+  const uid = currentUser.uid;
+  _myProfUnsub = fbDb.collection("users").doc(uid).onSnapshot(snap => {
+    if (!snap.exists || !currentUser || currentUser.uid !== uid) return;
+    const before = effectiveDept(uid, currentUser.dept) + "|" + userBrands(currentUser).slice().sort().join();
+    const deptBefore = effectiveDept(uid, currentUser.dept);
+    Object.assign(currentUser, snap.data() || {});
+    const after = effectiveDept(uid, currentUser.dept) + "|" + userBrands(currentUser).slice().sort().join();
+    if (before !== after) onProfileChanged(deptBefore !== effectiveDept(uid, currentUser.dept));
+  }, () => {});
+}
+async function onProfileChanged(deptChanged) {
+  const brands = userBrands(currentUser);
+  if (brands.length && !isMaster() && !brands.includes(brandOfCode(currentEventCode()))) {
+    const tab = activeView;
+    await switchToShow(defaultShowFor(brands, userBrand(currentUser)), false);
+    if (tab === "settings") setBottomTab("settings");
+  }
+  setupShowPicker();
+  if (deptChanged) { queueScheduleSync(); queueNotesSync(); }
+  updateMsSection();
+  render();
+  toast("Your team and brands were updated");
+}
+
+// ── ADMIN: ACCOUNTS ──────────────────────────────────────────────────────
+// Every profile in one list (masters only; the rules already let masters
+// read users/*): team, brands and whether they've connected Microsoft for
+// uploads. Changing someone's team or brands takes three deliberate steps:
+// open the person, tap the small "Change team or brands" link, then confirm
+// a before-and-after summary. Admin status itself is NOT editable here; it
+// stays in MASTER_EMAILS and the rules' uid list.
+let acctRows = [];                 // loaded profiles, sorted by name
+let acctState = "idle";            // idle | loading | ok | error
+let acctView = { mode: "list", uid: null, draft: null };   // list | person | edit | review
+let acctFilter = "", acctQ = "";
+async function loadAccounts() {
+  acctState = "loading";
+  try {
+    const snap = await fbDb.collection("users").get();
+    const rows = [];
+    snap.forEach(d => {
+      const x = d.data() || {};
+      const email = String(x.email || "").toLowerCase();
+      if (x.role === "home" || email === HOME_TEAM_EMAIL) return;   // the shared bullpen login isn't a person
+      rows.push({ ...x, uid: d.id, email });
+    });
+    rows.sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
+    acctRows = rows; acctState = "ok";
+  } catch (e) { acctState = "error"; }
+  const c = document.getElementById("accountsCount");
+  if (c) c.textContent = acctState === "ok" ? String(acctRows.length) : "";
+}
+function acctIsAdmin(a) { return a.role === "master" || a.master === true || MASTER_EMAILS.includes(a.email); }
+function acctDept(a) { return effectiveDept(a.uid, a.dept); }
+function acctFirst(a) { return String(a.name || "").trim().split(/\s+/)[0] || "this person"; }
+function acctTags(a) {
+  const d = acctDept(a);
+  const team = d === "edit" ? `<span class="acct-tag team-edit">Editorial</span>`
+             : d === "sales" ? `<span class="acct-tag team-sales">Sales</span>`
+             : `<span class="acct-tag team-none">No team yet</span>`;
+  const brands = userBrands(a).map(b =>
+    `<span class="acct-tag"><i class="acct-dot" style="background:${BRANDS[b].p.blue}"></i>${esc(brandShort(b))}</span>`).join("");
+  // Uploads are Editorial-only, so Sales rows skip the Microsoft tag.
+  const ms = d !== "edit" ? ""
+           : a.msConnected ? `<span class="acct-tag ms-on">✓ Microsoft</span>`
+           : `<span class="acct-tag ms-off">No Microsoft yet</span>`;
+  return team + brands + ms;
+}
+async function openAccountsSheet() {
+  acctView = { mode: "list", uid: null, draft: null };
+  acctFilter = ""; acctQ = "";
+  document.getElementById("acctCard").innerHTML = "";
+  document.getElementById("accountsSheet").style.display = "flex";
+  if (acctState !== "ok") acctState = "loading";
+  renderAccounts();
+  await loadAccounts();              // fresh on every open
+  if (acctView.mode === "list") renderAccounts();
+}
+document.getElementById("accountsBtn").addEventListener("click", openAccountsSheet);
+function renderAccounts() {
+  const card = document.getElementById("acctCard");
+  if (acctView.mode === "list") {
+    if (!card.querySelector("#acctList")) {
+      card.innerHTML = `<div class="acct-top">
+          <div class="settings-title">Accounts</div>
+          <div class="acct-sum" id="acctSum"></div>
+          <input class="settings-dbx-input acct-search" id="acctSearch" type="search" placeholder="Search names or emails" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="acct-filters" id="acctFilters"></div>
+        </div>
+        <div class="acct-list" id="acctList"></div>
+        <button class="settings-done share-secondary" type="button" data-acct-close>Close</button>`;
+      card.querySelector("#acctSearch").value = acctQ;
+    }
+    fillAccountsList();
+    return;
+  }
+  const a = acctRows.find(r => r.uid === acctView.uid);
+  if (!a) { acctView = { mode: "list", uid: null, draft: null }; card.innerHTML = ""; renderAccounts(); return; }
+  card.innerHTML = acctView.mode === "person" ? acctPersonHtml(a)
+                 : acctView.mode === "edit" ? acctEditHtml(a)
+                 : acctReviewHtml(a);
+  card.scrollTop = 0;
+}
+function fillAccountsList() {
+  const card = document.getElementById("acctCard");
+  const listEl = card.querySelector("#acctList");
+  if (!listEl) return;
+  const sumEl = card.querySelector("#acctSum"), fEl = card.querySelector("#acctFilters");
+  if (acctState !== "ok") {
+    sumEl.textContent = ""; fEl.innerHTML = "";
+    listEl.innerHTML = `<div class="acct-empty">${acctState === "error"
+      ? "Couldn't load accounts. Check your connection and try again." : "Loading…"}</div>`;
+    return;
+  }
+  const rows = acctRows;
+  const nEdit = rows.filter(a => acctDept(a) === "edit").length;
+  const nSales = rows.filter(a => acctDept(a) === "sales").length;
+  const nNone = rows.length - nEdit - nSales;
+  const nMs = rows.filter(a => acctDept(a) === "edit" && a.msConnected).length;
+  sumEl.innerHTML = `<strong>${rows.length}</strong> account${rows.length === 1 ? "" : "s"} · ${nEdit} Editorial · ${nSales} Sales`
+    + (nNone ? ` · ${nNone} with no team yet` : "")
+    + (nEdit ? `<br>Microsoft connected: ${nMs} of ${nEdit} Editorial` : "");
+  fEl.innerHTML = [["", "All"]].concat(SIGNUP_BRANDS.map(b => [b, brandShort(b)])).map(([k, label]) => {
+    const n = k ? rows.filter(a => userBrands(a).includes(k)).length : rows.length;
+    return `<button class="acct-chip${acctFilter === k ? " on" : ""}" type="button" data-acct-filter="${k}">${esc(label)}<b>${n}</b></button>`;
+  }).join("");
+  const q = acctQ.trim().toLowerCase();
+  const shown = rows.filter(a => (!acctFilter || userBrands(a).includes(acctFilter))
+    && (!q || String(a.name || "").toLowerCase().includes(q) || a.email.includes(q)));
+  listEl.innerHTML = shown.length ? shown.map(a => `<button class="acct-row" type="button" data-acct-uid="${esc(a.uid)}">
+      <span class="acct-av">${esc(initialsOf(a.name || a.email))}</span>
+      <span class="acct-main">
+        <span class="acct-name">${esc(a.name || "(no name)")}${acctIsAdmin(a) ? ` <span class="acct-admin">Admin</span>` : ""}</span>
+        <span class="acct-email">${esc(a.email)}</span>
+        <span class="acct-tags">${acctTags(a)}</span>
+      </span>
+      <span class="pf-chev" aria-hidden="true"></span>
+    </button>`).join("") : `<div class="acct-empty">No one matches that.</div>`;
+}
+function acctKv(k, v, cls) {
+  return `<div class="pf-row static"><span class="pf-k">${esc(k)}</span><span class="pf-v${cls ? " " + cls : ""}">${esc(v)}</span></div>`;
+}
+function acctDate(v) {
+  const d = v && typeof v.toDate === "function" ? v.toDate() : null;
+  return d ? fmtMonthDay(d) + ", " + d.getFullYear() : "";
+}
+function acctPersonHtml(a) {
+  const d = acctDept(a);
+  const ms = d !== "edit" ? "Not used by Sales" : a.msConnected ? "Connected" : "Not connected yet";
+  const joined = acctDate(a.createdAt), edited = acctDate(a.editedAt);
+  return `<button class="acct-back" type="button" data-acct-back>‹ All accounts</button>
+    <div class="pf-head acct-head">
+      <div class="pf-avatar">${esc(initialsOf(a.name || a.email))}</div>
+      <div class="pf-who">
+        <div class="pf-name">${esc(a.name || "(no name)")}</div>
+        <div class="pf-email">${esc(a.email)}</div>
+      </div>
+    </div>
+    <div class="pf-group acct-kv">
+      ${acctKv("Team", teamLabel(d) || "Not set yet", d ? "" : "warn")}
+      ${acctKv("Brands", userBrands(a).map(b => BRANDS[b].name).join(", ") || "None")}
+      ${acctKv("Microsoft", ms, d === "edit" ? (a.msConnected ? "ok" : "warn") : "")}
+      ${a.msConnected && a.msEmail && a.msEmail !== a.email ? acctKv("Microsoft login", a.msEmail) : ""}
+      ${joined ? acctKv("Joined", joined) : ""}
+      ${acctIsAdmin(a) ? acctKv("Access", "Admin") : ""}
+      ${a.editedBy ? acctKv("Last changed", (edited ? edited + " by " : "By ") + a.editedBy) : ""}
+    </div>
+    <button class="acct-edit-link" type="button" data-acct-edit>Change team or brands</button>
+    <button class="settings-done share-secondary" type="button" data-acct-close>Close</button>`;
+}
+function acctEditHtml(a) {
+  const d = acctView.draft;
+  const locked = !!DEPT_OVERRIDES[a.uid];
+  const first = acctFirst(a);
+  const opt = (v, title, sub) => `<label class="pf-opt${locked ? " locked" : ""}"><input type="radio" name="acctTeam" value="${v}"${d.dept === v ? " checked" : ""}${locked ? " disabled" : ""}><span><strong>${title}</strong><small>${sub}</small></span></label>`;
+  return `<button class="acct-back" type="button" data-acct-cancel>‹ Back</button>
+    <div class="settings-title">Change ${esc(first)}'s team or brands</div>
+    <div class="pf-label acct-first-label">Team</div>
+    <div class="pf-opts">
+      ${opt("edit", "Editorial team", "Booth notes, schedule and videos go to the bullpen.")}
+      ${opt("sales", "Sales", "Nothing goes to the bullpen.")}
+    </div>
+    ${locked ? `<p class="settings-dbx-note">${esc(first)}'s team is locked to Sales in the app.</p>` : ""}
+    <div class="pf-label">Brands</div>
+    <div class="brand-checks">${SIGNUP_BRANDS.map(b => `<label class="bc-row"><input type="checkbox" name="acctBrand" value="${b}"${d.brands.includes(b) ? " checked" : ""}><span>${esc(BRANDS[b].name)}</span></label>`).join("")}</div>
+    <div class="auth-error" id="acctErr"></div>
+    <button class="settings-done" type="button" data-acct-review>Review changes</button>
+    <button class="settings-done share-secondary" type="button" data-acct-cancel>Cancel</button>`;
+}
+function acctReviewHtml(a) {
+  const first = acctFirst(a);
+  const was = { dept: acctDept(a), brands: userBrands(a) };
+  const now = acctView.draft;
+  const names = list => list.map(b => BRANDS[b].name).join(", ") || "None";
+  const lines = [], effects = [];
+  if (now.dept !== was.dept) {
+    lines.push(`<div class="acct-chg"><b>Team</b><span>${esc(teamLabel(was.dept) || "Not set")} <i>→</i> ${esc(teamLabel(now.dept))}</span></div>`);
+    effects.push(now.dept === "edit"
+      ? `${first}'s booth notes, schedule and videos start going to the bullpen the next time the app is open.`
+      : `${first}'s new notes stop going to the bullpen. Anything already shared stays there.`);
+  }
+  const added = now.brands.filter(b => !was.brands.includes(b));
+  const removed = was.brands.filter(b => !now.brands.includes(b));
+  if (added.length || removed.length) {
+    lines.push(`<div class="acct-chg"><b>Brands</b><span>${esc(names(was.brands))} <i>→</i> ${esc(names(now.brands))}</span></div>`);
+    if (added.length) effects.push(`${first} will see ${names(added)} shows.`);
+    if (removed.length) effects.push(`${first} stops seeing ${names(removed)} shows. Nothing of theirs is deleted.`);
+  }
+  return `<button class="acct-back" type="button" data-acct-back-edit>‹ Back</button>
+    <div class="settings-title">Confirm changes for ${esc(a.name || first)}</div>
+    <div class="acct-review">${lines.join("")}</div>
+    <ul class="acct-effects">${effects.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
+    <button class="settings-done" type="button" data-acct-save>Yes, update ${esc(first)}'s account</button>
+    <button class="settings-done share-secondary" type="button" data-acct-back-edit>Go back</button>`;
+}
+document.getElementById("accountsSheet").addEventListener("input", e => {
+  if (e.target.id === "acctSearch") { acctQ = e.target.value; fillAccountsList(); }
+});
+document.getElementById("accountsSheet").addEventListener("change", () => {
+  const err = document.getElementById("acctErr");
+  if (err) err.textContent = "";
+});
+document.getElementById("accountsSheet").addEventListener("click", async e => {
+  const sheet = document.getElementById("accountsSheet");
+  if (e.target === sheet || e.target.closest("[data-acct-close]")) { sheet.style.display = "none"; return; }
+  const f = e.target.closest("[data-acct-filter]");
+  if (f) { acctFilter = f.dataset.acctFilter; fillAccountsList(); return; }
+  const row = e.target.closest("[data-acct-uid]");
+  if (row) { acctView = { mode: "person", uid: row.dataset.acctUid, draft: null }; renderAccounts(); return; }
+  if (e.target.closest("[data-acct-back]")) { acctView = { mode: "list", uid: null, draft: null }; renderAccounts(); return; }
+  const a = acctRows.find(r => r.uid === acctView.uid);
+  if (!a) return;
+  if (e.target.closest("[data-acct-edit]")) {
+    acctView = { mode: "edit", uid: a.uid, draft: { dept: acctDept(a), brands: userBrands(a) } };
+    renderAccounts(); return;
+  }
+  if (e.target.closest("[data-acct-cancel]")) { acctView = { mode: "person", uid: a.uid, draft: null }; renderAccounts(); return; }
+  if (e.target.closest("[data-acct-back-edit]")) { acctView.mode = "edit"; renderAccounts(); return; }
+  if (e.target.closest("[data-acct-review]")) {
+    const card = document.getElementById("acctCard");
+    const locked = !!DEPT_OVERRIDES[a.uid];
+    const dept = locked ? acctDept(a) : ((card.querySelector('input[name="acctTeam"]:checked') || {}).value || "");
+    const brands = [...card.querySelectorAll('input[name="acctBrand"]:checked')].map(i => i.value);
+    const err = card.querySelector("#acctErr");
+    if (!dept) { err.textContent = "Pick a team."; return; }
+    if (!brands.length) { err.textContent = "Check at least one brand."; return; }
+    const same = dept === acctDept(a) && brands.slice().sort().join() === userBrands(a).slice().sort().join();
+    if (same) { err.textContent = "Nothing has changed yet."; return; }
+    acctView = { mode: "review", uid: a.uid, draft: { dept, brands } };
+    renderAccounts(); return;
+  }
+  const save = e.target.closest("[data-acct-save]");
+  if (!save) return;
+  const first = acctFirst(a);
+  const d = acctView.draft;
+  const home = d.brands.includes(userBrand(a)) ? userBrand(a) : d.brands[0];
+  // Only these keys: the rules reject anything else from an admin (and the
+  // profile's eventCode must never move, it keys their schedule/notes docs).
+  const patch = { brands: d.brands, brand: home, brandsConfirmed: true,
+    editedBy: (currentUser && (currentUser.name || currentUser.email)) || "Admin",
+    editedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  if (!DEPT_OVERRIDES[a.uid]) patch.dept = d.dept;
+  save.disabled = true; save.textContent = "Saving…";
+  try { await fbDb.collection("users").doc(a.uid).set(patch, { merge: true }); }
+  catch (err) {
+    save.disabled = false; save.textContent = "Yes, update " + first + "'s account";
+    toast("Couldn't save. Check your connection and try again");
+    return;
+  }
+  Object.assign(a, patch, { editedAt: { toDate: () => new Date() } });
+  acctView = { mode: "person", uid: a.uid, draft: null };
+  renderAccounts();
+  toast("Updated " + first + "'s account");
 });
 async function loadUserDoc(uid) {
   try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
@@ -7532,6 +7918,7 @@ if (fbReady) {
       subscribeMyVideoStatus();
       subscribeNotifyConfig();
       subscribeUploadConfig();
+      subscribeMyProfile();
       updateMediaBtn();
       maybeShowInstallPrompt();   // reps on a phone; bullpen is excluded inside
       render();
@@ -7540,6 +7927,8 @@ if (fbReady) {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
       if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
+      if (_myProfUnsub) { _myProfUnsub(); _myProfUnsub = null; }
+      acctRows = []; acctState = "idle";
       uploadCfg = null; _msBooted = false;   // MS tokens stay: device-level, like home_member
       teamSchedules = {};
       myVideoDone = {};

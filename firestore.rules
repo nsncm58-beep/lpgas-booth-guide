@@ -26,6 +26,17 @@ service cloud.firestore {
       allow create, update: if request.auth != null && request.auth.uid == uid
                             && validEvent(request.resource.data.eventCode)
                             && (!("dept" in request.resource.data) || request.resource.data.dept in ["sales", "edit"]);
+      // Admins (Profile > Admin > Accounts) may change someone's team and
+      // brands and nothing else. eventCode can't move: it keys that person's
+      // "home" schedule and notes docs.
+      allow update: if isMaster()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(["dept", "brands", "brand", "brandsConfirmed", "editedBy", "editedAt"])
+                    && (!("dept" in request.resource.data.diff(resource.data).affectedKeys())
+                        || request.resource.data.dept in ["sales", "edit"])
+                    && request.resource.data.brands is list
+                    && request.resource.data.brands.size() > 0
+                    && request.resource.data.brands.hasOnly(["lpgas", "golfdom", "lm", "pmp", "pq"]);
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
