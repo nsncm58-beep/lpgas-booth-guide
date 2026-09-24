@@ -108,26 +108,20 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-/* App shell. The page itself never scrolls or bounces: when the PAGE
-   rubber-bands, iOS drags every fixed element along with it, which is what
-   lifted the bottom bar at the end of a list. Instead the header sits at the
-   top of a full-height column, the bottom bar is fixed, and only #appScroll
-   (the content between them) scrolls. It keeps its own soft bounce
-   (`contain`), so list ends still ease to a stop (Nate's Sept. 11 ask). */
-html { height: 100%; overflow: hidden; overscroll-behavior: none; }
-/* The column is pinned to the screen box itself (the same box a fixed
-   element measures from) rather than a 100% height chain, and the bottom bar
-   is its LAST ROW instead of a separately fixed layer, so the bar can only
-   ever end at the bottom edge and the content always ends right on top of
-   it. v133 sized the page by percentages and pinned the bar separately, and
-   on iPhone the two disagreed, leaving the bar short of the bottom. */
+/* The page scrolls normally, with NO rubber-band bounce. iOS drags every
+   position:fixed element along with the page's bounce, which is what made
+   the bottom bar move; `none` stops the bounce, so the header and the bar
+   stay put (list ends stop firmly instead of easing).
+   DON'T bring back the v133-v134 "app shell" (html/body locked to the screen
+   with an inner scroller): on iOS 26 home-screen apps with the
+   black-translucent status bar, WebKit bug 301108 sizes screen-filling
+   layouts one status bar short, and the bar floated above the bottom edge. */
+html, body { overscroll-behavior-y: none; }
 body {
-  position: fixed; inset: 0;
-  overflow: hidden; overscroll-behavior: none;
-  display: flex; flex-direction: column;
   font-family: var(--ft);
   background: var(--bg);
   color: var(--text);
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -137,15 +131,9 @@ body {
 @keyframes pop     { 0% { transform: scale(1); } 50% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
 /* ── HEADER ── */
-#appScroll {
-  flex: 1 1 auto; min-height: 0;
-  overflow-x: hidden; overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
 .app-header {
-  position: relative;   /* pinned by the app shell (it sits outside the scroller) */
-  flex: none;
+  position: sticky;
+  top: 0;
   z-index: 200;
   background: var(--blue);
   color: #fff;
@@ -681,11 +669,12 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 
 /* ── BOTTOM NAV (field app) ── */
 .bottom-nav {
-  position: relative; flex: none; z-index: 150;   /* last row of the app column (see body) */
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 150;
   display: flex; background: var(--surface);
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 14px rgba(0, 40, 70, 0.09);
   padding-bottom: env(safe-area-inset-bottom, 0);
+  transform: translateZ(0);   /* own compositor layer: no repaint lag on fast scrolls */
 }
 /* While the on-screen keyboard is up, iOS lifts every fixed element above
    it — the nav and the + button floated mid-screen during note typing.
@@ -704,6 +693,7 @@ body.kb-open .bottom-nav, body.kb-open .fab-wrap { display: none !important; }
 .bn-btn svg { width: 21px; height: 21px; }
 .bn-btn:active { opacity: 0.6; }
 .bn-btn.active { color: var(--blue); }
+body.has-nav { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0)); }
 body.home-mode .bottom-nav { display: none !important; }
 /* Home keeps few header controls, so its name never needs truncating. */
 body.home-mode .user-chip-name { max-width: none; }
@@ -870,9 +860,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 
 /* ── FOOTER ── */
 .app-footer {
-  /* Bottom padding keeps the hint line clear of the floating add button,
-     which overlaps the bottom ~75px of the scroll area. */
-  padding: 18px 16px 92px;
+  /* Deep bottom padding keeps the hint line clear of the floating add button,
+     which hovers about 124px above the bottom of the viewport. */
+  padding: 18px 16px calc(104px + env(safe-area-inset-bottom, 0));
   text-align: center;
   color: var(--muted);
   font-size: 0.7rem;
@@ -2022,12 +2012,9 @@ body.home-mode .user-chip-gear { display: none !important; }
    which is exactly where animation turns into jank. Everything is opacity/
    transform only, so it stays on the GPU. */
 
-/* (The v109-v112 #topBleed bounce patches are gone: with the app shell the
-   page never bounces, so the header can't be pulled away from the top.)
-   The canvas takes the bottom bar's color: if iOS ever leaves a sliver of
-   screen outside the layout (it has held back the home-indicator strip
-   before), that sliver reads as part of the bar, not a gap under it. */
-html { background: var(--surface); }
+/* (The v109-v112 #topBleed bounce patches are gone: with the bounce off,
+   the header can't be pulled away from the top.) */
+html { background: var(--bg); }
 
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
@@ -2138,16 +2125,12 @@ html { background: var(--surface); }
   <div class="progress-strip"><div class="bar" id="progBar"></div></div>
 </header>
 
-<!-- Only this area scrolls (see the app-shell CSS): the header above it and
-     the bottom bar stay put while it bounces. -->
-<div id="appScroll">
 <div id="content"></div>
 
 <datalist id="co-datalist"></datalist>
 
 <div class="app-footer">
   Notes save automatically. Export your show data from your Profile.
-</div>
 </div>
 
 <!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
@@ -2208,7 +2191,7 @@ html { background: var(--surface); }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v134</div>
+      <div class="pf-ver">NCM Events Guide · v135</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6578,29 +6561,28 @@ document.getElementById("content").addEventListener("change", e => {
 });
 
 // ── SCROLLING ─────────────────────────────────────────────────────────────
-// Only #appScroll scrolls (see the app-shell CSS). Each tab keeps its own
-// place, like a native tab bar, and tapping the tab you're already on jumps
-// back to the top. A fresh launch always opens on Schedule at the top.
+// Each tab keeps its own place, like a native tab bar, and tapping the tab
+// you're already on jumps back to the top. A fresh launch always opens on
+// Schedule at the top (the browser never restores an old scroll spot).
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-function appScroller() { return document.getElementById("appScroll"); }
-const tabScroll = {};              // view -> scrollTop
+const tabScroll = {};              // view -> scrollY
 function scrollAppTo(y, smooth) {
-  const s = appScroller();
-  if (!s) return;
-  if (smooth && s.scrollTo) s.scrollTo({ top: y, behavior: "smooth" });
-  else s.scrollTop = y;
+  if (smooth) window.scrollTo({ top: y, behavior: "smooth" });
+  else window.scrollTo(0, y);
 }
 function forgetTabScroll() { Object.keys(tabScroll).forEach(k => delete tabScroll[k]); }
-// iOS can leave the page itself nudged after the keyboard closes or the app
-// resumes. The page is never meant to scroll, so snap it back.
-function repinPage() { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); }
+// After the keyboard closes, iOS sometimes leaves the page scrolled past its
+// end (a blank band under the content). Pull it back into range.
+function settlePage() {
+  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  if (window.scrollY > max) window.scrollTo(0, max);
+}
 // Back after a real break (5+ minutes away): start fresh on Schedule, today's
 // day, at the top. Quick hops, like out to the camera, keep your place.
 const FRESH_AFTER_MS = 5 * 60e3;
 let _hiddenAt = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") { _hiddenAt = Date.now(); return; }
-  repinPage();
   const away = _hiddenAt ? Date.now() - _hiddenAt : 0;
   _hiddenAt = 0;
   if (away >= FRESH_AFTER_MS) startFresh();
@@ -6622,7 +6604,7 @@ document.getElementById("bottomNav").addEventListener("click", e => {
   if (tab) {
     const v = tab.dataset.v;
     if (v === activeView) { scrollAppTo(0, true); return; }
-    tabScroll[activeView] = appScroller().scrollTop;
+    tabScroll[activeView] = window.scrollY;
     setBottomTab(v);
     render();
     scrollAppTo(tabScroll[v] || 0);
@@ -6654,12 +6636,12 @@ document.addEventListener("focusout", () => {
   _kbTimer = setTimeout(() => {
     if (!_isTypingEl(document.activeElement)) {
       document.body.classList.remove("kb-open");
-      setTimeout(repinPage, 320);   // once the keyboard has finished closing
+      setTimeout(settlePage, 320);   // once the keyboard has finished closing
     }
   }, 80);
 });
 if (window.visualViewport) window.visualViewport.addEventListener("resize", () => {
-  if (!document.body.classList.contains("kb-open")) repinPage();
+  if (!document.body.classList.contains("kb-open")) settlePage();
 });
 
 document.querySelector(".filter-bar").addEventListener("click", e => {
