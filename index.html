@@ -108,15 +108,18 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-/* `contain` keeps the rubber-band bounce, so reaching the end of a long list
-   eases to a stop instead of hitting a wall, while still blocking scroll
-   chaining and pull-to-refresh. `none` removed the bounce entirely. */
-html, body { overscroll-behavior-y: contain; }
+/* App shell. The page itself never scrolls or bounces: when the PAGE
+   rubber-bands, iOS drags every fixed element along with it, which is what
+   lifted the bottom bar at the end of a list. Instead the header sits at the
+   top of a full-height column, the bottom bar is fixed, and only #appScroll
+   (the content between them) scrolls. It keeps its own soft bounce
+   (`contain`), so list ends still ease to a stop (Nate's Sept. 11 ask). */
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 body {
+  display: flex; flex-direction: column;
   font-family: var(--ft);
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -126,9 +129,15 @@ body {
 @keyframes pop     { 0% { transform: scale(1); } 50% { transform: scale(1.14); } 100% { transform: scale(1); } }
 
 /* ── HEADER ── */
+#appScroll {
+  flex: 1 1 auto; min-height: 0;
+  overflow-x: hidden; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
 .app-header {
-  position: sticky;
-  top: 0;
+  position: relative;   /* pinned by the app shell (it sits outside the scroller) */
+  flex: none;
   z-index: 200;
   background: var(--blue);
   color: #fff;
@@ -1755,6 +1764,8 @@ body.in-settings .app-footer { display: none; }   /* the hint points at Settings
 .acct-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; background: var(--border-soft); color: var(--text-2); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2px; }
 .acct-tag.team-edit { background: var(--blue-light); color: var(--blue); }
 .acct-tag.team-sales { background: #ECE3D3; color: #6B5B45; }
+.acct-tag.team-events { background: #EEE6F6; color: #5B3A8A; }
+.acct-admin-note { text-align: center; margin: 16px 8px 0; }
 .acct-tag.team-none { background: #FFF1CF; color: #8A5A00; }
 .acct-tag.ms-on { background: #E3F1E6; color: var(--green); }
 .acct-tag.ms-off { background: none; border: 1px dashed var(--border); color: var(--muted); }
@@ -1991,25 +2002,9 @@ body.home-mode .user-chip-gear { display: none !important; }
    which is exactly where animation turns into jank. Everything is opacity/
    transform only, so it stays on the GPU. */
 
-/* iOS rubber-band, third and final approach. History: a bleed above the
-   header (v109) never shows because iOS doesn't render document content
-   above y=0 during a bounce; a root-canvas gradient (v111) works but only
-   AFTER the first scroll, because WebKit tiles that canvas zone lazily.
-   This is a real fixed element parked just above the viewport: fixed
-   layers ride the layout viewport, which is exactly what bounces, so the
-   brand color slides down into the gap — and being composited from the
-   first frame, it needs no scroll warm-up. The html canvas goes page-gray
-   so the bottom bounce (and any exotic fallback) stays soft, not white. */
+/* (The v109-v112 #topBleed bounce patches are gone: with the app shell the
+   page never bounces, so the header can't be pulled away from the top.) */
 html { background: var(--bg); }
-#topBleed {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 110vh;
-  transform: translateY(-100%) translateZ(0);
-  background: var(--blue);
-  pointer-events: none;
-  z-index: 400;
-}
 
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
@@ -2088,7 +2083,6 @@ html { background: var(--bg); }
 </style>
 </head>
 <body>
-<div id="topBleed" aria-hidden="true"></div>
 
 <header class="app-header">
   <div class="header-top">
@@ -2121,12 +2115,16 @@ html { background: var(--bg); }
   <div class="progress-strip"><div class="bar" id="progBar"></div></div>
 </header>
 
+<!-- Only this area scrolls (see the app-shell CSS): the header above it and
+     the bottom bar stay put while it bounces. -->
+<div id="appScroll">
 <div id="content"></div>
 
 <datalist id="co-datalist"></datalist>
 
 <div class="app-footer">
   Notes save automatically. Export your show data from your Profile.
+</div>
 </div>
 
 <!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
@@ -2187,8 +2185,8 @@ html { background: var(--bg); }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v132</div>
-      <p>Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
+      <div class="pf-ver">NCM Events Guide · v133</div>
+      <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
   </div>
@@ -2199,7 +2197,7 @@ html { background: var(--bg); }
   <div class="settings-card">
     <div class="settings-title">Your team</div>
     <div class="pf-opts" id="teamOpts">
-      <label class="pf-opt"><input type="radio" name="teamPick" value="edit"><span><strong>Editorial team</strong><small>Your booth notes, schedule and videos go to the bullpen automatically.</small></span></label>
+      <label class="pf-opt"><input type="radio" name="teamPick" value="edit"><span><strong>Editorial/Digital</strong><small>Your booth notes, schedule and videos go to the bullpen automatically.</small></span></label>
       <label class="pf-opt"><input type="radio" name="teamPick" value="sales"><span><strong>Sales</strong><small>Your booth notes stay on your device, and nothing goes to the bullpen.</small></span></label>
     </div>
     <p class="settings-dbx-note" id="teamLockNote" style="display:none"></p>
@@ -2278,11 +2276,11 @@ html { background: var(--bg); }
 <div id="confirmSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title">Quick check: your team and brands</div>
-    <p class="settings-dbx-note">One time only. Editorial team notes and videos go to the bullpen, and you'll see every show on the brands you check.</p>
+    <p class="settings-dbx-note">One time only. Editorial/Digital notes and videos go to the bullpen, and you'll see every show on the brands you check.</p>
     <div class="settings-dbx-title" style="margin-top:12px">Your team</div>
     <select id="confirmDept" class="settings-dbx-input">
       <option value="">Choose…</option>
-      <option value="edit">Editorial team</option>
+      <option value="edit">Editorial/Digital</option>
       <option value="sales">Sales</option>
     </select>
     <div class="settings-dbx-title" style="margin-top:14px">Your brands</div>
@@ -2383,7 +2381,7 @@ html { background: var(--bg); }
         <label>Your Team</label>
         <select id="authDept">
           <option value="">Choose…</option>
-          <option value="edit">Editorial team</option>
+          <option value="edit">Editorial/Digital</option>
           <option value="sales">Sales</option>
         </select>
       </div>
@@ -4172,8 +4170,15 @@ const MASTER_EMAILS = ["nstoltman@northcoastmedia.net", "rrosen@northcoastmedia.
 // the team field and is pinned to Sales here by the owner's explicit call —
 // this hides his notes/schedule from the home DISPLAY only; nothing of his
 // is ever deleted (his local data and existing cloud docs stay untouched).
-const DEPT_OVERRIDES = { "nF8nwrY8EvXFVXWyP7mgnPtjlT02": "sales" };   // Brian Kanaba
+// Nate and Rachel are the Events team, which works exactly like
+// Editorial/Digital (notes, schedule and videos go to the bullpen). They're
+// pinned to "edit" for sharing and only the label says Events.
+const EVENTS_UIDS = ["mJS0Sg6dWQYBmARvtfeytacBSUN2", "roafgq9A27Rrg1DewdCvy2TnxDk1"];   // Nate, Rachel
+const DEPT_OVERRIDES = { "nF8nwrY8EvXFVXWyP7mgnPtjlT02": "sales",   // Brian Kanaba
+                         "mJS0Sg6dWQYBmARvtfeytacBSUN2": "edit", "roafgq9A27Rrg1DewdCvy2TnxDk1": "edit" };
 function effectiveDept(uid, dept) { return DEPT_OVERRIDES[uid] || dept || ""; }
+// The team to SHOW: "events" for Nate and Rachel, otherwise the sharing team.
+function teamKey(uid, dept) { return EVENTS_UIDS.includes(uid) ? "events" : effectiveDept(uid, dept); }
 // Home team uses a shared account. Only the (non-secret) email lives in code;
 // the passcode is typed once by the team and remembered by the browser.
 const HOME_TEAM_EMAIL = "hometeam@northcoastmedia.net";
@@ -5141,20 +5146,19 @@ let homeShowPast = false;         // brand view: past events expanded in the tab
 const homeVidNotesOpen = new Set();  // "<code>__<booth#>" videos with editor notes expanded
 // The home login is shared, so each device picks WHO is at it once; the name
 // shows on videos they claim via the "Working on" button.
-const HOME_MEMBERS = ["Test", "Sydney", "Mason", "Will", "Payton", "Editorial"];
+const HOME_MEMBERS = ["Test", "Sydney", "Mason", "Will", "Payton", "Editorial/Digital"];
+// The desk seat was "Edit", then "Editorial"; older picks and claims still
+// carry those names, so everything compares and displays by the current one.
+function memberName(x) { return (x === "Edit" || x === "Editorial") ? "Editorial/Digital" : (x || ""); }
 function homeMember() {
   try {
-    let m = localStorage.getItem("home_member") || "";
-    // "Edit" was renamed to "Editorial"; migrate the device's saved pick.
-    if (m === "Edit") { m = "Editorial"; localStorage.setItem("home_member", m); }
+    const saved = localStorage.getItem("home_member") || "";
+    const m = memberName(saved);
+    if (m !== saved) localStorage.setItem("home_member", m);   // migrate the device's saved pick
     return m;
   } catch (e) { return ""; }
 }
-// Claims saved before the rename still say "Edit", so compare by the new name.
-function sameMember(a, b) {
-  const norm = x => (x === "Edit" ? "Editorial" : (x || ""));
-  return norm(a) === norm(b);
-}
+function sameMember(a, b) { return memberName(a) === memberName(b); }
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
 let homeSchedRep = null;          // selected schedules docId
@@ -5291,7 +5295,7 @@ function buildHomeVideosView() {
     const wk = homeFlags["work__" + v.code + "__" + v.boothNum];
     const wkMine = wk && sameMember(wk.member, homeMember());
     const workBtn = v.done ? "" :
-      `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(wk.member) + " is working on it" : "Working on"}</button>`;
+      `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(memberName(wk.member)) + " is working on it" : "Working on"}</button>`;
     // Footage from the floor: one Watch chip per CLIP (multiple reps shoot
     // the same booth, and one rep shoots multiple angles). The ledger line
     // below the names says how much is in and who hasn't sent anything yet.
@@ -5437,7 +5441,7 @@ function buildHomeSchedView() {
   if (homeBrandFilter) entries = entries.filter(([id, s]) => s.eventCode === homeEventCode());
   entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
   if (!entries.length) {
-    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows editorial team schedules (set under Profile &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
+    return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows Editorial/Digital schedules (set under Profile &gt; Team in the field app). Sales schedules never appear here.</p></div>`;
   }
   let h = `<div class="home-search-box">
     <input class="home-search-input hs-search-input" type="text" placeholder="Search this brand&#39;s agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
@@ -6553,13 +6557,55 @@ document.getElementById("content").addEventListener("change", e => {
   }
 });
 
-// Bottom nav: Schedule/Booths switch views, Videos and Settings open sheets
-// (only the two view tabs ever take the active state).
+// ── SCROLLING ─────────────────────────────────────────────────────────────
+// Only #appScroll scrolls (see the app-shell CSS). Each tab keeps its own
+// place, like a native tab bar, and tapping the tab you're already on jumps
+// back to the top. A fresh launch always opens on Schedule at the top.
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+function appScroller() { return document.getElementById("appScroll"); }
+const tabScroll = {};              // view -> scrollTop
+function scrollAppTo(y, smooth) {
+  const s = appScroller();
+  if (!s) return;
+  if (smooth && s.scrollTo) s.scrollTo({ top: y, behavior: "smooth" });
+  else s.scrollTop = y;
+}
+function forgetTabScroll() { Object.keys(tabScroll).forEach(k => delete tabScroll[k]); }
+// iOS can leave the page itself nudged after the keyboard closes or the app
+// resumes. The page is never meant to scroll, so snap it back.
+function repinPage() { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); }
+// Back after a real break (5+ minutes away): start fresh on Schedule, today's
+// day, at the top. Quick hops, like out to the camera, keep your place.
+const FRESH_AFTER_MS = 5 * 60e3;
+let _hiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") { _hiddenAt = Date.now(); return; }
+  repinPage();
+  const away = _hiddenAt ? Date.now() - _hiddenAt : 0;
+  _hiddenAt = 0;
+  if (away >= FRESH_AFTER_MS) startFresh();
+});
+function startFresh() {
+  if (!currentUser || isHome()) return;
+  if (Object.keys(upProg).length || _isTypingEl(document.activeElement)) return;   // mid-upload or mid-note: stay put
+  viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
+  notesOpen.clear(); fabOpen = false; schedAddBooth = false;
+  schedDay = showDayToday(currentEventCode()) || schedDay;
+  forgetTabScroll();
+  setBottomTab("schedule");
+  render();
+  scrollAppTo(0);
+}
+// Bottom nav: Schedule/Booths/Profile switch views; Videos opens a sheet.
 document.getElementById("bottomNav").addEventListener("click", e => {
   const tab = e.target.closest("[data-v]");
   if (tab) {
-    setBottomTab(tab.dataset.v);
+    const v = tab.dataset.v;
+    if (v === activeView) { scrollAppTo(0, true); return; }
+    tabScroll[activeView] = appScroller().scrollTop;
+    setBottomTab(v);
     render();
+    scrollAppTo(tabScroll[v] || 0);
     return;
   }
   if (e.target.closest("#bnVideos")) { document.getElementById("mediaBtn").click(); return; }
@@ -6587,8 +6633,14 @@ document.addEventListener("focusout", () => {
   if (!_isTouchDevice) return;
   clearTimeout(_kbTimer);
   _kbTimer = setTimeout(() => {
-    if (!_isTypingEl(document.activeElement)) document.body.classList.remove("kb-open");
+    if (!_isTypingEl(document.activeElement)) {
+      document.body.classList.remove("kb-open");
+      setTimeout(repinPage, 320);   // once the keyboard has finished closing
+    }
   }, 80);
+});
+if (window.visualViewport) window.visualViewport.addEventListener("resize", () => {
+  if (!document.body.classList.contains("kb-open")) repinPage();
 });
 
 document.querySelector(".filter-bar").addEventListener("click", e => {
@@ -6851,7 +6903,7 @@ authEls.form.addEventListener("submit", async (e) => {
       const dept = document.getElementById("authDept").value;
       if (!name)  { authErr("Please enter your name.");   authEls.submit.disabled = false; return; }
       if (!brand) { authErr("Check at least one brand."); authEls.submit.disabled = false; return; }
-      if (!dept)  { authErr("Pick your team (Sales or Editorial)."); authEls.submit.disabled = false; return; }
+      if (!dept)  { authErr("Pick your team (Editorial/Digital or Sales)."); authEls.submit.disabled = false; return; }
       // A data anchor only (their first cloud doc keys off it); the app always
       // opens on the nearest show and the picker switches between the rest.
       const eventCode = defaultShowFor(brands, brand);
@@ -6922,16 +6974,19 @@ function prepSettings() {
   document.getElementById("pfAvatar").textContent = initialsOf(nm);
   document.getElementById("pfName").textContent = nm;
   document.getElementById("pfEmail").textContent = u.email || "";
-  const dept = effectiveDept(u.uid, u.dept);
-  const brands = userBrands(u);
-  document.getElementById("pfSub").textContent =
-    [teamLabel(dept), brands.map(brandShort).join(", ")].filter(Boolean).join(" · ");
+  const team = teamKey(u.uid, u.dept);
+  const admin = isMaster();
+  // Admins cover every brand (the show picker already offers them all).
+  const brandsTxt = admin ? "All brands" : userBrands(u).map(brandShort).join(", ");
+  document.getElementById("pfSub").textContent = [teamLabel(team), brandsTxt].filter(Boolean).join(" · ");
   const tv = document.getElementById("pfTeamVal");
-  tv.textContent = teamLabel(dept) || "Choose";
-  tv.className = "pf-v" + (dept ? "" : " act");
+  tv.textContent = teamLabel(team) || "Choose";
+  tv.className = "pf-v" + (team ? "" : " act");
+  document.getElementById("pfTeamRow").classList.toggle("static", team === "events");
   const bv = document.getElementById("pfBrandsVal");
-  bv.textContent = brands.map(brandShort).join(", ") || "Choose";
-  bv.className = "pf-v" + (brands.length ? "" : " act");
+  bv.textContent = brandsTxt || "Choose";
+  bv.className = "pf-v" + (brandsTxt ? "" : " act");
+  document.getElementById("pfBrandsRow").classList.toggle("static", admin);
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("pfShowRow").classList.toggle("static", pickerShows().length < 2);
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
@@ -7177,31 +7232,18 @@ async function openGuideSheet() {
   document.getElementById("guideSheet").style.display = "flex";
   const body = document.getElementById("guideBody");
   // One QR for everyone: reps pick their brand (and team) when they create the
-  // account, and add more brands later under Profile > My brands. Show status
-  // per brand is a quick readiness glance, no codes.
-  const status = SIGNUP_BRANDS.map(brand => {
-    const b = BRANDS[brand] || BRANDS.ncm;
-    const dot = `<span class="guide-brand-dot" style="background:${b.p.blue}"></span>`;
-    const current = sortShowsByDate(showsForBrand(brand).filter(c => EVENTS[c] && showStatus(c).k !== "past"));
-    if (!current.length) return `<div class="guide-brand">${dot}<strong>${esc(b.name)}</strong><span class="guide-brand-meta">no upcoming show loaded</span></div>`;
-    return current.map(code => {
-      const med = MEDIA[code] || {};
-      const bits = [showStatusText(code), (EVENTS[code].booths || []).length + " booths",
-        (med.request && med.folder) ? "folder wired" : "no folder yet"];
-      return `<div class="guide-brand">${dot}<strong>${esc(showLabelOf(code))}</strong><span class="guide-brand-meta">${esc(bits.join(" · "))}</span></div>`;
-    }).join("");
-  }).join("");
+  // account, and add more brands later under Profile > Brands. The passcode
+  // was fetched at sign-in, so it shows instantly.
+  const pass = _bullpenPass ? _bullpenPass.pass : "";
   body.innerHTML = `
     <div class="guide-install">
       <div class="guide-qr-lg" id="gqrInstall"></div>
       <div class="guide-url">${esc(GUIDE_APP_URL)}</div>
-      <div class="guide-note" style="margin:8px 0 0">One code for every rep and every brand. Scan, install (iPhone: Share &rarr; Add to Home Screen; Android: menu &rarr; Install app), then <strong>Create Account</strong> and pick your brand and team. Covering more than one brand? Profile &rarr; My brands.</div>
+      <div class="guide-note" style="margin:8px 0 0">One code for every rep and every brand. Scan, install (iPhone: Share &rarr; Add to Home Screen; Android: menu &rarr; Install app), then <strong>Create Account</strong> and pick your brand and team. Covering more than one brand? Profile &rarr; Brands.</div>
     </div>
-    <div class="guide-section-title">Shows loaded right now</div>
-    ${status}
-    <div class="guide-section-title" style="margin-top:14px">Bullpen (laptops)</div>
+    <div class="guide-section-title">Bullpen (laptops)</div>
     <div class="guide-note" style="margin:0 0 8px">Same address in a browser, then <strong>Enter the Bullpen</strong>. It asks for the shared passcode, then who's working the desk.</div>
-    <div class="guide-pass" id="guidePass"><span class="guide-pass-lbl">Passcode</span><span class="guide-pass-val" id="guidePassVal">loading…</span><button class="home-rem-btn" type="button" id="guidePassCopy">Copy</button></div>
+    <div class="guide-pass" id="guidePass"><span class="guide-pass-lbl">Passcode</span><span class="guide-pass-val" id="guidePassVal">${pass ? esc(pass) : "loading…"}</span><button class="home-rem-btn" type="button" id="guidePassCopy">Copy</button></div>
     <div class="guide-note" style="margin:8px 0 0">Stored in Firestore where only admins can read it (this page's source is public), so it never sits in the app code.</div>`;
   loadBullpenPasscode();
   try {
@@ -7217,14 +7259,26 @@ async function openGuideSheet() {
 // The bullpen passcode lives in Firestore config/admin (rules: masters only)
 // so it can be shown to Nate and Rachel here without ever touching the
 // public repo. Nate pastes it into the console once.
+// Fetched once at an admin's sign-in and kept in memory only (never saved on
+// the device), so the sheet opens with it already filled in.
+let _bullpenPass = null;           // { pass }
+let _bullpenPassP = null;
+function prefetchBullpenPasscode() {
+  if (!fbReady || !isMaster()) return Promise.reject(new Error("admins-only"));
+  if (!_bullpenPassP) {
+    _bullpenPassP = fbDb.collection("config").doc("admin").get()
+      .then(d => (_bullpenPass = { pass: (d.exists && d.data().bullpenPasscode) || "" }))
+      .catch(e => { _bullpenPassP = null; throw e; });
+  }
+  return _bullpenPassP;
+}
 async function loadBullpenPasscode() {
   const val = document.getElementById("guidePassVal");
   const btn = document.getElementById("guidePassCopy");
   if (!val) return;
   if (!fbReady || !isMaster()) { val.textContent = "admins only"; if (btn) btn.style.display = "none"; return; }
   try {
-    const d = await fbDb.collection("config").doc("admin").get();
-    const pass = (d.exists && d.data().bullpenPasscode) || "";
+    const pass = (_bullpenPass || await prefetchBullpenPasscode()).pass;
     if (!pass) {
       val.textContent = "not set yet";
       val.title = "Firestore console > config > add doc 'admin' with a string field bullpenPasscode";
@@ -7261,13 +7315,13 @@ function initialsOf(name) {
   if (!w.length) return "?";
   return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase();
 }
-function teamLabel(dept) { return dept === "edit" ? "Editorial team" : dept === "sales" ? "Sales" : ""; }
+function teamLabel(t) { return t === "events" ? "Events" : t === "edit" ? "Editorial/Digital" : t === "sales" ? "Sales" : ""; }
 function closeSheetById(id) { document.getElementById(id).style.display = "none"; }
 function sheetBackdropCloses(id) {
   document.getElementById(id).addEventListener("click", e => { if (e.target.id === id) closeSheetById(id); });
 }
 function openTeamSheet() {
-  if (!currentUser) return;
+  if (!currentUser || EVENTS_UIDS.includes(currentUser.uid)) return;   // Events is set in code
   const locked = !!DEPT_OVERRIDES[currentUser.uid];
   const cur = effectiveDept(currentUser.uid, currentUser.dept);
   document.querySelectorAll('#teamOpts input[name="teamPick"]').forEach(r => {
@@ -7295,10 +7349,10 @@ document.getElementById("teamSave").addEventListener("click", async () => {
   queueScheduleSync();   // restamp the cloud schedule with the new team
   queueNotesSync();      // edit -> start auto-sharing notes (sales -> no-op, nothing deleted)
   render();              // status picker/filters are sales-only, swap them in or out now
-  toast(pick === "edit" ? "Set to Editorial team" : "Set to Sales");
+  toast(pick === "edit" ? "Set to Editorial/Digital" : "Set to Sales");
 });
 function openBrandsSheet() {
-  if (!currentUser) return;
+  if (!currentUser || isMaster()) return;   // admins cover every brand
   const mine = userBrands(currentUser);
   document.getElementById("brandChecks").innerHTML = SIGNUP_BRANDS.map(b =>
     `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}><span>${esc((BRANDS[b] || {}).name || b)}</span></label>`).join("");
@@ -7388,17 +7442,20 @@ async function loadAccounts() {
   if (c) c.textContent = acctState === "ok" ? String(acctRows.length) : "";
 }
 function acctIsAdmin(a) { return a.role === "master" || a.master === true || MASTER_EMAILS.includes(a.email); }
-function acctDept(a) { return effectiveDept(a.uid, a.dept); }
+function acctDept(a) { return effectiveDept(a.uid, a.dept); }     // sharing team (Events counts as edit)
+function acctTeam(a) { return teamKey(a.uid, a.dept); }           // team to show
+function acctBrands(a) { return acctIsAdmin(a) ? SIGNUP_BRANDS.slice() : userBrands(a); }
 function acctFirst(a) { return String(a.name || "").trim().split(/\s+/)[0] || "this person"; }
 function acctTags(a) {
-  const d = acctDept(a);
-  const team = d === "edit" ? `<span class="acct-tag team-edit">Editorial</span>`
-             : d === "sales" ? `<span class="acct-tag team-sales">Sales</span>`
+  const t = acctTeam(a);
+  const team = t === "edit" ? `<span class="acct-tag team-edit">Editorial/Digital</span>`
+             : t === "events" ? `<span class="acct-tag team-events">Events</span>`
+             : t === "sales" ? `<span class="acct-tag team-sales">Sales</span>`
              : `<span class="acct-tag team-none">No team yet</span>`;
-  const brands = userBrands(a).map(b =>
+  const brands = acctIsAdmin(a) ? `<span class="acct-tag">All brands</span>` : userBrands(a).map(b =>
     `<span class="acct-tag"><i class="acct-dot" style="background:${BRANDS[b].p.blue}"></i>${esc(brandShort(b))}</span>`).join("");
-  // Uploads are Editorial-only, so Sales rows skip the Microsoft tag.
-  const ms = d !== "edit" ? ""
+  // Uploads are for Editorial/Digital and Events, so Sales rows skip the Microsoft tag.
+  const ms = acctDept(a) !== "edit" ? ""
            : a.msConnected ? `<span class="acct-tag ms-on">✓ Microsoft</span>`
            : `<span class="acct-tag ms-off">No Microsoft yet</span>`;
   return team + brands + ms;
@@ -7450,19 +7507,22 @@ function fillAccountsList() {
     return;
   }
   const rows = acctRows;
-  const nEdit = rows.filter(a => acctDept(a) === "edit").length;
-  const nSales = rows.filter(a => acctDept(a) === "sales").length;
-  const nNone = rows.length - nEdit - nSales;
-  const nMs = rows.filter(a => acctDept(a) === "edit" && a.msConnected).length;
-  sumEl.innerHTML = `<strong>${rows.length}</strong> account${rows.length === 1 ? "" : "s"} · ${nEdit} Editorial · ${nSales} Sales`
+  const nEdit = rows.filter(a => acctTeam(a) === "edit").length;
+  const nEvents = rows.filter(a => acctTeam(a) === "events").length;
+  const nSales = rows.filter(a => acctTeam(a) === "sales").length;
+  const nNone = rows.length - nEdit - nEvents - nSales;
+  const uploaders = rows.filter(a => acctDept(a) === "edit");   // Editorial/Digital + Events
+  const nMs = uploaders.filter(a => a.msConnected).length;
+  sumEl.innerHTML = `<strong>${rows.length}</strong> account${rows.length === 1 ? "" : "s"} · ${nEdit} Editorial/Digital`
+    + (nEvents ? ` · ${nEvents} Events` : "") + ` · ${nSales} Sales`
     + (nNone ? ` · ${nNone} with no team yet` : "")
-    + (nEdit ? `<br>Microsoft connected: ${nMs} of ${nEdit} Editorial` : "");
+    + (uploaders.length ? `<br>Microsoft connected: ${nMs} of ${uploaders.length} who upload video` : "");
   fEl.innerHTML = [["", "All"]].concat(SIGNUP_BRANDS.map(b => [b, brandShort(b)])).map(([k, label]) => {
-    const n = k ? rows.filter(a => userBrands(a).includes(k)).length : rows.length;
+    const n = k ? rows.filter(a => acctBrands(a).includes(k)).length : rows.length;
     return `<button class="acct-chip${acctFilter === k ? " on" : ""}" type="button" data-acct-filter="${k}">${esc(label)}<b>${n}</b></button>`;
   }).join("");
   const q = acctQ.trim().toLowerCase();
-  const shown = rows.filter(a => (!acctFilter || userBrands(a).includes(acctFilter))
+  const shown = rows.filter(a => (!acctFilter || acctBrands(a).includes(acctFilter))
     && (!q || String(a.name || "").toLowerCase().includes(q) || a.email.includes(q)));
   listEl.innerHTML = shown.length ? shown.map(a => `<button class="acct-row" type="button" data-acct-uid="${esc(a.uid)}">
       <span class="acct-av">${esc(initialsOf(a.name || a.email))}</span>
@@ -7482,8 +7542,9 @@ function acctDate(v) {
   return d ? fmtMonthDay(d) + ", " + d.getFullYear() : "";
 }
 function acctPersonHtml(a) {
-  const d = acctDept(a);
-  const ms = d !== "edit" ? "Not used by Sales" : a.msConnected ? "Connected" : "Not connected yet";
+  const d = acctDept(a), t = acctTeam(a);
+  const ms = d === "edit" ? (a.msConnected ? "Connected" : "Not connected yet")
+           : d === "sales" ? "Not used by Sales" : "Not until they pick a team";
   const joined = acctDate(a.createdAt), edited = acctDate(a.editedAt);
   return `<button class="acct-back" type="button" data-acct-back>‹ All accounts</button>
     <div class="pf-head acct-head">
@@ -7494,15 +7555,17 @@ function acctPersonHtml(a) {
       </div>
     </div>
     <div class="pf-group acct-kv">
-      ${acctKv("Team", teamLabel(d) || "Not set yet", d ? "" : "warn")}
-      ${acctKv("Brands", userBrands(a).map(b => BRANDS[b].name).join(", ") || "None")}
+      ${acctKv("Team", teamLabel(t) || "Not set yet", t ? "" : "warn")}
+      ${acctKv("Brands", acctIsAdmin(a) ? "All brands" : (userBrands(a).map(b => BRANDS[b].name).join(", ") || "None"))}
       ${acctKv("Microsoft", ms, d === "edit" ? (a.msConnected ? "ok" : "warn") : "")}
       ${a.msConnected && a.msEmail && a.msEmail !== a.email ? acctKv("Microsoft login", a.msEmail) : ""}
       ${joined ? acctKv("Joined", joined) : ""}
       ${acctIsAdmin(a) ? acctKv("Access", "Admin") : ""}
       ${a.editedBy ? acctKv("Last changed", (edited ? edited + " by " : "By ") + a.editedBy) : ""}
     </div>
-    <button class="acct-edit-link" type="button" data-acct-edit>Change team or brands</button>
+    ${acctIsAdmin(a)
+      ? `<p class="settings-dbx-note acct-admin-note">Admins are on the Events team and cover every brand, so there's nothing to change here.</p>`
+      : `<button class="acct-edit-link" type="button" data-acct-edit>Change team or brands</button>`}
     <button class="settings-done share-secondary" type="button" data-acct-close>Close</button>`;
 }
 function acctEditHtml(a) {
@@ -7514,7 +7577,7 @@ function acctEditHtml(a) {
     <div class="settings-title">Change ${esc(first)}'s team or brands</div>
     <div class="pf-label acct-first-label">Team</div>
     <div class="pf-opts">
-      ${opt("edit", "Editorial team", "Booth notes, schedule and videos go to the bullpen.")}
+      ${opt("edit", "Editorial/Digital", "Booth notes, schedule and videos go to the bullpen.")}
       ${opt("sales", "Sales", "Nothing goes to the bullpen.")}
     </div>
     ${locked ? `<p class="settings-dbx-note">${esc(first)}'s team is locked to Sales in the app.</p>` : ""}
@@ -7568,6 +7631,7 @@ document.getElementById("accountsSheet").addEventListener("click", async e => {
   const a = acctRows.find(r => r.uid === acctView.uid);
   if (!a) return;
   if (e.target.closest("[data-acct-edit]")) {
+    if (acctIsAdmin(a)) return;
     acctView = { mode: "edit", uid: a.uid, draft: { dept: acctDept(a), brands: userBrands(a) } };
     renderAccounts(); return;
   }
@@ -7794,6 +7858,7 @@ async function switchToShow(code, manual) {
   schedDay = showDayToday(code) || 1;
   setupShowPicker();
   render();
+  forgetTabScroll(); scrollAppTo(0);
   // A device that has never opened this show pulls its cloud copy first, so
   // a later save can't push an empty bucket over the rep's real data.
   await hydrateFromCloud();
@@ -7818,7 +7883,7 @@ document.getElementById("showSheet").addEventListener("click", e => {
 // asked both (or that never set a team). It decides what they see, so it
 // asks once, right after sign-in, and doesn't offer a skip.
 async function maybeShowConfirmSheet() {
-  if (!currentUser || isHome() || !fbReady) return;
+  if (!currentUser || isHome() || !fbReady || isMaster()) return;   // admins: Events, every brand
   if (currentUser.brandsConfirmed && currentUser.dept) return;
   const fresh = await loadUserDoc(currentUser.uid);   // signup's profile write can land a beat after sign-in
   if (fresh) Object.assign(currentUser, fresh);
@@ -7919,9 +7984,11 @@ if (fbReady) {
       subscribeNotifyConfig();
       subscribeUploadConfig();
       subscribeMyProfile();
+      if (isMaster()) { prefetchBullpenPasscode().catch(() => {}); loadQrLib().catch(() => {}); }
       updateMediaBtn();
       maybeShowInstallPrompt();   // reps on a phone; bullpen is excluded inside
       render();
+      forgetTabScroll(); scrollAppTo(0);
       maybeShowConfirmSheet();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
@@ -7929,6 +7996,7 @@ if (fbReady) {
       if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
       if (_myProfUnsub) { _myProfUnsub(); _myProfUnsub = null; }
       acctRows = []; acctState = "idle";
+      _bullpenPass = null; _bullpenPassP = null;
       uploadCfg = null; _msBooted = false;   // MS tokens stay: device-level, like home_member
       teamSchedules = {};
       myVideoDone = {};
