@@ -1752,6 +1752,22 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .ph-btn:active { opacity: 0.9; }
 .ph-btn-2 { margin-top: 10px; background: var(--surface); color: var(--blue); border: 1.5px solid var(--blue); }
 .ph-note { margin-top: 14px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
+.ph-sub { font-size: 0.74rem; color: var(--muted); margin: 10px 4px 0; line-height: 1.45; }
+.ph-queue { text-align: left; margin-top: 14px; padding: 16px 14px 14px; }
+.ph-queue-head { font-family: var(--fd); font-weight: 800; font-size: 0.92rem; color: var(--text); margin-bottom: 6px; }
+.ph-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border-soft); }
+.ph-queue-head + .ph-row { border-top: none; }
+.ph-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--border-soft); }
+.ph-thumb-vid { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.1rem; }
+.ph-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ph-cap { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 9px; font-family: var(--ft); font-size: 16px; color: var(--text); background: var(--surface); }
+.ph-cap:focus { outline: none; border-color: var(--blue); }
+.ph-cap:disabled { opacity: 0.7; }
+.ph-status { font-size: 0.72rem; font-weight: 700; color: var(--blue); }
+.ph-status.ok { color: var(--green); }
+.ph-status.err { color: #B3261E; }
+.ph-del { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); font-size: 0.8rem; cursor: pointer; }
+.ph-link { display: block; margin: 16px auto 0; background: none; border: none; color: var(--blue); font-family: var(--ft); font-weight: 700; font-size: 0.82rem; text-decoration: underline; cursor: pointer; }
 
 
 /* ── Admin > Accounts ── */
@@ -1937,6 +1953,10 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-vids .home-rem-meta { font-size: 0.78rem; color: #4b5563; margin: 5px 0 10px; }
 .home-rem-btn.work.on    { color: #5B2D71; border-color: #D9C6E5; background: #F1E8F6; }
 .home-rem-btn.work.other { color: #8A5D00; border-color: #ECD9A8; background: #FDF6E3; }
+/* Production steps (v139): a tapped step turns green and names who did it;
+   "Shared with sales", the finishing step, goes solid green. */
+.home-rem-btn.step.on { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
+.home-rem-btn.step.final.on { color: #fff; border-color: #2D7140; background: #2D7140; }
 /* Editors' booth notes, expanded under a video card via View notes */
 .home-vid-notes { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 4px; }
 .hvn-rep { padding: 8px 0 2px; }
@@ -2169,6 +2189,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 
 <!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
 <input type="file" id="vidFileInput" accept="video/*" style="display:none">
+<input type="file" id="photoFileInput" accept="image/*" multiple style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="bn-btn active" type="button" data-v="schedule">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
@@ -2225,7 +2246,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v138</div>
+      <div class="pf-ver">NCM Events Guide · v139</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4569,6 +4590,11 @@ function msUploadFolderUrl() {
   const m = eventMedia(currentEventCode());
   return (m && m.folder) || "";
 }
+// The Photos tab uploads in-app for every team (Sales' videos too), so any
+// signed-in rep on a show with a folder can connect Microsoft.
+function msPhotosActive() {
+  return !!(uploadCfg && currentUser && !isHome() && msUploadFolderUrl());
+}
 function msUploadsActive() {
   return !!(uploadCfg && currentUser && !isHome() && myNotesAutoShare()
             && msUploadFolderUrl());
@@ -4758,6 +4784,15 @@ function msFileName(c, file) {
   if (!ext) ext = file.type === "video/mp4" ? ".mp4" : ".mov";
   return co + "_B" + booth + "_" + rep + ext;
 }
+// Photos: the caption becomes the file name (the bullpen sees what it is at
+// a glance), then the rep's first name. SharePoint's rename handles repeats.
+function msPhotoName(caption, file) {
+  const clean = s => String(s || "").replace(/[^\w &-]+/g, " ").replace(/\s+/g, " ").trim().replace(/ /g, "-").slice(0, 60);
+  const rep = clean(((currentUser && currentUser.name) || "Rep").split(/\s+/)[0]) || "Rep";
+  let ext = (file.name && (file.name.match(/\.[A-Za-z0-9]{2,5}$/) || [])[0] || "").toLowerCase();
+  if (!ext) ext = /png/.test(file.type) ? ".png" : /heic|heif/.test(file.type) ? ".heic" : /^video\//.test(file.type) ? ".mov" : ".jpg";
+  return (clean(caption) || "Photo") + "_" + rep + ext;
+}
 const UP_CHUNK = 10 * 1024 * 1024;   // multiple of 320 KiB per Graph's rules
 // PUT one chunk with byte-level upload progress. fetch() can't report upload
 // progress, and per-chunk ticks made a 30 MB clip read 0% → 33% → done.
@@ -4773,13 +4808,15 @@ function putChunk(url, blob, range, onLoaded) {
     xhr.send(blob);
   });
 }
-async function msUploadFile(c, file, onPct) {
+async function msUploadFile(c, file, onPct) { return msUploadNamed(msFileName(c, file), file, onPct); }
+// Upload any file into the show folder as `name`: booth videos from the
+// booth cards, photos from the Photos tab. Resumable chunks, byte progress.
+async function msUploadNamed(name, file, onPct) {
   // Never redirect from in here: a navigation now would drop the file. The
-  // tap handler only opens the picker with a fresh token, so this is rare.
+  // tap handlers only open a picker with a fresh token, so this is rare.
   let token;
   try { token = await msSilentToken(); } catch (e) { throw new Error("token"); }
   const folder = await msResolveFolder(token);
-  const name = msFileName(c, file);
   const sess = await msGraph(
     "/drives/" + folder.driveId + "/items/" + folder.itemId + ":/" + encodeURIComponent(name) + ":/createUploadSession",
     { method: "POST", headers: { "Content-Type": "application/json" },
@@ -4869,16 +4906,19 @@ function uploadCtlHtml(c, s) {
 function updateMsSection() {
   const row = document.getElementById("pfMsRow");
   if (!row) return;
-  const on = msUploadsActive();
+  const on = msPhotosActive();
   row.style.display = on ? "" : "none";
   if (!on) return;
   const acct = msAccount();
+  const what = myNotesAutoShare()
+    ? "booth videos (the Upload button on flagged booths) and photos (the Photos tab)"
+    : "photos and videos from the Photos tab";
   const v = document.getElementById("pfMsVal");
   v.textContent = acct ? "Connected ✓" : "Connect";
   v.className = "pf-v " + (acct ? "ok" : "act");
   document.getElementById("msStatus").innerHTML = acct
-    ? "Connected as <strong>" + esc(acct.username || acct.name || "your NCM account") + "</strong> on this device. Every video-flagged booth has an Upload button, and clips land in the show folder named and linked automatically."
-    : "Connect once with your NCM Microsoft account (same login as Outlook) and every video-flagged booth gets an Upload button. Clips land in the shared show folder, named and linked automatically.";
+    ? "Connected as <strong>" + esc(acct.username || acct.name || "your NCM account") + "</strong> on this device. You can upload " + what + " straight to the show's shared folder."
+    : "Connect once with your NCM Microsoft account (same login as Outlook) to upload " + what + " straight to the show's shared folder.";
   document.getElementById("msSheetMain").textContent = acct ? "Done" : "Connect Microsoft account";
   document.getElementById("msConnectBtn").textContent = acct ? "Disconnect on this device" : "Not now";
 }
@@ -4965,8 +5005,8 @@ function notifyVideoDone(code, boothNum, boothName) {
   if (!notifyOnce("done|" + code + "|" + boothNum)) return;
   const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
   const me = homeMember() || "Someone";
-  notifyHome(esc(showLabelOf(code)) + ": video finished: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
-    "). Marked done by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me);
+  notifyHome(esc(showLabelOf(code)) + ": video done and shared with sales: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
+    "), by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me);
 }
 // "Removed from the bullpen" lives in homeFlags too: hide__<code>__<booth#>
 // with the member who removed it and a timestamp. Reps' data is never
@@ -5062,6 +5102,53 @@ function toggleWorkingOn(code, boothNum) {
     : fbDb.collection("homeFlags").doc(id).set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now() });
   op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
+// The bullpen's production steps per video, after "Working on". "Shared with
+// sales" is the finishing step: it marks the video done (Completed list, the
+// rep's "Video done" chip, the desk's Teams alert). The others are open to
+// anyone in any order; each records who tapped it and when, in
+// homeFlags/steps__<code>__<booth#> (home already reads and writes homeFlags).
+const VID_STEPS = [
+  { k: "edited",  label: "Edited" },
+  { k: "site",    label: "Uploaded to site" },
+  { k: "socials", label: "Shared on socials" },
+  { k: "sales",   label: "Shared with sales" },
+];
+function vidSteps(code, boothNum) { return homeFlags["steps__" + code + "__" + boothNum] || {}; }
+function firstNameOf(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
+function vidStepButtons(code, boothNum, done) {
+  const steps = vidSteps(code, boothNum);
+  return VID_STEPS.map(s => {
+    // Sales follows the done state itself (older "done" marks have no name).
+    const rec = s.k === "sales" ? (done ? (steps.sales || {}) : null) : steps[s.k];
+    const on = !!rec;
+    const who = on && rec.member ? firstNameOf(memberName(rec.member)) : "";
+    const tip = on
+      ? [who ? s.label + " by " + memberName(rec.member) : s.label, rec.ts ? fmtExact(rec.ts) : ""].filter(Boolean).join(" · ") + ". Tap to undo"
+      : (s.k === "sales" ? "Marks the video done" : "Tap when this is done");
+    return `<button class="home-rem-btn step${on ? " on" : ""}${s.k === "sales" ? " final" : ""}" type="button" data-vstep="${s.k}" data-vs-code="${esc(code)}" data-vs-b="${esc(boothNum)}" title="${esc(tip)}">${on ? "✓ " : ""}${esc(s.label)}${who ? " · " + esc(who) : ""}</button>`;
+  }).join("");
+}
+function toggleVidStep(code, boothNum, step) {
+  if (!fbReady) return;
+  if (step === "sales") { toggleVideoDoneGroup(code, boothNum); return; }
+  const ref = fbDb.collection("homeFlags").doc("steps__" + code + "__" + boothNum);
+  const op = vidSteps(code, boothNum)[step]
+    ? ref.set({ [step]: firebase.firestore.FieldValue.delete() }, { merge: true })
+    : ref.set({ eventCode: code, boothNum: boothNum, [step]: { member: homeMember() || "Someone", ts: Date.now() } }, { merge: true });
+  op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
+}
+// Is every rep's flag on this booth marked done? (Schedules view uses it.)
+function vidGroupDone(code, boothNum) {
+  let any = false, all = true;
+  Object.values(homeNotes)
+    .filter(d => effectiveDept(d.uid, d.dept) === "edit" && d.eventCode === code)
+    .forEach(d => (d.items || []).forEach(it => {
+      if (!it.video || it.boothNum !== boothNum) return;
+      any = true;
+      if (!homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]) all = false;
+    }));
+  return any && all;
+}
 // Grouped variant for the Videos tab: one booth's video covers every rep who
 // flagged it, so done/undo writes or deletes EACH rep's videoStatus doc —
 // all their reminders clear together and each sees the done chip. If only
@@ -5087,6 +5174,11 @@ function toggleVideoDoneGroup(code, boothNum) {
   });
   // Finishing a video also clears any "Working on" claim on it.
   if (!allDone) ops.push(fbDb.collection("homeFlags").doc("work__" + code + "__" + boothNum).delete());
+  // This is the "Shared with sales" step: record who, or clear it on undo.
+  const stepsRef = fbDb.collection("homeFlags").doc("steps__" + code + "__" + boothNum);
+  ops.push(allDone
+    ? stepsRef.set({ sales: firebase.firestore.FieldValue.delete() }, { merge: true })
+    : stepsRef.set({ eventCode: code, boothNum: boothNum, sales: { member: homeMember() || "Someone", ts: Date.now() } }, { merge: true }));
   if (!allDone) notifyVideoDone(code, boothNum, members[0].it.boothName);
   Promise.all(ops).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
@@ -5327,8 +5419,11 @@ function buildHomeVideosView() {
     // "Working on" claim: whoever at the home desk grabbed this video.
     const wk = homeFlags["work__" + v.code + "__" + v.boothNum];
     const wkMine = wk && sameMember(wk.member, homeMember());
+    // One person holds "Working on" (tap someone else's to take it over).
+    // Every other step stays open to anyone and names who tapped it.
     const workBtn = v.done ? "" :
-      `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk && !wkMine ? "Tap to take this over" : "Let the team know you're on this one"}">${wkMine ? "✓ You're on it · release" : wk ? "⏳ " + esc(memberName(wk.member)) + " is working on it" : "Working on"}</button>`;
+      `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk ? esc((wkMine ? "Tap to let it go" : "Tap to take this over") + (wk.ts ? " · since " + fmtExact(wk.ts) : "")) : "Let the team know you're on this one"}">${wk ? "✓ Working on · " + esc(wkMine ? "you" : firstNameOf(memberName(wk.member))) : "Working on"}</button>`;
+    const stepBtns = vidStepButtons(v.code, v.boothNum, v.done);
     // Footage from the floor: one Watch chip per CLIP (multiple reps shoot
     // the same booth, and one rep shoots multiple angles). The ledger line
     // below the names says how much is in and who hasn't sent anything yet.
@@ -5364,8 +5459,8 @@ function buildHomeVideosView() {
     const actions = v.hidden
       ? `<button class="home-rem-btn" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>
       <button class="home-rem-btn hide" type="button" data-vid-purge="${esc(gk)}" data-vid-purge-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Delete this card from the bullpen for good">Delete permanently</button>`
-      : `<button class="home-rem-btn${v.done ? " done" : ""}" type="button" data-vd-group data-vdg-code="${esc(v.code)}" data-vdg-b="${esc(v.boothNum)}">${v.done ? "✓ Video done · undo" : "Mark video done"}</button>
-      ${workBtn}
+      : `${workBtn}
+      ${stepBtns}
       ${notesBtn}
       <button class="home-rem-btn hide" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove</button>`;
     return `<div class="home-note${v.done ? " vid-done" : ""}${v.hidden ? " vid-hidden" : ""}">
@@ -5453,17 +5548,13 @@ function buildHomeVideosView() {
 // same Follow up / Covered flags as the Notes tab (same ids, same state).
 function schedNoteHtml(n, sel) {
   // n.video is part of the gate so a booth flagged for video with no notes
-  // yet still surfaces its Mark-video-done button under the agenda card.
+  // yet still surfaces its production steps under the agenda card.
   if (!n || (!n.pre && !n.post && !n.visited && !n.video)) return "";
-  const vdid = sel.eventCode + "__" + (sel.uid||"") + "__" + n.boothNum;
-  const vdone = !!homeVideoStatus[vdid];
   return `<div class="home-note hs-note">
     <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}${n.visited && n.vts ? `<span class="hs-vtime">${esc(fmtExact(n.vts))}</span>` : ""}</div>
     ${n.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(n.pre)}</div>` : ''}
     ${n.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(n.post)}</div>` : ''}
-    ${n.video ? `<div class="home-note-flags">
-      <button class="home-rem-btn${vdone ? " done" : ""}" type="button" data-vd="${esc(vdid)}" data-vd-code="${esc(sel.eventCode)}" data-vd-uid="${esc(sel.uid||"")}" data-vd-name="${esc(sel.name||"Rep")}" data-vd-b="${esc(n.boothNum)}" data-vd-n="${esc(n.boothName)}">${vdone ? "✓ Video done · undo" : "Mark video done"}</button>
-    </div>` : ''}
+    ${n.video ? `<div class="home-note-flags">${vidStepButtons(sel.eventCode, n.boothNum, vidGroupDone(sel.eventCode, n.boothNum))}</div>` : ''}
   </div>`;
 }
 // The Schedules view: pick a rep, see their Day 1/2/3 agenda read-only
@@ -6136,6 +6227,8 @@ document.getElementById("content").addEventListener("click", e => {
       name: vd.dataset.vdName, b: vd.dataset.vdB, n: vd.dataset.vdN });
     return;
   }
+  const vs = e.target.closest("[data-vstep]");
+  if (vs) { toggleVidStep(vs.dataset.vsCode, vs.dataset.vsB, vs.dataset.vstep); return; }
   const vdg = e.target.closest("[data-vd-group]");
   if (vdg) { toggleVideoDoneGroup(vdg.dataset.vdgCode, vdg.dataset.vdgB); return; }
   const wk = e.target.closest("[data-work-code]");
@@ -6625,7 +6718,7 @@ document.addEventListener("visibilitychange", () => {
 });
 function startFresh() {
   if (!currentUser || isHome()) return;
-  if (Object.keys(upProg).length || _isTypingEl(document.activeElement)) return;   // mid-upload or mid-note: stay put
+  if (Object.keys(upProg).length || photoQueue.length || photoUploading || _isTypingEl(document.activeElement)) return;   // mid-upload, photos waiting or mid-note: stay put
   viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   schedDay = showDayToday(currentEventCode()) || schedDay;
@@ -6800,44 +6893,149 @@ document.getElementById("mediaBtn").addEventListener("click", () => {
   document.querySelector('#bottomNav [data-v="photos"]').click();
 });
 // ── PHOTOS TAB ───────────────────────────────────────────────────────────
-// The show's shared upload folder as its own page (it used to be a pop-up).
-// Editorial/Digital and Events send booth VIDEOS from each flagged booth's
-// Upload button, so for them this is the photos home; Sales use it for both.
+// In-app uploads (v139): pick photos, caption each one (the caption becomes
+// the file name), and they go straight into the show's SharePoint folder
+// through Microsoft Graph, the same path and folder as booth videos. There's
+// no SharePoint upload page anymore. Editorial/Digital and Events send booth
+// VIDEOS from each flagged booth's Upload button, so their picker takes
+// photos only; Sales use this tab for videos too.
 const PH_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></svg>';
+let photoQueue = [];               // { id, file, url, caption, state: ready|up|done|err, pct }
+let photoUploading = false;
+function msHasLogin() { return !!msAccount() || Object.keys(localStorage).some(k => k.indexOf("msal.") === 0); }
+function refreshPhotos() { if (activeView === "photos" && !isHome()) render(); }
 function renderPhotosView() {
   document.body.classList.add("in-photos");
   const el = document.getElementById("content");
-  const m = eventMedia(currentEventCode());
   const edit = myNotesAutoShare();
+  const m = eventMedia(currentEventCode()) || {};
   const head = `<div class="ph-icon">${PH_CAMERA}</div>
       <div class="ph-title">${edit ? "Photos" : "Photos and videos"}</div>
       <div class="ph-show">${esc(currentShowLabel())}</div>`;
-  if (!m || !m.request) {
+  if (!msPhotosActive()) {
     el.innerHTML = `<div class="ph-wrap"><div class="ph-card">${head}
-      <p class="ph-text">Uploads aren't set up for this show yet. Once its shared folder is ready, the upload button appears here.</p></div></div>`;
+      <p class="ph-text">Uploads aren't set up for this show yet. Once its shared folder is ready, you can upload right here.</p></div></div>`;
     return;
   }
-  const info = edit
-    ? "Photos go straight to the show's shared folder, where the bullpen can see them."
-    : mediaIsMicrosoft(m)
-    ? "Photos and videos go straight to the team's shared Microsoft 365 folder, where the bullpen can see them. No sign-in needed: tap Upload and pick files from your camera roll."
-    : "Photos and videos go straight to the shared team Dropbox, where the bullpen can see them. No account needed: just pick files from your camera roll.";
+  const what = edit ? "photos" : "photos or videos";
+  const main = msHasLogin()
+    ? `<button class="ph-btn" type="button" data-ph-pick>Choose ${what}</button>`
+    : `<button class="ph-btn" type="button" data-ph-connect>Connect Microsoft account</button>
+       <p class="ph-sub">One time, with your NCM login (same as Outlook). You'll come right back here.</p>`;
+  const rows = photoQueue.map(p => {
+    const busy = p.state === "up", done = p.state === "done", locked = busy || done || photoUploading;
+    const status = busy ? `<span class="ph-status" data-ph-pct="${p.id}">Uploading ${p.pct || 0}%</span>`
+      : done ? `<span class="ph-status ok">✓ Uploaded</span>`
+      : p.state === "err" ? `<span class="ph-status err">Didn't finish. It'll retry with the next upload</span>` : "";
+    return `<div class="ph-row" data-ph-row="${p.id}">
+      ${p.url ? `<img class="ph-thumb" src="${p.url}" alt="">` : `<div class="ph-thumb ph-thumb-vid">&#9654;</div>`}
+      <div class="ph-row-main">
+        <input class="ph-cap" type="text" data-ph-cap="${p.id}" value="${esc(p.caption)}" placeholder="Caption, e.g. Rinnai front display" maxlength="80" autocomplete="off"${locked ? " disabled" : ""}>
+        ${status}
+      </div>
+      ${locked ? "" : `<button class="ph-del" type="button" data-ph-del="${p.id}" aria-label="Remove">&#10005;</button>`}
+    </div>`;
+  }).join("");
+  const waiting = photoQueue.filter(p => p.state === "ready" || p.state === "err").length;
+  const noun = n => edit ? (n === 1 ? "photo" : "photos") : (n === 1 ? "file" : "files");
+  const queue = photoQueue.length ? `<div class="ph-card ph-queue">
+      <div class="ph-queue-head">${photoUploading ? "Uploading…" : waiting ? waiting + " " + noun(waiting) + " ready" : "All sent"}</div>
+      ${rows}
+      ${photoUploading || !waiting ? "" : `<button class="ph-btn" type="button" data-ph-send>Upload ${waiting} ${noun(waiting)}</button>`}
+      <p class="ph-sub">Captions become the file names, so the bullpen knows what each one shows. Keep the app open until they finish.</p>
+    </div>` : "";
   el.innerHTML = `<div class="ph-wrap">
     <div class="ph-card">${head}
-      <p class="ph-text">${info}</p>
-      <button class="ph-btn" type="button" data-ph-upload>${edit ? "Upload photos" : "Upload photos and videos"}</button>
-      ${edit && m.folder ? `<button class="ph-btn ph-btn-2" type="button" data-ph-folder>Open the shared folder</button>` : ""}
+      <p class="ph-text">Pick ${what} from your camera roll, add a caption to each, and they upload straight to the show's shared folder, where the bullpen sees them.</p>
+      ${main}
     </div>
+    ${queue}
     ${edit ? `<div class="ph-note"><strong>Booth videos</strong> have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen.</div>` : ""}
-    <div class="ph-note"><strong>Tip:</strong> put the company or booth number in the file name so the bullpen knows what they're looking at.${edit ? "" : " Upload big videos on hotel wifi at the end of the day."} Please add files only; don't move or delete what's there.</div>
+    ${edit && m.folder ? `<button class="ph-link" type="button" data-ph-folder>Browse the shared folder</button>` : ""}
   </div>`;
 }
+// Same token rules as booth videos: the picker opens only with a fresh token
+// in hand (synchronously, or iOS drops it), so picked photos can never be
+// lost to a sign-in redirect.
+function pickPhotos() {
+  const inp = document.getElementById("photoFileInput");
+  inp.accept = myNotesAutoShare() ? "image/*" : "image/*,video/*";
+  if (msalApp && msAccount() && msTokenFresh()) { inp.click(); return; }
+  if (msalApp && msAccount()) {
+    toast("Refreshing your Microsoft sign-in…");
+    msToken(true).then(() => toast("Ready. Tap Choose again to pick")).catch(() => {});
+    return;
+  }
+  toast("One-time Microsoft sign-in: you'll come right back here");
+  msToken(true).then(() => { updateMsSection(); refreshPhotos(); toast("Connected. Tap Choose again to pick"); }).catch(() => {});
+}
+async function sendPhotos() {
+  if (photoUploading) return;
+  // Silent refresh only: a redirect now would drop the picked files.
+  try { await msSilentToken(); }
+  catch (e) { toast("Microsoft sign-in expired. Reconnect under Profile, then pick the photos again"); return; }
+  photoUploading = true;
+  refreshPhotos();
+  for (const p of photoQueue) {
+    if (p.state !== "ready" && p.state !== "err") continue;
+    p.state = "up"; p.pct = 0;
+    refreshPhotos();
+    try {
+      await msUploadNamed(msPhotoName(p.caption, p.file), p.file, pct => {
+        p.pct = pct;
+        const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
+        if (s) s.textContent = "Uploading " + pct + "%";
+      });
+      p.state = "done";
+    } catch (e) { p.state = "err"; }
+    refreshPhotos();
+  }
+  photoUploading = false;
+  const ok = photoQueue.filter(p => p.state === "done").length;
+  const bad = photoQueue.filter(p => p.state === "err").length;
+  toast(bad ? ok + " uploaded, " + bad + " didn't finish. Tap Upload to try again"
+            : ok + (ok === 1 ? " upload" : " uploads") + " sent to the show folder ✓");
+  refreshPhotos();
+  // Finished rows stay a moment so the checkmarks read, then clear.
+  setTimeout(() => {
+    photoQueue.filter(p => p.state === "done").forEach(p => { if (p.url) URL.revokeObjectURL(p.url); });
+    photoQueue = photoQueue.filter(p => p.state !== "done");
+    refreshPhotos();
+  }, 2500);
+}
+document.getElementById("photoFileInput").addEventListener("change", e => {
+  const files = [...(e.target.files || [])];
+  e.target.value = "";
+  files.forEach(f => {
+    if (!f || !f.size) return;
+    photoQueue.push({ id: Math.random().toString(36).slice(2, 10), file: f,
+      url: /^image\//.test(f.type) ? URL.createObjectURL(f) : "", caption: "", state: "ready", pct: 0 });
+  });
+  refreshPhotos();
+});
 document.getElementById("content").addEventListener("click", e => {
-  const up = e.target.closest("[data-ph-upload]"), folder = e.target.closest("[data-ph-folder]");
-  if (!up && !folder) return;
-  const m = eventMedia(currentEventCode());
-  const url = m && (up ? m.request : m.folder);
-  if (url) window.open(url, "_blank", "noopener");
+  if (e.target.closest("[data-ph-pick]")) { pickPhotos(); return; }
+  if (e.target.closest("[data-ph-connect]")) { msSignIn().catch(() => toast("Couldn't reach Microsoft sign-in. Try again in a minute")); return; }
+  if (e.target.closest("[data-ph-send]")) { sendPhotos(); return; }
+  const del = e.target.closest("[data-ph-del]");
+  if (del) {
+    const p = photoQueue.find(x => x.id === del.dataset.phDel);
+    if (p && p.url) URL.revokeObjectURL(p.url);
+    photoQueue = photoQueue.filter(x => x.id !== del.dataset.phDel);
+    refreshPhotos();
+    return;
+  }
+  if (e.target.closest("[data-ph-folder]")) {
+    const m = eventMedia(currentEventCode());
+    if (m && m.folder) window.open(m.folder, "_blank", "noopener");
+  }
+});
+// Captions save as you type, without a re-render (keeps the keyboard up).
+document.getElementById("content").addEventListener("input", e => {
+  const cap = e.target.closest && e.target.closest("[data-ph-cap]");
+  if (!cap) return;
+  const p = photoQueue.find(x => x.id === cap.dataset.phCap);
+  if (p) p.caption = cap.value;
 });
 
 function toast(msg) {
@@ -7507,10 +7705,10 @@ function acctTags(a) {
              : `<span class="acct-tag team-none">No team yet</span>`;
   const brands = acctIsAdmin(a) ? `<span class="acct-tag">All brands</span>` : userBrands(a).map(b =>
     `<span class="acct-tag"><i class="acct-dot" style="background:${BRANDS[b].p.blue}"></i>${esc(brandShort(b))}</span>`).join("");
-  // Uploads are for Editorial/Digital and Events, so Sales rows skip the Microsoft tag.
-  const ms = acctDept(a) !== "edit" ? ""
-           : a.msConnected ? `<span class="acct-tag ms-on">✓ Microsoft</span>`
-           : `<span class="acct-tag ms-off">No Microsoft yet</span>`;
+  // Anyone can connect Microsoft for photos now; the "No Microsoft yet"
+  // nudge stays for the teams that also upload booth videos.
+  const ms = a.msConnected ? `<span class="acct-tag ms-on">✓ Microsoft</span>`
+           : acctDept(a) === "edit" ? `<span class="acct-tag ms-off">No Microsoft yet</span>` : "";
   return team + brands + ms;
 }
 async function openAccountsSheet() {
@@ -7596,8 +7794,7 @@ function acctDate(v) {
 }
 function acctPersonHtml(a) {
   const d = acctDept(a), t = acctTeam(a);
-  const ms = d === "edit" ? (a.msConnected ? "Connected" : "Not connected yet")
-           : d === "sales" ? "Not used by Sales" : "Not until they pick a team";
+  const ms = a.msConnected ? "Connected" : d === "edit" ? "Not connected yet" : "Only needed for photo uploads";
   const joined = acctDate(a.createdAt), edited = acctDate(a.editedAt);
   return `<button class="acct-back" type="button" data-acct-back>‹ All accounts</button>
     <div class="pf-head acct-head">
@@ -7610,7 +7807,7 @@ function acctPersonHtml(a) {
     <div class="pf-group acct-kv">
       ${acctKv("Team", teamLabel(t) || "Not set yet", t ? "" : "warn")}
       ${acctKv("Brands", acctIsAdmin(a) ? "All brands" : (userBrands(a).map(b => BRANDS[b].name).join(", ") || "None"))}
-      ${acctKv("Microsoft", ms, d === "edit" ? (a.msConnected ? "ok" : "warn") : "")}
+      ${acctKv("Microsoft", ms, a.msConnected ? "ok" : d === "edit" ? "warn" : "")}
       ${a.msConnected && a.msEmail && a.msEmail !== a.email ? acctKv("Microsoft login", a.msEmail) : ""}
       ${joined ? acctKv("Joined", joined) : ""}
       ${acctIsAdmin(a) ? acctKv("Access", "Admin") : ""}
