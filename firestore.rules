@@ -94,6 +94,20 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null && (isHome() || isMaster());
     }
 
+    // Photo records: the Photos tab writes one per photo from Editorial/Digital
+    // and Events reps (caption, SharePoint link, small thumbnail) so the
+    // bullpen can browse them; the file itself lives in SharePoint. Reps add
+    // their own, the bullpen and masters read, and the bullpen can remove
+    // records (never the files).
+    match /photos/{docId} {
+      allow read: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster() || isHome());
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid
+                    && validEvent(request.resource.data.eventCode)
+                    && request.resource.data.thumb is string && request.resource.data.thumb.size() < 80000
+                    && request.resource.data.caption is string && request.resource.data.caption.size() <= 200;
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster() || isHome());
+    }
+
     // Archived past-show CSVs. Each doc is owned by the rep who archived it
     // (readable by them or a master); created by the owner; deletable by owner/master.
     match /archives/{docId} {

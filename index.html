@@ -1953,6 +1953,18 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-vids .home-rem-meta { font-size: 0.78rem; color: #4b5563; margin: 5px 0 10px; }
 .home-rem-btn.work.on    { color: #5B2D71; border-color: #D9C6E5; background: #F1E8F6; }
 .home-rem-btn.work.other { color: #8A5D00; border-color: #ECD9A8; background: #FDF6E3; }
+/* Bullpen Photos view (v141) */
+.hp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.hp-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.hp-thumb { display: block; aspect-ratio: 4 / 3; background: var(--border-soft); overflow: hidden; }
+.hp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hp-noimg { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.hp-noimg svg { width: 32px; height: 32px; }
+.hp-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.hp-cap { font-weight: 700; font-size: 0.86rem; color: var(--text); line-height: 1.35; overflow-wrap: anywhere; }
+.hp-cap.none { color: var(--muted); font-weight: 600; font-style: italic; }
+.hp-meta { font-size: 0.72rem; color: var(--muted); }
+.hp-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; align-items: center; }
 /* Production steps (v139): a tapped step turns green and names who did it;
    "Shared with sales", the finishing step, goes solid green. */
 .home-rem-btn.step.on { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
@@ -2246,7 +2258,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v140</div>
+      <div class="pf-ver">NCM Events Guide · v141</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5334,6 +5346,7 @@ function renderHomeDashboard() {
   const filterName = homeBrandFilter ? (isPlaceholderShow(homeEventCode()) ? BRANDS[homeBrandFilter].name : showLabelOf(homeEventCode())) : "all brands";
   const subtitle = !homeBrandFilter ? "Live overview of every brand."
     : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
+      : homeView === "photos" ? "Photos from the field team, with their captions: " + esc(filterName) + "."
                             : "Every video flagged by the field team: " + esc(filterName) + ".");
   let html = `<div class="home-wrap"><div class="home-main">
     <div class="home-head"><h2>Bullpen</h2><p>${subtitle}</p></div>
@@ -5341,7 +5354,8 @@ function renderHomeDashboard() {
   if (homeBrandFilter) {
     html += buildHomeEventTabs();
     html += `<div class="home-view-tabs">
-      <button class="home-view-tab${homeView!=="sched"?" active":""}" type="button" data-home-view="videos">Videos</button>
+      <button class="home-view-tab${homeView==="videos"?" active":""}" type="button" data-home-view="videos">Videos</button>
+      <button class="home-view-tab${homeView==="photos"?" active":""}" type="button" data-home-view="photos">Photos</button>
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
       ${homeView==="sched" ? `<button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>` : ""}
     </div>`;
@@ -5355,19 +5369,65 @@ function renderHomeDashboard() {
         <span class="home-aside-media-main">View shared folder<span class="home-aside-media-sub">every photo and video for this show, on Microsoft 365</span></span>
       </a>`;
     }
-    html += (homeView === "sched") ? buildHomeSchedView() : buildHomeVideosView();
+    html += homeView === "sched" ? buildHomeSchedView() : homeView === "photos" ? buildHomePhotosView() : buildHomeVideosView();
   } else {
     html += buildHomeOverview();
   }
   html += `</div></div>`;
   el.innerHTML = html;
-  const activeQ = homeView === "sched" ? homeSchedQ : homeSearchQ;
+  const activeQ = homeView === "sched" ? homeSchedQ : homeView === "photos" ? homePhotoQ : homeSearchQ;
   if (activeQ.trim()) {
-    const si = document.querySelector(homeView === "sched" ? ".hs-search-input" : ".home-search-input");
+    const si = document.querySelector(homeView === "sched" ? ".hs-search-input" : homeView === "photos" ? ".hp-search-input" : ".home-search-input");
     if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
   }
 }
 
+// ── BULLPEN PHOTOS ───────────────────────────────────────────────────────
+// What Editorial/Digital and Events reps uploaded from the Photos tab,
+// newest first: the thumbnail saved with each record, the caption as typed,
+// who sent it and when. "Open" goes to the full file in SharePoint.
+let homePhotos = {};               // docId -> photo record (home side)
+let _homePhotosUnsub = null;
+let homePhotoQ = "";
+function subscribeHomePhotos() {
+  if (_homePhotosUnsub) { _homePhotosUnsub(); _homePhotosUnsub = null; }
+  homePhotos = {};
+  if (!fbReady || !isHome()) return;
+  _homePhotosUnsub = fbDb.collection("photos").onSnapshot(snap => {
+    homePhotos = {};
+    snap.forEach(d => { const x = d.data(); if (x) homePhotos[d.id] = x; });
+    if (isHome()) renderHomeDashboard();
+  }, () => {});
+}
+function buildHomePhotosView() {
+  const code = homeEventCode();
+  const q = homePhotoQ.trim().toLowerCase();
+  const all = Object.entries(homePhotos).map(([id, p]) => ({ id, ...p }))
+    .filter(p => effectiveDept(p.uid, p.dept) === "edit" && p.eventCode === code)
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const shown = all.filter(p => !q || String(p.caption || "").toLowerCase().includes(q)
+    || String(p.name || "").toLowerCase().includes(q));
+  let html = `<div class="home-search-box">
+      <input class="home-search-input hp-search-input" type="text" placeholder="Search photos: caption or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homePhotoQ)}">
+    </div>`;
+  if (!all.length) return html + `<div class="empty-wrap"><h3>No photos yet</h3>
+      <p>When Editorial/Digital reps upload from the app's Photos tab, their photos show up here with the captions they wrote.</p></div>`;
+  const reps = new Set(all.map(p => p.uid)).size;
+  html += `<div class="home-vids-summary">${all.length} photo${all.length === 1 ? "" : "s"} from ${reps} rep${reps === 1 ? "" : "s"}</div>`;
+  if (!shown.length) return html + `<div class="home-rem-empty">No photos match that search.</div>`;
+  return html + `<div class="hp-grid">${shown.map(p => {
+    const open = p.webUrl ? `href="${esc(p.webUrl)}" target="_blank" rel="noopener"` : "";
+    return `<div class="hp-card">
+      <a class="hp-thumb" ${open}>${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : `<span class="hp-noimg">${PH_CAMERA}</span>`}</a>
+      <div class="hp-body">
+        <div class="hp-cap${p.caption ? "" : " none"}">${esc(p.caption || "No caption")}</div>
+        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}</div>
+        <div class="hp-actions">${p.webUrl ? `<a class="home-rem-btn watch" ${open}>Open</a>` : ""}
+          <button class="home-rem-btn hide" type="button" data-photo-del="${esc(p.id)}" title="Remove from the bullpen. The file stays in SharePoint.">Remove</button></div>
+      </div>
+    </div>`;
+  }).join("")}</div>`;
+}
 // The Videos view: one flat list of every video-flagged booth across every
 // Editorial/Digital rep. Reps who flagged the SAME booth share one card (a
 // video only needs making once); its done button covers all of them. Ready-
@@ -6233,6 +6293,13 @@ document.getElementById("content").addEventListener("click", e => {
   if (vdg) { toggleVideoDoneGroup(vdg.dataset.vdgCode, vdg.dataset.vdgB); return; }
   const wk = e.target.closest("[data-work-code]");
   if (wk) { toggleWorkingOn(wk.dataset.workCode, wk.dataset.workB); return; }
+  const pdel = e.target.closest("[data-photo-del]");
+  if (pdel) {
+    if (confirm("Remove this photo from the bullpen? The file stays in the SharePoint folder."))
+      fbDb.collection("photos").doc(pdel.dataset.photoDel).delete()
+        .catch(() => toast("Couldn't remove (are the latest Firestore rules published?)"));
+    return;
+  }
   const hm = e.target.closest("[data-home-member]");
   if (hm) { try { localStorage.setItem("home_member", hm.dataset.homeMember); } catch (err) {} renderHomeDashboard(); return; }
   if (e.target.closest("[data-home-member-switch]")) { try { localStorage.removeItem("home_member"); } catch (err) {} renderHomeDashboard(); return; }
@@ -6584,6 +6651,7 @@ document.getElementById("content").addEventListener("click", e => {
 
 document.getElementById("content").addEventListener("input", e => {
   if (e.target.classList.contains("hs-search-input")) { homeSchedQ = e.target.value; renderHomeDashboard(); return; }
+  if (e.target.classList.contains("hp-search-input")) { homePhotoQ = e.target.value; renderHomeDashboard(); return; }
   if (e.target.classList.contains("home-search-input")) { homeSearchQ = e.target.value; renderHomeDashboard(); return; }
   if (e.target.id === "mealCompanyInp") { mealFormCompany = e.target.value; return; }
   if (e.target.id === "mealNotesInp")   { mealFormNotes   = e.target.value; return; }
@@ -6930,7 +6998,7 @@ function renderPhotosView() {
     return `<div class="ph-row" data-ph-row="${p.id}">
       ${p.url ? `<img class="ph-thumb" src="${p.url}" alt="">` : `<div class="ph-thumb ph-thumb-vid">&#9654;</div>`}
       <div class="ph-row-main">
-        <input class="ph-cap" type="text" data-ph-cap="${p.id}" value="${esc(p.caption)}" placeholder="Caption, e.g. Rinnai front display" maxlength="80" autocomplete="off"${locked ? " disabled" : ""}>
+        <input class="ph-cap" type="text" data-ph-cap="${p.id}" value="${esc(p.caption)}" placeholder="${edit ? "Caption for the bullpen, e.g. Rinnai front display" : "Caption, e.g. Rinnai front display"}" maxlength="120" autocomplete="off"${locked ? " disabled" : ""}>
         ${status}
       </div>
       ${locked ? "" : `<button class="ph-del" type="button" data-ph-del="${p.id}" aria-label="Remove">&#10005;</button>`}
@@ -6942,7 +7010,7 @@ function renderPhotosView() {
       <div class="ph-queue-head">${photoUploading ? "Uploading…" : waiting ? waiting + " " + noun(waiting) + " ready" : "All sent"}</div>
       ${rows}
       ${photoUploading || !waiting ? "" : `<button class="ph-btn" type="button" data-ph-send>Upload ${waiting} ${noun(waiting)}</button>`}
-      <p class="ph-sub">Captions become the file names, so the bullpen knows what each one shows. Keep the app open until they finish.</p>
+      <p class="ph-sub">${edit ? "Captions show up in the bullpen with each photo and become the file names." : "Captions become the file names, so the bullpen knows what each one shows."} Keep the app open until they finish.</p>
     </div>` : "";
   el.innerHTML = `<div class="ph-wrap">
     <div class="ph-card">${head}
@@ -6990,6 +7058,7 @@ async function sendPhotos() {
       p.state = "done";
       p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
       batch.push(p);
+      recordPhoto(p);                // bullpen Photos view (Editorial/Digital + Events)
     } catch (e) { p.state = "err"; }
     refreshPhotos();
   }
@@ -7006,6 +7075,41 @@ async function sendPhotos() {
     photoQueue = photoQueue.filter(p => p.state !== "done");
     refreshPhotos();
   }, 2500);
+}
+// Editorial/Digital and Events photos also land in the bullpen's Photos view:
+// one Firestore record per photo with the caption exactly as typed (the file
+// name is a sanitized copy), who sent it, the SharePoint link and a small
+// JPEG thumbnail made on the phone, so the desk can browse without opening
+// SharePoint. Sales photos stay out of the bullpen, like the rest of Sales'
+// data (they still reach the folder and the Teams alert).
+function recordPhoto(p) {
+  if (!fbReady || !currentUser || !myNotesAutoShare() || /^video\//.test(p.file.type)) return;
+  const code = currentEventCode();
+  photoThumb(p.file).catch(() => "").then(thumb => fbDb.collection("photos").add({
+    uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
+    eventCode: code, brand: brandOfCode(code),
+    caption: String(p.caption || "").trim().slice(0, 200),
+    fileName: p.upName || "", webUrl: p.webUrl || "",
+    thumb: thumb || "", ts: Date.now()
+  })).catch(() => {});
+}
+function photoThumb(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, 320 / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * r));
+      c.height = Math.max(1, Math.round(img.naturalHeight * r));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      const out = c.toDataURL("image/jpeg", 0.6);
+      out.length < 78000 ? resolve(out) : reject(new Error("thumb-too-big"));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("thumb")); };
+    img.src = url;
+  });
 }
 // The bullpen hears about every upload: one Teams alert per batch (a 20-photo
 // dump is one message, not 20) with the count, who sent them and each
@@ -7025,7 +7129,8 @@ function notifyPhotosUploaded(batch) {
   const list = labels.length <= 6 ? joinAnd(labels) : labels.slice(0, 5).join(", ") + " and " + (labels.length - 5) + " more";
   const folder = msUploadFolderUrl();
   notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + ": " + list +
-    (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : "."));
+    (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : ".") +
+    (myNotesAutoShare() ? ' · <a href="' + APP_LINK + '">See them in the bullpen</a>' : ""));
 }
 document.getElementById("photoFileInput").addEventListener("change", e => {
   const files = [...(e.target.files || [])];
@@ -8055,8 +8160,10 @@ function showSignedOut() {
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
   if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
   if (_homeVdUnsub) { _homeVdUnsub(); _homeVdUnsub = null; }
+  if (_homePhotosUnsub) { _homePhotosUnsub(); _homePhotosUnsub = null; }
   if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
   homeNotes = {};
+  homePhotos = {}; homePhotoQ = "";
   homeFlags = {};
   homeSchedules = {};
   homeVideoStatus = {};
@@ -8207,7 +8314,7 @@ if (fbReady) {
           const savedBrand = localStorage.getItem("home_brand") || "";
           homeBrandFilter = HOME_FILTER_BRANDS.includes(savedBrand) ? savedBrand : "";
           const savedView = localStorage.getItem("home_view");
-          if (savedView === "sched" || savedView === "videos") homeView = savedView;
+          if (savedView === "sched" || savedView === "videos" || savedView === "photos") homeView = savedView;
         } catch (e) {}
         applyBrand(homeBrandFilter || "ncm");
         updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen");
@@ -8215,6 +8322,7 @@ if (fbReady) {
         subscribeHomeFlags();
         subscribeHomeSchedules();
         subscribeHomeVideoStatus();
+        subscribeHomePhotos();
         subscribeNotifyConfig();
         renderHomeDashboard();
         return;
