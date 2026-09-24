@@ -385,7 +385,6 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   overflow: hidden;
   box-shadow: var(--shadow);
   background: var(--surface);
-  animation: fadeUp 0.3s ease both;
 }
 .row-section:last-child { margin-bottom: 10px; }
 .row-header {
@@ -816,7 +815,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .empty-wrap {
   padding: 64px 28px 40px;
   text-align: center;
-  animation: fadeIn 0.3s ease;
 }
 .empty-wrap h3 {
   font-family: var(--fd);
@@ -1010,7 +1008,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   margin-bottom: 5px;
   box-shadow: var(--shadow-sm);
   border-left: 3px solid var(--blue);
-  animation: fadeUp 0.2s ease both;
 }
 .sched-card.visited { border-left-color: var(--green); background: #F6FBF8; }
 .sched-card-info { flex: 1; min-width: 0; }
@@ -1052,7 +1049,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 /* Full card embedded in a schedule time slot */
 .sched-slot-card {
   margin: 0 0 10px;
-  animation: fadeUp 0.2s ease both;
 }
 .sched-slot-card .co-card { margin-bottom: 0; }
 .sched-rm-link {
@@ -1075,7 +1071,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   padding: 36px 22px 22px;
   text-align: center;
   color: var(--muted);
-  animation: fadeIn 0.3s ease;
 }
 .sched-empty h4 { font-family: var(--fd); font-weight: 800; font-size: 1.02rem; color: var(--text); margin-bottom: 6px; }
 .sched-empty p { font-size: 0.81rem; line-height: 1.55; max-width: 300px; margin: 0 auto; }
@@ -1164,7 +1159,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   border-radius: var(--radius-md);
   padding: 14px;
   box-shadow: var(--shadow);
-  animation: fadeUp 0.2s ease both;
 }
 .meal-form-title {
   font-family: var(--fd);
@@ -1260,7 +1254,6 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   margin: 0 0 8px;
   box-shadow: var(--shadow-sm);
   border-left: 3px solid var(--maroon);
-  animation: fadeUp 0.2s ease both;
 }
 .meal-card-icon {
   flex-shrink: 0;
@@ -1760,7 +1753,7 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .ph-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: var(--border-soft); }
 .ph-thumb-vid { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.1rem; }
 .ph-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.ph-cap { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 9px; font-family: var(--ft); font-size: 16px; color: var(--text); background: var(--surface); }
+.ph-cap { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 9px; font-family: var(--ft); font-size: 16px; line-height: 1.35; color: var(--text); background: var(--surface); resize: none; overflow: hidden; min-height: 44px; display: block; }
 .ph-cap:focus { outline: none; border-color: var(--blue); }
 .ph-cap:disabled { opacity: 0.7; }
 .ph-status { font-size: 0.72rem; font-weight: 700; color: var(--blue); }
@@ -1961,7 +1954,12 @@ body.home-mode .user-chip-gear { display: none !important; }
 .hp-noimg { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--muted); }
 .hp-noimg svg { width: 32px; height: 32px; }
 .hp-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-.hp-cap { font-weight: 700; font-size: 0.86rem; color: var(--text); line-height: 1.35; overflow-wrap: anywhere; }
+.hp-cap-row { display: flex; align-items: flex-start; gap: 8px; }
+.hp-cap { flex: 1; min-width: 0; font-weight: 700; font-size: 0.86rem; color: var(--text); line-height: 1.35; overflow-wrap: anywhere; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.hp-cap.open { display: block; -webkit-line-clamp: unset; }
+.hp-cap[data-hp-more] { cursor: pointer; }
+.hp-copy { flex-shrink: 0; font-family: var(--ft); font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--blue-mid); background: var(--blue-light); color: var(--blue); cursor: pointer; }
+.hp-copy:active { opacity: 0.7; }
 .hp-cap.none { color: var(--muted); font-weight: 600; font-style: italic; }
 .hp-meta { font-size: 0.72rem; color: var(--muted); }
 .hp-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; align-items: center; }
@@ -2084,6 +2082,14 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
    tab, day tab, filter pill, home tab/brand). render() calls on the same
    screen — visit taps, note syncs, search keystrokes — never replay it. */
 #content.view-in { animation: viewIn 0.15s ease-out; }
+/* Card entrances play only while .view-in is on, one beat after the SCREEN
+   changes (see viewTransition). They used to sit on the cards themselves,
+   so every background redraw (a teammate's schedule syncing in, a visit
+   tap, a video marked done, a search keystroke) replayed them and the list
+   blinked: the "random flashing". */
+#content.view-in .row-section { animation: fadeUp 0.3s ease both; }
+#content.view-in .sched-card, #content.view-in .sched-slot-card, #content.view-in .meal-card { animation: fadeUp 0.2s ease both; }
+#content.view-in .empty-wrap, #content.view-in .sched-empty { animation: fadeIn 0.3s ease; }
 /* Opacity-only, and from 0.3 rather than 0: a slide would repaint the whole
    (sometimes 900-booth) content layer against the sticky header, and a full
    blink from 0 reads as flicker when you're tapping between tabs quickly.
@@ -2258,7 +2264,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v141</div>
+      <div class="pf-ver">NCM Events Guide · v142</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4693,19 +4699,14 @@ async function msSilentToken() {
   _msTok = { token: r.accessToken, exp: r.expiresOn ? new Date(r.expiresOn).getTime() : Date.now() + 50 * 60e3 };
   return r.accessToken;
 }
-let _msWarmTried = false;
 async function msWarmToken() {
   if (!uploadCfg || !msAccount() || !navigator.onLine) return;
-  try { await msSilentToken(); }
-  catch (e) {
-    // Silent renewal is over (the 24h window): do the round trip NOW, at
-    // launch, while nobody is holding a video. Once per session, no loops.
-    if (_msWarmTried || sessionStorage.getItem("ncm_ms_relogin")) return;
-    _msWarmTried = true;
-    sessionStorage.setItem("ncm_ms_relogin", "1");
-    sessionStorage.setItem("ncm_ms_signin", "refresh");
-    try { await msalApp.acquireTokenRedirect({ scopes: MS_SCOPES, account: msAccount() }); } catch (e2) {}
-  }
+  // Quiet only. When silent renewal has lapsed (Microsoft's ~24h window),
+  // the Upload / Choose photos tap does the sign-in round trip BEFORE its
+  // picker opens, so no file is ever at risk. (v123-v141 did that round trip
+  // here at launch instead, which made the app blink away and back once a
+  // day for anyone connected.)
+  try { await msSilentToken(); } catch (e) {}
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && msalApp && msAccount() && !msTokenFresh())
@@ -5389,6 +5390,22 @@ function renderHomeDashboard() {
 let homePhotos = {};               // docId -> photo record (home side)
 let _homePhotosUnsub = null;
 let homePhotoQ = "";
+const homePhotoOpen = new Set();   // ids of long captions expanded this session
+// Clipboard with a fallback for browsers that refuse the async API.
+function copyText(t) {
+  if (!t) return Promise.resolve(false);
+  const fallback = () => {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand("copy"); ta.remove(); return ok;
+    } catch (e) { return false; }
+  };
+  return (navigator.clipboard && window.isSecureContext)
+    ? navigator.clipboard.writeText(t).then(() => true, fallback)
+    : Promise.resolve(fallback());
+}
 function subscribeHomePhotos() {
   if (_homePhotosUnsub) { _homePhotosUnsub(); _homePhotosUnsub = null; }
   homePhotos = {};
@@ -5420,7 +5437,10 @@ function buildHomePhotosView() {
     return `<div class="hp-card">
       <a class="hp-thumb" ${open}>${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : `<span class="hp-noimg">${PH_CAMERA}</span>`}</a>
       <div class="hp-body">
-        <div class="hp-cap${p.caption ? "" : " none"}">${esc(p.caption || "No caption")}</div>
+        <div class="hp-cap-row">
+          <div class="hp-cap${p.caption ? "" : " none"}${homePhotoOpen.has(p.id) ? " open" : ""}"${String(p.caption || "").length > 140 ? ` data-hp-more="${esc(p.id)}" title="Click to show all"` : ""}>${esc(p.caption || "No caption")}</div>
+          ${p.caption ? `<button class="hp-copy" type="button" data-photo-copy="${esc(p.id)}" title="Copy the caption">Copy</button>` : ""}
+        </div>
         <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}</div>
         <div class="hp-actions">${p.webUrl ? `<a class="home-rem-btn watch" ${open}>Open</a>` : ""}
           <button class="home-rem-btn hide" type="button" data-photo-del="${esc(p.id)}" title="Remove from the bullpen. The file stays in SharePoint.">Remove</button></div>
@@ -5814,6 +5834,7 @@ function buildCard(c, state) {
 // screen render() calls — visit taps, sync refreshes, search keystrokes —
 // keep the same key and paint instantly, so nothing flickers mid-use.
 let _paintKey = null;
+let _viewInTimer = null;
 function viewTransition(key) {
   const el = document.getElementById("content");
   if (!el || _paintKey === key) return;
@@ -5821,6 +5842,10 @@ function viewTransition(key) {
   el.classList.remove("view-in");
   void el.offsetWidth;                    // restart the CSS animation
   el.classList.add("view-in");
+  // Off again once the entrance has played, so later redraws of the same
+  // screen don't replay the card animations.
+  clearTimeout(_viewInTimer);
+  _viewInTimer = setTimeout(() => el.classList.remove("view-in"), 400);
 }
 function render() {
   // Always first: the Settings card is a real DOM node living in #content
@@ -6293,6 +6318,19 @@ document.getElementById("content").addEventListener("click", e => {
   if (vdg) { toggleVideoDoneGroup(vdg.dataset.vdgCode, vdg.dataset.vdgB); return; }
   const wk = e.target.closest("[data-work-code]");
   if (wk) { toggleWorkingOn(wk.dataset.workCode, wk.dataset.workB); return; }
+  const pcopy = e.target.closest("[data-photo-copy]");
+  if (pcopy) {
+    const rec = homePhotos[pcopy.dataset.photoCopy];
+    copyText(rec && rec.caption).then(ok => toast(ok ? "Caption copied" : "Couldn't copy here. Select the caption text instead"));
+    return;
+  }
+  const pmore = e.target.closest("[data-hp-more]");
+  if (pmore) {
+    const id = pmore.dataset.hpMore;
+    homePhotoOpen.has(id) ? homePhotoOpen.delete(id) : homePhotoOpen.add(id);
+    pmore.classList.toggle("open", homePhotoOpen.has(id));
+    return;
+  }
   const pdel = e.target.closest("[data-photo-del]");
   if (pdel) {
     if (confirm("Remove this photo from the bullpen? The file stays in the SharePoint folder."))
@@ -6971,7 +7009,50 @@ const PH_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 let photoQueue = [];               // { id, file, url, caption, state: ready|up|done|err, pct }
 let photoUploading = false;
 function msHasLogin() { return !!msAccount() || Object.keys(localStorage).some(k => k.indexOf("msal.") === 0); }
-function refreshPhotos() { if (activeView === "photos" && !isHome()) render(); }
+// Status changes during an upload update the rows in place: re-rendering the
+// whole tab reloaded every thumbnail, which flashed. A full render happens
+// only when photos are added or removed.
+function refreshPhotos() {
+  if (activeView !== "photos" || isHome()) return;
+  const onScreen = [...document.querySelectorAll("[data-ph-row]")].map(r => r.dataset.phRow);
+  const same = onScreen.length && onScreen.length === photoQueue.length && photoQueue.every((p, i) => p.id === onScreen[i]);
+  if (!same) { render(); return; }
+  photoQueue.forEach(p => {
+    const row = document.querySelector('[data-ph-row="' + p.id + '"]');
+    if (!row) return;
+    const locked = photoLocked(p);
+    row.querySelector(".ph-cap").disabled = locked;
+    row.querySelector(".ph-status-slot").innerHTML = photoStatusHtml(p);
+    row.querySelector(".ph-del").style.display = locked ? "none" : "";
+  });
+  const head = document.querySelector(".ph-queue-head");
+  if (head) head.textContent = photoQueueHeadText();
+  const slot = document.querySelector(".ph-send-slot");
+  if (slot) slot.innerHTML = photoSendHtml();
+}
+// Caption boxes grow with the text up to about eight lines, then scroll.
+function fitCaption(t) {
+  t.style.height = "auto";
+  const full = t.scrollHeight + 2;
+  t.style.height = Math.min(full, 220) + "px";
+  t.style.overflowY = full > 220 ? "auto" : "hidden";
+}
+function photoLocked(p) { return p.state === "up" || p.state === "done" || photoUploading; }
+function photoNoun(n) { return myNotesAutoShare() ? (n === 1 ? "photo" : "photos") : (n === 1 ? "file" : "files"); }
+function photoWaiting() { return photoQueue.filter(p => p.state === "ready" || p.state === "err").length; }
+function photoStatusHtml(p) {
+  return p.state === "up" ? `<span class="ph-status" data-ph-pct="${p.id}">Uploading ${p.pct || 0}%</span>`
+    : p.state === "done" ? `<span class="ph-status ok">✓ Uploaded</span>`
+    : p.state === "err" ? `<span class="ph-status err">Didn't finish. It'll retry with the next upload</span>` : "";
+}
+function photoQueueHeadText() {
+  const w = photoWaiting();
+  return photoUploading ? "Uploading…" : w ? w + " " + photoNoun(w) + " ready" : "All sent";
+}
+function photoSendHtml() {
+  const w = photoWaiting();
+  return photoUploading || !w ? "" : `<button class="ph-btn" type="button" data-ph-send>Upload ${w} ${photoNoun(w)}</button>`;
+}
 function renderPhotosView() {
   document.body.classList.add("in-photos");
   const el = document.getElementById("content");
@@ -6991,25 +7072,20 @@ function renderPhotosView() {
     : `<button class="ph-btn" type="button" data-ph-connect>Connect Microsoft account</button>
        <p class="ph-sub">One time, with your NCM login (same as Outlook). You'll come right back here.</p>`;
   const rows = photoQueue.map(p => {
-    const busy = p.state === "up", done = p.state === "done", locked = busy || done || photoUploading;
-    const status = busy ? `<span class="ph-status" data-ph-pct="${p.id}">Uploading ${p.pct || 0}%</span>`
-      : done ? `<span class="ph-status ok">✓ Uploaded</span>`
-      : p.state === "err" ? `<span class="ph-status err">Didn't finish. It'll retry with the next upload</span>` : "";
+    const locked = photoLocked(p);
     return `<div class="ph-row" data-ph-row="${p.id}">
       ${p.url ? `<img class="ph-thumb" src="${p.url}" alt="">` : `<div class="ph-thumb ph-thumb-vid">&#9654;</div>`}
       <div class="ph-row-main">
-        <input class="ph-cap" type="text" data-ph-cap="${p.id}" value="${esc(p.caption)}" placeholder="${edit ? "Caption for the bullpen, e.g. Rinnai front display" : "Caption, e.g. Rinnai front display"}" maxlength="120" autocomplete="off"${locked ? " disabled" : ""}>
-        ${status}
+        <textarea class="ph-cap" data-ph-cap="${p.id}" rows="2" placeholder="${edit ? "Caption for the bullpen, e.g. Rinnai front display" : "Caption, e.g. Rinnai front display"}" maxlength="2200" autocomplete="off"${locked ? " disabled" : ""}>${esc(p.caption)}</textarea>
+        <div class="ph-status-slot">${photoStatusHtml(p)}</div>
       </div>
-      ${locked ? "" : `<button class="ph-del" type="button" data-ph-del="${p.id}" aria-label="Remove">&#10005;</button>`}
+      <button class="ph-del" type="button" data-ph-del="${p.id}" aria-label="Remove"${locked ? ' style="display:none"' : ""}>&#10005;</button>
     </div>`;
   }).join("");
-  const waiting = photoQueue.filter(p => p.state === "ready" || p.state === "err").length;
-  const noun = n => edit ? (n === 1 ? "photo" : "photos") : (n === 1 ? "file" : "files");
   const queue = photoQueue.length ? `<div class="ph-card ph-queue">
-      <div class="ph-queue-head">${photoUploading ? "Uploading…" : waiting ? waiting + " " + noun(waiting) + " ready" : "All sent"}</div>
+      <div class="ph-queue-head">${photoQueueHeadText()}</div>
       ${rows}
-      ${photoUploading || !waiting ? "" : `<button class="ph-btn" type="button" data-ph-send>Upload ${waiting} ${noun(waiting)}</button>`}
+      <div class="ph-send-slot">${photoSendHtml()}</div>
       <p class="ph-sub">${edit ? "Captions show up in the bullpen with each photo and become the file names." : "Captions become the file names, so the bullpen knows what each one shows."} Keep the app open until they finish.</p>
     </div>` : "";
   el.innerHTML = `<div class="ph-wrap">
@@ -7021,6 +7097,8 @@ function renderPhotosView() {
     ${edit ? `<div class="ph-note"><strong>Booth videos</strong> have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen.</div>` : ""}
     ${edit && m.folder ? `<button class="ph-link" type="button" data-ph-folder>Browse the shared folder</button>` : ""}
   </div>`;
+  // Long captions keep their full height after a redraw.
+  el.querySelectorAll(".ph-cap").forEach(t => { if (t.value) fitCaption(t); });
 }
 // Same token rules as booth videos: the picker opens only with a fresh token
 // in hand (synchronously, or iOS drops it), so picked photos can never be
@@ -7088,7 +7166,7 @@ function recordPhoto(p) {
   photoThumb(p.file).catch(() => "").then(thumb => fbDb.collection("photos").add({
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
-    caption: String(p.caption || "").trim().slice(0, 200),
+    caption: String(p.caption || "").trim().slice(0, 2200),
     fileName: p.upName || "", webUrl: p.webUrl || "",
     thumb: thumb || "", ts: Date.now()
   })).catch(() => {});
@@ -7123,7 +7201,8 @@ function notifyPhotosUploaded(batch) {
   const nVid = batch.filter(p => /^video\//.test(p.file.type)).length, nPh = batch.length - nVid;
   const what = joinAnd([nPh ? nPh + " photo" + (nPh === 1 ? "" : "s") : "", nVid ? nVid + " video" + (nVid === 1 ? "" : "s") : ""].filter(Boolean));
   const labels = batch.map(p => {
-    const label = esc(p.caption.trim() || p.upName || "Untitled");
+    const cap = p.caption.trim();
+    const label = esc(cap ? (cap.length > 80 ? cap.slice(0, 78).trimEnd() + "…" : cap) : (p.upName || "Untitled"));
     return p.webUrl ? '<a href="' + esc(p.webUrl) + '">' + label + '</a>' : label;
   });
   const list = labels.length <= 6 ? joinAnd(labels) : labels.slice(0, 5).join(", ") + " and " + (labels.length - 5) + " more";
@@ -7165,6 +7244,7 @@ document.getElementById("content").addEventListener("input", e => {
   if (!cap) return;
   const p = photoQueue.find(x => x.id === cap.dataset.phCap);
   if (p) p.caption = cap.value;
+  fitCaption(cap);                                             // grow with the caption
 });
 
 function toast(msg) {
@@ -8420,8 +8500,10 @@ if ("serviceWorker" in navigator) {
           if (swUpdatePending && !swRefreshing) { swRefreshing = true; location.reload(); }
           return;
         }
+        // A waiting update applies the next time the app goes to the
+        // background (above) or on a fresh launch, never the moment someone
+        // returns to it (that read as the app flashing at random).
         reg.update().catch(() => {});
-        if (swUpdatePending && !swRefreshing) { swRefreshing = true; location.reload(); }
       });
     }).catch(() => {});
   });
