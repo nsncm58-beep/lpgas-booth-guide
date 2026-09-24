@@ -2246,7 +2246,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v139</div>
+      <div class="pf-ver">NCM Events Guide · v140</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6976,21 +6976,25 @@ async function sendPhotos() {
   catch (e) { toast("Microsoft sign-in expired. Reconnect under Profile, then pick the photos again"); return; }
   photoUploading = true;
   refreshPhotos();
+  const batch = [];                // this run's successes, for the Teams alert
   for (const p of photoQueue) {
     if (p.state !== "ready" && p.state !== "err") continue;
     p.state = "up"; p.pct = 0;
     refreshPhotos();
     try {
-      await msUploadNamed(msPhotoName(p.caption, p.file), p.file, pct => {
+      const item = await msUploadNamed(msPhotoName(p.caption, p.file), p.file, pct => {
         p.pct = pct;
         const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
         if (s) s.textContent = "Uploading " + pct + "%";
       });
       p.state = "done";
+      p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
+      batch.push(p);
     } catch (e) { p.state = "err"; }
     refreshPhotos();
   }
   photoUploading = false;
+  notifyPhotosUploaded(batch);
   const ok = photoQueue.filter(p => p.state === "done").length;
   const bad = photoQueue.filter(p => p.state === "err").length;
   toast(bad ? ok + " uploaded, " + bad + " didn't finish. Tap Upload to try again"
@@ -7002,6 +7006,26 @@ async function sendPhotos() {
     photoQueue = photoQueue.filter(p => p.state !== "done");
     refreshPhotos();
   }, 2500);
+}
+// The bullpen hears about every upload: one Teams alert per batch (a 20-photo
+// dump is one message, not 20) with the count, who sent them and each
+// caption linked to its file. Goes through notifyHome like the video
+// alerts, so testMode still routes it to Nate only.
+function joinAnd(arr) { return arr.length <= 1 ? (arr[0] || "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1]; }
+function notifyPhotosUploaded(batch) {
+  if (!batch.length) return;
+  const code = currentEventCode();
+  const who = (currentUser && currentUser.name) || "A rep";
+  const nVid = batch.filter(p => /^video\//.test(p.file.type)).length, nPh = batch.length - nVid;
+  const what = joinAnd([nPh ? nPh + " photo" + (nPh === 1 ? "" : "s") : "", nVid ? nVid + " video" + (nVid === 1 ? "" : "s") : ""].filter(Boolean));
+  const labels = batch.map(p => {
+    const label = esc(p.caption.trim() || p.upName || "Untitled");
+    return p.webUrl ? '<a href="' + esc(p.webUrl) + '">' + label + '</a>' : label;
+  });
+  const list = labels.length <= 6 ? joinAnd(labels) : labels.slice(0, 5).join(", ") + " and " + (labels.length - 5) + " more";
+  const folder = msUploadFolderUrl();
+  notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + ": " + list +
+    (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : "."));
 }
 document.getElementById("photoFileInput").addEventListener("change", e => {
   const files = [...(e.target.files || [])];
