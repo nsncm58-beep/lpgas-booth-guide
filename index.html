@@ -7,12 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0E2A3F">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<!-- Solid status bar (v137), colored by theme-color. The see-through
-     black-translucent style hits iOS 26 WebKit bug 301108 (screen-filling
-     layouts sized one status bar short). Start with the header color this
-     device showed last, so the bar doesn't flash navy before sign-in. -->
-<script>try { var c = localStorage.getItem("ncm_bar_color"); if (c) document.querySelector('meta[name="theme-color"]').setAttribute("content", c); } catch (e) {}</script>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NCM Events"><!-- home-screen icon label; kept short on purpose (full name: NCM Events Guide) -->
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" href="favicon.png?v=2">
@@ -2052,31 +2047,6 @@ html { background: var(--bg); }
   z-index: 149;
 }
 body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bottomBleed { display: none; }
-/* ── Shell mode (v137): iPhone home-screen app with the solid status bar.
-   The page itself never scrolls or bounces. The header, the content and the
-   bottom bar are three rows of one screen-sized column, and only #appScroll
-   (the tan content) scrolls, with its own soft bounce, so the colored header
-   and the bar stay perfectly still while the content bounces between them.
-   JS adds html.shell only after checking the window is sized right (see
-   checkShell); everywhere else the page scrolls as above. */
-html.shell { height: 100%; overflow: hidden; overscroll-behavior: none; }
-html.shell body {
-  position: fixed; inset: 0; min-height: 0;
-  overflow: hidden; overscroll-behavior: none;
-  display: flex; flex-direction: column;
-}
-html.shell body.has-nav { padding-bottom: 0; }
-html.shell .app-header { position: relative; flex: none; }
-html.shell #appScroll {
-  flex: 1 1 auto; min-height: 0;
-  overflow-x: hidden; overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-html.shell .bottom-nav { position: relative; flex: none; transform: none; }
-html.shell .app-footer { padding-bottom: 92px; }
-html.shell #topBleed, html.shell #bottomBleed { display: none; }
-#safeProbe { position: fixed; top: 0; left: 0; width: 0; height: 0; padding-top: env(safe-area-inset-top, 0px); visibility: hidden; pointer-events: none; }
 
 /* Views: #content fades and rises 7px when the SCREEN changes (bottom-nav
    tab, day tab, filter pill, home tab/brand). render() calls on the same
@@ -2157,7 +2127,6 @@ html.shell #topBleed, html.shell #bottomBleed { display: none; }
 <body>
 <div id="topBleed" aria-hidden="true"></div>
 <div id="bottomBleed" aria-hidden="true"></div>
-<div id="safeProbe" aria-hidden="true"></div>
 
 <header class="app-header">
   <div class="header-top">
@@ -2190,16 +2159,12 @@ html.shell #topBleed, html.shell #bottomBleed { display: none; }
   <div class="progress-strip"><div class="bar" id="progBar"></div></div>
 </header>
 
-<!-- In shell mode (html.shell) only this area scrolls; otherwise it's a
-     plain block and the page scrolls. -->
-<div id="appScroll">
 <div id="content"></div>
 
 <datalist id="co-datalist"></datalist>
 
 <div class="app-footer">
   Notes save automatically. Export your show data from your Profile.
-</div>
 </div>
 
 <!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
@@ -2260,7 +2225,7 @@ html.shell #topBleed, html.shell #bottomBleed { display: none; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v137</div>
+      <div class="pf-ver">NCM Events Guide · v138</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4166,11 +4131,10 @@ function applyBrand(brandKey) {
   r.setProperty("--maroon", p.maroon);
   r.setProperty("--maroon-light", p.maroonLight);
   r.setProperty("--fd", b.font || "'Forza', sans-serif");
-  // The solid status bar takes theme-color: match the header so the colored
-  // top reads as one still block (and remember it for the next launch).
+  // theme-color matches the header: no effect under the see-through status
+  // bar, but a phone still holding v137's solid bar shows it in the header color.
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", p.blue);
-  try { localStorage.setItem("ncm_bar_color", p.blue); } catch (e) {}
   return b;
 }
 function updateHeaderBrand(brandKey, show) {
@@ -6636,55 +6600,19 @@ document.getElementById("content").addEventListener("change", e => {
 // Each tab keeps its own place, like a native tab bar, and tapping the tab
 // you're already on jumps back to the top. A fresh launch always opens on
 // Schedule at the top (the browser never restores an old scroll spot).
-// In shell mode (below) #appScroll scrolls; otherwise the page does.
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-const tabScroll = {};              // view -> scroll position
-function shellOn() { return document.documentElement.classList.contains("shell"); }
-function scrollPos() { return shellOn() ? document.getElementById("appScroll").scrollTop : window.scrollY; }
+const tabScroll = {};              // view -> scrollY
 function scrollAppTo(y, smooth) {
-  const s = shellOn() ? document.getElementById("appScroll") : window;
-  if (smooth) s.scrollTo({ top: y, behavior: "smooth" });
-  else s.scrollTo(0, y);
+  if (smooth) window.scrollTo({ top: y, behavior: "smooth" });
+  else window.scrollTo(0, y);
 }
 function forgetTabScroll() { Object.keys(tabScroll).forEach(k => delete tabScroll[k]); }
-// After the keyboard closes, iOS sometimes leaves the page out of place:
-// scrolled past its end on the scrolling page, or nudged at all in shell mode
-// (where the page itself never scrolls). Put it back.
+// After the keyboard closes, iOS sometimes leaves the page scrolled past its
+// end (a blank band under the content). Pull it back into range.
 function settlePage() {
-  if (shellOn()) { if (window.scrollY || window.scrollX) window.scrollTo(0, 0); return; }
   const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   if (window.scrollY > max) window.scrollTo(0, max);
 }
-// ── SHELL MODE ────────────────────────────────────────────────────────────
-// iPhone home-screen app: the colored header and the bottom bar stay still
-// and only the tan content scrolls and bounces (html.shell, see the CSS). It
-// relies on the solid status bar: with the old see-through one, iOS 26 sizes
-// a screen-filling layout one status bar short (WebKit bug 301108) and the
-// bottom bar floats above the edge. iOS can keep an install on its old status
-// bar until the app is re-added, so after switching on, this checks the real
-// window and falls back to the scrolling page if it comes up short.
-const IS_IOS_APP = /iPhone|iPad|iPod/.test(navigator.userAgent)
-  && (navigator.standalone === true || matchMedia("(display-mode: standalone)").matches);
-function checkShell() {
-  const root = document.documentElement;
-  const was = root.classList.contains("shell");
-  if (IS_IOS_APP) {
-    root.classList.add("shell");
-    const probe = document.getElementById("safeProbe");
-    const top = probe ? (parseFloat(getComputedStyle(probe).paddingTop) || 0) : 0;
-    const h = document.body.getBoundingClientRect().height;
-    const screenH = matchMedia("(orientation: landscape)").matches
-      ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-    // Bug 301108's signature: content drawn up under the status bar (top > 0)
-    // but the window sized short of the screen (by exactly that inset).
-    if (top > 0 && h < screenH - 1) root.classList.remove("shell");
-  } else {
-    root.classList.remove("shell");
-  }
-  if (was !== root.classList.contains("shell")) forgetTabScroll();
-}
-checkShell();
-window.addEventListener("orientationchange", () => setTimeout(checkShell, 350));
 // Back after a real break (5+ minutes away): start fresh on Schedule, today's
 // day, at the top. Quick hops, like out to the camera, keep your place.
 const FRESH_AFTER_MS = 5 * 60e3;
@@ -6712,7 +6640,7 @@ document.getElementById("bottomNav").addEventListener("click", e => {
   if (tab) {
     const v = tab.dataset.v;
     if (v === activeView) { scrollAppTo(0, true); return; }
-    tabScroll[activeView] = scrollPos();
+    tabScroll[activeView] = window.scrollY;
     setBottomTab(v);
     render();
     scrollAppTo(tabScroll[v] || 0);
