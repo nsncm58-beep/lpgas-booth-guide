@@ -1503,6 +1503,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .auth-submit:active { background: var(--blue-dark); }
 .auth-submit:disabled { opacity: 0.6; cursor: default; }
 .auth-foot { text-align: center; font-size: 0.74rem; color: var(--muted); margin-top: 14px; line-height: 1.45; }
+.auth-foot a { color: var(--blue); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.auth-foot a:active { opacity: 0.7; }
 .auth-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0 12px; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
 .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .auth-home-btn {
@@ -2084,7 +2086,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v128</div>
+      <div class="settings-dbx-note">NCM Events Guide · v129</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -6580,9 +6582,8 @@ function setAuthMode(mode) {
     f.classList.toggle("hide", mode !== "signup"));
   authEls.submit.textContent = mode === "signup" ? "Create Account" : "Sign In";
   authEls.pass.autocomplete = mode === "signup" ? "new-password" : "current-password";
-  authEls.foot.textContent = mode === "signup"
-    ? "Field reps: create an account and pick your brand."
-    : "Welcome back. Sign in to sync with your team.";
+  if (mode === "signup") authEls.foot.textContent = "Field reps: create an account and pick your brand.";
+  else authEls.foot.innerHTML = 'Welcome back. Sign in to sync with your team. <a href="#" id="authForgot">Forgot password?</a>';
 }
 function authErr(msg) { authEls.err.textContent = msg || ""; }
 function mapAuthError(e) {
@@ -6592,8 +6593,29 @@ function mapAuthError(e) {
   if (c.includes("email-already-in-use")) return "That email already has an account — try Sign In.";
   if (c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("user-not-found")) return "Email or password is incorrect.";
   if (c.includes("operation-not-allowed") || c.includes("configuration-not-found")) return "Email/Password sign-in isn't enabled in Firebase yet.";
-  if (c.includes("network")) return "Network error — check your connection.";
+  if (c.includes("network")) return "Network error. Check your connection.";
   return (e && e.message) || "Something went wrong. Try again.";
+}
+// Forgot password: Firebase emails a reset link to the address in the email
+// field. Nothing for Nate to do per rep; the only console-side work is the
+// optional email template polish (Authentication > Templates).
+let _resetBusy = false;
+async function sendPasswordReset() {
+  const email = authEls.email.value.trim();
+  if (!email) { authErr("Type your email above first, then tap Forgot password."); authEls.email.focus(); return; }
+  if (!fbReady) { authErr("Can't reach the sign-in service right now. Try again in a minute."); return; }
+  if (_resetBusy) return;
+  _resetBusy = true;
+  authErr("");
+  try {
+    await fbAuth.sendPasswordResetEmail(email);
+    authEls.foot.innerHTML = 'Reset link sent to <strong>' + esc(email) + '</strong>. Check your inbox (and junk). Open the link, set a new password, then sign in here. <a href="#" id="authForgot">Send again</a>';
+  } catch (e) {
+    const c = (e && e.code) || "";
+    authErr(c.includes("user-not-found") ? "No account uses that email. Check the spelling, or create an account."
+      : c.includes("too-many-requests") ? "Too many attempts. Wait a few minutes and try again."
+      : mapAuthError(e));
+  } finally { _resetBusy = false; }
 }
 document.querySelectorAll("[data-auth-tab]").forEach(t =>
   t.addEventListener("click", () => setAuthMode(t.dataset.authTab)));
@@ -6602,6 +6624,7 @@ document.getElementById("homeTeamBtn").addEventListener("click", () => {
 });
 authEls.foot.addEventListener("click", e => {
   if (e.target && e.target.id === "homeBack") { e.preventDefault(); setAuthMode("signin"); }
+  if (e.target && e.target.id === "authForgot") { e.preventDefault(); sendPasswordReset(); }
 });
 
 authEls.form.addEventListener("submit", async (e) => {
