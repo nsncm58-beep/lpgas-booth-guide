@@ -1,20 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function myEvent() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.eventCode; }
     function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2', 'roafgq9A27Rrg1DewdCvy2TnxDk1']; }
     function isHome() { return request.auth != null && request.auth.uid in ['OjQ9GnNOF0dm10hkdAZlYyTcCHJ2']; }
     function ownDoc(docId) { return docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'); }
-    // The app is locked to exactly these events. Because a profile's eventCode
-    // must be on this list, myEvent() is always valid too, and everything that
-    // validates against myEvent() (schedules, notes) inherits the lock.
-    // Reps pick a BRAND at signup and the app assigns that brand's current
-    // show, so these codes are never typed by anyone — but they still gate
-    // what can be written. Rolling a brand to a new show = add its code here
-    // AND to CURRENT_SHOW/EVENTS/MEDIA in index.html, then republish these
-    // rules (a rep's automatic rollover writes the new code to their profile,
-    // and that write fails until the code is listed here).
-    function validEvent(c) { return c in ['LPGAS-2026', 'GOLFDOM-2026', 'LM-2026', 'PMP-2026', 'PQ-2026']; }
+    // Show codes are BRAND-SOMETHING (LM-2026, LM-ELEVATE-2026, ...). Brands
+    // hold any number of shows, so the rules accept the shape instead of a
+    // list: adding a show is an app-only deploy, no republish.
+    function validEvent(c) { return c is string && c.matches('^(LPGAS|GOLFDOM|LM|PMP|PQ)-[A-Z0-9-]+$'); }
+    // The signed-in person's profile, and whether a show belongs to one of
+    // the brands they cover (home brand, extra brands, or the brand of the
+    // show their account was created on, for profiles that predate brands).
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function brandOf(c) { return c.split('-')[0].lower(); }
+    function onMyBrand(c) {
+      return brandOf(c) == me().get('brand', '')
+          || brandOf(c) in me().get('brands', [])
+          || brandOf(c) == brandOf(me().get('eventCode', 'X'));
+    }
 
     // Profiles hold names + emails, so reads are limited to yourself, masters
     // and the home account (teammates see names via schedules/notes instead).
@@ -26,13 +29,15 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
-    // isHome(): the home dashboard's Schedules view shows rep agendas read-only.
+    // Schedules: your own always; teammates' for any show on a brand you
+    // cover (the field "whose schedule" picker); the bullpen reads Editorial
+    // ones only (matches its dept-filtered query). You write only your own
+    // docs, for any show.
     match /schedules/{docId} {
-      // Home may only read Editorial/Digital schedules (matches the client's
-      // dept-filtered query); the field team bar reads same-event as before.
-      allow read: if request.auth != null && (resource.data.eventCode == myEvent() || isMaster()
+      allow read: if request.auth != null && (ownDoc(docId) || isMaster()
+                                              || onMyBrand(resource.data.eventCode)
                                               || (isHome() && resource.data.dept == "edit"));
-      allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
+      allow create, update: if request.auth != null && ownDoc(docId) && validEvent(request.resource.data.eventCode);
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
 
@@ -41,7 +46,7 @@ service cloud.firestore {
       // dept field, e.g. Brian's) are unreadable by home and never displayed.
       allow read: if request.auth != null && (ownDoc(docId) || isMaster()
                                               || (isHome() && resource.data.dept == "edit"));
-      allow create, update: if request.auth != null && ownDoc(docId) && (request.resource.data.eventCode == myEvent() || isMaster());
+      allow create, update: if request.auth != null && ownDoc(docId) && validEvent(request.resource.data.eventCode);
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
 

@@ -1625,29 +1625,27 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .user-chip-out:active { background: rgba(255,255,255,0.15); }
 
-/* Master-only brand switcher */
-/* Masters' brand switcher: compact dropdown living inside the user chip */
-.brand-switch-row { display: inline-flex; align-items: center; }
-.brand-switch {
+/* Show picker: compact pill in the user chip; opens the brand + show sheet */
+.show-pick {
   height: 26px;
-  max-width: 108px;
-  padding: 0 20px 0 8px;
+  max-width: 180px;
+  padding: 0 9px 0 10px;
   border-radius: 7px;
   border: 1px solid rgba(255,255,255,0.45);
-  background-color: transparent;
+  background: transparent;
   color: #fff;
   font-family: var(--ft);
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='9' height='5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l3.5 3 3.5-3' stroke='%23ffffff' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
 }
-.brand-switch:focus { outline: none; border-color: #fff; }
-.brand-switch option { color: #0E1B2C; }
+.show-pick:active { background: rgba(255,255,255,0.15); }
+.show-pick-lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.show-pick-chev { font-size: 0.6rem; opacity: 0.85; flex-shrink: 0; }
 /* ── Settings gear + sheet ── */
 .user-chip-gear {
   border: 1px solid rgba(255,255,255,0.45);
@@ -1698,7 +1696,7 @@ body.in-settings .app-footer { display: none; }   /* the hint points at Settings
 body.home-mode .booths-search,
 body.home-mode .view-tabs,
 body.home-mode .filter-bar,
-body.home-mode .brand-switch-row,
+body.home-mode .show-pick,
 body.home-mode .app-footer,
 body.home-mode .user-chip-gear { display: none !important; }
 
@@ -1885,7 +1883,7 @@ body.home-mode .user-chip-gear { display: none !important; }
   .hdr-photos { padding: 7px 11px; font-size: 0.62rem; letter-spacing: 0.4px; gap: 5px; }
   .user-chip { gap: 6px; }
   .user-chip-name { max-width: 50px; }
-  .brand-switch { max-width: 76px; font-size: 0.64rem; }
+  .show-pick { max-width: 140px; font-size: 0.64rem; }
   .user-chip-out, .user-chip-member { padding: 5px 8px; font-size: 0.58rem; }
 }
 @media (max-width: 430px) {
@@ -1894,7 +1892,9 @@ body.home-mode .user-chip-gear { display: none !important; }
   .hdr-photos { padding: 6px 9px; font-size: 0.6rem; }
   .user-chip { gap: 5px; }
   .user-chip-name { max-width: 40px; }
-  .brand-switch { max-width: 64px; font-size: 0.62rem; padding: 0 16px 0 6px; }
+  .show-pick { max-width: 122px; font-size: 0.62rem; padding: 0 7px 0 8px; }
+  /* With the show picker up, the first name steps aside (it's on the Profile tab) */
+  body.has-show-pick .user-chip-name, body.has-show-pick .admin-tag { display: none; }
   .user-chip-out, .user-chip-member { padding: 5px 7px; font-size: 0.56rem; }
 }
 @media (max-width: 380px) {
@@ -1963,6 +1963,30 @@ html { background: var(--bg); }
   }
 }
 
+/* ── Multiple shows per brand ── */
+.show-banner { font-size: 0.76rem; line-height: 1.45; color: var(--text-2); background: var(--surface); border: 1.5px dashed var(--border); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
+.show-card { max-height: 86vh; overflow-y: auto; }
+.show-group { margin: 2px 0 10px; }
+.show-group-head { display: flex; align-items: center; gap: 8px; font-family: var(--fd); font-weight: 800; font-size: 0.78rem; color: var(--text); margin: 8px 0 6px; }
+.show-group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.show-row { width: 100%; display: flex; align-items: center; gap: 8px; padding: 11px 12px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); margin-bottom: 6px; font-family: inherit; text-align: left; cursor: pointer; color: var(--text); }
+.show-row.current { border-color: var(--blue); background: var(--blue-light); }
+.show-row-dot { width: 12px; color: var(--blue); font-size: 0.7rem; flex-shrink: 0; }
+.show-row-name { font-weight: 700; font-size: 0.86rem; flex: 1; min-width: 0; }
+.show-row-status, .het-status { font-size: 0.66rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.show-row-status.live, .het-status.live { color: #2D7140; }
+.show-row-status.upcoming, .het-status.upcoming { color: #23639C; }
+.show-past-toggle, .home-ev-more { background: none; border: none; font-family: inherit; font-size: 0.74rem; font-weight: 700; color: var(--muted); padding: 8px 2px; cursor: pointer; }
+.home-ev-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+.home-ev-tab { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 14px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); font-family: inherit; cursor: pointer; text-align: left; }
+.home-ev-tab.active { border-color: var(--blue); background: var(--blue-light); }
+.het-name { font-family: var(--fd); font-weight: 800; font-size: 0.86rem; color: var(--text); }
+.home-ov-next { font-size: 0.72rem; color: var(--text-2); margin: 4px 0 0; }
+.auth-brand-checks { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.auth-field .abc-row { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; margin: 0; border: 1.5px solid var(--border); border-radius: 9px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text); cursor: pointer; background: var(--surface); }
+.auth-field .abc-row input { width: auto; height: auto; padding: 0; margin: 0; border: none; box-shadow: none; accent-color: var(--blue); }
+.auth-hint { font-size: 0.68rem; color: var(--muted); margin-top: 6px; }
+
 /* ── PALETTE EXPERIMENT (2026-09-23): warm paper instead of pure white ──
    Nate wanted to see the app on off-white/beige for character. Every
    surface (cards, sheets, inputs, nav, auth card) now reads --surface, so
@@ -1990,7 +2014,7 @@ html { background: var(--bg); }
       <button class="hdr-photos" id="mediaBtn" style="display:none" type="button"><svg width="15" height="12" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>Videos</button>
     </div>
     <div class="user-chip" id="userChip" style="display:none">
-      <span class="brand-switch-row" id="brandSwitchRow" style="display:none"><select class="brand-switch" id="brandSwitch" title="Switch brand"></select></span>
+      <button class="show-pick" id="showPickBtn" type="button" style="display:none" aria-haspopup="dialog"><span class="show-pick-lbl" id="showPickLbl"></span><span class="show-pick-chev">▾</span></button>
       <span class="user-chip-name" id="userChipName"></span>
       <span class="admin-tag" id="adminTag" style="display:none">Admin</span>
       <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
@@ -2067,8 +2091,8 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsShows">
       <div class="settings-dbx-title">Shows</div>
-      <div class="settings-dbx-note">You're on <strong id="curShowName">this show</strong>. When this brand moves to its next show, this one is saved to your old show data automatically and your booths, notes and schedule reset. Nothing for you to do.</div>
-      <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button" style="margin-top:12px;">Access old show data</button>
+      <div class="settings-dbx-note">You're viewing <strong id="curShowName">this show</strong>. Every show keeps its own booths, notes and schedule, and nothing is ever deleted. When your brands have more than one show, a show button appears at the top of the app.</div>
+      <button class="settings-dbx-btn settings-stack-btn" id="oldDataBtn" type="button" style="margin-top:12px;">Download a show's data (CSV)</button>
     </div>
     <div class="settings-danger" id="settingsMs" style="display:none">
       <div class="settings-dbx-title">Video uploads</div>
@@ -2087,7 +2111,7 @@ html { background: var(--bg); }
     </div>
     <div class="settings-danger" id="settingsAbout">
       <div class="settings-dbx-title">About</div>
-      <div class="settings-dbx-note">NCM Events Guide · v130</div>
+      <div class="settings-dbx-note">NCM Events Guide · v131</div>
       <div class="settings-dbx-note">Your schedule is visible to teammates on your show. Editorial team notes, schedules and video uploads are shared with the bullpen and admins automatically; sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</div>
       <div class="settings-dbx-note">Questions or problems: Nate Stoltman · <a href="mailto:nstoltman@northcoastmedia.net">nstoltman@northcoastmedia.net</a></div>
     </div>
@@ -2121,6 +2145,33 @@ html { background: var(--bg); }
     <p class="settings-dbx-note" id="vidHideText"></p>
     <button class="settings-done" id="vidHideCancel" type="button">Keep it</button>
     <button class="settings-done share-secondary" id="vidHideConfirm" type="button">Remove from the bullpen</button>
+  </div>
+</div>
+
+<!-- ── Show picker: every brand you cover, with its shows ── -->
+<div id="showSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card show-card">
+    <div class="settings-title">Switch show</div>
+    <div id="showList"></div>
+    <button class="settings-done share-secondary" id="showSheetClose" type="button">Close</button>
+  </div>
+</div>
+
+<!-- ── One-time: confirm team + brands (accounts from before signup asked) ── -->
+<div id="confirmSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title">Quick check: your team and brands</div>
+    <p class="settings-dbx-note">One time only. Editorial team notes and videos go to the bullpen, and you'll see every show on the brands you check.</p>
+    <div class="settings-dbx-title" style="margin-top:12px">Your team</div>
+    <select id="confirmDept" class="settings-dbx-input">
+      <option value="">Choose…</option>
+      <option value="edit">Editorial team</option>
+      <option value="sales">Sales</option>
+    </select>
+    <div class="settings-dbx-title" style="margin-top:14px">Your brands</div>
+    <div id="confirmBrands" class="brand-checks"></div>
+    <div class="auth-error" id="confirmErr"></div>
+    <button class="settings-done" id="confirmSave" type="button">Save</button>
   </div>
 </div>
 
@@ -2166,8 +2217,8 @@ html { background: var(--bg); }
 <!-- ── Old show data (archived CSVs) ── -->
 <div id="oldDataSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
-    <div class="settings-title">Old show data</div>
-    <p class="settings-dbx-note">Shows that have wrapped, plus any data you've archived. Download a past show's CSV anytime.</p>
+    <div class="settings-title">Show data</div>
+    <p class="settings-dbx-note">Every show on your brands. Download any one's booths, notes and schedule as a CSV.</p>
     <div id="oldDataList" class="cleanup-list"></div>
     <button class="settings-done" id="oldDataClose" type="button">Done</button>
   </div>
@@ -2217,10 +2268,9 @@ html { background: var(--bg); }
         <input id="authName" type="text" autocomplete="name" placeholder="Jane Smith">
       </div>
       <div class="auth-field" data-only="signup">
-        <label>Your Brand</label>
-        <select id="authBrand">
-          <option value="">Choose…</option>
-        </select>
+        <label>Your Brands</label>
+        <div class="auth-brand-checks" id="authBrands"></div>
+        <div class="auth-hint">Check every brand you cover. You'll see all of their shows.</div>
       </div>
       <div class="auth-field" data-only="signup">
         <label>Your Team</label>
@@ -3760,15 +3810,75 @@ const BRANDS = {
 // Registered events: code -> { brand, show, booths }. Add a show here once its
 // exhibitor list is in hand. Unregistered codes still theme by prefix (below)
 // but show an empty booth list until configured.
-// Shows that have wrapped. They stay valid event codes (reps still on them
-// keep their notes, schedules and archives) but carry no booth list, so the
-// app shows the "no booth list yet" empty state until next year's exhibitor
-// list arrives. The old list stays in the file: reviving a show is a one-line
-// change back to `booths: LPGAS_BOOTHS`.
-const PAST_SHOWS = {
-  "LPGAS-2026": { ended: "September 2026", listName: "LPGAS_BOOTHS", count: LPGAS_BOOTHS.length },
-};
-function isPastShow(code) { return !!PAST_SHOWS[code]; }
+// ── SHOWS ─────────────────────────────────────────────────────────────────
+// A brand can hold any number of shows (EVENTS entries). Each show's state
+// comes from its dates alone: upcoming, live, wrapped (the WRAP_WINDOW_DAYS
+// after its last day: still in the main lists and fully usable, so late notes
+// and hotel uploads work) and past (tucked under "Past shows"). Nothing is
+// ever deleted. Brands with no show loaded keep a placeholder code so their
+// reps still have somewhere to be until a real list lands.
+const WRAP_WINDOW_DAYS = 45;
+const PLACEHOLDER_SHOWS = { golfdom: "GOLFDOM-2026", pq: "PQ-2026" };
+const DAY_MS = 864e5;
+function showsForBrand(b) {
+  const real = Object.keys(EVENTS).filter(c => EVENTS[c].brand === b);
+  return real.length ? real : (PLACEHOLDER_SHOWS[b] ? [PLACEHOLDER_SHOWS[b]] : []);
+}
+function isPlaceholderShow(code) { return !!code && !EVENTS[code]; }
+function showStatus(code) {
+  const ev = EVENTS[code];
+  const ds = (ev && Array.isArray(ev.dates)) ? ev.dates : [];
+  if (!ds.length) return { k: "tbd" };
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(ds[0] + "T00:00:00");
+  const end = new Date(ds[ds.length - 1] + "T00:00:00");
+  if (today < start) return { k: "upcoming", start, end, daysUntil: Math.round((start - today) / DAY_MS) };
+  if (today <= end) return { k: "live", start, end, day: Math.round((today - start) / DAY_MS) + 1 };
+  const since = Math.round((today - end) / DAY_MS);
+  return { k: since <= WRAP_WINDOW_DAYS ? "wrapped" : "past", start, end, daysSince: since };
+}
+// Wrapped or past: the show's last day is behind us.
+function isPastShow(code) { const k = showStatus(code).k; return k === "wrapped" || k === "past"; }
+// AP-style month and day: "Oct. 21", "April 19".
+function fmtMonthDay(d) {
+  const M = ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
+  return M[d.getMonth()] + " " + d.getDate();
+}
+function showStatusText(code) {
+  const s = showStatus(code);
+  if (s.k === "live") return "Live · Day " + s.day;
+  if (s.k === "upcoming") return s.daysUntil <= 1 ? "Starts tomorrow"
+    : s.daysUntil <= WRAP_WINDOW_DAYS ? "Starts in " + s.daysUntil + " days" : "Starts " + fmtMonthDay(s.start);
+  if (s.k === "wrapped") return "Wrapped " + fmtMonthDay(s.end);
+  if (s.k === "past") return "Ended " + fmtMonthDay(s.end) + ", " + s.end.getFullYear();
+  return "Dates TBD";
+}
+// One ranking for "which show matters most": live, then the soonest
+// upcoming, then the most recent wrapped (inside its window), then a brand
+// with no show loaded, then the most recent past show.
+const SHOW_TIER = { live: 0, upcoming: 1, wrapped: 2, tbd: 3, past: 4 };
+function showRank(code) {
+  const s = showStatus(code);
+  const t = s.k === "upcoming" ? s.daysUntil : (s.k === "wrapped" || s.k === "past") ? s.daysSince : 0;
+  return SHOW_TIER[s.k] * 1e6 + t;
+}
+function sortShows(codes) { return codes.slice().sort((a, b) => showRank(a) - showRank(b)); }
+// Calendar order (earliest first, shows without dates last), for tab rows.
+function sortShowsByDate(codes) {
+  const t = c => { const s = showStatus(c); return s.start ? s.start.getTime() : Infinity; };
+  return codes.slice().sort((a, b) => t(a) - t(b));
+}
+// The show someone lands on, across every brand they cover. Ties go to the
+// home brand, so a PestWorld + Equip rep lands on their own brand during the
+// overlap.
+function defaultShowFor(brands, home) {
+  let best = null, bestKey = Infinity;
+  (brands || []).forEach(b => showsForBrand(b).forEach(code => {
+    const key = showRank(code) * 2 + (b === home ? 0 : 1);
+    if (key < bestKey) { best = code; bestKey = key; }
+  }));
+  return best;
+}
 // Show dates, newest list wins. `dates` is Day 1/2/3 as "YYYY-MM-DD" in the
 // show's local time. When today is one of them, the Schedule view opens on
 // that day instead of always Day 1. Omit `dates` and it just opens on Day 1.
@@ -3776,10 +3886,11 @@ function isPastShow(code) { return !!PAST_SHOWS[code]; }
 const EVENTS = {
   "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"] },
   "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-20","2026-10-21","2026-10-22","2026-10-23"] },
-  // Retired (see PAST_SHOWS), but the booth list STAYS LOADED: it is what maps
-  // saved booth data back to company names, so CSV exports and existing notes
-  // keep working. The Booths tab hides itself for past shows instead.
-  "LPGAS-2026": { brand:"lpgas", show:"LPGas Show", booths: LPGAS_BOOTHS, dates: ["2026-09-01","2026-09-02","2026-09-03"] },
+  // NPGA Southeastern & International Propane Expo, Music City Center,
+  // Nashville (the app's first show). Every show keeps its booth list loaded
+  // for good: it maps saved booth data back to company names, so notes,
+  // uploads and CSV exports keep working long after the show.
+  "LPGAS-2026": { brand:"lpgas", show:"Southeastern Propane Expo", short:"SE Propane Expo", booths: LPGAS_BOOTHS, dates: ["2026-04-19","2026-04-20","2026-04-21"] },
 };
 // Which show day is today? 1/2/3 during the show, else null.
 function showDayToday(code) {
@@ -3799,45 +3910,9 @@ function showDayCount(code) {
 function showDays(code) {
   return Array.from({ length: showDayCount(code) }, (_, i) => i + 1);
 }
-// The show that matters most right now: one that's live today wins outright,
-// otherwise the next one to start. Wrapped shows and shows without dates
-// never win. Masters land here at sign-in instead of on their own brand,
-// which may have finished months ago.
-function nearestShowCode(brandPool) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  let best = null, bestScore = Infinity;
-  (brandPool || SIGNUP_BRANDS).forEach(b => {
-    const code = CURRENT_SHOW[b];
-    const ev = EVENTS[code];
-    if (!code || isPastShow(code) || !ev || !Array.isArray(ev.dates) || !ev.dates.length) return;
-    const start = new Date(ev.dates[0] + "T00:00:00");
-    const end = new Date(ev.dates[ev.dates.length - 1] + "T23:59:59");
-    let score;
-    if (today >= start && today <= end) score = -1;              // happening now
-    else if (start > today) score = (start - today) / 86400000;  // days until it starts
-    else return;                                                 // over (not yet marked wrapped)
-    if (score < bestScore) { bestScore = score; best = code; }
-  });
-  return best;
-}
-// THE definitive list of event codes this app accepts. Nothing outside this
-// list can join or exist. Adding a future show = add it here + an EVENTS
-// entry (booth list + dates) + MEDIA links + CURRENT_SHOW below + the
-// whitelist in firestore.rules (then republish).
-const VALID_EVENT_CODES = ["LPGAS-2026", "GOLFDOM-2026", "LM-2026", "PMP-2026", "PQ-2026"];
-// Reps never type a show code: they pick a BRAND at signup and the app
-// follows that brand's current show from here. Rolling a brand to its next
-// show = point it at the new code (with the pieces listed above). Every rep
-// on that brand rolls over automatically on their next open: the finished
-// show is archived to their Old show data and their booths, notes and
-// schedule reset for the new one.
-const CURRENT_SHOW = {
-  lpgas:   "LPGAS-2026",
-  golfdom: "GOLFDOM-2026",
-  lm:      "LM-2026",
-  pmp:     "PMP-2026",
-  pq:      "PQ-2026",
-};
+// Adding a show = an EVENTS entry (name, dates, booth list) plus its MEDIA
+// folder link, then deploy. Any number of shows per brand; the Firestore
+// rules accept any code shaped BRAND-SOMETHING, so no rules republish.
 const SIGNUP_BRANDS = ["lpgas", "golfdom", "lm", "pmp", "pq"];   // picker order
 function brandOfCode(code) { return (resolveEvent(code) || {}).brand || ""; }
 // A profile's brand, falling back to the brand of its stored event code so
@@ -3993,7 +4068,8 @@ function effectiveDept(uid, dept) { return DEPT_OVERRIDES[uid] || dept || ""; }
 // Home team uses a shared account. Only the (non-secret) email lives in code;
 // the passcode is typed once by the team and remembered by the browser.
 const HOME_TEAM_EMAIL = "hometeam@northcoastmedia.net";
-let masterEventOverride = null;   // set when a master switches brand
+let masterEventOverride = null;   // the selected show: pinned at sign-in, changed by the show picker
+let showPickedManually = false;   // true once someone picks a show themselves this session
 function isMaster() {
   if (!currentUser) return false;
   return currentUser.role === "master" || currentUser.master === true
@@ -4005,11 +4081,12 @@ function isHome() {
       || (currentUser.email || "").toLowerCase() === HOME_TEAM_EMAIL;
 }
 function currentEventCode() {
+  // Pinned at sign-in rather than recomputed on every call: a default that
+  // moved when a show ended at midnight would swap storage buckets under an
+  // open app.
   if (masterEventOverride) return masterEventOverride;
   if (!currentUser) return null;
-  // The brand's current show wins over whatever the profile last stored, so a
-  // rollover takes effect the moment the rep opens the app.
-  return CURRENT_SHOW[userBrand(currentUser)] || currentUser.eventCode || null;
+  return defaultShowFor(userBrands(currentUser), userBrand(currentUser)) || currentUser.eventCode || null;
 }
 
 // STATE — booth/notes/meals/off-site per event. The LP Gas / default event
@@ -4137,51 +4214,6 @@ async function syncMyScheduleToCloud() {
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   } catch (e) { /* offline — Firestore persistence will retry */ }
-}
-// Automatic show rollover. A profile remembers the show the rep was last on;
-// when their brand has moved on, the finished show is archived to their Old
-// show data and their booths, notes and schedule reset for the new one. Runs
-// BEFORE hydrate/sync so the old show's data never bleeds into the new one.
-async function rolloverIfShowChanged() {
-  if (!fbReady || !currentUser || isHome()) return false;
-  const brand = userBrand(currentUser);
-  const nowCode = CURRENT_SHOW[brand], wasCode = currentUser.eventCode;
-  if (!nowCode || !wasCode || nowCode === wasCode) return false;
-  const oldEv = resolveEvent(wasCode);
-  // storeKey() already points at the NEW show, so name the old bucket directly.
-  const oldBucket = (wasCode === "LPGAS-2026") ? STORE : STORE + "__" + wasCode;
-  let csv = "";
-  try {
-    if (localStorage.getItem(oldBucket)) {
-      const prevCO = CO, prevOverride = masterEventOverride;
-      CO = (oldEv.booths && oldEv.booths.length) ? oldEv.booths : [];
-      masterEventOverride = wasCode;      // makes storeKey()/buildShowCsv() read the finished show
-      csv = buildShowCsv();
-      masterEventOverride = prevOverride; CO = prevCO;
-    }
-  } catch (e) {}
-  if (csv) {
-    try {
-      await fbDb.collection("archives").add({
-        uid: currentUser.uid, name: currentUser.name || "",
-        eventCode: wasCode, show: oldEv.show || wasCode,
-        brand: (BRANDS[oldEv.brand] || BRANDS.ncm).name,
-        csv, ts: Date.now()
-      });
-    } catch (e) { return false; }   // offline: keep everything, retry next open
-  }
-  try {
-    localStorage.removeItem(oldBucket);
-    const uid = currentUser.uid;
-    await fbDb.collection("schedules").doc(uid).delete().catch(() => {});
-    await fbDb.collection("notes").doc(uid).delete().catch(() => {});
-    await fbDb.collection("schedules").doc(uid + "__" + wasCode).delete().catch(() => {});
-    await fbDb.collection("notes").doc(uid + "__" + wasCode).delete().catch(() => {});
-  } catch (e) {}
-  currentUser.eventCode = nowCode;
-  try { await fbDb.collection("users").doc(currentUser.uid).set({ eventCode: nowCode, brand }, { merge: true }); } catch (e) {}
-  toast("New show: " + (resolveEvent(nowCode).show || nowCode) + ". Your last show was saved to Old show data");
-  return true;
 }
 // New-device continuity: if this device has no local data for the current
 // event but the cloud has this rep's schedule/notes, rebuild local state from
@@ -4343,7 +4375,7 @@ function notifyVideoReady(i, state) {
   const who = (currentUser && currentUser.name) || "A rep";
   const when = fmtExact(s.vts || Date.now());
   const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
-  notifyHome(brand + " show, video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
+  notifyHome(esc(showLabelOf(currentEventCode())) + ": video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
     "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the bullpen</a>');
 }
 // ── IN-APP VIDEO UPLOADS (Microsoft Graph) ──────────────────────────────
@@ -4391,7 +4423,7 @@ function msUploadFolderUrl() {
 }
 function msUploadsActive() {
   return !!(uploadCfg && currentUser && !isHome() && myNotesAutoShare()
-            && !isPastShow(currentEventCode()) && msUploadFolderUrl());
+            && msUploadFolderUrl());
 }
 function msRedirectUri() {
   // Must byte-match the SPA redirect URI registered in Entra (the Pages root).
@@ -4500,6 +4532,7 @@ document.addEventListener("visibilitychange", () => {
 let _msPromptedThisSession = false;
 function maybeShowMsPrompt() {
   if (_msPromptedThisSession) return;
+  if (document.getElementById("confirmSheet").style.display === "flex") return;   // after the team/brands check
   if (!msUploadsActive() || msAccount()) return;
   if (Object.keys(localStorage).some(k => k.indexOf("msal.") === 0)) return;   // has tokens, just not warmed
   try { if (localStorage.getItem("ncm_ms_prompted")) return; } catch (e) {}
@@ -4653,7 +4686,7 @@ async function startVideoUpload(i, file) {
     if (notifyOnce("upload|" + currentEventCode() + "|" + c.b)) {
       const who = (currentUser && currentUser.name) || "A rep";
       const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
-      notifyHome(brand + " show, footage uploaded: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
+      notifyHome(esc(showLabelOf(currentEventCode())) + ": footage uploaded: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
         ") by " + esc(who) + ": " + esc(item.name || "") +
         (item.webUrl ? '. <a href="' + esc(item.webUrl) + '">Watch it</a>' : ""));
     }
@@ -4766,7 +4799,7 @@ function notifyVideoDone(code, boothNum, boothName) {
   if (!notifyOnce("done|" + code + "|" + boothNum)) return;
   const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
   const me = homeMember() || "Someone";
-  notifyHome(brand + " show, video finished: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
+  notifyHome(esc(showLabelOf(code)) + ": video finished: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
     "). Marked done by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me);
 }
 // "Removed from the bullpen" lives in homeFlags too: hide__<code>__<booth#>
@@ -4780,6 +4813,45 @@ function isVidHidden(g) {
   if (h.gone) return true;                 // deleted from the bullpen: stays gone
   const newest = Math.max(0, ...g.reps.flatMap(r => (r.clips || []).map(c => c.t || 0)));
   return !(newest > (h.ts || 0));
+}
+// Which event a brand view opens on: one live now, else a wrapped one still
+// inside its window with videos not done, else the next upcoming, else a
+// brand with no show loaded, else the most recent.
+function vidsPendingFor(code) {
+  return Object.values(homeNotes).some(d => d.eventCode === code && effectiveDept(d.uid, d.dept) === "edit"
+    && (d.items || []).some(it => it.video && it.visited && !itemHiddenFromBullpen(code, it)
+      && !homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]));
+}
+function bullpenDefaultShow(brand) {
+  const codes = showsForBrand(brand);
+  const of = k => sortShows(codes.filter(c => showStatus(c).k === k));
+  return of("live")[0] || of("wrapped").find(vidsPendingFor) || of("upcoming")[0]
+    || of("tbd")[0] || of("wrapped")[0] || of("past")[0] || codes[0] || null;
+}
+function homeEventCode() {
+  if (!homeBrandFilter) return null;
+  const sel = homeShowSel[homeBrandFilter];
+  return (sel && showsForBrand(homeBrandFilter).includes(sel)) ? sel : bullpenDefaultShow(homeBrandFilter);
+}
+// Event tabs under the brand row, calendar order; past events fold away.
+function buildHomeEventTabs() {
+  const codes = sortShowsByDate(showsForBrand(homeBrandFilter));
+  const cur = homeEventCode();
+  const active = codes.filter(c => showStatus(c).k !== "past");
+  const past = codes.filter(c => showStatus(c).k === "past");
+  const tab = c => {
+    const s = showStatus(c);
+    return `<button class="home-ev-tab${c === cur ? " active" : ""}" type="button" data-home-event="${esc(c)}">
+      <span class="het-name">${esc(isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c))}</span>
+      <span class="het-status ${s.k}">${esc(showStatusText(c))}</span></button>`;
+  };
+  let h = `<div class="home-ev-tabs">` + active.map(tab).join("");
+  if (past.length) {
+    const open = homeShowPast || past.includes(cur);
+    h += open ? past.map(tab).join("") + (past.includes(cur) ? "" : `<button class="home-ev-more" type="button" data-home-past-toggle>Hide past</button>`)
+              : `<button class="home-ev-more" type="button" data-home-past-toggle>Past shows (${past.length})</button>`;
+  }
+  return h + `</div>`;
 }
 // Same check for a single rep's item (overview counts).
 function itemHiddenFromBullpen(code, it) {
@@ -4863,7 +4935,8 @@ function buildHomeOverview() {
   let h = `<div class="home-ov-grid">`;
   HOME_FILTER_BRANDS.forEach(bk => {
     const brand = BRANDS[bk];
-    const codes = VALID_EVENT_CODES.filter(c => resolveEvent(c).brand === bk);
+    const featured = bullpenDefaultShow(bk);
+    const codes = featured ? [featured] : [];
     const notesDocs = Object.values(homeNotes).filter(d =>
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
     const schedDocs = Object.values(homeSchedules).filter(d =>
@@ -4884,19 +4957,25 @@ function buildHomeOverview() {
     });
     schedDocs.forEach(d => { last = Math.max(last, homeDocTs(d)); });
     const vidPending = vidTotal - vidDone;
-    const media = codes.map(c => eventMedia(c)).find(m => m && m.folder);
-    const code = codes[0] || "";
-    const ev = EVENTS[code] || {};
+    const media = featured ? eventMedia(featured) : null;
+    const code = featured || "";
+    const fk = showStatus(code).k;
+    const title = isPlaceholderShow(code) ? "No show loaded yet" : fk === "past" ? "No upcoming show" : showLabelOf(code);
     const st = showOvStatus(code);
+    // A second line for what's next (or, with nothing coming, what was last).
+    const nextUp = sortShows(showsForBrand(bk).filter(c => c !== code && EVENTS[c] && ["live", "upcoming"].includes(showStatus(c).k)))[0];
+    const subline = nextUp ? "Next: " + showLabelOf(nextUp) + " · " + showStatusText(nextUp)
+      : (fk === "past" ? "Last: " + showLabelOf(code) + " · " + showStatusText(code) : "");
     h += `<div class="home-ov-card" data-home-brand="${esc(bk)}" role="button" tabindex="0">
       <div class="home-ov-bar" style="background:${brand.p.blue}">
         <img src="./${esc(brand.logo)}" alt="${esc(brand.name)}" onerror="this.style.display='none'">
       </div>
       <div class="home-ov-body">
         <div class="home-ov-showrow">
-          <span class="home-ov-show">${esc(ev.show || brand.name)}</span>
-          <span class="home-ov-badge ${st.k}">${st.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(st.label)}</span>
+          <span class="home-ov-show">${esc(title)}</span>
+          ${st.label ? `<span class="home-ov-badge ${st.k}">${st.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(st.label)}</span>` : ""}
         </div>
+        ${subline ? `<div class="home-ov-next">${esc(subline)}</div>` : ""}
         <div class="home-ov-stats">
           <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
           <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
@@ -4912,21 +4991,14 @@ function buildHomeOverview() {
   h += `</div><div class="home-ov-hint">Pick a brand for its videos, schedules and search.</div>`;
   return h;
 }
-// A show's at-a-glance state for the overview cards.
+// A show's at-a-glance badge for the overview cards.
 function showOvStatus(code) {
-  const ev = EVENTS[code] || {};
-  if (isPastShow(code)) return { k: "quiet", label: "Wrapped" };
-  const ds = ev.dates || [];
-  if (!ds.length) return { k: "quiet", label: "Dates TBD" };
-  const now = new Date();
-  const t0 = new Date(ds[0] + "T00:00:00");
-  const t1 = new Date(ds[ds.length - 1] + "T23:59:59");
-  if (now >= t0 && now <= t1) return { k: "live", label: "Live · Day " + (showDayToday(code) || 1) };
-  if (now < t0) {
-    const days = Math.ceil((t0 - now) / 864e5);
-    return { k: "soon", label: days === 1 ? "Starts tomorrow" : "Starts in " + days + " days" };
-  }
-  return { k: "quiet", label: "Show ended" };
+  const s = showStatus(code);
+  if (s.k === "live") return { k: "live", label: "Live · Day " + s.day };
+  if (s.k === "upcoming") return { k: "soon", label: showStatusText(code) };
+  if (s.k === "wrapped") return { k: "quiet", label: "Wrapped" };
+  if (s.k === "tbd" && !isPlaceholderShow(code)) return { k: "quiet", label: "Dates TBD" };
+  return { k: "quiet", label: "" };
 }
 // Home dashboard organization: two views (Notes / Schedules), collapsible
 // per-rep sections in Notes, and read-only rep schedules in Schedules
@@ -4936,6 +5008,8 @@ let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged b
 let homeShowDoneVids = false;     // Videos view: completed section expanded?
 let homeShowFootage = false;      // Videos view: uploaded-footage list expanded?
 let homeShowHiddenVids = false;   // Videos view: "Removed from the bullpen" list expanded?
+const homeShowSel = {};           // brand -> event picked this session (default: the one with work in it)
+let homeShowPast = false;         // brand view: past events expanded in the tab row?
 const homeVidNotesOpen = new Set();  // "<code>__<booth#>" videos with editor notes expanded
 // The home login is shared, so each device picks WHO is at it once; the name
 // shows on videos they claim via the "Working on" button.
@@ -4986,7 +5060,7 @@ function buildHomeFilter() {
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   updateHomeMemberChip();
-  viewTransition("h:" + homeView + ":" + homeBrandFilter + ":" + (homeSchedRep || "") + ":" + schedDay);
+  viewTransition("h:" + homeView + ":" + homeBrandFilter + ":" + (homeBrandFilter ? homeEventCode() : "") + ":" + (homeSchedRep || "") + ":" + schedDay);
   // Shared login, individual people: each device picks a name once before
   // anything else, so "Working on" claims are attributable.
   if (!homeMember()) {
@@ -5000,7 +5074,7 @@ function renderHomeDashboard() {
     </div></div>`;
     return;
   }
-  const filterName = homeBrandFilter ? BRANDS[homeBrandFilter].name : "all brands";
+  const filterName = homeBrandFilter ? (isPlaceholderShow(homeEventCode()) ? BRANDS[homeBrandFilter].name : showLabelOf(homeEventCode())) : "all brands";
   const subtitle = !homeBrandFilter ? "Live overview of every brand."
     : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
                             : "Every video flagged by the field team: " + esc(filterName) + ".");
@@ -5008,6 +5082,7 @@ function renderHomeDashboard() {
     <div class="home-head"><h2>Bullpen</h2><p>${subtitle}</p></div>
     ${buildHomeFilter()}`;
   if (homeBrandFilter) {
+    html += buildHomeEventTabs();
     html += `<div class="home-view-tabs">
       <button class="home-view-tab${homeView!=="sched"?" active":""}" type="button" data-home-view="videos">Videos</button>
       <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
@@ -5015,7 +5090,7 @@ function renderHomeDashboard() {
     </div>`;
     // The show's shared folder, full width under the tabs (the old right
     // rail is gone; this button was the only thing left living in it).
-    const mc = Object.keys(MEDIA).find(c => resolveEvent(c).brand === homeBrandFilter && (eventMedia(c) || {}).folder);
+    const mc = (eventMedia(homeEventCode()) || {}).folder ? homeEventCode() : null;
     if (mc) {
       const b = BRANDS[homeBrandFilter];
       html += `<a class="home-aside-media home-folder-wide" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
@@ -5047,7 +5122,7 @@ function buildHomeVideosView() {
   Object.values(homeNotes)
     .filter(d => effectiveDept(d.uid, d.dept) === "edit")
     .forEach(d => {
-      if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
+      if (homeBrandFilter && d.eventCode !== homeEventCode()) return;
       (d.items || []).forEach(it => {
         if (!it.video) return;
         const gk = d.eventCode + "__" + it.boothNum;
@@ -5155,7 +5230,7 @@ function buildHomeVideosView() {
   Object.values(homeNotes)
     .filter(d => effectiveDept(d.uid, d.dept) === "edit")
     .forEach(d => {
-      if (homeBrandFilter && resolveEvent(d.eventCode).brand !== homeBrandFilter) return;
+      if (homeBrandFilter && d.eventCode !== homeEventCode()) return;
       (d.items || []).forEach(it => {
         // Gate on the flag too: unflagging a booth pulls it out of the
         // bullpen everywhere, including this list (test-clip cleanup).
@@ -5231,7 +5306,7 @@ function schedNoteHtml(n, sel) {
 function buildHomeSchedView() {
   let entries = Object.entries(homeSchedules)
     .filter(([id, s]) => effectiveDept(s.uid, s.dept) === "edit");   // edit/digital only
-  if (homeBrandFilter) entries = entries.filter(([id, s]) => resolveEvent(s.eventCode).brand === homeBrandFilter);
+  if (homeBrandFilter) entries = entries.filter(([id, s]) => s.eventCode === homeEventCode());
   entries.sort((a, b) => (a[1].name || "").localeCompare(b[1].name || ""));
   if (!entries.length) {
     return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows editorial team schedules (set under Profile &gt; My team in the field app). Sales schedules never appear here.</p></div>`;
@@ -5436,7 +5511,7 @@ function render() {
   // while its tab is open, and any other view's innerHTML would destroy it.
   parkSettingsCard();
   if (isHome()) { renderHomeDashboard(); return; }
-  viewTransition("f:" + activeView + ":" + activeFilter
+  viewTransition("f:" + currentEventCode() + ":" + activeView + ":" + activeFilter
     + (activeView === "schedule" ? ":" + schedDay + ":" + (viewedScheduleUid || "") : ""));
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
@@ -5478,16 +5553,6 @@ function render() {
   filterBar?.classList.remove("hidden");
   boothsSearch?.classList.remove("hidden");
 
-  // A wrapped show keeps its booth list loaded (exports and old notes depend
-  // on it) but stops offering the floor to walk.
-  if (isPastShow(currentEventCode())) {
-    filterBar?.classList.add("hidden");
-    boothsSearch?.classList.add("hidden");
-    el.innerHTML = `<div class="empty-wrap"><h3>This show has wrapped</h3>
-      <p>${esc(currentShowLabel())} is finished, so the booth list is closed. Your notes and schedule are still here, and you can download everything from your Profile. The next show's booths appear when it opens.</p></div>`;
-    updateStats(state);
-    return;
-  }
   if (!CO.length) {
     el.innerHTML = `<div class="empty-wrap"><h3>No booth list yet</h3>
       <p>This event doesn't have an exhibitor list loaded yet. Your schedule, meals, and notes still work — booths will appear once the list is added.</p></div>`;
@@ -5518,7 +5583,7 @@ function render() {
   const rowKeys = Object.keys(groups).sort((a,b) => rowOrder(a) - rowOrder(b));
 
   _rowGroups = groups;
-  let html = "";
+  let html = showStatusBannerHtml();
   rowKeys.forEach((rk, ri) => {
     const comps = groups[rk];
     const outdoor = isOutdoor(rk);
@@ -5785,7 +5850,7 @@ function renderScheduleView(state) {
   const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
   const hasAny = slotTimes.length > 0;
 
-  let html = teamBar + `
+  let html = showStatusBannerHtml() + teamBar + `
 <div class="sched-day-tabs">${dayTabs}</div>
 ${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
@@ -5856,7 +5921,7 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
   html += `
 <div class="fab-wrap${fabOpen ? " open" : ""}">
   <div class="fab-menu">
-    ${isPastShow(currentEventCode()) ? "" : `<button class="fab-item" type="button" data-fab-booth>Add booth</button>`}
+    <button class="fab-item" type="button" data-fab-booth>Add booth</button>
     <button class="fab-item" type="button" data-meal-open>Add breakfast / lunch / dinner</button>
     <button class="fab-item" type="button" data-off-open>Add off-site meeting</button>
   </div>
@@ -5910,6 +5975,14 @@ document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-footage-toggle]")) { homeShowFootage = !homeShowFootage; renderHomeDashboard(); return; }
   if (e.target.closest("[data-hidden-vids-toggle]")) { homeShowHiddenVids = !homeShowHiddenVids; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-home-past-toggle]")) { homeShowPast = !homeShowPast; renderHomeDashboard(); return; }
+  const hev = e.target.closest("[data-home-event]");
+  if (hev) {
+    homeShowSel[homeBrandFilter] = hev.dataset.homeEvent;
+    homeSearchQ = ""; homeSchedQ = ""; homeSchedRep = null;
+    renderHomeDashboard();
+    return;
+  }
   const vh = e.target.closest("[data-vid-hide]");
   if (vh) { openVidHideConfirm(vh.dataset.vidHide, vh.dataset.vidHideName); return; }
   const vu = e.target.closest("[data-vid-unhide]");
@@ -6427,6 +6500,16 @@ document.getElementById("searchInput").addEventListener("input", () => {
 });
 
 // Build the current show's CSV (reused by Export + the end-of-show archive).
+// CSV for any show, not just the one on screen: borrow its booth list and
+// storage bucket for the length of the export.
+function csvForShow(code) {
+  if (!code || code === currentEventCode()) return buildShowCsv();
+  const prevCO = CO, prevSel = masterEventOverride;
+  const ev = resolveEvent(code);
+  CO = (ev.booths && ev.booths.length) ? ev.booths : [];
+  masterEventOverride = code;
+  try { return buildShowCsv(); } finally { masterEventOverride = prevSel; CO = prevCO; }
+}
 function buildShowCsv() {
   const state = load();
   const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
@@ -6545,7 +6628,7 @@ const authEls = {
   overlay:  document.getElementById("authOverlay"),
   form:     document.getElementById("authForm"),
   name:     document.getElementById("authName"),
-  brand:    document.getElementById("authBrand"),
+  brand:    document.getElementById("authBrands"),
   email:    document.getElementById("authEmail"),
   pass:     document.getElementById("authPass"),
   err:      document.getElementById("authError"),
@@ -6640,17 +6723,19 @@ authEls.form.addEventListener("submit", async (e) => {
       await fbAuth.signInWithEmailAndPassword(HOME_TEAM_EMAIL, pass);
     } else if (authMode === "signup") {
       const name = authEls.name.value.trim();
-      const brand = authEls.brand.value;
+      const brands = [...authEls.brand.querySelectorAll("input:checked")].map(i => i.value);
+      const brand = brands[0] || "";   // home brand: the first one checked
       const dept = document.getElementById("authDept").value;
       if (!name)  { authErr("Please enter your name.");   authEls.submit.disabled = false; return; }
-      if (!brand) { authErr("Pick your brand.");          authEls.submit.disabled = false; return; }
+      if (!brand) { authErr("Check at least one brand."); authEls.submit.disabled = false; return; }
       if (!dept)  { authErr("Pick your team (Sales or Editorial)."); authEls.submit.disabled = false; return; }
-      // The brand's current show, not a code anyone typed.
-      const eventCode = CURRENT_SHOW[brand];
-      if (!eventCode) { authErr("That brand has no show set up yet. Check with Nate."); authEls.submit.disabled = false; return; }
+      // A data anchor only (their first cloud doc keys off it); the app always
+      // opens on the nearest show and the picker switches between the rest.
+      const eventCode = defaultShowFor(brands, brand);
+      if (!eventCode) { authErr("Those brands have no shows set up yet. Check with Nate."); authEls.submit.disabled = false; return; }
       const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
       await fbDb.collection("users").doc(cred.user.uid).set({
-        name, email, brand, eventCode, dept, role: "field",
+        name, email, brand, brands, eventCode, dept, brandsConfirmed: true, role: "field",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
     } else {
@@ -6669,14 +6754,36 @@ document.getElementById("homeMemberBtn").addEventListener("click", () => {
 authEls.signOut.addEventListener("click", async () => {
   if (fbAuth) { try { await fbAuth.signOut(); } catch (e) {} }
 });
-// Human name for an event code, for every place the UI used to print the raw
-// code (LM-2026 → "Equip Expo"; a brand with no show loaded → the brand name).
+// Human name for an event code: show name and year ("Equip Expo 2026").
+// Raw codes are internal ids and never reach the screen.
 function showLabelOf(code) {
   if (!code) return "";
   const ev = EVENTS[code];
-  if (ev && ev.show) return ev.show;
+  if (!ev) { const b = BRANDS[resolveEvent(code).brand]; return (b ? b.name : code) + " (next show TBD)"; }
+  const y = ((ev.dates && ev.dates[0]) || "").slice(0, 4);
+  return ev.show + (y ? " " + y : "");
+}
+// Header-sized version: an optional short name ("SE Propane Expo 2026").
+function showShortLabelOf(code) {
+  const ev = EVENTS[code];
+  if (!ev) { const b = BRANDS[resolveEvent(code).brand]; return (b ? b.name : "Show") + " · TBD"; }
+  const y = ((ev.dates && ev.dates[0]) || "").slice(0, 4);
+  return (ev.short || ev.show) + (y ? " " + y : "");
+}
+// Wrapped/past note for the top of the Booths and Schedule views.
+function showStatusBannerHtml() {
+  const code = currentEventCode();
+  if (!code || isHome() || !EVENTS[code]) return "";
+  const s = showStatus(code);
+  const label = esc(showLabelOf(code));
+  if (s.k === "wrapped")
+    return `<div class="show-banner">${label} wrapped ${esc(fmtMonthDay(s.end))}. It stays open for late notes and uploads.</div>`;
+  if (s.k !== "past") return "";
+  const others = pickerShows().some(c => c !== code && !isPlaceholderShow(c) && showStatus(c).k !== "past");
   const b = BRANDS[resolveEvent(code).brand];
-  return b ? b.name : code;
+  return `<div class="show-banner">${(!others && !showPickedManually)
+    ? `No upcoming ${esc(b ? b.name : "")} show yet. Showing ${label}, which ended ${esc(fmtMonthDay(s.end))}.`
+    : `${label} ended ${esc(fmtMonthDay(s.end))}, ${s.end.getFullYear()}. Everything from it is still here.`}</div>`;
 }
 function currentShowLabel() {
   // Show name only; the raw event code is an internal id nobody needs to see.
@@ -6689,7 +6796,7 @@ function currentShowLabel() {
 function prepSettings() {
   const mine = userBrands(currentUser);
   document.getElementById("brandChecks").innerHTML = SIGNUP_BRANDS.map(b =>
-    `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}${b === userBrand(currentUser) ? " disabled" : ""}><span>${esc((BRANDS[b] || {}).name || b)}${b === userBrand(currentUser) ? ' <em class="bc-home">home brand</em>' : ""}</span></label>`).join("");
+    `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}><span>${esc((BRANDS[b] || {}).name || b)}</span></label>`).join("");
   document.getElementById("deptSelect").value = (currentUser && currentUser.dept) || "";
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
@@ -6838,30 +6945,22 @@ async function renderOldData() {
     snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
   } catch (e) {}
   docs.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  // Shows that have wrapped, whether or not this rep archived their own copy.
-  // Their booth lists are retired, so the app shows the empty state for them.
-  const past = Object.keys(PAST_SHOWS).map(code => {
-    const ev = resolveEvent(code);
-    const b = BRANDS[ev.brand] || BRANDS.ncm;
-    // If this wrapped show is still the rep's current one, their data is on
-    // the device (not archived yet), so offer a live export of it.
-    const live = code === currentEventCode();
-    return `<div class="cleanup-row">
+  // Every real show on this rep's brands; each exports straight from this
+  // device's data for it (nothing gets archived away any more).
+  const codes = sortShowsByDate(pickerShows().filter(c => EVENTS[c])).reverse();
+  const past = codes.map(code => `<div class="cleanup-row">
       <div class="cleanup-row-main">
-        <div class="cleanup-row-name">${esc(b.name)} ${esc(ev.show || "")}</div>
-        <div class="cleanup-row-meta">${esc(showLabelOf(code))} · wrapped ${esc(PAST_SHOWS[code].ended)}</div>
+        <div class="cleanup-row-name">${esc(showLabelOf(code))}</div>
+        <div class="cleanup-row-meta">${esc(showStatusText(code))}</div>
       </div>
-      ${live
-        ? `<button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>`
-        : `<span class="cleanup-row-meta">Closed</span>`}
-    </div>`;
-  }).join("");
-  const pastBlock = past ? `<div class="cleanup-head">Past shows</div>${past}<div class="cleanup-head">Your archived data</div>` : "";
+      <button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>
+    </div>`).join("");
+  const pastBlock = past ? `<div class="cleanup-head">Your shows</div>${past}` : "";
   if (!docs.length) {
-    el.innerHTML = pastBlock + `<div class="cleanup-empty">No archived shows yet. When you start a new show, the current one is saved here.</div>`;
+    el.innerHTML = pastBlock || `<div class="cleanup-empty">No shows yet.</div>`;
     return;
   }
-  el.innerHTML = pastBlock + docs.map(d => {
+  el.innerHTML = pastBlock + `<div class="cleanup-head">Earlier archives</div>` + docs.map(d => {
     _archiveCache[d.id] = { csv: d.csv || "", code: d.eventCode || "show" };
     const when = d.ts ? new Date(d.ts).toLocaleDateString() : "";
     return `<div class="cleanup-row">
@@ -6885,7 +6984,7 @@ document.getElementById("oldDataList").addEventListener("click", e => {
   // A wrapped show that's still the rep's current one exports live from the
   // device; anything genuinely archived comes from the stored CSV.
   const live = e.target.closest("[data-past-dl]");
-  if (live) { downloadCsv(buildShowCsv(), csvFileName(live.dataset.pastDl)); toast("CSV downloaded"); return; }
+  if (live) { downloadCsv(csvForShow(live.dataset.pastDl), csvFileName(live.dataset.pastDl)); toast("CSV downloaded"); return; }
   const btn = e.target.closest("[data-arch-id]");
   if (!btn) return;
   const a = _archiveCache[btn.dataset.archId];
@@ -6908,9 +7007,9 @@ document.getElementById("whoClose").addEventListener("click", () => {
 document.getElementById("whoSheet").addEventListener("click", e => {
   if (e.target.id === "whoSheet") e.currentTarget.style.display = "none";
 });
-// Admin: event codes + install/join QRs (master only). Renders straight from
-// the live BRANDS/EVENTS/MEDIA/MASTER_BRANDS registries in this build, so it
-// can never go stale. QR lib loads on demand (masters only ever pay for it).
+// Admin: the install QR, per-show readiness and the bullpen passcode (masters
+// only). Renders straight from the live BRANDS/EVENTS/MEDIA registries in this
+// build, so it can never go stale. QR lib loads on demand (masters only ever pay for it).
 const GUIDE_APP_URL = location.origin + location.pathname.replace(/index\.html$/, "");
 let _qrLib = null;
 function loadQrLib() {
@@ -6931,17 +7030,16 @@ async function openGuideSheet() {
   // account, and add more brands later under Profile > My brands. Show status
   // per brand is a quick readiness glance, no codes.
   const status = SIGNUP_BRANDS.map(brand => {
-    const code = CURRENT_SHOW[brand];
-    const ev = EVENTS[code];
     const b = BRANDS[brand] || BRANDS.ncm;
-    const med = MEDIA[code] || {};
-    const nBooths = ev ? (ev.booths || []).length : 0;
-    const bits = [
-      isPastShow(code) ? "wrapped" : nBooths ? nBooths + " booths" : "booth list not loaded yet",
-      (ev && ev.dates && ev.dates.length) ? "dates set" : "no dates yet",
-      (med.request && med.folder) ? "folder wired" : "no folder yet"
-    ];
-    return `<div class="guide-brand"><span class="guide-brand-dot" style="background:${b.p.blue}"></span><strong>${esc((ev && ev.show) || b.name)}</strong><span class="guide-brand-meta">${esc(bits.join(" · "))}</span></div>`;
+    const dot = `<span class="guide-brand-dot" style="background:${b.p.blue}"></span>`;
+    const current = sortShowsByDate(showsForBrand(brand).filter(c => EVENTS[c] && showStatus(c).k !== "past"));
+    if (!current.length) return `<div class="guide-brand">${dot}<strong>${esc(b.name)}</strong><span class="guide-brand-meta">no upcoming show loaded</span></div>`;
+    return current.map(code => {
+      const med = MEDIA[code] || {};
+      const bits = [showStatusText(code), (EVENTS[code].booths || []).length + " booths",
+        (med.request && med.folder) ? "folder wired" : "no folder yet"];
+      return `<div class="guide-brand">${dot}<strong>${esc(showLabelOf(code))}</strong><span class="guide-brand-meta">${esc(bits.join(" · "))}</span></div>`;
+    }).join("");
   }).join("");
   body.innerHTML = `
     <div class="guide-install">
@@ -7101,15 +7199,20 @@ document.getElementById("cleanupList").addEventListener("click", async e => {
 // check them here. Nothing is archived or reset — each show keeps its own
 // bucket, exactly like the master switcher — this only controls which brands
 // the header switcher offers and where the app lands at sign-in.
-document.getElementById("brandChecks").addEventListener("change", async () => {
+document.getElementById("brandChecks").addEventListener("change", async e => {
   if (!currentUser) return;
   const picked = [...document.querySelectorAll("#brandChecks input:checked")].map(i => i.value);
-  const home = userBrand(currentUser);
-  if (home && !picked.includes(home)) picked.unshift(home);   // home brand can't be dropped
-  currentUser.brands = picked;
-  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ brands: picked }, { merge: true }); } catch (err) {}
-  setupBrandSwitcher();
-  toast(picked.length > 1 ? "You're on " + picked.length + " brands. Use the header switcher to jump" : "Saved");
+  if (!picked.length) { e.target.checked = true; toast("Keep at least one brand"); return; }
+  const home = picked.includes(userBrand(currentUser)) ? userBrand(currentUser) : picked[0];
+  currentUser.brands = picked; currentUser.brand = home;
+  try { if (fbReady) await fbDb.collection("users").doc(currentUser.uid).set({ brands: picked, brand: home, brandsConfirmed: true }, { merge: true }); } catch (err) {}
+  // Dropped the brand of the show on screen? Move to their nearest remaining one.
+  if (!isMaster() && !picked.includes(brandOfCode(currentEventCode()))) {
+    await switchToShow(defaultShowFor(picked, home), false);
+    setBottomTab("settings"); render();
+  }
+  setupShowPicker();
+  toast(pickerShows().length > 1 ? "Saved. Switch shows with the button at the top" : "Saved");
 });
 document.getElementById("deptSelect").addEventListener("change", async e => {
   if (!currentUser || !e.target.value) return;
@@ -7182,10 +7285,10 @@ document.getElementById("installSkip").addEventListener("click", () => {
 });
 // Fill the signup brand picker from the registry (labels come from BRANDS).
 function setupBrandPicker() {
-  const sel = authEls.brand;
-  if (!sel) return;
-  sel.innerHTML = `<option value="">Choose…</option>` +
-    SIGNUP_BRANDS.map(b => `<option value="${b}">${esc((BRANDS[b] || {}).name || b)}</option>`).join("");
+  const box = authEls.brand;
+  if (!box) return;
+  box.innerHTML = SIGNUP_BRANDS.map(b =>
+    `<label class="abc-row"><input type="checkbox" value="${b}"><span>${esc((BRANDS[b] || {}).name || b)}</span></label>`).join("");
 }
 // QR deep link: the admin guide makes per-show QRs that open the app as
 // ?code=<EVENTCODE>. Reps no longer type anything, so this just preselects
@@ -7196,7 +7299,8 @@ function applyQrPrefill() {
   if (!qrCode || !authEls.brand) return;
   const brand = brandOfCode(qrCode.trim().toUpperCase());
   if (brand && SIGNUP_BRANDS.includes(brand)) {
-    authEls.brand.value = brand;
+    const cb = authEls.brand.querySelector('input[value="' + brand + '"]');
+    if (cb) cb.checked = true;
     setAuthMode("signup");
   }
 }
@@ -7214,7 +7318,7 @@ function showSignedOut() {
   liftVeil(() => authEls.overlay.classList.remove("checking"));
   authEls.overlay.classList.remove("hidden");
   authEls.chip.style.display = "none";
-  document.getElementById("brandSwitchRow").style.display = "none";
+  document.getElementById("showPickBtn").style.display = "none";
   document.getElementById("mediaBtn").style.display = "none";
   document.getElementById("bottomNav").style.display = "none";
   document.getElementById("adminTag").style.display = "none";
@@ -7237,51 +7341,125 @@ function showSignedOut() {
   homeVideosOnly = false; homeShowDoneVids = false; homeShowFootage = false;
   homeVidNotesOpen.clear();
   currentUser = null;
-  masterEventOverride = null;
+  masterEventOverride = null; showPickedManually = false;
+  document.body.classList.remove("has-show-pick");
   setAuthMode("signin");
   setupBrandPicker();
   applyQrPrefill();
   maybeShowInstallPrompt();
   applyBrand("ncm");   // login screen uses NCM neutral colors
 }
-// Brands a master can jump between (label + the event code that drives it).
-// Masters jump between brands; each entry follows that brand's current show,
-// so this never needs touching when a show rolls over.
-const MASTER_BRANDS = [
-  { brand:"lpgas",   label:"LP Gas" },
-  { brand:"golfdom", label:"Golfdom" },
-  { brand:"lm",      label:"LM" },
-  { brand:"pmp",     label:"PMP" },
-  { brand:"pq",      label:"P&Q" },
-].map(b => ({ ...b, code: CURRENT_SHOW[b.brand] }));
-function setupBrandSwitcher() {
-  const row = document.getElementById("brandSwitchRow");
-  const sel = document.getElementById("brandSwitch");
-  // Masters jump across all five brands; a rep covering several (Profile >
-  // My brands) gets the same switcher scoped to theirs. Single-brand reps
-  // see nothing. Data stays separate per show, nothing is archived by a jump.
-  const list = isMaster() ? MASTER_BRANDS
-    : MASTER_BRANDS.filter(b => userBrands(currentUser).includes(b.brand));
-  if (list.length < 2) { row.style.display = "none"; return; }
-  sel.innerHTML = list.map(b => `<option value="${b.code}">${b.label}</option>`).join("");
-  // Locked to the five valid codes — legacy/unknown codes are never added.
-  const cur = currentEventCode();
-  sel.value = list.some(b => b.code === cur) ? cur : list[0].code;
-  row.style.display = "";
+// ── SHOW PICKER ───────────────────────────────────────────────────────────
+// One header control for brand and show together: the pill shows the current
+// show; tapping opens a sheet of every brand this person covers (masters: all
+// five) with each brand's shows and their status. Past shows fold away.
+function pickerBrands() { return isMaster() ? SIGNUP_BRANDS.slice() : userBrands(currentUser); }
+function pickerShows() { return [].concat(...pickerBrands().map(showsForBrand)); }
+function setupShowPicker() {
+  const btn = document.getElementById("showPickBtn");
+  if (!btn) return;
+  const on = !!currentUser && !isHome() && pickerShows().length > 1;
+  btn.style.display = on ? "" : "none";
+  document.body.classList.toggle("has-show-pick", on);
+  if (!on) return;
+  document.getElementById("showPickLbl").textContent = showShortLabelOf(currentEventCode());
+  btn.title = "Switch show: " + showLabelOf(currentEventCode());
 }
-document.getElementById("brandSwitch").addEventListener("change", e => {
-  masterEventOverride = e.target.value;
+let _showSheetPast = false;
+function renderShowSheet() {
+  const cur = currentEventCode();
+  const row = c => {
+    const s = showStatus(c);
+    return `<button class="show-row${c === cur ? " current" : ""}" type="button" data-pick-show="${esc(c)}">
+        <span class="show-row-dot">${c === cur ? "●" : ""}</span>
+        <span class="show-row-name">${esc(isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c))}</span>
+        <span class="show-row-status ${s.k}">${esc(showStatusText(c))}</span>
+      </button>`;
+  };
+  let h = "", past = [];
+  pickerBrands().forEach(b => {
+    const codes = sortShowsByDate(showsForBrand(b));
+    const active = codes.filter(c => showStatus(c).k !== "past");
+    past = past.concat(codes.filter(c => showStatus(c).k === "past"));
+    if (!active.length) return;
+    const B = BRANDS[b] || BRANDS.ncm;
+    h += `<div class="show-group"><div class="show-group-head"><span class="show-group-dot" style="background:${B.p.blue}"></span>${esc(B.name)}</div>${active.map(row).join("")}</div>`;
+  });
+  if (past.length) {
+    const open = _showSheetPast || past.includes(cur);
+    h += `<button class="show-past-toggle" type="button" data-show-past-toggle>${open ? "▾" : "▸"} Past shows (${past.length})</button>`;
+    if (open) h += `<div class="show-group">${sortShows(past).map(row).join("")}</div>`;
+  }
+  document.getElementById("showList").innerHTML = h;
+}
+function openShowSheet() {
+  _showSheetPast = false;
+  renderShowSheet();
+  document.getElementById("showSheet").style.display = "flex";
+}
+async function switchToShow(code, manual) {
+  if (!code) return;
+  masterEventOverride = code;
+  showPickedManually = manual !== false;
   viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
   setBottomTab("schedule");
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
-  applyEvent(masterEventOverride);
-  schedDay = showDayToday(masterEventOverride) || 1;
-  subscribeTeam();              // listen to the new brand's team
+  applyEvent(code);
+  schedDay = showDayToday(code) || 1;
+  setupShowPicker();
+  render();
+  // A device that has never opened this show pulls its cloud copy first, so
+  // a later save can't push an empty bucket over the rep's real data.
+  await hydrateFromCloud();
+  subscribeTeam();
   subscribeMyVideoStatus();
   updateMediaBtn();
   render();
-  const ev = resolveEvent(masterEventOverride);
-  toast("Switched to " + (BRANDS[ev.brand] ? BRANDS[ev.brand].name : "brand"));
+}
+document.getElementById("showPickBtn").addEventListener("click", openShowSheet);
+document.getElementById("showSheet").addEventListener("click", e => {
+  const sheet = document.getElementById("showSheet");
+  if (e.target.id === "showSheet" || e.target.closest("#showSheetClose")) { sheet.style.display = "none"; return; }
+  if (e.target.closest("[data-show-past-toggle]")) { _showSheetPast = !_showSheetPast; renderShowSheet(); return; }
+  const r = e.target.closest("[data-pick-show]");
+  if (!r) return;
+  sheet.style.display = "none";
+  const code = r.dataset.pickShow;
+  if (code === currentEventCode()) return;
+  switchToShow(code, true).then(() => toast("Switched to " + showLabelOf(code)));
+});
+// One-time "confirm your team and brands" for accounts made before signup
+// asked both (or that never set a team). It decides what they see, so it
+// asks once, right after sign-in, and doesn't offer a skip.
+async function maybeShowConfirmSheet() {
+  if (!currentUser || isHome() || !fbReady) return;
+  if (currentUser.brandsConfirmed && currentUser.dept) return;
+  const fresh = await loadUserDoc(currentUser.uid);   // signup's profile write can land a beat after sign-in
+  if (fresh) Object.assign(currentUser, fresh);
+  if (currentUser.brandsConfirmed && currentUser.dept) return;
+  document.getElementById("confirmDept").value = effectiveDept(currentUser.uid, currentUser.dept) || "";
+  const mine = userBrands(currentUser);
+  document.getElementById("confirmBrands").innerHTML = SIGNUP_BRANDS.map(b =>
+    `<label class="bc-row"><input type="checkbox" value="${b}"${mine.includes(b) ? " checked" : ""}><span>${esc((BRANDS[b] || {}).name || b)}</span></label>`).join("");
+  document.getElementById("confirmErr").textContent = "";
+  document.getElementById("confirmSheet").style.display = "flex";
+}
+document.getElementById("confirmSave").addEventListener("click", async () => {
+  const dept = document.getElementById("confirmDept").value;
+  const picked = [...document.querySelectorAll("#confirmBrands input:checked")].map(i => i.value);
+  const err = document.getElementById("confirmErr");
+  if (!dept) { err.textContent = "Pick your team."; return; }
+  if (!picked.length) { err.textContent = "Check at least one brand."; return; }
+  const home = picked.includes(userBrand(currentUser)) ? userBrand(currentUser) : picked[0];
+  Object.assign(currentUser, { dept, brands: picked, brand: home, brandsConfirmed: true });
+  try { await fbDb.collection("users").doc(currentUser.uid).set({ dept, brands: picked, brand: home, brandsConfirmed: true }, { merge: true }); } catch (e) {}
+  document.getElementById("confirmSheet").style.display = "none";
+  if (!isMaster() && !picked.includes(brandOfCode(currentEventCode()))) await switchToShow(defaultShowFor(picked, home), false);
+  setupShowPicker();
+  queueScheduleSync(); queueNotesSync();   // restamp this show's docs with the team
+  render();
+  maybeShowMsPrompt();
+  toast("Thanks, you're all set");
 });
 if (fbReady) {
   fbAuth.onAuthStateChanged(async (user) => {
@@ -7293,7 +7471,7 @@ if (fbReady) {
       // Home team = a separate, read-only dashboard (no booths/schedule).
       if (isHome()) {
         document.body.classList.add("home-mode");
-        document.getElementById("brandSwitchRow").style.display = "none";
+        document.getElementById("showPickBtn").style.display = "none";
         homeBrandFilter = null; homeSearchQ = "";
         applyBrand("ncm");
         updateHeaderBrand("ncm", "Bullpen");
@@ -7327,8 +7505,6 @@ if (fbReady) {
           .forEach(k => localStorage.removeItem(k));
       }
       localStorage.setItem("lpgas_owner_uid", user.uid);
-      // Brand moved to a new show? Archive the finished one and reset first.
-      await rolloverIfShowChanged();
       // Backfill `brand` on profiles created before the brand picker.
       if (!currentUser.brand) {
         const b = userBrand(currentUser);
@@ -7337,24 +7513,15 @@ if (fbReady) {
           try { await fbDb.collection("users").doc(user.uid).set({ brand: b }, { merge: true }); } catch (e) {}
         }
       }
-      // Anyone on more than one brand (masters see all five; some reps cover
-      // two, e.g. Golfdom + LM) opens on whichever of their shows is live or
-      // next up, rather than a brand whose show may have wrapped. The header
-      // switcher still jumps anywhere; this only picks the landing spot.
-      {
-        const mine = userBrands(currentUser);
-        const pool = isMaster() ? null : (mine.length > 1 ? mine : null);
-        if (isMaster() || pool) {
-          const near = nearestShowCode(pool);
-          const own = CURRENT_SHOW[userBrand(currentUser)] || currentUser.eventCode;
-          if (near && near !== own) masterEventOverride = near;
-        }
-      }
+      // Everyone lands on their nearest show (live, else next up, else the
+      // most recent) across every brand they cover; masters across all five.
+      masterEventOverride = defaultShowFor(pickerBrands(), userBrand(currentUser));
+      showPickedManually = false;
       // Theme + booth list for this user's event/brand.
       applyEvent(currentEventCode());
       // During the show itself, open on today's day rather than Day 1.
       schedDay = showDayToday(currentEventCode()) || 1;
-      setupBrandSwitcher();
+      setupShowPicker();
       showSignedIn(profile);
       // Pull cloud data down first if this device is empty, THEN push (which
       // also migrates existing local data) and start the team subscription.
@@ -7368,6 +7535,7 @@ if (fbReady) {
       updateMediaBtn();
       maybeShowInstallPrompt();   // reps on a phone; bullpen is excluded inside
       render();
+      maybeShowConfirmSheet();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
