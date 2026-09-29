@@ -93,6 +93,8 @@
   --maroon-light:#F6E6EB;
   --green:       #2D7140;
   --green-light: #E9F4ED;
+  --sess:        #1B6F8A;   /* education sessions: LM's Irrigation profit-center blue */
+  --sess-light:  #E4F1F5;
   --bg:          #F4F7FB;
   --surface:     #FFFFFF;
   --text:        #0E1B2C;
@@ -1313,6 +1315,73 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .meal-btn-primary.offsite:active { background: var(--blue-dark); }
 .meal-card.offsite { border-left-color: var(--blue); }
 .meal-card.offsite .meal-card-icon { background: var(--blue-light); color: var(--blue); }
+
+/* Education session variant (Equip): its own blue so it never reads as a
+   meal or an off-site meeting on LM's green/rust palette. */
+.meal-card.session { border-left-color: var(--sess); }
+.meal-card.session .meal-card-icon { background: var(--sess-light); color: var(--sess); }
+.meal-card-kicker {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--sess);
+  margin-bottom: 2px;
+}
+.meal-card.session .notes-toggle.has .nt-lbl { color: var(--sess); }
+textarea.nf.sess-nf:focus { border-color: var(--sess); box-shadow: 0 0 0 3px rgba(27,111,138,0.12); }
+.meal-form.session { border-color: var(--sess); }
+.meal-form.session .meal-form-title { color: var(--sess); }
+.meal-btn-primary.session { background: var(--sess); border-color: var(--sess); }
+.meal-btn-primary.session:active { background: #145569; }
+.sess-pick-sub {
+  font-size: 0.74rem;
+  color: var(--text-2);
+  line-height: 1.4;
+  margin: -4px 0 4px;
+}
+.sess-pick-day {
+  font-family: var(--fd);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 12px 0 6px;
+}
+.sess-pick-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 11px;
+  margin: 0 0 6px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: var(--ft);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.sess-pick-row:active { background: var(--sess-light); }
+.sess-pick-row.on { border-color: var(--sess); background: var(--sess-light); cursor: default; }
+.spr-time { flex-shrink: 0; width: 60px; font-size: 0.72rem; font-weight: 700; color: var(--sess); padding-top: 1px; }
+.spr-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.spr-title { font-size: 0.8rem; font-weight: 700; line-height: 1.3; }
+.spr-spk { font-size: 0.7rem; color: var(--text-2); line-height: 1.35; }
+.spr-state {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--sess);
+  padding: 3px 8px;
+  border: 1.5px solid var(--sess);
+  border-radius: 999px;
+}
+.sess-pick-row.on .spr-state { background: var(--sess); color: #fff; }
 .meal-card-actions {
   display: flex;
   flex-direction: column;
@@ -2120,7 +2189,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
    immediate; colors trail just behind. */
 .visit-btn, .video-btn, .upload-btn, .status-btn, .f-pill, .bn-btn,
 .sched-day-tab, .home-rem-btn, .settings-dbx-btn, .team-chip, .notes-toggle,
-.fab-item, .meal-act-btn, .auth-btn, .sched-rm-link {
+.fab-item, .meal-act-btn, .auth-btn, .sched-rm-link, .sess-pick-row {
   transition: background-color 0.16s ease, border-color 0.16s ease,
               color 0.16s ease, transform 0.12s ease, box-shadow 0.16s ease;
 }
@@ -2283,7 +2352,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v143</div>
+      <div class="pf-ver">NCM Events Guide · v144</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4078,12 +4147,32 @@ function defaultShowFor(brands, home) {
   }));
   return best;
 }
+// Education sessions Landscape Management runs at Equip (Day 1 = Wednesday,
+// Oct. 21; Day 2 = Thursday, Oct. 22). Source: "Landscape Management brings
+// its experts to Equip Expo," landscapemanagement.net, July 21, 2026. The
+// article names the lead of eq1/eq5 only as "Scott with Jeffrey Scott
+// Consulting" (its founder is Jeffrey Scott). Ids are permanent: saved
+// schedules point at them. Rooms weren't published; give a session a `room`
+// and it shows on every card. A show gets the "Add education session" menu
+// item only when its EVENTS entry lists `sessions`.
+const LM_EQUIP_SESSIONS = [
+  { id:"eq1",  day:1, time:"9:30 AM",  end:"10:30 AM", title:"Winning in a Tighter Market: How Smart Companies Protect and Grow Profit", speakers:"Jeffrey Scott, Jeffrey Scott Consulting" },
+  { id:"eq2",  day:1, time:"12:30 PM", end:"1:30 PM",  title:"From Startup to Scalable: Understanding the Growth Phases of Your Landscape Business", speakers:"Ben Gandy and Ken Thomas, Envisor Consulting" },
+  { id:"eq3",  day:1, time:"2:00 PM",  end:"3:00 PM",  title:"The Sales to Production Handoff: It's More Than an AI Integration", speakers:"Chris Psencik and Kevin Keim, McFarlin Stanford" },
+  { id:"eq4",  day:1, time:"3:30 PM",  end:"4:30 PM",  title:"The Anatomy of a Winning Snow and Grounds Bid", speakers:"Mike McCarron, Image Works Landscape Management" },
+  { id:"eq5",  day:2, time:"8:00 AM",  end:"9:00 AM",  title:"The $10 Million Landscape Company Playbook: How to Build It and Grow Beyond It", speakers:"Jeffrey Scott, Jeffrey Scott Consulting" },
+  { id:"eq6",  day:2, time:"9:30 AM",  end:"10:30 AM", title:"The Sales Execution Playbook: How to Tactically Drive Sales Initiatives to Grow Your Company Today", speakers:"Chris Psencik and Kevin Keim, McFarlin Stanford" },
+  { id:"eq7",  day:2, time:"11:00 AM", end:"12:00 PM", title:"Grow What You've Got: Mastering Enhancement Sales to Maintenance Clients", speakers:"Ben Gandy and Ken Thomas, Envisor Consulting" },
+  { id:"eq8",  day:2, time:"12:30 PM", end:"1:30 PM",  title:"The Culture Blueprint: How to Design and Build a Great Place to Work", speakers:"Katelyn Manes, Fisk Lawnscapes" },
+  { id:"eq9",  day:2, time:"2:00 PM",  end:"3:00 PM",  title:"Leadership Lessons from the Landscape Management 150", speakers:"Moderated by Seth Jones and Scott Hollister of Landscape Management, with senior leaders from LM150 companies" },
+  { id:"eq10", day:2, time:"3:30 PM",  end:"4:30 PM",  title:"Lead From the Middle: Yes, You!", speakers:"Sam Gembel, Atlas Outdoor" },
+];
 // Show dates, newest list wins. `dates` is Day 1/2/3 as "YYYY-MM-DD" in the
 // show's local time. When today is one of them, the Schedule view opens on
 // that day instead of always Day 1. Omit `dates` and it just opens on Day 1.
 // (Ask for these whenever a booth list is loaded for a show.)
 const EVENTS = {
-  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"] },
+  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS },
   "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-20","2026-10-21","2026-10-22","2026-10-23"] },
   // NPGA Southeastern & International Propane Expo, Music City Center,
   // Nashville (the app's first show). Every show keeps its booth list loaded
@@ -4325,6 +4414,32 @@ const saveOffsite = arr => { const s = load(); s._offsite = arr; save(s); };
 const offsiteId   = () => "o"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const OFFSITE_DEFAULT_TIME = "5:00 PM";
 
+// Education sessions live under the reserved "_sessions" array key: one
+// { sid, notes } per session the rep added. Day, time, title and speakers
+// always come from the show's `sessions` list, so a fix there reaches
+// every schedule already holding that session.
+const loadSessions = () => { const s = load(); return Array.isArray(s._sessions) ? s._sessions : []; };
+const saveSessions = arr => { const s = load(); s._sessions = arr; save(s); };
+function showSessions(code) { return (resolveEvent(code) || {}).sessions || []; }
+function sessionById(sid, code) { return showSessions(code || currentEventCode()).find(x => x.id === sid) || null; }
+// My sessions for the current show, joined with the show's list.
+function mySessions() {
+  const code = currentEventCode();
+  return loadSessions().map(e => {
+    const x = sessionById(e.sid, code);
+    return x ? { ...x, notes: e.notes || "" } : null;
+  }).filter(Boolean);
+}
+// "Day 1 · Wednesday, Oct. 21" from the show's dates ("Day 1" without them).
+function showDayLabel(code, d) {
+  const iso = ((resolveEvent(code) || {}).dates || [])[d - 1];
+  if (!iso) return "Day " + d;
+  const [y, m, dd] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, dd);
+  return "Day " + d + " · " + dt.toLocaleDateString("en-US", { weekday: "long" }) + ", " + fmtMonthDay(dt);
+}
+const SESS_ICON = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h20"></path><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"></path><path d="M7 21l5-5 5 5"></path></svg>`;
+
 // ── CLOUD SCHEDULE SYNC (Phase 1b) ──────────────────────────────────────
 // Each signed-in user pushes a normalized snapshot of their agenda to
 // schedules/{uid}; teammates in the same event read it (view-only).
@@ -4393,6 +4508,7 @@ function buildMyScheduleItems() {
   });
   loadMeals().forEach(m => items.push({ kind:"meal", day:m.day, time:m.time, mealType:m.type, company:m.company||"", notes:m.notes||"" }));
   loadOffsite().forEach(o => items.push({ kind:"offsite", day:o.day, time:o.time, title:o.title||"", company:o.company||"", location:o.location||"", notes:o.notes||"" }));
+  mySessions().forEach(x => items.push({ kind:"session", sid:x.id, day:x.day, time:x.time, end:x.end||"", title:x.title, speakers:x.speakers||"", room:x.room||"", notes:x.notes||"" }));
   return items;
 }
 // Schedule doc id: home event keeps the plain uid; other events (master
@@ -4433,7 +4549,7 @@ async function syncMyScheduleToCloud() {
 async function hydrateFromCloud() {
   if (!fbReady || !currentUser || isHome()) return;
   const st = load();
-  if (Object.keys(st).some(k => k[0] === "c") || (st._meals||[]).length || (st._offsite||[]).length) return;
+  if (Object.keys(st).some(k => k[0] === "c") || (st._meals||[]).length || (st._offsite||[]).length || (st._sessions||[]).length) return;
   try {
     const [nd, sd] = await Promise.all([
       fbDb.collection("notes").doc(myScheduleDocId()).get(),
@@ -4451,19 +4567,22 @@ async function hydrateFromCloud() {
         vclips: Array.isArray(it.vclips) ? it.vclips : [] };
     });
     if (sd.exists) {
-      const meals = [], offs = [];
+      const meals = [], offs = [], sess = [];
       (sd.data().items || []).forEach(it => {
         if (it.kind === "booth") {
           const i = byBooth[it.boothNum + "||" + it.boothName];
           if (i != null) { fresh["c"+i] = fresh["c"+i] || {}; fresh["c"+i].scheduled = it.day + "|" + it.time; }
         } else if (it.kind === "meal") {
           meals.push({ id: mealId(), type: it.mealType, day: it.day, time: it.time, company: it.company || "", notes: it.notes || "" });
+        } else if (it.kind === "session") {
+          if (it.sid && !sess.some(x => x.sid === it.sid)) sess.push({ sid: it.sid, notes: it.notes || "" });
         } else {
           offs.push({ id: offsiteId(), day: it.day, time: it.time, title: it.title || "", company: it.company || "", location: it.location || "", notes: it.notes || "" });
         }
       });
       if (meals.length) fresh._meals = meals;
       if (offs.length) fresh._offsite = offs;
+      if (sess.length) fresh._sessions = sess;
     }
     if (Object.keys(fresh).length) {
       localStorage.setItem(storeKey(), JSON.stringify(fresh));
@@ -4482,7 +4601,11 @@ function subscribeTeam() {
     .onSnapshot(snap => {
       teamSchedules = {};
       snap.forEach(doc => { const d = doc.data(); if (d && d.uid) teamSchedules[d.uid] = d; });
-      if (activeView === "schedule") render();
+      // Not mid-note: this also fires on the rep's own saves, and a redraw
+      // would close the keyboard in the middle of a sentence.
+      const typing = document.activeElement && document.activeElement.classList
+                  && document.activeElement.classList.contains("nf");
+      if (activeView === "schedule" && !typing) render();
     }, () => {});
 }
 
@@ -5328,6 +5451,7 @@ let homeSchedDay = 1;
 let homeSchedQ = "";              // Schedules-view search (across ALL reps + days)
 function schedItemMatch(it, q) {
   return [it.boothName, it.boothNum, it.company, it.title, it.location, it.notes,
+          it.speakers, it.room, it.kind === "session" ? "education session" : "",
           MEAL_LABEL[it.mealType] || "", it.time]
     .some(x => (x || "").toLowerCase().includes(q));
 }
@@ -5783,6 +5907,8 @@ let offFormCompany  = "";
 let offFormLocation = "";
 let offFormNotes    = "";
 let offEditingId    = null;    // when set, the form edits an existing off-site meeting
+let sessPickOpen    = false;   // the education-session picker (shows with `sessions`)
+const sessNotesOpen = new Set();   // session ids whose notes box is open
 
 function buildCard(c, state) {
   const s = state[key(c.i)] || {};
@@ -6048,6 +6174,59 @@ function buildOffsiteForm() {
     </div>`;
 }
 
+// Education-session picker: every session on the show's list, by day. A
+// tap adds it on its own day and time; taking one off is the card's Del,
+// so a stray tap here can never throw away notes.
+function buildSessionPicker() {
+  const code = currentEventCode();
+  const list = showSessions(code);
+  const mine = new Set(loadSessions().map(x => x.sid));
+  const days = [...new Set(list.map(x => x.day))].sort((a, b) => a - b);
+  let h = `<div class="meal-form session">
+    <div class="meal-form-title">Add education sessions</div>
+    <div class="sess-pick-sub">Tap each one you're attending or working. It lands on its own day and time.</div>`;
+  days.forEach(d => {
+    h += `<div class="sess-pick-day">${esc(showDayLabel(code, d))}</div>`;
+    list.filter(x => x.day === d).sort((a, b) => timeToMin(a.time) - timeToMin(b.time)).forEach(x => {
+      const on = mine.has(x.id);
+      h += `<button class="sess-pick-row${on ? " on" : ""}" type="button" data-sess-add="${esc(x.id)}"${on ? ' aria-disabled="true"' : ""}>
+        <span class="spr-time">${esc(x.time)}</span>
+        <span class="spr-body"><span class="spr-title">${esc(x.title)}</span>${x.speakers ? `<span class="spr-spk">${esc(x.speakers)}</span>` : ""}</span>
+        <span class="spr-state">${on ? "Added ✓" : "Add"}</span>
+      </button>`;
+    });
+  });
+  h += `<div class="meal-form-actions"><button class="meal-btn-primary session" type="button" data-sess-done>Done</button></div>
+  </div>`;
+  return h;
+}
+// Session card. `own` = my schedule: a notes box (autosaves like booth
+// notes) and Del. Teammates and the bullpen get it read-only.
+function sessionCardHtml(x, own) {
+  const notes = x.notes || "";
+  const open = own && sessNotesOpen.has(x.id);
+  const prev = open ? "" : notes.trim().replace(/\s+/g, " ").slice(0, 80);
+  return `<div class="meal-card session${own ? "" : " ro"}">
+    <div class="meal-card-icon" aria-hidden="true">${SESS_ICON}</div>
+    <div class="meal-card-body">
+      <div class="meal-card-kicker">Education session</div>
+      <div class="meal-card-title">${esc(x.title || "Education session")}</div>
+      <div class="meal-card-with">${esc(x.time || "")}${x.end ? " to " + esc(x.end) : ""}</div>
+      ${x.speakers ? `<div class="meal-card-with">${esc(x.speakers)}</div>` : ""}
+      ${x.room ? `<div class="meal-card-loc">${esc(x.room)}</div>` : ""}
+      ${own ? `<button class="notes-toggle${notes.trim() ? " has" : ""}" type="button" data-sess-notes="${esc(x.id)}">
+        <span class="nt-lbl">${notes.trim() ? "Notes" : "Add notes"}</span>
+        <span class="nt-prev">${esc(prev)}</span>
+        <span class="nt-chev${open ? " open" : ""}">▾</span>
+      </button>
+      <div class="notes-content${open ? " open" : ""}">
+        <textarea class="nf sess-nf" data-sid="${esc(x.id)}" placeholder="Takeaways, quotes, follow-ups…">${esc(notes)}</textarea>
+      </div>` : (notes ? `<div class="meal-card-notes">${esc(notes)}</div>` : "")}
+    </div>
+    ${own ? `<div class="meal-card-actions"><button class="meal-act-btn del" type="button" data-sess-del="${esc(x.id)}">Del</button></div>` : ""}
+  </div>`;
+}
+
 // Read-only card for a teammate's normalized schedule item.
 function roCardHtml(it) {
   if (it.kind === "booth") {
@@ -6065,6 +6244,10 @@ function roCardHtml(it) {
         ${it.notes   ? `<div class="meal-card-notes">${esc(it.notes)}</div>` : ""}
       </div>
     </div>`;
+  }
+  if (it.kind === "session") {
+    return sessionCardHtml({ id: it.sid || "", title: it.title, time: it.time, end: it.end,
+      speakers: it.speakers, room: it.room, notes: it.notes }, false);
   }
   return `<div class="meal-card offsite ro">
     <div class="meal-card-icon" aria-hidden="true">
@@ -6171,6 +6354,7 @@ function renderScheduleView(state) {
   // ── My own schedule (editable) ──
   const meals = loadMeals();
   const offsite = loadOffsite();
+  const sessions = mySessions();
 
   const nDays = showDayCount(currentEventCode());
   if (schedDay > nDays) schedDay = 1;
@@ -6183,6 +6367,7 @@ function renderScheduleView(state) {
   });
   meals.forEach(m => { if (m.day>=1 && m.day<=nDays) dayCount[m.day]++; });
   offsite.forEach(o => { if (o.day>=1 && o.day<=nDays) dayCount[o.day]++; });
+  sessions.forEach(x => { if (x.day>=1 && x.day<=nDays) dayCount[x.day]++; });
 
   const dayTabs = showDays(currentEventCode()).map(d => `
     <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
@@ -6227,6 +6412,9 @@ function renderScheduleView(state) {
   offsite.filter(o => o.day === schedDay).forEach(o => {
     (byTime[o.time] = byTime[o.time]||[]).push({ kind: "offsite", off: o });
   });
+  sessions.filter(x => x.day === schedDay).forEach(x => {
+    (byTime[x.time] = byTime[x.time]||[]).push({ kind: "session", sess: x });
+  });
   const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
   const hasAny = slotTimes.length > 0;
 
@@ -6237,7 +6425,8 @@ ${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
 </div>` : ""}
 ${mealFormOpen ? buildMealForm() : ""}
-${offFormOpen ? buildOffsiteForm() : ""}`;
+${offFormOpen ? buildOffsiteForm() : ""}
+${sessPickOpen ? buildSessionPicker() : ""}`;
 
   if (!hasAny) {
     html += `<div class="sched-empty">
@@ -6268,6 +6457,8 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
               <button class="meal-act-btn del" data-meal-del="${esc(m.id)}">Del</button>
             </div>
           </div>`;
+        } else if (entry.kind === "session") {
+          html += sessionCardHtml(entry.sess, true);
         } else {
           const o = entry.off;
           html += `<div class="meal-card offsite">
@@ -6304,6 +6495,7 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
     <button class="fab-item" type="button" data-fab-booth>Add booth</button>
     <button class="fab-item" type="button" data-meal-open>Add breakfast / lunch / dinner</button>
     <button class="fab-item" type="button" data-off-open>Add off-site meeting</button>
+    ${showSessions(currentEventCode()).length ? '<button class="fab-item" type="button" data-sess-open>Add education session</button>' : ""}
   </div>
   <button class="fab" type="button" data-fab-toggle aria-label="Add to this day">+</button>
 </div>`;
@@ -6510,6 +6702,7 @@ document.getElementById("content").addEventListener("click", e => {
     mealFormCompany = "";
     mealFormNotes = "";
     offFormOpen = false; offEditingId = null;  // only one form open at a time
+    sessPickOpen = false;
     render();
     return;
   }
@@ -6578,6 +6771,7 @@ document.getElementById("content").addEventListener("click", e => {
     offFormTime = OFFSITE_DEFAULT_TIME;
     offFormTitle = ""; offFormCompany = ""; offFormLocation = ""; offFormNotes = "";
     mealFormOpen = false; mealEditingId = null;  // only one form open at a time
+    sessPickOpen = false;
     render();
     return;
   }
@@ -6624,6 +6818,57 @@ document.getElementById("content").addEventListener("click", e => {
     const id = oDelBtn.dataset.offDel;
     saveOffsite(loadOffsite().filter(o => o.id !== id));
     toast("Off-site meeting removed");
+    render();
+    return;
+  }
+
+  // ── education sessions (shows whose EVENTS entry lists `sessions`) ──
+  if (e.target.closest("[data-sess-open]")) {
+    fabOpen = false; sessPickOpen = true;
+    mealFormOpen = false; mealEditingId = null;   // only one form open at a time
+    offFormOpen = false; offEditingId = null;
+    render();
+    return;
+  }
+  if (e.target.closest("[data-sess-done]")) { sessPickOpen = false; render(); return; }
+  const sAddBtn = e.target.closest("[data-sess-add]");
+  if (sAddBtn) {
+    const sid = sAddBtn.dataset.sessAdd;
+    const x = sessionById(sid);
+    const arr = loadSessions();
+    if (!x || arr.some(y => y.sid === sid)) return;   // already on the schedule
+    arr.push({ sid, notes: "" });
+    saveSessions(arr);
+    toast(`Added to Day ${x.day} · ${x.time}`);
+    render();
+    return;
+  }
+  const sNotesBtn = e.target.closest("[data-sess-notes]");
+  if (sNotesBtn) {
+    const sid = sNotesBtn.dataset.sessNotes;
+    const opening = !sessNotesOpen.has(sid);
+    if (opening) sessNotesOpen.add(sid); else sessNotesOpen.delete(sid);
+    const panel = sNotesBtn.nextElementSibling;
+    panel?.classList.toggle("open", opening);
+    sNotesBtn.querySelector(".nt-chev")?.classList.toggle("open", opening);
+    const txt = (panel?.querySelector(".sess-nf")?.value || "").trim();
+    sNotesBtn.querySelector(".nt-prev").textContent = opening ? "" : txt.replace(/\s+/g, " ").slice(0, 80);
+    sNotesBtn.classList.toggle("has", !!txt);
+    sNotesBtn.querySelector(".nt-lbl").textContent = txt ? "Notes" : "Add notes";
+    if (opening) panel?.querySelector(".sess-nf")?.focus();
+    return;
+  }
+  const sDelBtn = e.target.closest("[data-sess-del]");
+  if (sDelBtn) {
+    const sid = sDelBtn.dataset.sessDel;
+    const typed = document.querySelector(`.sess-nf[data-sid="${sid}"]`)?.value || "";
+    const saved = (loadSessions().find(y => y.sid === sid) || {}).notes || "";
+    if ((typed.trim() || saved.trim())
+        && !confirm("Remove this session from your schedule? Its notes will be deleted too.")) return;
+    clearTimeout(_dt["s:" + sid]);
+    saveSessions(loadSessions().filter(y => y.sid !== sid));
+    sessNotesOpen.delete(sid);
+    toast("Session removed");
     render();
     return;
   }
@@ -6755,6 +7000,17 @@ document.getElementById("content").addEventListener("input", e => {
     }).join("");
     return;
   }
+  // Session notes: the same 480ms autosave as booth notes, keyed by session.
+  if (e.target.classList.contains("sess-nf")) {
+    const sid = e.target.dataset.sid, v = e.target.value;
+    clearTimeout(_dt["s:" + sid]);
+    _dt["s:" + sid] = setTimeout(() => {
+      const arr = loadSessions();
+      const x = arr.find(y => y.sid === sid);
+      if (x) { x.notes = v; saveSessions(arr); }
+    }, 480);
+    return;
+  }
   if (!e.target.classList.contains("nf")) return;
   const i = parseInt(e.target.dataset.i);
   const f = e.target.dataset.f;
@@ -6858,7 +7114,7 @@ document.addEventListener("visibilitychange", () => {
 function startFresh() {
   if (!currentUser || isHome()) return;
   if (Object.keys(upProg).length || photoQueue.length || photoUploading || _isTypingEl(document.activeElement)) return;   // mid-upload, photos waiting or mid-note: stay put
-  viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
+  viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false; sessPickOpen = false;
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   schedDay = showDayToday(currentEventCode()) || schedDay;
   forgetTabScroll();
@@ -7004,6 +7260,12 @@ function buildShowCsv() {
     rows.push([]);
     rows.push(["Off-Site Meeting","Day","Time","With","Location","Notes"]);
     offsite.forEach(o => rows.push([o.title||"Off-Site Meeting", "Day "+o.day, o.time, o.company||"", o.location||"", o.notes||""]));
+  }
+  const sess = mySessions().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
+  if (sess.length) {
+    rows.push([]);
+    rows.push(["Education Session","Day","Time","Speakers","Notes"]);
+    sess.forEach(x => rows.push([x.title, "Day "+x.day, x.time + (x.end ? " to " + x.end : ""), x.speakers||"", x.notes||""]));
   }
   return rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\r\n");
 }
@@ -7714,7 +7976,7 @@ document.getElementById("whoList").addEventListener("click", e => {
   const row = e.target.closest("[data-team-uid]");
   if (!row) return;
   viewedScheduleUid = row.dataset.teamUid || null;
-  schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
+  schedSearchQ = ""; mealFormOpen = false; offFormOpen = false; sessPickOpen = false;
   fabOpen = false; schedAddBooth = false;
   document.getElementById("whoSheet").style.display = "none";
   render();
@@ -8476,7 +8738,7 @@ async function switchToShow(code, manual) {
   if (!code) return;
   masterEventOverride = code;
   showPickedManually = manual !== false;
-  viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false;
+  viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false; sessPickOpen = false;
   setBottomTab("schedule");
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   applyEvent(code);
