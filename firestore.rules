@@ -3,6 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function isMaster() { return request.auth != null && request.auth.uid in ['mJS0Sg6dWQYBmARvtfeytacBSUN2', 'roafgq9A27Rrg1DewdCvy2TnxDk1']; }
     function isHome() { return request.auth != null && request.auth.uid in ['OjQ9GnNOF0dm10hkdAZlYyTcCHJ2']; }
+    // Profile > Video progress (view only) for bullpen staff on their own app
+    // accounts. Nate and Rachel already read everything as masters.
+    function isVideoViewer() { return request.auth != null && request.auth.token.get('email', '').lower() in ['sfischer@northcoastmedia.net']; }
     function ownDoc(docId) { return docId == request.auth.uid || docId.matches('^' + request.auth.uid + '__.*'); }
     // Show codes are BRAND-SOMETHING (LM-2026, LM-ELEVATE-2026, ...). Brands
     // hold any number of shows, so the rules accept the shape instead of a
@@ -56,7 +59,7 @@ service cloud.firestore {
       // Home may only read Editorial/Digital notes; sales/legacy docs (no
       // dept field, e.g. Brian's) are unreadable by home and never displayed.
       allow read: if request.auth != null && (ownDoc(docId) || isMaster()
-                                              || (isHome() && resource.data.dept == "edit"));
+                                              || ((isHome() || isVideoViewer()) && resource.data.dept == "edit"));
       allow create, update: if request.auth != null && ownDoc(docId) && validEvent(request.resource.data.eventCode);
       allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
     }
@@ -85,12 +88,13 @@ service cloud.firestore {
     // state across devices; masters can read and clean up.
     match /homeFlags/{docId} {
       allow read, create, update, delete: if request.auth != null && (isHome() || isMaster());
+      allow read: if isVideoViewer();
     }
 
     // Video pipeline: home marks a rep's visited booth's video as done;
     // the rep reads their own records to show the "Video done" chip.
     match /videoStatus/{docId} {
-      allow read: if request.auth != null && (resource.data.repUid == request.auth.uid || isHome() || isMaster());
+      allow read: if request.auth != null && (resource.data.repUid == request.auth.uid || isHome() || isMaster() || isVideoViewer());
       allow create, update, delete: if request.auth != null && (isHome() || isMaster());
     }
 

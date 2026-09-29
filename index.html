@@ -1805,6 +1805,18 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .acct-chg i { font-style: normal; color: var(--muted); padding: 0 3px; }
 .acct-effects { margin: 12px 0 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
 .acct-effects li { margin-top: 4px; }
+/* ── Profile > Video progress (view only) ── */
+.vp-sum { font-size: 0.8rem; font-weight: 700; color: var(--text-2); padding: 10px 2px 4px; }
+.vp-item { padding: 12px 2px; border-bottom: 1px solid var(--border-soft); }
+.vp-co { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+.vp-booth { font-weight: 600; font-size: 0.74rem; color: var(--muted); margin-left: 6px; }
+.vp-meta { font-size: 0.74rem; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+.vp-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.vp-chip { display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+.vp-chip.on { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
+.vp-chip.work { color: #5B2D71; border-color: #D9C6E5; background: #F1E8F6; }
+.vp-chip.final { color: #fff; border-color: #2D7140; background: #2D7140; }
+.vp-done-toggle { display: block; margin: 12px 0 4px; padding: 4px 2px; background: none; border: none; color: var(--blue); font-family: var(--ft); font-weight: 700; font-size: 0.8rem; cursor: pointer; }
 
 
 /* ── Bullpen mode: hide the field-app chrome ── */
@@ -2253,6 +2265,13 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
       <button class="pf-row" id="oldDataBtn" type="button"><span class="pf-k">Download show data</span><span class="pf-v">CSV</span><span class="pf-chev" aria-hidden="true"></span></button>
     </div>
 
+    <div id="settingsVideoProgress" style="display:none">
+      <div class="pf-label">Bullpen</div>
+      <div class="pf-group">
+        <button class="pf-row" id="vpBtn" type="button"><span class="pf-k">Video progress</span><span class="pf-v" id="vpBtnVal"></span><span class="pf-chev" aria-hidden="true"></span></button>
+      </div>
+    </div>
+
     <div id="settingsAdmin" style="display:none">
       <div class="pf-label">Admin</div>
       <div class="pf-group">
@@ -2264,7 +2283,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v142</div>
+      <div class="pf-ver">NCM Events Guide · v143</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2310,6 +2329,11 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <!-- ── Admin: every account, with guarded team and brand edits (master only) ── -->
 <div id="accountsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card acct-card" id="acctCard"></div>
+</div>
+
+<!-- ── Profile > Video progress: the bullpen's steps, view only ── -->
+<div id="vpSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card acct-card" id="vpCard"></div>
 </div>
 
 <!-- ── Confirm before un-flagging a booth's video (accidental re-taps) ── -->
@@ -5848,6 +5872,9 @@ function viewTransition(key) {
   _viewInTimer = setTimeout(() => el.classList.remove("view-in"), 400);
 }
 function render() {
+  // A redraw can remove the field that had focus without iOS firing
+  // focusout, which left the bottom bar hidden; recheck once it's done.
+  queueMicrotask(releaseKbIfNoField);
   // Always first: the Settings card is a real DOM node living in #content
   // while its tab is open, and any other view's innerHTML would destroy it.
   parkSettingsCard();
@@ -6095,6 +6122,12 @@ function buildWhoSheet() {
 
 function renderScheduleView(state) {
   const el = document.getElementById("content");
+  // Keep the cursor in the add-booth search only if it was already there
+  // (a redraw mid-typing). v142 and earlier put it back on EVERY redraw after
+  // Add booth was used once, background syncs included; iPhone counted that
+  // as typing and hid the bottom bar with no keyboard on screen.
+  const hadSearchFocus = !!(document.activeElement && document.activeElement.classList
+    && document.activeElement.classList.contains("sched-search-input"));
   const teamBar = buildSchedTitle();
 
   // ── Viewing a teammate's schedule (read-only) ──
@@ -6280,7 +6313,7 @@ ${offFormOpen ? buildOffsiteForm() : ""}`;
   if (dl && !dl.childElementCount) {
     dl.innerHTML = CO.map(c => `<option value="${esc(c.n)}">`).join("");
   }
-  if (schedAddBooth || schedSearchQ) document.querySelector(".sched-search-input")?.focus();
+  if (hadSearchFocus) document.querySelector(".sched-search-input")?.focus();
   updateStats(state);
 }
 
@@ -6864,7 +6897,20 @@ document.addEventListener("focusin", e => {
   if (!_isTouchDevice || !_isTypingEl(e.target)) return;
   clearTimeout(_kbTimer);
   document.body.classList.add("kb-open");
+  // If no keyboard ever shows up (a focus iOS didn't act on), don't leave
+  // the bar hidden.
+  setTimeout(() => { if (document.body.classList.contains("kb-open") && !kbShowing()) document.body.classList.remove("kb-open"); }, 900);
 });
+// "Keyboard up" means the visible area is well short of the page, not just
+// that a text field has focus.
+function kbShowing() {
+  const vv = window.visualViewport;
+  return vv ? (window.innerHeight - vv.height > 120) : true;
+}
+function releaseKbIfNoField() {
+  if (document.body.classList.contains("kb-open") && !_isTypingEl(document.activeElement))
+    document.body.classList.remove("kb-open");
+}
 document.addEventListener("focusout", () => {
   if (!_isTouchDevice) return;
   clearTimeout(_kbTimer);
@@ -6876,6 +6922,11 @@ document.addEventListener("focusout", () => {
   }, 80);
 });
 if (window.visualViewport) window.visualViewport.addEventListener("resize", () => {
+  // The keyboard opening or closing resizes the visible area: follow it.
+  if (_isTouchDevice) {
+    if (_isTypingEl(document.activeElement) && kbShowing()) document.body.classList.add("kb-open");
+    else if (!kbShowing()) document.body.classList.remove("kb-open");
+  }
   if (!document.body.classList.contains("kb-open")) settlePage();
 });
 
@@ -7449,6 +7500,8 @@ function prepSettings() {
   document.getElementById("curShowName").textContent = currentShowLabel();
   document.getElementById("pfShowRow").classList.toggle("static", pickerShows().length < 2);
   document.getElementById("settingsAdmin").style.display = isMaster() ? "" : "none";
+  document.getElementById("settingsVideoProgress").style.display = canViewVideoProgress() ? "" : "none";
+  document.getElementById("vpBtnVal").textContent = showShortLabelOf(currentEventCode()) || "";
   if (isMaster() && acctState === "idle") loadAccounts();   // fills the Accounts count, once
   updateMsSection();
 }
@@ -7872,6 +7925,117 @@ async function onProfileChanged(deptChanged) {
   render();
   toast("Your team and brands were updated");
 }
+
+// ── PROFILE > VIDEO PROGRESS ─────────────────────────────────────────────
+// Nate, Rachel and Sydney can check the bullpen's production steps from
+// their phones: every video-flagged booth on the current show with Working
+// on, Edited, Uploaded to site, Shared on socials and Shared with sales, and
+// who did each. View only; the buttons live in the bullpen. The rules let
+// these accounts read the Editorial notes, bullpen flags and video status
+// (the admins as masters, Sydney by her email).
+const VIDEO_VIEWER_EMAILS = ["nstoltman@northcoastmedia.net", "rrosen@northcoastmedia.net", "sfischer@northcoastmedia.net"];
+function canViewVideoProgress() {
+  return !!currentUser && !isHome()
+    && (isMaster() || VIDEO_VIEWER_EMAILS.includes(String(currentUser.email || "").toLowerCase()));
+}
+let vpData = { code: null, notes: {}, flags: {}, status: {}, got: 0, error: false };
+let _vpUnsubs = [];
+let vpShowDone = false;
+function vpStop() { _vpUnsubs.forEach(u => { try { u(); } catch (e) {} }); _vpUnsubs = []; }
+function openVideoProgress() {
+  if (!fbReady || !canViewVideoProgress()) return;
+  const code = currentEventCode();
+  vpStop();
+  vpData = { code, notes: {}, flags: {}, status: {}, got: 0, error: false };
+  vpShowDone = false;
+  document.getElementById("vpSheet").style.display = "flex";
+  renderVideoProgress();
+  const seen = new Set();
+  const listen = (key, query) => _vpUnsubs.push(query.onSnapshot(snap => {
+    const m = {};
+    snap.forEach(d => { m[d.id] = d.data(); });
+    vpData[key] = m;
+    seen.add(key); vpData.got = seen.size;
+    renderVideoProgress();
+  }, () => { vpData.error = true; renderVideoProgress(); }));
+  listen("notes", fbDb.collection("notes").where("eventCode", "==", code).where("dept", "==", "edit"));
+  listen("flags", fbDb.collection("homeFlags").where("eventCode", "==", code));
+  listen("status", fbDb.collection("videoStatus").where("eventCode", "==", code));
+}
+function closeVideoProgress() {
+  vpStop();
+  document.getElementById("vpSheet").style.display = "none";
+}
+// Same grouping as the bullpen's Videos view: one card per booth however
+// many reps flagged it, done once every rep's flag is marked done, and cards
+// the bullpen removed stay out (unless newer footage came in).
+function vpGroups() {
+  const code = vpData.code, groups = {};
+  Object.values(vpData.notes).forEach(d => {
+    if (effectiveDept(d.uid, d.dept) !== "edit") return;
+    (d.items || []).forEach(it => {
+      if (!it.video) return;
+      const g = groups[it.boothNum] = groups[it.boothNum] || { boothNum: it.boothNum, boothName: it.boothName, reps: [] };
+      const clips = (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips : (it.vlink ? [{ t: it.vupAt || 0 }] : []);
+      g.reps.push({ name: d.name || "Rep", visited: !!it.visited, vts: it.vts || 0, clips,
+        done: !!vpData.status[code + "__" + d.uid + "__" + it.boothNum] });
+    });
+  });
+  return Object.values(groups).map(g => {
+    const hide = vpData.flags["hide__" + code + "__" + g.boothNum];
+    const newest = Math.max(0, ...g.reps.flatMap(r => r.clips.map(c => c.t || 0)));
+    return { ...g,
+      hidden: !!hide && (hide.gone || !(newest > (hide.ts || 0))),
+      done: g.reps.every(r => r.done),
+      visited: g.reps.some(r => r.visited),
+      vts: Math.max(0, ...g.reps.map(r => r.vts)),
+      clips: g.reps.reduce((n, r) => n + r.clips.length, 0) };
+  }).filter(g => !g.hidden);
+}
+function renderVideoProgress() {
+  const card = document.getElementById("vpCard");
+  if (!card) return;
+  const code = vpData.code;
+  let body;
+  if (vpData.error) body = `<div class="acct-empty">Couldn't load video progress. Check your connection and try again.</div>`;
+  else if (vpData.got < 3) body = `<div class="acct-empty">Loading…</div>`;
+  else {
+    const vids = vpGroups().sort((a, b) => (b.visited - a.visited) || (b.vts - a.vts)
+      || String(a.boothName || "").localeCompare(String(b.boothName || "")));
+    if (!vids.length) body = `<div class="acct-empty">No videos flagged for this show yet.</div>`;
+    else {
+      const chip = (label, rec, cls) => `<span class="vp-chip${rec ? " on" + (cls ? " " + cls : "") : ""}">${rec ? "✓ " : ""}${esc(label)}${rec && rec.member ? " · " + esc(firstNameOf(memberName(rec.member))) : ""}</span>`;
+      const item = v => {
+        const wk = vpData.flags["work__" + code + "__" + v.boothNum] || null;
+        const steps = vpData.flags["steps__" + code + "__" + v.boothNum] || {};
+        const recs = VID_STEPS.map(s => [s, s.k === "sales" ? (v.done ? (steps.sales || {}) : null) : (steps[s.k] || null)]);
+        const last = [wk && !v.done ? ["Working on", wk] : null].concat(recs.map(([s, r]) => r ? [s.label, r] : null))
+          .filter(x => x && x[1].ts).sort((a, b) => b[1].ts - a[1].ts)[0];
+        const names = [...new Set(v.reps.map(r => r.name))].join(", ");
+        return `<div class="vp-item">
+          <div class="vp-co">${esc(v.boothName)}<span class="vp-booth">Booth ${esc(v.boothNum)}</span></div>
+          <div class="vp-meta">${esc(names)} · ${v.visited ? "visited" : "not visited yet"}${v.clips ? " · " + v.clips + " clip" + (v.clips === 1 ? "" : "s") + " in" : ""}${last ? "<br>Last step: " + esc(last[0]) + (last[1].member ? " by " + esc(memberName(last[1].member)) : "") + ", " + esc(fmtExact(last[1].ts)) : ""}</div>
+          <div class="vp-chips">${v.done ? "" : chip("Working on", wk, "work")}${recs.map(([s, r]) => chip(s.label, r, s.k === "sales" ? "final" : "")).join("")}</div>
+        </div>`;
+      };
+      const open = vids.filter(v => !v.done), done = vids.filter(v => v.done);
+      body = `<div class="vp-sum">${vids.length} video${vids.length === 1 ? "" : "s"} flagged · ${done.length} done · ${open.length} to go</div>`
+        + (open.length ? open.map(item).join("") : `<div class="acct-empty">Every video on this show is done.</div>`)
+        + (done.length ? `<button class="vp-done-toggle" type="button" data-vp-done>${vpShowDone ? "Hide" : "Show"} completed (${done.length})</button>` + (vpShowDone ? done.map(item).join("") : "") : "");
+    }
+  }
+  card.innerHTML = `<div class="acct-top">
+      <div class="settings-title">Video progress</div>
+      <div class="acct-sum">${esc(showLabelOf(code) || "This show")}. View only: the bullpen taps these steps. Switch shows with the button at the top.</div>
+    </div>
+    <div class="acct-list">${body}</div>
+    <button class="settings-done share-secondary" type="button" data-vp-close>Close</button>`;
+}
+document.getElementById("vpBtn").addEventListener("click", openVideoProgress);
+document.getElementById("vpSheet").addEventListener("click", e => {
+  if (e.target.id === "vpSheet" || e.target.closest("[data-vp-close]")) { closeVideoProgress(); return; }
+  if (e.target.closest("[data-vp-done]")) { vpShowDone = !vpShowDone; renderVideoProgress(); }
+});
 
 // ── ADMIN: ACCOUNTS ──────────────────────────────────────────────────────
 // Every profile in one list (masters only; the rules already let masters
@@ -8457,6 +8621,7 @@ if (fbReady) {
       if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
       if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
       if (_myProfUnsub) { _myProfUnsub(); _myProfUnsub = null; }
+      closeVideoProgress();
       acctRows = []; acctState = "idle";
       _bullpenPass = null; _bullpenPassP = null;
       uploadCfg = null; _msBooted = false;   // MS tokens stay: device-level, like home_member
