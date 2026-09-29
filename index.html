@@ -1972,6 +1972,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-rem-btn.done { color: #2D7140; border-color: #BCDDC6; background: #EDF7F0; }
 .home-rem-donehead { font-size: 0.7rem; font-weight: 700; color: var(--muted); padding: 10px 0 2px; cursor: pointer; -webkit-user-select: none; user-select: none; }
 /* Rep-side: the bullpen finished this booth's video */
+.gone-chip { flex-shrink: 0; background: #F4F1EC; color: #6B5D4B; border: 1px solid #DDD3C4; padding: 3px 8px; border-radius: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px; }
 .video-done-chip { flex-shrink: 0; background: #EDF7F0; color: #2D7140; border: 1px solid #BCDDC6; padding: 3px 8px; border-radius: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.3px; }
 
 /* Home dashboard: status chips, freshness, copy buttons, workflow flags */
@@ -2352,7 +2353,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v144</div>
+      <div class="pf-ver">NCM Events Guide · v145</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2822,7 +2823,13 @@ const LPGAS_BOOTHS = [
   {n:"Zephyr Solutions LLC",b:"446"}
 ];
 // Equip Expo 2026 exhibitors (Landscape Management's show), pulled from the
-// official Map Your Show directory 2026-09-15: 930 companies, all boothed.
+// official Map Your Show directory 2026-09-15 (930 companies, all boothed)
+// and refreshed 2026-09-29 (933 listed: 9 new on the end, 6 withdrawn kept
+// in place as x:1, 8 booth moves and 4 renames edited in place).
+// REFRESHING ANY LIST: never insert, delete or reorder entries. Phones key
+// saved booth data by position, so edit moves/renames in place, append new
+// companies and flag withdrawn ones x:1 (hidden unless a rep saved
+// something on them).
 // Multi-booth companies show both, indoor first (e.g. "1182 / 6052D" = booth
 // + outdoor demo yard). Refresh closer to the show for late additions.
 const LM_BOOTHS = [
@@ -2889,7 +2896,7 @@ const LM_BOOTHS = [
   {n:"Aspen Fuels", b:"11042 / 30NWP"},
   {n:"Aspire Software", b:"1170"},
   {n:"Association of Outdoor Lighting Professionals", b:"27063"},
-  {n:"Atlantic-OASE", b:"22044"},
+  {n:"Atlantic-Oase", b:"22044"},
   {n:"Avant Tecno USA, Inc.", b:"3142 / 7720D / TC447"},
   {n:"Azenco Outdoor", b:"42501"},
   {n:"Azpects Easy Joint", b:"27022"},
@@ -2904,13 +2911,13 @@ const LM_BOOTHS = [
   {n:"Bandit Industries Inc.", b:"9049 / 7148D"},
   {n:"Barreto Manufacturing Inc.", b:"9191 / 7767D"},
   {n:"Bartell Global", b:"561"},
-  {n:"Bayto Pools", b:"42607"},
+  {n:"Bayto Pools", b:"27034"},
   {n:"BCE Cleaning Systems", b:"488"},
   {n:"Beacon Funding", b:"22102"},
   {n:"Beavrr", b:"42043"},
   {n:"Belgard® Hardscapes", b:"20038"},
   {n:"Berlin Gardens", b:"30028"},
-  {n:"Berlon Industries", b:"9218"},
+  {n:"Berlon Industries", b:"9218", x:1},
   {n:"Berti Sisto & C./Via Dell'Arte Inc.", b:"28017"},
   {n:"Best Bee Trap, LLC", b:"42252"},
   {n:"Better Source Equipment", b:"42234"},
@@ -2952,7 +2959,7 @@ const LM_BOOTHS = [
   {n:"Burly USA", b:"42818"},
   {n:"Burrito Brands", b:"276"},
   {n:"Bushman USA", b:"11031"},
-  {n:"busybusy Mobile Time & Equipment Tracking", b:"4011"},
+  {n:"BusyBusy by AlignOps", b:"4011"},
   {n:"Buyers Products", b:"5184"},
   {n:"Buzon USA, Inc.", b:"42709"},
   {n:"BV Powersports (Trail Master)", b:"8182"},
@@ -3114,7 +3121,7 @@ const LM_BOOTHS = [
   {n:"Firebuggz", b:"42807"},
   {n:"Firehawk Bioherbicide", b:"26092"},
   {n:"Firman Power Equipment", b:"11070"},
-  {n:"First Products", b:"42032"},
+  {n:"First Products", b:"9218"},
   {n:"Fisher Barton", b:"10116"},
   {n:"Fixposition.com", b:"9015"},
   {n:"FJDYNAMICS INTERNATIONAL LIMITED", b:"42861"},
@@ -3141,7 +3148,7 @@ const LM_BOOTHS = [
   {n:"Geneva Capital, LLC", b:"4014"},
   {n:"Genmax Power", b:"26066"},
   {n:"Geo-Tronics of Kentucky", b:"40011"},
-  {n:"GeoCeramica USA", b:"30006"},
+  {n:"GeoCeramica USA", b:"27038"},
   {n:"GEODNET", b:"9195"},
   {n:"Geotab", b:"42212"},
   {n:"Giant Electric Tech Inc.", b:"42529"},
@@ -3201,7 +3208,7 @@ const LM_BOOTHS = [
   {n:"HiVis Supply", b:"42535"},
   {n:"HLA Snow/Reist Industries", b:"11050 / 6360D"},
   {n:"Holidynamics, Inc.", b:"24064"},
-  {n:"Homebridge Precast, LLC", b:"42714"},
+  {n:"Homebridge Precast, LLC", b:"42714", x:1},
   {n:"Homeworks", b:"42833"},
   {n:"Housecall Pro", b:"42926"},
   {n:"HPC Fire Inspired™", b:"30040"},
@@ -3214,7 +3221,7 @@ const LM_BOOTHS = [
   {n:"HY-C Company", b:"42235"},
   {n:"Hydra-Flex Inc.", b:"42324"},
   {n:"Hydro-Gear", b:"2092 / 6018D"},
-  {n:"i3 Product Development", b:"10062"},
+  {n:"i3 Product Development", b:"10062", x:1},
   {n:"Ideal Block/Uniframe Systems", b:"40004"},
   {n:"Ideal Computer Systems Inc./c-Systems Software/Charter Software Inc.", b:"7004"},
   {n:"Ideal Rockaway", b:"9188"},
@@ -3297,7 +3304,7 @@ const LM_BOOTHS = [
   {n:"Lawn Crack (iGoProLawnSupply.com)", b:"11189"},
   {n:"LEAFBOSS", b:"9189"},
   {n:"LeanScaper Inc", b:"1200"},
-  {n:"Lemke Stone", b:"30013"},
+  {n:"Lemke Stone", b:"28018"},
   {n:"LiftMatic", b:"9004"},
   {n:"Lights For Decorators", b:"21110"},
   {n:"Lil' Bubba Curb Machines/The Concrete Edge Co.", b:"9164 / 6448D"},
@@ -3349,7 +3356,7 @@ const LM_BOOTHS = [
   {n:"Milwaukee Tool", b:"1016 / 6270D / TC415"},
   {n:"Minebea Mitsumi", b:"11008"},
   {n:"Miner Elastomer Products Corporation", b:"11004"},
-  {n:"MiniCrusher.com", b:"42801"},
+  {n:"MiniCrusher.com", b:"42801", x:1},
   {n:"MiniTrencher", b:"2036 / 6106D"},
   {n:"Moasure", b:"28012 / 28016"},
   {n:"Modern Moulding", b:"42803"},
@@ -3402,7 +3409,7 @@ const LM_BOOTHS = [
   {n:"Omfa Rubbers Limited", b:"42107"},
   {n:"Omni Powertrain Technologies", b:"9039"},
   {n:"One Step GPS", b:"271"},
-  {n:"OrbiSharp Robotics, Inc.", b:"42765"},
+  {n:"Hercobot (by OrbiSharp Robotics)", b:"42765"},
   {n:"OREC America Inc.", b:"10061 / 6248D"},
   {n:"OREGON®", b:"3164 / TC307"},
   {n:"Orion Professional Turf Products", b:"42735"},
@@ -3420,7 +3427,7 @@ const LM_BOOTHS = [
   {n:"PaveDrain, LLC", b:"42901"},
   {n:"Paver Buddy Inc", b:"42719"},
   {n:"PBI Gordon", b:"8042"},
-  {n:"Peacock Pavers", b:"42900"},
+  {n:"Peacock Pavers", b:"30006"},
   {n:"PECO", b:"384"},
   {n:"Peerless Gear/Comet Clutch", b:"11005"},
   {n:"PELLENC", b:"11191"},
@@ -3565,7 +3572,7 @@ const LM_BOOTHS = [
   {n:"SRW Products", b:"23032"},
   {n:"Stabila Inc.", b:"540"},
   {n:"StabilBase", b:"42722"},
-  {n:"Stanley Black & Decker", b:"5116"},
+  {n:"Stanley Black & Decker Outdoor Cub Cadet, Hustler and DEWALT", b:"5116"},
   {n:"Staple Wasp", b:"8034"},
   {n:"Star Industries", b:"42227"},
   {n:"Steel Green Manufacturing, LLC", b:"9208 / 7434D"},
@@ -3605,19 +3612,19 @@ const LM_BOOTHS = [
   {n:"Synergetic Media", b:"42745"},
   {n:"SynkedUP", b:"20064"},
   {n:"Synthetic Turf Resources", b:"42519"},
-  {n:"T Design (USA) Inc.", b:"40019"},
+  {n:"T Design (USA) Inc.", b:"28041"},
   {n:"T-MAX INDUSTRIAL CO., LTD", b:"25069"},
   {n:"Tailor Made Grass", b:"42908"},
   {n:"Taizhou Chenhui Machinery Manufacturing Co., Ltd.", b:"9216"},
   {n:"Takeuchi", b:"11146 / 7734D"},
-  {n:"Tamarack Industries", b:"11041"},
+  {n:"Tamarack Industries", b:"11041", x:1},
   {n:"TCC Materials", b:"28030"},
   {n:"Techniseal", b:"20054"},
   {n:"Terrarobo", b:"3156"},
   {n:"Texas Nursery & Landscape Association", b:"27021"},
   {n:"The Belden Brick Company", b:"29012"},
   {n:"The Bubba Hogan Coaching", b:"42625"},
-  {n:"The Buggy Barn", b:"42523"},
+  {n:"The Buggy Barn", b:"28037"},
   {n:"The Charles Machine Works / Ditch Witch", b:"1096 / 7428D"},
   {n:"The Firepit Source", b:"30029"},
   {n:"The Fountainhead Group, Inc.", b:"11072"},
@@ -3702,7 +3709,7 @@ const LM_BOOTHS = [
   {n:"Warming Trends", b:"22054"},
   {n:"Warner Electric", b:"9106"},
   {n:"Weathermatic", b:"42242"},
-  {n:"Weaver Craft Structures", b:"42713"},
+  {n:"Weaver Craft Structures", b:"24047"},
   {n:"Weaverline", b:"42207"},
   {n:"Weber Mt, Inc.", b:"22048 / 4408D"},
   {n:"Weifang Sinolink Heavy Industry CO., LTD.", b:"42402"},
@@ -3728,7 +3735,7 @@ const LM_BOOTHS = [
   {n:"Wright Manufacturing, Inc.", b:"3094 / 7624D"},
   {n:"WUXI EVERWIN VEHICLE PARTS CO., LTD", b:"42636"},
   {n:"Wuyi Zhisheng Tool Co., Ltd.", b:"25085"},
-  {n:"XIDAR", b:"42007"},
+  {n:"XIDAR", b:"42007", x:1},
   {n:"Yangzhou Higher Machinery Co., Ltd.", b:"42334"},
   {n:"Yarbo International Inc.", b:"10162 / 6243D"},
   {n:"YAT USA, Inc – SENIX Tools", b:"3072"},
@@ -3756,9 +3763,23 @@ const LM_BOOTHS = [
   {n:"Zhejiang Well Shine Industry & Trade Co.Ltd,", b:"27111"},
   {n:"Zhejiang Xinhao Rehabilitation Equipment Co., LTD.", b:"42143"},
   {n:"Zhong Xiang Rubber Products Co.,Ltd", b:"42228"},
+  // Added in the 2026-09-29 refresh. New companies ALWAYS go on the end:
+  // phones key saved booth data by position, so inserting mid-list would
+  // hand one company's notes and visits to another.
+  {n:"Atlantic Logistics", b:"42607"},
+  {n:"BIK Boom Trucks", b:"26108"},
+  {n:"Boss Industrial, Inc.", b:"10062"},
+  {n:"Cyclone2X Wholesale and Retail USA", b:"42036"},
+  {n:"Elgin USA", b:"10188-B"},
+  {n:"Fifthroom.com", b:"42623"},
+  {n:"Invoyce", b:"30013"},
+  {n:"Sinnov, Inc.", b:"40019"},
+  {n:"Zimmerman Manufacturing", b:"42032"},
 ];
 // PestWorld 2026 exhibitors (PMP's show), from the official Map Your Show
-// directory 2026-09-15: 290 companies, hall sold out. CB-## booths are the
+// directory 2026-09-15 (290 companies, hall sold out); refreshed 2026-09-29
+// to 300 (10 new on the end, 3 booth changes in place). Same refresh rule
+// as LM_BOOTHS: append only, never reorder. CB-## booths are the
 // Compelling Booths corridor; they group under Other locations.
 const PMP_BOOTHS = [
   {n:"A.R.M Solutions", b:"1318"},
@@ -3835,7 +3856,7 @@ const PMP_BOOTHS = [
   {n:"Dagmar Marketing", b:"926"},
   {n:"Dash", b:"1734"},
   {n:"DATAMAN GROUP DIRECT MARKETING", b:"842"},
-  {n:"Denaro AI", b:"134"},
+  {n:"Denaro AI", b:"1744"},
   {n:"Design Collective by Cintas", b:"1138"},
   {n:"DETOUR®", b:"1526"},
   {n:"Dijital Karma Inc.", b:"1126"},
@@ -3938,7 +3959,7 @@ const PMP_BOOTHS = [
   {n:"No-Pest Vent", b:"1735"},
   {n:"NPD Products, Ltd.", b:"1606"},
   {n:"NWCOA", b:"CB-19"},
-  {n:"OLDHAM CHEMICALS", b:"1007 / 531"},
+  {n:"OLDHAM CHEMICALS", b:"531"},
   {n:"One Step GPS", b:"1637"},
   {n:"OpSync", b:"1241"},
   {n:"Overit", b:"1208"},
@@ -3995,7 +4016,7 @@ const PMP_BOOTHS = [
   {n:"Sellify AI", b:"1717 / 933"},
   {n:"Semco Co. Ltd.", b:"1509"},
   {n:"SenesTech, Inc.", b:"1132"},
-  {n:"Serve AI", b:"1635"},
+  {n:"Serve AI", b:"1635 / 442"},
   {n:"Sewer Assassin", b:"314"},
   {n:"Sharda USA", b:"1738"},
   {n:"SHENZHEN LONGRAY TECHNOLOGY CO., LTD.", b:"500"},
@@ -4051,6 +4072,19 @@ const PMP_BOOTHS = [
   {n:"Yard Gard Deterrents", b:"201"},
   {n:"Your Crawlspace, Inc.", b:"1806"},
   {n:"Zhongshan Glee Electricals Manufacturing Co.,Ltd", b:"206"},
+  // Added in the 2026-09-29 refresh. New companies ALWAYS go on the end:
+  // phones key saved booth data by position, so inserting mid-list would
+  // hand one company's notes and visits to another.
+  {n:"Align LLC", b:"1836"},
+  {n:"CLA (CliftonLarsonAllen LLP)", b:"CB-23"},
+  {n:"Context Overlay Inc", b:"1040"},
+  {n:"D2SYNC", b:"1801"},
+  {n:"Fieldster", b:"320"},
+  {n:"Fingercheck", b:"724"},
+  {n:"Martin Ink Promo", b:"943"},
+  {n:"NM Professional Repellents by Nature’s Mace", b:"1808"},
+  {n:"Rat Pak Engineering Ltd", b:"134"},
+  {n:"Turf Signs / Posting Signs", b:"1007"},
 ];
 
 // ── BRANDS + EVENTS (multi-brand theming) ───────────────────────────────
@@ -4400,6 +4434,14 @@ function storeKey() {
 const load  = () => { try { return JSON.parse(localStorage.getItem(storeKey())||"{}"); } catch(e){ return {}; } };
 const save  = s  => { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); if (typeof queueNotesSync === "function") queueNotesSync(); };
 const key   = i  => "c"+i;
+// Withdrawn exhibitors (x:1) stay in their list slot so saved data keeps
+// its company. They're hidden unless this rep saved something on them.
+function hasBoothData(s) {
+  return !!s && !!(s.visited || s.scheduled || s.video || s.vlink
+    || (s.pre || "").trim() || (s.post || "").trim()
+    || (s.status && s.status !== "unknown") || (Array.isArray(s.vclips) && s.vclips.length));
+}
+function boothShown(c, i, state) { return !c.x || hasBoothData(state[key(i)]); }
 
 // Meals live under the reserved "_meals" array key — booth state uses c<i> keys,
 // so no collision. Each meal: { id, type, day, time, company, notes }.
@@ -4555,11 +4597,21 @@ async function hydrateFromCloud() {
       fbDb.collection("notes").doc(myScheduleDocId()).get(),
       fbDb.collection("schedules").doc(myScheduleDocId()).get()
     ]);
-    const byBooth = {};
-    CO.forEach((c, i) => { byBooth[c.b + "||" + c.n] = i; });
+    const byBooth = {}, byName = {}, byNum = {};
+    CO.forEach((c, i) => {
+      byBooth[c.b + "||" + c.n] = i;
+      if (c.x) return;
+      byName[c.n] = i;
+      byNum[c.b] = (c.b in byNum) ? -1 : i;   // -1: shared, don't guess
+    });
+    const findBooth = (num, name) => {
+      if (byBooth[num + "||" + name] != null) return byBooth[num + "||" + name];
+      if (byName[name] != null) return byName[name];
+      return byNum[num] >= 0 ? byNum[num] : null;
+    };
     const fresh = {};
     if (nd.exists) (nd.data().items || []).forEach(it => {
-      const i = byBooth[it.boothNum + "||" + it.boothName];
+      const i = findBooth(it.boothNum, it.boothName);
       if (i == null) return;
       fresh["c"+i] = { visited: !!it.visited, video: !!it.video, vts: it.vts || 0,
         status: it.status || "", pre: it.pre || "", post: it.post || "",
@@ -4570,7 +4622,7 @@ async function hydrateFromCloud() {
       const meals = [], offs = [], sess = [];
       (sd.data().items || []).forEach(it => {
         if (it.kind === "booth") {
-          const i = byBooth[it.boothNum + "||" + it.boothName];
+          const i = findBooth(it.boothNum, it.boothName);
           if (i != null) { fresh["c"+i] = fresh["c"+i] || {}; fresh["c"+i].scheduled = it.day + "|" + it.time; }
         } else if (it.kind === "meal") {
           meals.push({ id: mealId(), type: it.mealType, day: it.day, time: it.time, company: it.company || "", notes: it.notes || "" });
@@ -5941,6 +5993,7 @@ function buildCard(c, state) {
         <span class="co-name">${esc(c.n)}</span>
         ${schedTag}
         ${myVideoDone[c.b] ? '<span class="video-done-chip">Video done</span>' : ''}
+        ${c.x ? '<span class="gone-chip">No longer listed</span>' : ''}
         <span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>
       </div>
       <div class="card-actions">
@@ -6020,7 +6073,7 @@ function render() {
     document.querySelectorAll(".f-pill").forEach(p => p.classList.toggle("active", p.dataset.f === "all"));
   }
 
-  let list = CO.map((c,i)=>({...c,i}));
+  let list = CO.map((c,i)=>({...c,i})).filter(c => boothShown(c, c.i, state));
   if (q) list = list.filter(c => c.n.toLowerCase().includes(q) || c.b.toLowerCase().includes(q));
   if (activeFilter==="visited")     list = list.filter(c => state[key(c.i)]?.visited);
   if (activeFilter==="novisit")     list = list.filter(c => !state[key(c.i)]?.visited);
@@ -6378,7 +6431,7 @@ function renderScheduleView(state) {
   const searchHtml = (() => {
     if (!schedSearchQ) return "";
     const matches = CO.map((c,i)=>({...c,i}))
-      .filter(c => c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))
+      .filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ)))
       .slice(0,8);
     if (!matches.length)
       return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
@@ -6503,14 +6556,14 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
   // Refresh the company autocomplete options (cheap; only when this view renders).
   const dl = document.getElementById("co-datalist");
   if (dl && !dl.childElementCount) {
-    dl.innerHTML = CO.map(c => `<option value="${esc(c.n)}">`).join("");
+    dl.innerHTML = CO.filter(c => !c.x).map(c => `<option value="${esc(c.n)}">`).join("");
   }
   if (hadSearchFocus) document.querySelector(".sched-search-input")?.focus();
   updateStats(state);
 }
 
 function updateStats(state) {
-  const total = CO.length;
+  const total = CO.filter(c => !c.x).length;
   const vis = Object.values(state).filter(s => s?.visited).length;
   const pct = total > 0 ? (vis/total)*100 : 0;
   const bar = document.getElementById("progBar");
@@ -6979,7 +7032,7 @@ document.getElementById("content").addEventListener("input", e => {
     schedSearchQ = e.target.value.trim().toLowerCase();
     const state = load();
     const matches = schedSearchQ
-      ? CO.map((c,i)=>({...c,i})).filter(c => c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ)).slice(0,8)
+      ? CO.map((c,i)=>({...c,i})).filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))).slice(0,8)
       : [];
     const rEl = document.getElementById("sched-results");
     if (!rEl) return;
@@ -7237,6 +7290,7 @@ function buildShowCsv() {
   const state = load();
   const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
   [...CO].map((c,i) => ({...c,i}))
+    .filter(c => boothShown(c, c.i, state))
     .sort((a,b) => a.n.localeCompare(b.n))
     .forEach(c => {
       const s = state[key(c.i)] || {};
