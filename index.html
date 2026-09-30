@@ -2353,7 +2353,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v149</div>
+      <div class="pf-ver">NCM Events Guide · v150</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4962,8 +4962,8 @@ function notifyOnce(key) {
   _notified.add(key);
   return true;
 }
-// While testMode is on, video alerts (footage uploaded, video done, Photos
-// batches with a video) also reach these roster names (Nate's
+// While testMode is on, video alerts (footage uploaded, Photos batches with
+// a video) also reach these roster names (Nate's
 // call on Sept. 30, 2026: "me and Syd"). Photo-only alerts stay Nate-only.
 // Going live (testMode false) sends everything to the whole roster anyway.
 const TEST_VIDEO_TO = ["Sydney"];
@@ -4993,11 +4993,12 @@ function notifyHome(text, skipMember, isVideo) {
   if (window.__ncmTestNotify) window.__ncmTestNotify({ text, targets: targets.map(t => t[0]) });
 }
 const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
-// Teams alerts go out when something is actually UPLOADED (booth footage,
-// Photos-tab batches) or when the desk marks a video done. Flagging Video or
-// writing a post-visit note never pings anyone (Nate, Sept. 30, 2026: "they
-// should send when a video is uploaded, not when the video button is
-// selected"), so the old "video ready to produce" alert is gone.
+// Teams alerts go out ONLY when something is uploaded (booth footage,
+// Photos-tab batches). Flagging Video, writing a post-visit note and the
+// bullpen marking a video done never ping anyone (Nate, Sept. 30, 2026:
+// "they should send when a video is uploaded, not when the video button is
+// selected" and "no need for an alert when the bullpen marks a video as
+// done"), so the old "ready to produce" and "video done" alerts are gone.
 // ── IN-APP VIDEO UPLOADS (Microsoft Graph) ──────────────────────────────
 // Dormant until a master creates Firestore doc config/uploads =
 // { clientId, tenantId, folderUrl } (IDs are public identifiers, but they
@@ -5445,17 +5446,7 @@ function toggleVideoDone(id, meta) {
     : fbDb.collection("videoStatus").doc(id).set({
         eventCode: meta.code, repUid: meta.uid, repName: meta.name,
         boothName: meta.n, boothNum: meta.b, done: true, ts: Date.now() });
-  if (!wasDone) notifyVideoDone(meta.code, meta.b, meta.n);
   op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
-}
-// Home side: announce a finished video to the rest of the desk (the person
-// who marked it is skipped — they already know).
-function notifyVideoDone(code, boothNum, boothName) {
-  if (!notifyOnce("done|" + code + "|" + boothNum)) return;
-  const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
-  const me = homeMember() || "Someone";
-  notifyHome(esc(showLabelOf(code)) + ": video done and shared with sales: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
-    "), by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me, true);
 }
 // "Removed from the bullpen" lives in homeFlags too: hide__<code>__<booth#>
 // with the member who removed it and a timestamp. Reps' data is never
@@ -5552,8 +5543,8 @@ function toggleWorkingOn(code, boothNum) {
   op.catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 // The bullpen's production steps per video, after "Working on". "Shared with
-// sales" is the finishing step: it marks the video done (Completed list, the
-// rep's "Video done" chip, the desk's Teams alert). The others are open to
+// sales" is the finishing step: it marks the video done (Completed list and
+// the rep's "Video done" chip; no Teams alert). The others are open to
 // anyone in any order; each records who tapped it and when, in
 // homeFlags/steps__<code>__<booth#> (home already reads and writes homeFlags).
 const VID_STEPS = [
@@ -5628,7 +5619,6 @@ function toggleVideoDoneGroup(code, boothNum) {
   ops.push(allDone
     ? stepsRef.set({ sales: firebase.firestore.FieldValue.delete() }, { merge: true })
     : stepsRef.set({ eventCode: code, boothNum: boothNum, sales: { member: homeMember() || "Someone", ts: Date.now() } }, { merge: true }));
-  if (!allDone) notifyVideoDone(code, boothNum, members[0].it.boothName);
   Promise.all(ops).catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 // (The right rail is gone entirely: Reminders retired 2026-09-21, and the
