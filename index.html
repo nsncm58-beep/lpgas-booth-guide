@@ -2353,7 +2353,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v150</div>
+      <div class="pf-ver">NCM Events Guide · v151</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5440,6 +5440,7 @@ function subscribeMyVideoStatus() {
 }
 function toggleVideoDone(id, meta) {
   if (!fbReady) return;
+  id = fsId(id);
   const wasDone = !!homeVideoStatus[id];
   const op = wasDone
     ? fbDb.collection("videoStatus").doc(id).delete()
@@ -5452,7 +5453,15 @@ function toggleVideoDone(id, meta) {
 // with the member who removed it and a timestamp. Reps' data is never
 // touched; the desk just stops seeing the card. Any clip uploaded AFTER the
 // removal outranks it, so fresh footage resurfaces the booth on its own.
-function vidHideDoc(code, boothNum) { return homeFlags["hide__" + code + "__" + boothNum] || null; }
+// Firestore document names can't contain "/", but a multi-booth company's
+// booth reads "5084 / 7400D", and every bullpen record is named after the
+// booth (hide__/work__/steps__ flags in homeFlags, videoStatus docs). Before
+// v151 those names threw before anything was sent, so Remove, Restore,
+// Working on, the steps and Shared with sales silently did nothing for
+// those companies. fsId turns " / " into "+" ("5084+7400D"); single-booth
+// names are unchanged, so every existing record still matches.
+function fsId(s) { return String(s == null ? "" : s).replace(/\s*\/\s*/g, "+"); }
+function vidHideDoc(code, boothNum) { return homeFlags[fsId("hide__" + code + "__" + boothNum)] || null; }
 function isVidHidden(g) {
   const h = vidHideDoc(g.code, g.boothNum);
   if (!h) return false;
@@ -5466,7 +5475,7 @@ function isVidHidden(g) {
 function vidsPendingFor(code) {
   return Object.values(homeNotes).some(d => d.eventCode === code && effectiveDept(d.uid, d.dept) === "edit"
     && (d.items || []).some(it => it.video && it.visited && !itemHiddenFromBullpen(code, it)
-      && !homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]));
+      && !homeVideoStatus[fsId(code + "__" + d.uid + "__" + it.boothNum)]));
 }
 function bullpenDefaultShow(brand) {
   const codes = showsForBrand(brand);
@@ -5511,21 +5520,21 @@ function itemHiddenFromBullpen(code, it) {
 // account can't reach either, and shouldn't).
 function purgeVideoGroup(code, boothNum) {
   if (!fbReady) return;
-  fbDb.collection("homeFlags").doc("hide__" + code + "__" + boothNum)
+  fbDb.collection("homeFlags").doc(fsId("hide__" + code + "__" + boothNum))
     .set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now(), gone: true })
     .then(() => toast("Deleted from the bullpen"))
     .catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 function hideVideoGroup(code, boothNum) {
   if (!fbReady) return;
-  fbDb.collection("homeFlags").doc("hide__" + code + "__" + boothNum)
+  fbDb.collection("homeFlags").doc(fsId("hide__" + code + "__" + boothNum))
     .set({ member: homeMember(), eventCode: code, boothNum: boothNum, ts: Date.now() })
     .then(() => toast("Removed from the bullpen. Restore anytime from the Removed list"))
     .catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
 function unhideVideoGroup(code, boothNum) {
   if (!fbReady) return;
-  fbDb.collection("homeFlags").doc("hide__" + code + "__" + boothNum).delete()
+  fbDb.collection("homeFlags").doc(fsId("hide__" + code + "__" + boothNum)).delete()
     .then(() => toast("Restored to the bullpen"))
     .catch(() => toast("Couldn't save (are the latest Firestore rules published?)"));
 }
@@ -5535,7 +5544,7 @@ function unhideVideoGroup(code, boothNum) {
 // someone else's claim takes it over (small team, no locking ceremony).
 function toggleWorkingOn(code, boothNum) {
   if (!fbReady) return;
-  const id = "work__" + code + "__" + boothNum;
+  const id = fsId("work__" + code + "__" + boothNum);
   const mine = homeFlags[id] && sameMember(homeFlags[id].member, homeMember());
   const op = mine
     ? fbDb.collection("homeFlags").doc(id).delete()
@@ -5553,7 +5562,7 @@ const VID_STEPS = [
   { k: "socials", label: "Shared on socials" },
   { k: "sales",   label: "Shared with sales" },
 ];
-function vidSteps(code, boothNum) { return homeFlags["steps__" + code + "__" + boothNum] || {}; }
+function vidSteps(code, boothNum) { return homeFlags[fsId("steps__" + code + "__" + boothNum)] || {}; }
 function firstNameOf(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
 function vidStepButtons(code, boothNum, done) {
   const steps = vidSteps(code, boothNum);
@@ -5571,7 +5580,7 @@ function vidStepButtons(code, boothNum, done) {
 function toggleVidStep(code, boothNum, step) {
   if (!fbReady) return;
   if (step === "sales") { toggleVideoDoneGroup(code, boothNum); return; }
-  const ref = fbDb.collection("homeFlags").doc("steps__" + code + "__" + boothNum);
+  const ref = fbDb.collection("homeFlags").doc(fsId("steps__" + code + "__" + boothNum));
   const op = vidSteps(code, boothNum)[step]
     ? ref.set({ [step]: firebase.firestore.FieldValue.delete() }, { merge: true })
     : ref.set({ eventCode: code, boothNum: boothNum, [step]: { member: homeMember() || "Someone", ts: Date.now() } }, { merge: true });
@@ -5585,7 +5594,7 @@ function vidGroupDone(code, boothNum) {
     .forEach(d => (d.items || []).forEach(it => {
       if (!it.video || it.boothNum !== boothNum) return;
       any = true;
-      if (!homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]) all = false;
+      if (!homeVideoStatus[fsId(code + "__" + d.uid + "__" + it.boothNum)]) all = false;
     }));
   return any && all;
 }
@@ -5603,9 +5612,9 @@ function toggleVideoDoneGroup(code, boothNum) {
       if (it.video && it.boothNum === boothNum) members.push({ d, it });
     }));
   if (!members.length) return;
-  const allDone = members.every(({ d, it }) => homeVideoStatus[code + "__" + d.uid + "__" + it.boothNum]);
+  const allDone = members.every(({ d, it }) => homeVideoStatus[fsId(code + "__" + d.uid + "__" + it.boothNum)]);
   const ops = members.map(({ d, it }) => {
-    const id = code + "__" + d.uid + "__" + it.boothNum;
+    const id = fsId(code + "__" + d.uid + "__" + it.boothNum);
     return allDone
       ? fbDb.collection("videoStatus").doc(id).delete()
       : fbDb.collection("videoStatus").doc(id).set({
@@ -5613,9 +5622,9 @@ function toggleVideoDoneGroup(code, boothNum) {
           boothName: it.boothName, boothNum: it.boothNum, done: true, ts: Date.now() });
   });
   // Finishing a video also clears any "Working on" claim on it.
-  if (!allDone) ops.push(fbDb.collection("homeFlags").doc("work__" + code + "__" + boothNum).delete());
+  if (!allDone) ops.push(fbDb.collection("homeFlags").doc(fsId("work__" + code + "__" + boothNum)).delete());
   // This is the "Shared with sales" step: record who, or clear it on undo.
-  const stepsRef = fbDb.collection("homeFlags").doc("steps__" + code + "__" + boothNum);
+  const stepsRef = fbDb.collection("homeFlags").doc(fsId("steps__" + code + "__" + boothNum));
   ops.push(allDone
     ? stepsRef.set({ sales: firebase.firestore.FieldValue.delete() }, { merge: true })
     : stepsRef.set({ eventCode: code, boothNum: boothNum, sales: { member: homeMember() || "Someone", ts: Date.now() } }, { merge: true }));
@@ -5649,7 +5658,7 @@ function buildHomeOverview() {
         visited++;
         if (!it.video || offBullpen) return;   // only rep-flagged, still-live videos count
         vidTotal++;
-        if (homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum]) vidDone++;
+        if (homeVideoStatus[fsId(d.eventCode + "__" + d.uid + "__" + it.boothNum)]) vidDone++;
       });
     });
     schedDocs.forEach(d => { last = Math.max(last, homeDocTs(d)); });
@@ -5895,7 +5904,7 @@ function buildHomeVideosView() {
           pre: it.pre || "", post: it.post || "",
           clips: (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips
                : (it.vlink ? [{ u: it.vlink, f: it.vfile || "", t: it.vupAt || 0 }] : []),
-          done: !!homeVideoStatus[d.eventCode + "__" + d.uid + "__" + it.boothNum] });
+          done: !!homeVideoStatus[fsId(d.eventCode + "__" + d.uid + "__" + it.boothNum)] });
       });
     });
   const vids = Object.values(groups).map(g => {
@@ -5924,7 +5933,7 @@ function buildHomeVideosView() {
   const done    = shown.filter(v => v.done);
   const itemHtml = v => {
     // "Working on" claim: whoever at the home desk grabbed this video.
-    const wk = homeFlags["work__" + v.code + "__" + v.boothNum];
+    const wk = homeFlags[fsId("work__" + v.code + "__" + v.boothNum)];
     const wkMine = wk && sameMember(wk.member, homeMember());
     // One person holds "Working on" (tap someone else's to take it over).
     // Every other step stays open to anyone and names who tapped it.
@@ -8522,11 +8531,11 @@ function vpGroups() {
       const g = groups[it.boothNum] = groups[it.boothNum] || { boothNum: it.boothNum, boothName: it.boothName, reps: [] };
       const clips = (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips : (it.vlink ? [{ t: it.vupAt || 0 }] : []);
       g.reps.push({ name: d.name || "Rep", visited: !!it.visited, vts: it.vts || 0, clips,
-        done: !!vpData.status[code + "__" + d.uid + "__" + it.boothNum] });
+        done: !!vpData.status[fsId(code + "__" + d.uid + "__" + it.boothNum)] });
     });
   });
   return Object.values(groups).map(g => {
-    const hide = vpData.flags["hide__" + code + "__" + g.boothNum];
+    const hide = vpData.flags[fsId("hide__" + code + "__" + g.boothNum)];
     const newest = Math.max(0, ...g.reps.flatMap(r => r.clips.map(c => c.t || 0)));
     return { ...g,
       hidden: !!hide && (hide.gone || !(newest > (hide.ts || 0))),
@@ -8550,8 +8559,8 @@ function renderVideoProgress() {
     else {
       const chip = (label, rec, cls) => `<span class="vp-chip${rec ? " on" + (cls ? " " + cls : "") : ""}">${rec ? "✓ " : ""}${esc(label)}${rec && rec.member ? " · " + esc(firstNameOf(memberName(rec.member))) : ""}</span>`;
       const item = v => {
-        const wk = vpData.flags["work__" + code + "__" + v.boothNum] || null;
-        const steps = vpData.flags["steps__" + code + "__" + v.boothNum] || {};
+        const wk = vpData.flags[fsId("work__" + code + "__" + v.boothNum)] || null;
+        const steps = vpData.flags[fsId("steps__" + code + "__" + v.boothNum)] || {};
         const recs = VID_STEPS.map(s => [s, s.k === "sales" ? (v.done ? (steps.sales || {}) : null) : (steps[s.k] || null)]);
         const last = [wk && !v.done ? ["Working on", wk] : null].concat(recs.map(([s, r]) => r ? [s.label, r] : null))
           .filter(x => x && x[1].ts).sort((a, b) => b[1].ts - a[1].ts)[0];
