@@ -2353,7 +2353,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v146</div>
+      <div class="pf-ver">NCM Events Guide · v147</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4403,9 +4403,9 @@ function defaultShowFor(brands, home) {
 }
 // Education sessions Landscape Management runs at Equip (Day 1 = Wednesday,
 // Oct. 21; Day 2 = Thursday, Oct. 22). Source: "Landscape Management brings
-// its experts to Equip Expo," landscapemanagement.net, July 21, 2026. The
-// article names the lead of eq1/eq5 only as "Scott with Jeffrey Scott
-// Consulting" (its founder is Jeffrey Scott). Ids are permanent: saved
+// its experts to Equip Expo," landscapemanagement.net, July 21, 2026, and
+// NCM's own LM-Equip-2026-Session-List.docx (which confirms Jeffrey Scott
+// leads eq1/eq5; neither lists rooms). Ids are permanent: saved
 // schedules point at them. Rooms weren't published; give a session a `room`
 // and it shows on every card. A show gets the "Add education session" menu
 // item only when its EVENTS entry lists `sessions`.
@@ -4952,15 +4952,22 @@ function notifyOnce(key) {
   _notified.add(key);
   return true;
 }
-function notifyHome(text, skipMember) {
+// While testMode is on, video alerts also reach these roster names (Nate's
+// call on Sept. 30, 2026: "me and Syd"). Photo-only alerts stay Nate-only.
+// Going live (testMode false) sends everything to the whole roster anyway.
+const TEST_VIDEO_TO = ["Sydney"];
+function notifyHome(text, skipMember, isVideo) {
   if (!notifyCfg.url) return;
   // testMode: the full roster stays saved in the map, but every alert routes
-  // ONLY to the "Test" entry (Nate) so deliveries can be verified before the
-  // desk goes live. Flip the config doc's testMode to false to go live —
-  // takes effect instantly, no deploy. In test mode the skip-the-actor rule
-  // is ignored so Test sees every event fire, including their own.
+  // to the "Test" entry (Nate), plus TEST_VIDEO_TO for video alerts, so
+  // deliveries can be verified before the desk goes live. Flip the config
+  // doc's testMode to false to go live: takes effect instantly, no deploy.
+  // In test mode Test sees every event fire, including their own; the
+  // TEST_VIDEO_TO people still skip alerts about their own actions.
+  const skip = name => !!skipMember && sameMember(name, skipMember);
   const targets = notifyCfg.testMode
-    ? Object.entries(notifyCfg.emails).filter(([name, email]) => email && name === "Test")
+    ? Object.entries(notifyCfg.emails).filter(([name, email]) => email && (name === "Test"
+        || (isVideo && TEST_VIDEO_TO.some(m => sameMember(name, m)) && !skip(name))))
     : Object.entries(notifyCfg.emails)
         .filter(([name, email]) => email && !(skipMember && sameMember(name, skipMember)));
   targets.forEach(([name, email]) => {
@@ -4987,7 +4994,7 @@ function notifyVideoReady(i, state) {
   const when = fmtExact(s.vts || Date.now());
   const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
   notifyHome(esc(showLabelOf(currentEventCode())) + ": video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
-    "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the bullpen</a>');
+    "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', null, true);
 }
 // ── IN-APP VIDEO UPLOADS (Microsoft Graph) ──────────────────────────────
 // Dormant until a master creates Firestore doc config/uploads =
@@ -5312,7 +5319,7 @@ async function startVideoUpload(i, file) {
       const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
       notifyHome(esc(showLabelOf(currentEventCode())) + ": footage uploaded: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
         ") by " + esc(who) + ": " + esc(item.name || "") +
-        (item.webUrl ? '. <a href="' + esc(item.webUrl) + '">Watch it</a>' : ""));
+        (item.webUrl ? '. <a href="' + esc(item.webUrl) + '">Watch it</a>' : ""), null, true);
     }
   } catch (e) {
     delete upProg[i]; render();
@@ -5443,7 +5450,7 @@ function notifyVideoDone(code, boothNum, boothName) {
   const brand = (BRANDS[resolveEvent(code).brand] || BRANDS.ncm).name;
   const me = homeMember() || "Someone";
   notifyHome(esc(showLabelOf(code)) + ": video done and shared with sales: <strong>" + esc(boothName) + "</strong> (Booth " + esc(boothNum) +
-    "), by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me);
+    "), by " + esc(me) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', me, true);
 }
 // "Removed from the bullpen" lives in homeFlags too: hide__<code>__<booth#>
 // with the member who removed it and a timestamp. Reps' data is never
@@ -7784,7 +7791,8 @@ function photoThumb(file) {
 // The bullpen hears about every upload: one Teams alert per batch (a 20-photo
 // dump is one message, not 20) with the count, who sent them and each
 // caption linked to its file. Goes through notifyHome like the video
-// alerts, so testMode still routes it to Nate only.
+// alerts: in testMode a batch with any video counts as a video alert (Nate
+// and Sydney); photos-only batches go to Nate only.
 function joinAnd(arr) { return arr.length <= 1 ? (arr[0] || "") : arr.slice(0, -1).join(", ") + " and " + arr[arr.length - 1]; }
 function notifyPhotosUploaded(batch) {
   if (!batch.length) return;
@@ -7801,7 +7809,7 @@ function notifyPhotosUploaded(batch) {
   const folder = msUploadFolderUrl();
   notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + ": " + list +
     (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : ".") +
-    (myNotesAutoShare() ? ' · <a href="' + APP_LINK + '">See them in the bullpen</a>' : ""));
+    (myNotesAutoShare() ? ' · <a href="' + APP_LINK + '">See them in the bullpen</a>' : ""), null, nVid > 0);
 }
 document.getElementById("photoFileInput").addEventListener("change", e => {
   const files = [...(e.target.files || [])];
