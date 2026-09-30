@@ -2353,7 +2353,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v148</div>
+      <div class="pf-ver">NCM Events Guide · v149</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4962,7 +4962,8 @@ function notifyOnce(key) {
   _notified.add(key);
   return true;
 }
-// While testMode is on, video alerts also reach these roster names (Nate's
+// While testMode is on, video alerts (footage uploaded, video done, Photos
+// batches with a video) also reach these roster names (Nate's
 // call on Sept. 30, 2026: "me and Syd"). Photo-only alerts stay Nate-only.
 // Going live (testMode false) sends everything to the whole roster anyway.
 const TEST_VIDEO_TO = ["Sydney"];
@@ -4992,20 +4993,11 @@ function notifyHome(text, skipMember, isVideo) {
   if (window.__ncmTestNotify) window.__ncmTestNotify({ text, targets: targets.map(t => t[0]) });
 }
 const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
-// Rep side: a booth is "ready to produce" the moment it is BOTH visited and
-// video-flagged, whichever tap completes the pair. Fires once per booth per
-// device (guarded by the caller), never for sales reps (they have no Video
-// button at all).
-function notifyVideoReady(i, state) {
-  const c = CO[i]; if (!c) return;
-  if (!notifyOnce("ready|" + currentEventCode() + "|" + c.b)) return;
-  const s = state[key(i)] || {};
-  const who = (currentUser && currentUser.name) || "A rep";
-  const when = fmtExact(s.vts || Date.now());
-  const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
-  notifyHome(esc(showLabelOf(currentEventCode())) + ": video ready to produce: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
-    "). Visited by " + esc(who) + ", " + esc(when) + '. <a href="' + APP_LINK + '">Open the bullpen</a>', null, true);
-}
+// Teams alerts go out when something is actually UPLOADED (booth footage,
+// Photos-tab batches) or when the desk marks a video done. Flagging Video or
+// writing a post-visit note never pings anyone (Nate, Sept. 30, 2026: "they
+// should send when a video is uploaded, not when the video button is
+// selected"), so the old "video ready to produce" alert is gone.
 // ── IN-APP VIDEO UPLOADS (Microsoft Graph) ──────────────────────────────
 // Dormant until a master creates Firestore doc config/uploads =
 // { clientId, tenantId, folderUrl } (IDs are public identifiers, but they
@@ -5323,7 +5315,7 @@ async function startVideoUpload(i, file) {
     s.vlink = item.webUrl || ""; s.vfile = item.name || ""; s.vupAt = Date.now();
     s.video = true;                                  // footage exists; keep it in the pipeline
     // Footage means the booth was visited (there's no Mark Visit button
-    // anymore). The upload sends its own alert, so no "ready" ping here.
+    // anymore). The upload's own "footage uploaded" alert goes out below.
     if (!s.visited) { s.visited = true; s.vts = s.vts || Date.now(); }
     save(st); render();
     toast("Uploaded to the show folder ✓");
@@ -7227,8 +7219,6 @@ document.getElementById("content").addEventListener("click", e => {
     state[k].video = !state[k].video;
     save(state);
     vidBtn.classList.toggle("on", state[k].video);
-    // Flagging AFTER the visit completes the pair, so it pings here too.
-    if (state[k].video && state[k].visited) notifyVideoReady(i, state);
     toast(state[k].video ? "Video flagged for the bullpen" : "Video flag removed");
     // The Upload button rides the flag, so this card needs a rebuild.
     if (msUploadsActive()) render();
@@ -7322,8 +7312,6 @@ document.getElementById("content").addEventListener("input", e => {
     }
     save(state);
     if (autoVisited) {
-      // A post-visit note auto-marks the visit, so it can complete the pair too.
-      if (state[k].video) notifyVideoReady(i, state);
       const card = document.getElementById("cc"+i);
       card?.classList.add("visited");
       updateStats(state);
