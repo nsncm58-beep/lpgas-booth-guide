@@ -2353,7 +2353,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v147</div>
+      <div class="pf-ver">NCM Events Guide · v148</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2433,6 +2433,16 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <p class="settings-dbx-note" id="vidHideText"></p>
     <button class="settings-done" id="vidHideCancel" type="button">Keep it</button>
     <button class="settings-done share-secondary" id="vidHideConfirm" type="button">Remove from the bullpen</button>
+  </div>
+</div>
+
+<!-- ── Schedule: confirm before anything comes off a day ── -->
+<div id="rmSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title" id="rmTitle">Remove this from your schedule?</div>
+    <p class="settings-dbx-note" id="rmText"></p>
+    <button class="settings-done" id="rmKeep" type="button">Keep it</button>
+    <button class="settings-done share-secondary" id="rmGo" type="button">Remove</button>
   </div>
 </div>
 
@@ -4940,7 +4950,7 @@ function subscribeNotifyConfig() {
   }, () => {});
 }
 // One DM per home member. Fire-and-forget: a failed webhook must never block
-// a rep tapping Mark Visit on a show floor with flaky wifi.
+// a rep saving a note or flagging a video on a show floor with flaky wifi.
 // mode:'cors' is required — 'no-cors' downgrades Content-Type to text/plain
 // and the flow trigger rejects it (TriggerInputSchemaMismatch).
 // Duplicate guard: toggling a booth's Visit or Video button off and on again
@@ -5312,6 +5322,9 @@ async function startVideoUpload(i, file) {
     s.vclips = (s.vclips || []).concat([{ u: item.webUrl || "", f: item.name || "", t: Date.now() }]).slice(-12);
     s.vlink = item.webUrl || ""; s.vfile = item.name || ""; s.vupAt = Date.now();
     s.video = true;                                  // footage exists; keep it in the pipeline
+    // Footage means the booth was visited (there's no Mark Visit button
+    // anymore). The upload sends its own alert, so no "ready" ping here.
+    if (!s.visited) { s.visited = true; s.vts = s.vts || Date.now(); }
     save(st); render();
     toast("Uploaded to the show folder ✓");
     if (notifyOnce("upload|" + currentEventCode() + "|" + c.b)) {
@@ -6229,9 +6242,6 @@ function buildCard(c, state) {
         <span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>
       </div>
       <div class="card-actions">
-        <button class="visit-btn${visited?" on":""}" data-visit="${c.i}">
-          <span class="dot"></span>${visited?"Visited":"Mark Visit"}
-        </button>
         ${salesView ? `<div class="status-group">
           <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
           <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
@@ -6347,7 +6357,7 @@ function render() {
 
   if (!list.length) {
     const msgs = {
-      visited:     ["No visits yet","Mark booths as visited as you walk the floor."],
+      visited:     ["No visits yet","A booth counts as visited once you write a post-visit note or upload its footage."],
       novisit:     ["All caught up","Every company in this view has been visited."],
       customer:    ["No customers tagged","Tap Customer on a card to flag accounts you own."],
       noncustomer: ["No non-customers tagged","Tap Non-Cust to mark booths you can skip."],
@@ -6930,18 +6940,28 @@ document.getElementById("content").addEventListener("click", e => {
   const rmBtn = e.target.closest("[data-rm]");
   if (rmBtn) {
     const i = parseInt(rmBtn.dataset.rm);
-    const k = key(i);
-    let clearedVideo = false;
-    if (state[k]) {
-      state[k].scheduled = null;
-      // Cancelling a planned visit cancels its video plan too, so the home
-      // team stops waiting on it. A visited booth keeps its flag — that
-      // footage was already shot.
-      if (state[k].video && !state[k].visited && !state[k].vlink) { state[k].video = false; clearedVideo = true; }
-    }
-    save(state);
-    toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
-    render();
+    const c = CO[i] || {};
+    const s0 = state[key(i)] || {};
+    const day = (s0.scheduled || "").split("|")[0] || schedDay;
+    const vidNote = (s0.video && !s0.visited && !s0.vlink)
+      ? " Its video flag comes off too, so it leaves the bullpen's Videos list." : "";
+    confirmRemove("Remove this booth from Day " + day + "?",
+      (c.n || "This booth") + " (Booth " + (c.b || "") + ") comes off your schedule. Your notes on it stay." + vidNote,
+      () => {
+        const st = load();
+        const k = key(i);
+        let clearedVideo = false;
+        if (st[k]) {
+          st[k].scheduled = null;
+          // Cancelling a planned visit cancels its video plan too, so the home
+          // team stops waiting on it. A visited booth keeps its flag: that
+          // footage was already shot.
+          if (st[k].video && !st[k].visited && !st[k].vlink) { st[k].video = false; clearedVideo = true; }
+        }
+        save(st);
+        toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
+        render();
+      });
     return;
   }
 
@@ -7044,9 +7064,12 @@ document.getElementById("content").addEventListener("click", e => {
   const mDelBtn = e.target.closest("[data-meal-del]");
   if (mDelBtn) {
     const id = mDelBtn.dataset.mealDel;
-    saveMeals(loadMeals().filter(m => m.id !== id));
-    toast("Meal removed");
-    render();
+    const m = loadMeals().find(x => x.id === id) || {};
+    const label = MEAL_LABEL[m.type] || "Meal";
+    confirmRemove("Remove this " + label.toLowerCase() + "?",
+      label + (m.company ? " with " + m.company : "") + (m.time ? " at " + m.time : "")
+        + (m.day ? " on Day " + m.day : "") + " comes off your schedule.",
+      () => { saveMeals(loadMeals().filter(x => x.id !== id)); toast("Meal removed"); render(); });
     return;
   }
 
@@ -7101,9 +7124,12 @@ document.getElementById("content").addEventListener("click", e => {
   const oDelBtn = e.target.closest("[data-off-del]");
   if (oDelBtn) {
     const id = oDelBtn.dataset.offDel;
-    saveOffsite(loadOffsite().filter(o => o.id !== id));
-    toast("Off-site meeting removed");
-    render();
+    const o = loadOffsite().find(x => x.id === id) || {};
+    confirmRemove("Remove this off-site meeting?",
+      (o.title ? o.title + (o.company ? " (" + o.company + ")" : "") : "This off-site meeting" + (o.company ? " with " + o.company : ""))
+        + (o.time ? " at " + o.time : "")
+        + (o.day ? " on Day " + o.day : "") + " comes off your schedule.",
+      () => { saveOffsite(loadOffsite().filter(x => x.id !== id)); toast("Off-site meeting removed"); render(); });
     return;
   }
 
@@ -7148,13 +7174,17 @@ document.getElementById("content").addEventListener("click", e => {
     const sid = sDelBtn.dataset.sessDel;
     const typed = document.querySelector(`.sess-nf[data-sid="${sid}"]`)?.value || "";
     const saved = (loadSessions().find(y => y.sid === sid) || {}).notes || "";
-    if ((typed.trim() || saved.trim())
-        && !confirm("Remove this session from your schedule? Its notes will be deleted too.")) return;
-    clearTimeout(_dt["s:" + sid]);
-    saveSessions(loadSessions().filter(y => y.sid !== sid));
-    sessNotesOpen.delete(sid);
-    toast("Session removed");
-    render();
+    const x = sessionById(sid) || {};
+    confirmRemove("Remove this session?",
+      (x.title || "This session") + " comes off your schedule."
+        + ((typed.trim() || saved.trim()) ? " Your notes on it will be deleted too." : ""),
+      () => {
+        clearTimeout(_dt["s:" + sid]);
+        saveSessions(loadSessions().filter(y => y.sid !== sid));
+        sessNotesOpen.delete(sid);
+        toast("Session removed");
+        render();
+      });
     return;
   }
 
@@ -7199,9 +7229,7 @@ document.getElementById("content").addEventListener("click", e => {
     vidBtn.classList.toggle("on", state[k].video);
     // Flagging AFTER the visit completes the pair, so it pings here too.
     if (state[k].video && state[k].visited) notifyVideoReady(i, state);
-    toast(state[k].video
-      ? (state[k].visited ? "Video flagged for the bullpen" : "Video flagged. It reaches the bullpen once you mark the booth visited")
-      : "Video flag removed");
+    toast(state[k].video ? "Video flagged for the bullpen" : "Video flag removed");
     // The Upload button rides the flag, so this card needs a rebuild.
     if (msUploadsActive()) render();
     return;
@@ -7228,26 +7256,6 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
-  const visBtn = e.target.closest("[data-visit]");
-  if (visBtn) {
-    const i = parseInt(visBtn.dataset.visit);
-    const k = key(i);
-    if (!state[k]) state[k] = {};
-    state[k].visited = !state[k].visited;
-    if (state[k].visited) state[k].vts = Date.now();   // when: drives home-team reminders
-    save(state);
-    if (state[k].visited && state[k].video) notifyVideoReady(i, state);
-    const on = state[k].visited;
-    visBtn.classList.toggle("on", on);
-    visBtn.innerHTML = `<span class="dot"></span>${on?"Visited":"Mark Visit"}`;
-    const card = document.getElementById("cc"+i);
-    card?.classList.toggle("visited", on);
-    const rk = card?.closest("[data-rk]")?.dataset.rk;
-    if (rk) refreshBadge(rk, state);
-    updateStats(state);
-    if (on) toast("Marked as visited");
-    return;
-  }
 });
 
 document.getElementById("content").addEventListener("input", e => {
@@ -7318,11 +7326,6 @@ document.getElementById("content").addEventListener("input", e => {
       if (state[k].video) notifyVideoReady(i, state);
       const card = document.getElementById("cc"+i);
       card?.classList.add("visited");
-      const vb = card?.querySelector("[data-visit]");
-      if (vb) {
-        vb.classList.add("on");
-        vb.innerHTML = '<span class="dot"></span>Visited';
-      }
       updateStats(state);
       refreshBadge(rowKey(CO[i].b), state);
       toast("Marked as visited");
@@ -8158,6 +8161,20 @@ document.getElementById("vidHideConfirm").addEventListener("click", () => {
 document.getElementById("vidHideSheet").addEventListener("click", e => {
   if (e.target.id === "vidHideSheet") { _vidHideTarget = null; e.currentTarget.style.display = "none"; }
 });
+// Schedule removals (booth Remove from Day, meal / off-site / session Del)
+// all ask first. Keep it, or a tap outside the card, cancels. The action
+// re-reads storage when it runs, so a sync landing mid-question is safe.
+let _rmAction = null;
+function confirmRemove(title, text, action) {
+  _rmAction = action;
+  document.getElementById("rmTitle").textContent = title;
+  document.getElementById("rmText").textContent = text;
+  document.getElementById("rmSheet").style.display = "flex";
+}
+function closeRemove() { _rmAction = null; document.getElementById("rmSheet").style.display = "none"; }
+document.getElementById("rmKeep").addEventListener("click", closeRemove);
+document.getElementById("rmGo").addEventListener("click", () => { const a = _rmAction; closeRemove(); if (a) a(); });
+document.getElementById("rmSheet").addEventListener("click", e => { if (e.target.id === "rmSheet") closeRemove(); });
 // Bullpen "Delete permanently" confirm (from the Removed list).
 let _vidPurgeTarget = null;
 function openVidPurgeConfirm(gk, name) {
