@@ -910,6 +910,10 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .sched-day-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
 .sched-day-tab.active .stdt-count { color: rgba(255,255,255,0.8); }
 .sched-day-tab:active { opacity: 0.85; }
+.sched-day-tabs.many { gap: 4px; padding: 10px 8px 4px; }
+.sched-day-tabs.many .sched-day-tab { padding: 8px 1px; border-radius: 9px; }
+.sched-day-tabs.many .stdt-day { font-size: 0.8rem; }
+.sched-day-tabs.many .stdt-count { font-size: 0.54rem; letter-spacing: 0.2px; }
 
 .sched-search-box {
   margin: 8px 10px 6px;
@@ -1833,6 +1837,22 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 
 
 /* ── Admin > Accounts ── */
+.pre-sum { font-size: 0.78rem; line-height: 1.55; color: var(--text-2); margin: 14px 0 6px; }
+.pre-all { display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 600; color: var(--text-2); margin: 4px 0 6px; cursor: pointer; }
+.pre-person { display: flex; align-items: flex-start; gap: 10px; padding: 10px 2px 8px; border-top: 1px solid var(--border-soft); cursor: pointer; }
+.pre-person input, .pre-all input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--blue); flex-shrink: 0; }
+.pre-p-main { flex: 1; min-width: 0; font-size: 0.88rem; color: var(--text); }
+.pre-p-team { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); margin-left: 6px; }
+.pre-p-sub { display: block; font-size: 0.74rem; color: var(--text-2); margin-top: 2px; line-height: 1.4; }
+.pre-p-sub b { color: var(--blue); font-weight: 700; }
+.pre-items { margin: 0 0 8px 30px; font-size: 0.74rem; color: var(--text-2); }
+.pre-items summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.pre-items ul, .pre-list { margin: 6px 0 0; padding-left: 16px; font-size: 0.74rem; color: var(--text-2); line-height: 1.45; }
+.pre-items li, .pre-list li { margin: 3px 0; }
+.pre-list.issues li { color: var(--maroon); }
+.pre-sec { font-family: var(--fd); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); margin: 16px 0 4px; }
+.pre-status { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border-soft); font-size: 0.8rem; color: var(--text); }
+.pre-status span:last-child { color: var(--text-2); text-align: right; }
 .acct-card { max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow-y: auto; }
 .acct-top { flex-shrink: 0; }
 .acct-top .settings-title { margin-bottom: 6px; }
@@ -2346,6 +2366,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
       <div class="pf-label">Admin</div>
       <div class="pf-group">
         <button class="pf-row" id="accountsBtn" type="button"><span class="pf-k">Accounts</span><span class="pf-v" id="accountsCount"></span><span class="pf-chev" aria-hidden="true"></span></button>
+        <button class="pf-row" id="preBtn" type="button"><span class="pf-k">Upload schedules</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
         <button class="pf-row" id="guideBtn" type="button"><span class="pf-k">Install QR and bullpen passcode</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
       </div>
     </div>
@@ -2353,7 +2374,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v151</div>
+      <div class="pf-ver">NCM Events Guide · v152</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2399,6 +2420,12 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <!-- ── Admin: every account, with guarded team and brand edits (master only) ── -->
 <div id="accountsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card acct-card" id="acctCard"></div>
+</div>
+
+<!-- ── Profile > Admin > Upload schedules ── -->
+<div id="preSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card acct-card" id="preCard"></div>
+  <input type="file" id="preFile" accept=".xlsx,.xls,.csv" hidden>
 </div>
 
 <!-- ── Profile > Video progress: the bullpen's steps, view only ── -->
@@ -4442,7 +4469,11 @@ const EVENTS = {
   // No MEDIA entry yet, so Photos says uploads aren't set up until its
   // SharePoint folder link is added.
   "LM-ELEVATE-2026": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_BOOTHS, dates: ["2026-11-08","2026-11-09","2026-11-10","2026-11-11"] },
-  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-20","2026-10-21","2026-10-22","2026-10-23"] },
+  // PestWorld: Day 1 is Sunday, Oct. 18 (Pelgar dinner), Day 2 Monday (PMP
+  // Hall of Fame, booth setup), Days 3-6 the exhibit hall (Tue. 2-6 p.m.,
+  // Wed. and Thu. 10 a.m.-2 p.m., Fri. 8-10 a.m.). Day 1 was Tuesday until
+  // Oct. 2, 2026; LEGACY_D0 shifts anything saved before that.
+  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"] },
   // NPGA Southeastern & International Propane Expo, Music City Center,
   // Nashville (the app's first show). Every show keeps its booth list loaded
   // for good: it maps saved booth data back to company names, so notes,
@@ -4466,6 +4497,44 @@ function showDayCount(code) {
 }
 function showDays(code) {
   return Array.from({ length: showDayCount(code) }, (_, i) => i + 1);
+}
+// When a show's Day 1 moves, saved day numbers move with it. LEGACY_D0 is
+// the Day 1 a show's data was saved against before its dates changed.
+// Local buckets written since carry a _d0 stamp and cloud schedule docs a
+// d0 field; anything without one is shifted from LEGACY_D0 when read.
+const LEGACY_D0 = { "PMP-2026": "2026-10-20" };
+function dayShiftFor(code, d0) {
+  const ds = (resolveEvent(code) || {}).dates || [];
+  const base = d0 || LEGACY_D0[code];
+  const i = base ? ds.indexOf(base) : -1;
+  return i > 0 ? i : 0;
+}
+// A cloud schedule doc's items, with days counted from the show's Day 1 now.
+function docItems(doc) {
+  const items = (doc && Array.isArray(doc.items)) ? doc.items : [];
+  const sh = dayShiftFor(doc && doc.eventCode, doc && doc.d0);
+  return sh ? items.map(it => ({ ...it, day: (+it.day || 0) + sh })) : items;
+}
+// Move a local bucket saved against an older Day 1 (once; load() calls it).
+function shiftLocalDays(st, code) {
+  const ds = (resolveEvent(code) || {}).dates || [];
+  if (!ds.length || st._d0 === ds[0]) return false;
+  const hasDays = Object.keys(st).some(k => k[0] === "c" && st[k] && st[k].scheduled)
+    || (st._meals || []).length || (st._offsite || []).length;
+  if (!hasDays) return false;
+  const sh = dayShiftFor(code, st._d0);
+  if (sh) {
+    Object.keys(st).forEach(k => {
+      const s = st[k];
+      if (k[0] !== "c" || !s || !s.scheduled) return;
+      const [d, t] = s.scheduled.split("|");
+      s.scheduled = ((+d || 0) + sh) + "|" + t;
+    });
+    (st._meals || []).forEach(m => { m.day = (+m.day || 0) + sh; });
+    (st._offsite || []).forEach(o => { o.day = (+o.day || 0) + sh; });
+  }
+  st._d0 = ds[0];
+  return true;
 }
 // Adding a show = an EVENTS entry (name, dates, booth list) plus its MEDIA
 // folder link, then deploy. Any number of shows per brand; the Firestore
@@ -4666,8 +4735,15 @@ function storeKey() {
   const c = currentEventCode();
   return (!c || c === "LPGAS-2026") ? STORE : STORE + "__" + c;
 }
-const load  = () => { try { return JSON.parse(localStorage.getItem(storeKey())||"{}"); } catch(e){ return {}; } };
-const save  = s  => { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); if (typeof queueNotesSync === "function") queueNotesSync(); };
+const load  = () => {
+  let st;
+  try { st = JSON.parse(localStorage.getItem(storeKey())||"{}"); } catch(e){ return {}; }
+  // A bucket saved before its show's Day 1 moved gets its days shifted once.
+  const code = currentEventCode();
+  if (code && shiftLocalDays(st, code)) { try { localStorage.setItem(storeKey(), JSON.stringify(st)); } catch(e){} }
+  return st;
+};
+const save  = s  => { try { const ds = (resolveEvent(currentEventCode()) || {}).dates; if (ds && ds.length) s._d0 = ds[0]; localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); if (typeof queueNotesSync === "function") queueNotesSync(); };
 const key   = i  => "c"+i;
 // Withdrawn exhibitors (x:1) stay in their list slot so saved data keeps
 // its company. They're hidden unless this rep saved something on them.
@@ -4814,6 +4890,7 @@ async function syncMyScheduleToCloud() {
       name: currentUser.name || "",
       eventCode: code,
       dept: effectiveDept(currentUser.uid, currentUser.dept),   // home shows edit/digital only
+      d0: ((resolveEvent(code) || {}).dates || [])[0] || "",     // which Day 1 the day numbers count from
       items: buildMyScheduleItems(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -4855,7 +4932,7 @@ async function hydrateFromCloud() {
     });
     if (sd.exists) {
       const meals = [], offs = [], sess = [];
-      (sd.data().items || []).forEach(it => {
+      docItems(sd.data()).forEach(it => {
         if (it.kind === "booth") {
           const i = findBooth(it.boothNum, it.boothName);
           if (i != null) { fresh["c"+i] = fresh["c"+i] || {}; fresh["c"+i].scheduled = it.day + "|" + it.time; }
@@ -4872,10 +4949,132 @@ async function hydrateFromCloud() {
       if (sess.length) fresh._sessions = sess;
     }
     if (Object.keys(fresh).length) {
+      fresh._d0 = ((resolveEvent(currentEventCode()) || {}).dates || [])[0] || "";
       localStorage.setItem(storeKey(), JSON.stringify(fresh));
       toast("Restored your show data from the cloud");
     }
   } catch (e) { /* offline: nothing to restore from */ }
+}
+
+// ── SCHEDULE PRELOADS (rep side) ────────────────────────────────────────
+// An admin uploads a show's master schedule (Profile > Admin > Upload
+// schedules); each person gets preloads/<CODE>__<email>. Here, after the
+// cloud restore, the rep's app merges a newer version into their schedule:
+// items the admin added or changed land, items the admin dropped leave,
+// everything else (the rep's own items, edits and notes) is left alone.
+// _pre in the local bucket remembers the last version applied.
+function preNorm(s) { return String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, ""); }
+function preItemKey(it) {
+  if (it.kind === "booth") return "b:" + it.boothNum;
+  if (it.kind === "session") return "s:" + it.sid;
+  if (it.kind === "meal") return "m:" + it.day + ":" + (it.mealType || it.type) + ":" + preNorm(it.company);
+  return "o:" + it.day + ":" + preNorm(it.title || it.company);
+}
+function preBoothIndex(it) {
+  let i = CO.findIndex(c => c.b === it.boothNum && c.n === it.boothName);
+  if (i < 0) i = CO.findIndex(c => !c.x && c.n === it.boothName);
+  if (i < 0) i = CO.findIndex(c => !c.x && c.b === it.boothNum);
+  return i;
+}
+function prePut(st, k, n, b, ids) {
+  if (n.kind === "booth") {
+    const i = preBoothIndex(n); if (i < 0) return false;
+    const s = st["c" + i] = st["c" + i] || {};
+    s.scheduled = n.day + "|" + n.time;
+    if (n.video) s.video = true;
+    else if (b && b.video && !s.vlink && !(s.vclips || []).length) s.video = false;
+    if (n.pre && !(s.pre || "").trim()) s.pre = n.pre;
+    return true;
+  }
+  if (n.kind === "meal" || n.kind === "offsite") {
+    const ak = n.kind === "meal" ? "_meals" : "_offsite";
+    const arr = st[ak] = Array.isArray(st[ak]) ? st[ak] : [];
+    let x = ids[k] ? arr.find(y => y.id === ids[k]) : null;
+    if (!x) x = arr.find(y => preItemKey({ kind: n.kind, ...y }) === preItemKey(n));   // the rep already had it
+    const f = n.kind === "meal"
+      ? { type: n.mealType, day: n.day, time: n.time, company: n.company || "", notes: n.notes || "" }
+      : { day: n.day, time: n.time, title: n.title || "", company: n.company || "", location: n.location || "", notes: n.notes || "" };
+    if (x) Object.assign(x, f);
+    else { x = { id: n.kind === "meal" ? mealId() : offsiteId(), ...f }; arr.push(x); }
+    ids[k] = x.id;
+    return true;
+  }
+  if (n.kind === "session") {
+    const arr = st._sessions = Array.isArray(st._sessions) ? st._sessions : [];
+    if (!arr.some(y => y.sid === n.sid)) arr.push({ sid: n.sid, notes: "" });
+    return true;
+  }
+  return false;
+}
+function preDrop(st, k, b, ids) {
+  if (b.kind === "booth") {
+    const i = preBoothIndex(b); if (i < 0) return false;
+    const s = st["c" + i]; if (!s) return false;
+    let hit = false;
+    if (s.scheduled === b.day + "|" + b.time) { s.scheduled = null; hit = true; }   // the rep moved it? then it's theirs
+    if (b.video && !s.vlink && !(s.vclips || []).length && !s.scheduled) s.video = false;
+    return hit;
+  }
+  if (b.kind === "meal" || b.kind === "offsite") {
+    const arr = Array.isArray(st[b.kind === "meal" ? "_meals" : "_offsite"]) ? st[b.kind === "meal" ? "_meals" : "_offsite"] : [];
+    const j = ids[k] ? arr.findIndex(y => y.id === ids[k]) : -1;
+    delete ids[k];
+    if (j >= 0) { arr.splice(j, 1); return true; }
+    return false;
+  }
+  if (b.kind === "session") {
+    const arr = Array.isArray(st._sessions) ? st._sessions : [];
+    const j = arr.findIndex(y => y.sid === b.sid && !(y.notes || "").trim());
+    if (j >= 0) { arr.splice(j, 1); return true; }
+  }
+  return false;
+}
+function mergePreload(st, base, next, ids) {
+  const out = { added: 0, changed: 0, removed: 0 };
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  new Set([...Object.keys(base), ...Object.keys(next)]).forEach(k => {
+    const b = base[k], n = next[k];
+    if (n && !b) { if (prePut(st, k, n, null, ids)) out.added++; }
+    else if (n && b && !same(n, b)) { if (prePut(st, k, n, b, ids)) out.changed++; }
+    else if (!n && b) { if (preDrop(st, k, b, ids)) out.removed++; }
+  });
+  return out;
+}
+function preDocId(code, email) { return code + "__" + String(email || "").trim().toLowerCase(); }
+async function applyPreload() {
+  if (!fbReady || !currentUser || isHome()) return;
+  const code = currentEventCode();
+  const email = String(currentUser.email || "").toLowerCase();
+  if (!code || !email) return;
+  let p;
+  try {
+    const snap = await fbDb.collection("preloads").doc(preDocId(code, email)).get();
+    if (!snap.exists) return;
+    p = snap.data() || {};
+  } catch (e) { return; }                       // offline, or rules not published yet
+  if (code !== currentEventCode()) return;      // the show changed meanwhile
+  const st = load();
+  const prev = st._pre || { v: 0, items: {}, ids: {} };
+  if (!((+p.version || 0) > (+prev.v || 0))) return;
+  const sh = dayShiftFor(code, p.d0);
+  const next = {};
+  (p.items || []).forEach(it => { if (it && it.key) next[it.key] = sh ? { ...it, day: (+it.day || 0) + sh } : it; });
+  const ids = { ...(prev.ids || {}) };
+  const n = mergePreload(st, prev.items || {}, next, ids);
+  st._pre = { v: +p.version, items: next, ids };
+  save(st);
+  const who = String(p.updatedBy || "").trim().split(/\s+/)[0] || "An admin";
+  if (!(prev.v > 0)) {
+    const cnt = Object.keys(next).length;
+    toast(who + " loaded your " + showShortLabelOf(code) + " schedule: " + cnt + " item" + (cnt === 1 ? "" : "s"));
+  } else if (n.added || n.changed || n.removed) {
+    toast(who + " updated your schedule: " + [n.added && n.added + " added", n.changed && n.changed + " changed",
+      n.removed && n.removed + " removed"].filter(Boolean).join(", "));
+  }
+  fbDb.collection("preloads").doc(preDocId(code, email)).update({
+    claimedBy: currentUser.uid, claimedName: currentUser.name || "", claimedAt: Date.now(), claimedV: +p.version
+  }).catch(() => {});
+  render();
 }
 
 function subscribeTeam() {
@@ -6095,7 +6294,7 @@ function buildHomeSchedView() {
   if (q) {
     let anyHit = false;
     entries.forEach(([id, s]) => {
-      const hits = (Array.isArray(s.items) ? s.items : [])
+      const hits = docItems(s)
         .filter(it => vOnly(it) && schedItemMatch(it, q))
         .sort((a, b) => (a.day - b.day) || (timeToMin(a.time || "") - timeToMin(b.time || "")));
       if (!hits.length) return;
@@ -6116,12 +6315,12 @@ function buildHomeSchedView() {
   const sel = homeSchedules[homeSchedRep];
   h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
     `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(showLabelOf(s.eventCode))}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
-  const items = (Array.isArray(sel.items) ? sel.items : []).filter(vOnly);
+  const items = docItems(sel).filter(vOnly);
   const nDays = showDayCount(sel.eventCode);
   const dc = Array(nDays + 1).fill(0);
   items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
   if (homeSchedDay > nDays) homeSchedDay = 1;
-  h += `<div class="sched-day-tabs">` + showDays(sel.eventCode).map(d => `
+  h += `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">` + showDays(sel.eventCode).map(d => `
     <button class="sched-day-tab${homeSchedDay===d?" active":""}" data-hs-day="${d}">
       <span class="stdt-day">Day ${d}</span>
       <span class="stdt-count">${dc[d]} booked</span>
@@ -6218,9 +6417,10 @@ function buildCard(c, state) {
   const schedTag = scheduled
     ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}</span>`
     : "";
+  const [schD, schT] = scheduled ? scheduled.split("|") : ["", ""];
   const timeOpts = showDays(currentEventCode()).map(d =>
-    `<optgroup label="Day ${d}">${TIME_SLOTS.map(t =>
-      `<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${t}</option>`
+    `<optgroup label="Day ${d}">${withTime(TIME_SLOTS, String(d) === schD ? schT : "").map(t =>
+      `<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${esc(t)}</option>`
     ).join("")}</optgroup>`
   ).join("");
   return `
@@ -6395,13 +6595,18 @@ function render() {
   updateStats(state);
 }
 
+// A time list with one extra entry when the current value is off the grid
+// (an uploaded 8:45 AM breakfast), so editing never silently moves it.
+function withTime(slots, t) {
+  return (t && !slots.includes(t)) ? slots.concat([t]).sort((a, b) => timeToMin(a) - timeToMin(b)) : slots;
+}
 function buildMealForm() {
   const types = ["breakfast","lunch","dinner"];
   const typeBtns = types.map(t =>
     `<button class="mt-btn${mealFormType===t?" active":""}" data-mtype="${t}">${MEAL_LABEL[t]}</button>`
   ).join("");
-  const timeOpts = MEAL_TIME_SLOTS.map(t =>
-    `<option value="${esc(t)}"${t===mealFormTime?" selected":""}>${t}</option>`
+  const timeOpts = withTime(MEAL_TIME_SLOTS, mealFormTime).map(t =>
+    `<option value="${esc(t)}"${t===mealFormTime?" selected":""}>${esc(t)}</option>`
   ).join("");
   return `
     <div class="meal-form">
@@ -6427,8 +6632,8 @@ function buildMealForm() {
 }
 
 function buildOffsiteForm() {
-  const timeOpts = MEAL_TIME_SLOTS.map(t =>
-    `<option value="${esc(t)}"${t===offFormTime?" selected":""}>${t}</option>`
+  const timeOpts = withTime(MEAL_TIME_SLOTS, offFormTime).map(t =>
+    `<option value="${esc(t)}"${t===offFormTime?" selected":""}>${esc(t)}</option>`
   ).join("");
   return `
     <div class="meal-form offsite">
@@ -6602,7 +6807,7 @@ function renderScheduleView(state) {
   // ── Viewing a teammate's schedule (read-only) ──
   if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
     const tm = teamSchedules[viewedScheduleUid];
-    const items = Array.isArray(tm.items) ? tm.items : [];
+    const items = docItems(tm);
     const nDays = showDayCount(currentEventCode());
     if (schedDay > nDays) schedDay = 1;
     const dc = Array(nDays + 1).fill(0);
@@ -6617,7 +6822,7 @@ function renderScheduleView(state) {
       (byTime[it.time] = byTime[it.time]||[]).push(it);
     });
     const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
-    let html = teamBar + `<div class="sched-day-tabs">${dayTabs}</div>`;
+    let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>`;
     html += `<div class="ro-banner">Viewing <strong>${esc(tm.name||"teammate")}</strong> · view only</div>`;
     if (!slotTimes.length) {
       html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4>
@@ -6660,6 +6865,7 @@ function renderScheduleView(state) {
       <span class="stdt-day">Day ${d}</span>
       <span class="stdt-count">${dayCount[d]} booked</span>
     </button>`).join("");
+  const manyDays = nDays >= 5 ? " many" : "";
 
   const searchHtml = (() => {
     if (!schedSearchQ) return "";
@@ -6705,7 +6911,7 @@ function renderScheduleView(state) {
   const hasAny = slotTimes.length > 0;
 
   let html = showStatusBannerHtml() + teamBar + `
-<div class="sched-day-tabs">${dayTabs}</div>
+<div class="sched-day-tabs${manyDays}">${dayTabs}</div>
 ${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
@@ -8366,6 +8572,289 @@ async function loadBullpenPasscode() {
 // admin's own name in the header; the header now shows whose schedule you're
 // viewing instead, so it moved here with the rest of the admin tools.
 document.getElementById("guideBtn").addEventListener("click", openGuideSheet);
+
+// ── SCHEDULE PRELOADS (admin side) ──────────────────────────────────────
+// The master schedule is a spreadsheet: a "Schedule" sheet (Day, Start, End,
+// Type, Company / event, Who, With, Location, Notes; one row per item) and a
+// "People" sheet (Name, Email, Team, Also known as). Each person named in a
+// row's Who column gets that item. Rows with nobody in Who are listed as
+// "not assigned yet" and go to no one. Publishing writes one doc per
+// checked person whose items changed (version + 1); their app merges it.
+let _xlsxLib = null;
+function loadXlsxLib() {
+  if (window.XLSX) return Promise.resolve();
+  if (!_xlsxLib) _xlsxLib = new Promise((ok, fail) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = ok; s.onerror = () => { _xlsxLib = null; fail(new Error("xlsx lib failed to load")); };
+    document.head.appendChild(s);
+  });
+  return _xlsxLib;
+}
+const PRE_COLS = {
+  day: ["day", "date"], start: ["start", "start time", "time"], end: ["end", "end time"],
+  type: ["type", "what"], company: ["company / event", "company/event", "company or event", "company", "event", "title"],
+  who: ["who", "who (ncm)", "ncm"], with: ["with", "guests", "their people"],
+  location: ["location", "where"], notes: ["notes", "note"]
+};
+function preCol(row, key) {
+  for (const k of Object.keys(row)) if (PRE_COLS[key].includes(k.trim().toLowerCase())) return String(row[k] == null ? "" : row[k]).trim();
+  return "";
+}
+function preDayOf(s, dates) {
+  s = String(s || "").trim(); if (!s) return 0;
+  const at = (mo, d) => dates.findIndex(x => +x.slice(5, 7) === mo && +x.slice(8, 10) === d) + 1;
+  let m = s.match(/^day\s*(\d+)$/i);
+  if (m) return (+m[1] >= 1 && +m[1] <= dates.length) ? +m[1] : 0;
+  m = s.match(/(\d{1,2})\/(\d{1,2})/);
+  if (m) return at(+m[1], +m[2]);
+  m = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})/i);
+  if (m) return at(["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].indexOf(m[1].toLowerCase()) + 1, +m[2]);
+  m = s.match(/^(sun|mon|tue|wed|thu|fri|sat)/i);
+  if (m) {
+    const wd = ["sun","mon","tue","wed","thu","fri","sat"].indexOf(m[1].toLowerCase());
+    const hits = dates.map((x, i) => [new Date(x + "T12:00:00").getDay(), i]).filter(([w]) => w === wd);
+    return hits.length === 1 ? hits[0][1] + 1 : 0;
+  }
+  return 0;
+}
+function preTimeOf(s) {
+  s = String(s || "").trim().toLowerCase();
+  if (!s) return "";
+  if (/^0?\.\d+$/.test(s)) return fmtTime(Math.round(parseFloat(s) * 1440));   // Excel time cell
+  s = s.replace(/\s+/g, "").replace(/\./g, "");                                 // "7:30 a.m." -> "7:30am"
+  if (s === "noon") return "12:00 PM";
+  const m = s.match(/^(\d{1,2})(?::(\d{2}))?(am|pm|a|p)?$/);
+  if (!m) return "";
+  let h = +m[1]; const mn = +(m[2] || 0), ap = m[3];
+  if (h > 23 || mn > 59) return "";
+  if (ap) { if (ap[0] === "p" && h !== 12) h += 12; if (ap[0] === "a" && h === 12) h = 0; }
+  else if (h <= 6) h += 12;                    // a bare "2:30" at a show is 2:30 p.m.
+  return fmtTime(h * 60 + mn);
+}
+function preKindOf(t) {
+  t = String(t || "").toLowerCase();
+  if (/breakfast/.test(t)) return ["meal", "breakfast"];
+  if (/lunch/.test(t)) return ["meal", "lunch"];
+  if (/dinner/.test(t)) return ["meal", "dinner"];
+  if (/video/.test(t)) return ["booth", "video"];
+  if (/session/.test(t)) return ["session", ""];
+  if (/booth|visit/.test(t)) return ["booth", ""];
+  if (/meet|event|off/.test(t)) return ["offsite", ""];
+  return ["", ""];
+}
+function preFindBooth(name, booths) {
+  const n = String(name || "").trim(); if (!n) return null;
+  const lc = n.toLowerCase(), nn = preNorm(n);
+  const act = booths.filter(c => !c.x);
+  const one = hits => hits.length === 1 ? hits[0] : null;
+  return act.find(c => c.n.toLowerCase() === lc) || act.find(c => preNorm(c.n) === nn)
+    || one(act.filter(c => preNorm(c.n).startsWith(nn) || (preNorm(c.n).length > 3 && nn.startsWith(preNorm(c.n)))))
+    || one(act.filter(c => preNorm(c.n).includes(nn))) || null;
+}
+function preFindSession(name, code) {
+  const nn = preNorm(name); if (!nn) return null;
+  const list = showSessions(code);
+  return list.find(x => preNorm(x.title) === nn) || (list.filter(x => preNorm(x.title).includes(nn)).length === 1
+    ? list.find(x => preNorm(x.title).includes(nn)) : null);
+}
+function preBuildItem(o) {
+  const range = o.end ? o.start + " to " + o.end : "";
+  const also = o.others.length ? "Also going: " + o.others.join(", ") : "";
+  const join = a => a.filter(Boolean).join(" · ");
+  if (o.kind === "meal") return { kind: "meal", day: o.day, time: o.start, mealType: o.sub, company: o.comp,
+    notes: join([o.location, range, o.withTxt, also, o.notes]) };
+  if (o.kind === "offsite") return { kind: "offsite", day: o.day, time: o.start, title: o.comp || "Meeting", company: "",
+    location: o.location, notes: join([range, o.withTxt, also, o.notes]) };
+  if (o.kind === "booth") return { kind: "booth", day: o.day, time: o.start, boothName: o.booth.n, boothNum: o.booth.b,
+    video: o.sub === "video", pre: join([o.withTxt, also, o.notes]) };
+  return { kind: "session", day: o.sess.day, time: o.sess.time, sid: o.sess.id };
+}
+function preParse(wb, code) {
+  const ev = resolveEvent(code), dates = ev.dates || [], booths = ev.booths || [];
+  const named = n => wb.SheetNames.find(s => s.trim().toLowerCase() === n);
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[named("schedule") || wb.SheetNames[0]], { raw: false, defval: "" });
+  const people = named("people") ? XLSX.utils.sheet_to_json(wb.Sheets[named("people")], { raw: false, defval: "" }).map(r => {
+    const g = k => { const key = Object.keys(r).find(x => x.trim().toLowerCase() === k); return key ? String(r[key]).trim() : ""; };
+    const name = g("name"), email = g("email").toLowerCase(), team = g("team").toLowerCase();
+    return { name, email, first: name.split(/\s+/)[0].toLowerCase(),
+      dept: /sales/.test(team) ? "sales" : "edit", team: /sales/.test(team) ? "Sales" : /event/.test(team) ? "Events" : "Editorial/Digital",
+      aka: g("also known as").split(/[,;]/).map(x => x.trim().toLowerCase().replace(/\./g, "")).filter(Boolean) };
+  }).filter(p => p.name && /@/.test(p.email)) : [];
+  const issues = [], unassigned = [], byEmail = {};
+  if (!people.length) issues.push('No "People" sheet with Name, Email and Team, so nobody can be matched.');
+  const findPerson = t => {
+    const lc = t.toLowerCase().replace(/\./g, "");
+    const firsts = people.filter(p => p.first === lc);
+    return people.find(p => p.name.toLowerCase() === lc) || people.find(p => p.aka.includes(lc))
+      || (firsts.length === 1 ? firsts[0] : null) || people.find(p => p.email.split("@")[0] === lc) || null;
+  };
+  rows.forEach((r, ri) => {
+    const dayTxt = preCol(r, "day"), type = preCol(r, "type"), comp = preCol(r, "company"), whoTxt = preCol(r, "who");
+    if (!dayTxt && !type && !comp && !whoTxt) return;
+    const label = "Row " + (ri + 2) + ": " + [dayTxt, preCol(r, "start"), type, comp].filter(Boolean).join(" · ");
+    // Nobody in Who yet: list it for the admin and skip the other checks.
+    const toks = whoTxt.split(/\s*(?:,|&|;|\/|\band\b)\s*/i).map(x => x.trim()).filter(Boolean);
+    if (!toks.length) { unassigned.push(label + (preCol(r, "notes") ? " (" + preCol(r, "notes") + ")" : "")); return; }
+    const day = preDayOf(dayTxt, dates), start = preTimeOf(preCol(r, "start")), end = preTimeOf(preCol(r, "end"));
+    const [kind, sub] = preKindOf(type);
+    if (!day) { issues.push(label + ": the day isn't one of this show's dates"); return; }
+    if (!kind) { issues.push(label + ": Type should be Breakfast, Lunch, Dinner, Meeting, Event, Booth, Video or Session"); return; }
+    if (!start && kind !== "session") { issues.push(label + ": no start time"); return; }
+    let booth = null, sess = null;
+    if (kind === "booth" && !(booth = preFindBooth(comp, booths))) { issues.push(label + ': couldn\'t find "' + comp + '" on the exhibitor list'); return; }
+    if (kind === "session" && !(sess = preFindSession(comp, code))) { issues.push(label + ': "' + comp + '" isn\'t one of this show\'s sessions'); return; }
+    const who = [];
+    toks.forEach(t => { const p = findPerson(t); if (p) { if (!who.includes(p)) who.push(p); } else issues.push(label + ': "' + t + '" isn\'t on the People sheet'); });
+    who.forEach(p => {
+      const it = preBuildItem({ kind, sub, day, start, end, comp, booth, sess, withTxt: preCol(r, "with"),
+        location: preCol(r, "location"), notes: preCol(r, "notes"), others: who.filter(q => q !== p).map(q => q.name) });
+      const P = byEmail[p.email] = byEmail[p.email] || { name: p.name, email: p.email, dept: p.dept, team: p.team, items: [], issues: [] };
+      let k = preItemKey(it);
+      if (P.items.some(x => x.key === k)) {
+        if (kind === "booth") { P.issues.push(label + ": that booth is already on " + p.name + "'s schedule, so this row was skipped"); return; }
+        let n = 2; while (P.items.some(x => x.key === k + ":" + n)) n++; k += ":" + n;
+      }
+      P.items.push({ key: k, ...it });
+    });
+  });
+  Object.values(byEmail).forEach(P => P.items.sort((a, b) => (a.day - b.day) || (timeToMin(a.time) - timeToMin(b.time))));
+  return { persons: Object.values(byEmail).sort((a, b) => a.name.localeCompare(b.name)), unassigned, issues };
+}
+let preUp = { status: "idle", error: "", fileName: "", persons: [], unassigned: [], issues: [], existing: {}, existingOk: null, pick: new Set(), busy: false };
+function preItemLine(code, it) {
+  const what = it.kind === "meal" ? (MEAL_LABEL[it.mealType] || "Meal") + (it.company ? " with " + it.company : "")
+    : it.kind === "offsite" ? (it.title || "Meeting") + (it.location ? " (" + it.location + ")" : "")
+    : it.kind === "booth" ? (it.video ? "Video: " : "Booth visit: ") + it.boothName + " (Booth " + it.boothNum + ")"
+    : ((sessionById(it.sid, code) || {}).title || "Education session");
+  return showDayLabel(code, it.day) + " · " + (it.time || "") + " · " + what;
+}
+function preChange(code, P) {
+  const old = preUp.existing[preDocId(code, P.email)];
+  if (!old) return { tag: "New", n: P.items.length, changed: true };
+  const a = {}, b = {};
+  (old.items || []).forEach(x => { a[x.key] = JSON.stringify(x); });
+  P.items.forEach(x => { b[x.key] = JSON.stringify(x); });
+  let add = 0, chg = 0, rem = 0;
+  Object.keys(b).forEach(k => { if (!(k in a)) add++; else if (a[k] !== b[k]) chg++; });
+  Object.keys(a).forEach(k => { if (!(k in b)) rem++; });
+  if (!add && !chg && !rem) return { tag: "No changes", changed: false };
+  return { tag: "Update: " + [add && add + " added", chg && chg + " changed", rem && rem + " removed"].filter(Boolean).join(", "), changed: true };
+}
+function renderPre() {
+  const card = document.getElementById("preCard");
+  const code = currentEventCode();
+  let h = `<div class="settings-title">Upload schedules</div>
+    <p class="settings-dbx-note">For <strong>${esc(showLabelOf(code))}</strong> (switch shows from the header to upload another). Each person in the spreadsheet's Who column gets their items when they open the app or sign up. Upload again anytime: they get your changes, and anything they added themselves stays.</p>
+    <button class="settings-done" type="button" data-pre-pick>${preUp.persons.length ? "Choose a different spreadsheet" : "Choose spreadsheet"}</button>`;
+  if (preUp.status === "reading") h += `<div class="acct-empty">Reading ${esc(preUp.fileName)}…</div>`;
+  if (preUp.status === "error") h += `<div class="auth-error" style="display:block">${esc(preUp.error)}</div>`;
+  if (preUp.status === "ready") {
+    const n = preUp.persons.reduce((s, P) => s + P.items.length, 0);
+    h += `<div class="pre-sum"><strong>${esc(preUp.fileName)}</strong><br>${preUp.persons.length} ${preUp.persons.length === 1 ? "person" : "people"} · ${n} item${n === 1 ? "" : "s"}`
+      + (preUp.unassigned.length ? ` · ${preUp.unassigned.length} not assigned yet` : "")
+      + (preUp.issues.length ? ` · <span style="color:var(--maroon)">${preUp.issues.length} to fix</span>` : "") + `</div>`;
+    if (preUp.persons.length) {
+      const allOn = preUp.persons.every(P => preUp.pick.has(P.email));
+      h += `<label class="pre-all"><input type="checkbox" data-pre-all${allOn ? " checked" : ""}> Select everyone</label>`;
+      preUp.persons.forEach(P => {
+        const ch = preChange(code, P);
+        const kinds = {};
+        P.items.forEach(it => { const k = it.kind === "meal" ? it.mealType : it.kind === "booth" ? (it.video ? "video" : "booth visit") : it.kind === "offsite" ? "meeting" : "session"; kinds[k] = (kinds[k] || 0) + 1; });
+        const kindTxt = Object.entries(kinds).map(([k, c]) => c + " " + k + (c === 1 ? "" : (k === "lunch" ? "es" : "s"))).join(", ");
+        h += `<label class="pre-person"><input type="checkbox" data-pre-person="${esc(P.email)}"${preUp.pick.has(P.email) ? " checked" : ""}>
+          <span class="pre-p-main"><strong>${esc(P.name)}</strong><span class="pre-p-team">${esc(P.team)}</span>
+          <span class="pre-p-sub">${esc(P.email)}<br>${P.items.length} item${P.items.length === 1 ? "" : "s"}: ${esc(kindTxt)} · <b>${esc(ch.tag)}</b></span></span></label>
+          <details class="pre-items"><summary>See ${esc(P.name.split(" ")[0])}'s items</summary><ul>${P.items.map(it => `<li>${esc(preItemLine(code, it))}</li>`).join("")}</ul>
+          ${P.issues.length ? `<ul class="pre-list issues">${P.issues.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</details>`;
+      });
+      const go = preUp.persons.filter(P => preUp.pick.has(P.email) && preChange(code, P).changed).length;
+      h += `<button class="settings-done" type="button" data-pre-publish${go && !preUp.busy ? "" : " disabled"}>${preUp.busy ? "Publishing…" : go ? "Publish " + go + " schedule" + (go === 1 ? "" : "s") : "Nothing new to publish"}</button>`;
+    }
+    if (preUp.unassigned.length) h += `<div class="pre-sec">Not assigned yet (no one in Who)</div><ul class="pre-list">${preUp.unassigned.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    if (preUp.issues.length) h += `<div class="pre-sec">To fix in the spreadsheet</div><ul class="pre-list issues">${preUp.issues.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  }
+  const ex = Object.values(preUp.existing).filter(d => d.eventCode === code).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  h += `<div class="pre-sec">Already uploaded for this show</div>`;
+  if (preUp.existingOk === false) h += `<div class="acct-empty">Couldn't load them (are the latest Firestore rules published?).</div>`;
+  else if (preUp.existingOk === null) h += `<div class="acct-empty">Loading…</div>`;
+  else if (!ex.length) h += `<div class="acct-empty">None yet.</div>`;
+  else ex.forEach(d => {
+    const st = !d.claimedBy ? "Waiting for them to sign in"
+      : (+d.claimedV || 0) < (+d.version || 0) ? "In their app; update waiting for their next open" : "In their app";
+    h += `<div class="pre-status"><span>${esc(d.name || d.email)} · v${esc(String(d.version || 1))}</span><span>${esc(st)}</span></div>`;
+  });
+  h += `<button class="settings-done share-secondary" type="button" data-pre-close>Close</button>`;
+  card.innerHTML = h;
+}
+async function loadPreExisting() {
+  const code = currentEventCode();
+  try {
+    const snap = await fbDb.collection("preloads").where("eventCode", "==", code).get();
+    preUp.existing = {};
+    snap.forEach(d => { preUp.existing[d.id] = d.data(); });
+    preUp.existingOk = true;
+  } catch (e) { preUp.existingOk = false; }
+  if (document.getElementById("preSheet").style.display === "flex") renderPre();
+}
+function openPreSheet() {
+  preUp = { status: "idle", error: "", fileName: "", persons: [], unassigned: [], issues: [], existing: {}, existingOk: null, pick: new Set(), busy: false };
+  document.getElementById("preSheet").style.display = "flex";
+  renderPre();
+  if (fbReady) loadPreExisting(); else { preUp.existingOk = false; renderPre(); }
+}
+document.getElementById("preBtn").addEventListener("click", openPreSheet);
+document.getElementById("preFile").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  preUp.status = "reading"; preUp.fileName = f.name; preUp.persons = []; preUp.pick = new Set(); renderPre();
+  try {
+    await loadXlsxLib();
+    const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+    const r = preParse(wb, currentEventCode());
+    Object.assign(preUp, r, { status: "ready" });
+  } catch (err) {
+    preUp.status = "error";
+    preUp.error = /xlsx lib/.test(String(err && err.message)) ? "Couldn't load the spreadsheet reader. Check the connection and try again."
+      : "Couldn't read that file. Save it as .xlsx or .csv and try again.";
+  }
+  renderPre();
+});
+async function publishPreloads() {
+  const code = currentEventCode();
+  const go = preUp.persons.filter(P => preUp.pick.has(P.email) && preChange(code, P).changed);
+  if (!go.length || preUp.busy || !fbReady) return;
+  preUp.busy = true; renderPre();
+  const d0 = ((resolveEvent(code) || {}).dates || [])[0] || "";
+  let ok = 0;
+  for (const P of go) {
+    const old = preUp.existing[preDocId(code, P.email)];
+    const doc = { email: P.email, name: P.name, dept: P.dept, eventCode: code, d0,
+      version: ((old && +old.version) || 0) + 1, items: P.items,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (currentUser && currentUser.name) || "" };
+    try { await fbDb.collection("preloads").doc(preDocId(code, P.email)).set(doc, { merge: true }); ok++; }
+    catch (e) { /* reported below */ }
+  }
+  preUp.busy = false;
+  toast(ok === go.length ? "Published " + ok + " schedule" + (ok === 1 ? "" : "s")
+    : "Published " + ok + " of " + go.length + " (are the latest Firestore rules published?)");
+  await loadPreExisting();
+  renderPre();
+}
+document.getElementById("preSheet").addEventListener("change", e => {
+  const pb = e.target.closest("[data-pre-person]");
+  if (pb) { if (pb.checked) preUp.pick.add(pb.dataset.prePerson); else preUp.pick.delete(pb.dataset.prePerson); renderPre(); return; }
+  if (e.target.closest("[data-pre-all]")) {
+    if (e.target.checked) preUp.persons.forEach(P => preUp.pick.add(P.email)); else preUp.pick.clear();
+    renderPre();
+  }
+});
+document.getElementById("preSheet").addEventListener("click", e => {
+  if (e.target.id === "preSheet" || e.target.closest("[data-pre-close]")) { document.getElementById("preSheet").style.display = "none"; return; }
+  if (e.target.closest("[data-pre-pick]")) { document.getElementById("preFile").click(); return; }
+  if (e.target.closest("[data-pre-publish]")) { publishPreloads(); return; }
+});
 document.getElementById("guideClose").addEventListener("click", () => {
   document.getElementById("guideSheet").style.display = "none";
 });
@@ -9040,6 +9529,7 @@ async function switchToShow(code, manual) {
   // A device that has never opened this show pulls its cloud copy first, so
   // a later save can't push an empty bucket over the rep's real data.
   await hydrateFromCloud();
+  await applyPreload();
   subscribeTeam();
   subscribeMyVideoStatus();
   updateMediaBtn();
@@ -9156,6 +9646,7 @@ if (fbReady) {
       // Pull cloud data down first if this device is empty, THEN push (which
       // also migrates existing local data) and start the team subscription.
       await hydrateFromCloud();
+      await applyPreload();
       syncMyScheduleToCloud();
       syncMyNotesToCloud();
       subscribeTeam();

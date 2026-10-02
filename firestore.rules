@@ -112,6 +112,23 @@ service cloud.firestore {
       allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMaster() || isHome());
     }
 
+    // Schedules an admin uploads before (or after) people sign up: one doc
+    // per person per show, named <SHOW>__<work email>. Masters write them;
+    // the person whose email is in the name reads theirs (so a missing doc
+    // reads as "none" instead of an error) and may only stamp it claimed; the
+    // bullpen reads Editorial/Digital ones.
+    match /preloads/{docId} {
+      allow read: if request.auth != null && (isMaster()
+                    || docId.split('__')[1] == request.auth.token.get('email', '').lower()
+                    || (isHome() && resource.data.dept == "edit"));
+      allow create, delete: if isMaster();
+      allow update: if isMaster()
+                    || (request.auth != null
+                        && docId.split('__')[1] == request.auth.token.get('email', '').lower()
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(["claimedBy", "claimedName", "claimedAt", "claimedV"]));
+    }
+
     // Archived past-show CSVs. Each doc is owned by the rep who archived it
     // (readable by them or a master); created by the owner; deletable by owner/master.
     match /archives/{docId} {
