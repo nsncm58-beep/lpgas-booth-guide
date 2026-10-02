@@ -2374,7 +2374,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v152</div>
+      <div class="pf-ver">NCM Events Guide · v153</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4963,6 +4963,9 @@ async function hydrateFromCloud() {
 // items the admin added or changed land, items the admin dropped leave,
 // everything else (the rep's own items, edits and notes) is left alone.
 // _pre in the local bucket remembers the last version applied.
+// Items are flat maps; Firestore may hand their fields back in a different
+// order than they were written, so compare with the keys sorted.
+function canonJSON(o) { return JSON.stringify(o, Object.keys(o || {}).sort()); }
 function preNorm(s) { return String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, ""); }
 function preItemKey(it) {
   if (it.kind === "booth") return "b:" + it.boothNum;
@@ -5031,7 +5034,7 @@ function preDrop(st, k, b, ids) {
 }
 function mergePreload(st, base, next, ids) {
   const out = { added: 0, changed: 0, removed: 0 };
-  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const same = (a, b) => canonJSON(a) === canonJSON(b);
   new Set([...Object.keys(base), ...Object.keys(next)]).forEach(k => {
     const b = base[k], n = next[k];
     if (n && !b) { if (prePut(st, k, n, null, ids)) out.added++; }
@@ -8733,8 +8736,8 @@ function preChange(code, P) {
   const old = preUp.existing[preDocId(code, P.email)];
   if (!old) return { tag: "New", n: P.items.length, changed: true };
   const a = {}, b = {};
-  (old.items || []).forEach(x => { a[x.key] = JSON.stringify(x); });
-  P.items.forEach(x => { b[x.key] = JSON.stringify(x); });
+  (old.items || []).forEach(x => { a[x.key] = canonJSON(x); });
+  P.items.forEach(x => { b[x.key] = canonJSON(x); });
   let add = 0, chg = 0, rem = 0;
   Object.keys(b).forEach(k => { if (!(k in a)) add++; else if (a[k] !== b[k]) chg++; });
   Object.keys(a).forEach(k => { if (!(k in b)) rem++; });
