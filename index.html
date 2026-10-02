@@ -1837,22 +1837,6 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 
 
 /* ── Admin > Accounts ── */
-.pre-sum { font-size: 0.78rem; line-height: 1.55; color: var(--text-2); margin: 14px 0 6px; }
-.pre-all { display: inline-flex; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 600; color: var(--text-2); margin: 4px 0 6px; cursor: pointer; }
-.pre-person { display: flex; align-items: flex-start; gap: 10px; padding: 10px 2px 8px; border-top: 1px solid var(--border-soft); cursor: pointer; }
-.pre-person input, .pre-all input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--blue); flex-shrink: 0; }
-.pre-p-main { flex: 1; min-width: 0; font-size: 0.88rem; color: var(--text); }
-.pre-p-team { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); margin-left: 6px; }
-.pre-p-sub { display: block; font-size: 0.74rem; color: var(--text-2); margin-top: 2px; line-height: 1.4; }
-.pre-p-sub b { color: var(--blue); font-weight: 700; }
-.pre-items { margin: 0 0 8px 30px; font-size: 0.74rem; color: var(--text-2); }
-.pre-items summary { cursor: pointer; color: var(--blue); font-weight: 600; }
-.pre-items ul, .pre-list { margin: 6px 0 0; padding-left: 16px; font-size: 0.74rem; color: var(--text-2); line-height: 1.45; }
-.pre-items li, .pre-list li { margin: 3px 0; }
-.pre-list.issues li { color: var(--maroon); }
-.pre-sec { font-family: var(--fd); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); margin: 16px 0 4px; }
-.pre-status { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--border-soft); font-size: 0.8rem; color: var(--text); }
-.pre-status span:last-child { color: var(--text-2); text-align: right; }
 .acct-card { max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; overflow-y: auto; }
 .acct-top { flex-shrink: 0; }
 .acct-top .settings-title { margin-bottom: 6px; }
@@ -2366,7 +2350,6 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
       <div class="pf-label">Admin</div>
       <div class="pf-group">
         <button class="pf-row" id="accountsBtn" type="button"><span class="pf-k">Accounts</span><span class="pf-v" id="accountsCount"></span><span class="pf-chev" aria-hidden="true"></span></button>
-        <button class="pf-row" id="preBtn" type="button"><span class="pf-k">Upload schedules</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
         <button class="pf-row" id="guideBtn" type="button"><span class="pf-k">Install QR and bullpen passcode</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
       </div>
     </div>
@@ -2374,7 +2357,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v153</div>
+      <div class="pf-ver">NCM Events Guide · v154</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2420,12 +2403,6 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <!-- ── Admin: every account, with guarded team and brand edits (master only) ── -->
 <div id="accountsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card acct-card" id="acctCard"></div>
-</div>
-
-<!-- ── Profile > Admin > Upload schedules ── -->
-<div id="preSheet" class="settings-sheet" style="display:none">
-  <div class="settings-card acct-card" id="preCard"></div>
-  <input type="file" id="preFile" accept=".xlsx,.xls,.csv" hidden>
 </div>
 
 <!-- ── Profile > Video progress: the bullpen's steps, view only ── -->
@@ -4957,8 +4934,10 @@ async function hydrateFromCloud() {
 }
 
 // ── SCHEDULE PRELOADS (rep side) ────────────────────────────────────────
-// An admin uploads a show's master schedule (Profile > Admin > Upload
-// schedules); each person gets preloads/<CODE>__<email>. Here, after the
+// Claude publishes a show's master schedule spreadsheet with the Schedule
+// Publisher (Tech > Apps & Tools > NCM Events Guide > Schedule Publisher on
+// Nate's Mac; the in-app uploader was removed Oct. 2, 2026), so each person
+// gets preloads/<CODE>__<email>. Here, after the
 // cloud restore, the rep's app merges a newer version into their schedule:
 // items the admin added or changed land, items the admin dropped leave,
 // everything else (the rep's own items, edits and notes) is left alone.
@@ -8576,288 +8555,6 @@ async function loadBullpenPasscode() {
 // viewing instead, so it moved here with the rest of the admin tools.
 document.getElementById("guideBtn").addEventListener("click", openGuideSheet);
 
-// ── SCHEDULE PRELOADS (admin side) ──────────────────────────────────────
-// The master schedule is a spreadsheet: a "Schedule" sheet (Day, Start, End,
-// Type, Company / event, Who, With, Location, Notes; one row per item) and a
-// "People" sheet (Name, Email, Team, Also known as). Each person named in a
-// row's Who column gets that item. Rows with nobody in Who are listed as
-// "not assigned yet" and go to no one. Publishing writes one doc per
-// checked person whose items changed (version + 1); their app merges it.
-let _xlsxLib = null;
-function loadXlsxLib() {
-  if (window.XLSX) return Promise.resolve();
-  if (!_xlsxLib) _xlsxLib = new Promise((ok, fail) => {
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
-    s.onload = ok; s.onerror = () => { _xlsxLib = null; fail(new Error("xlsx lib failed to load")); };
-    document.head.appendChild(s);
-  });
-  return _xlsxLib;
-}
-const PRE_COLS = {
-  day: ["day", "date"], start: ["start", "start time", "time"], end: ["end", "end time"],
-  type: ["type", "what"], company: ["company / event", "company/event", "company or event", "company", "event", "title"],
-  who: ["who", "who (ncm)", "ncm"], with: ["with", "guests", "their people"],
-  location: ["location", "where"], notes: ["notes", "note"]
-};
-function preCol(row, key) {
-  for (const k of Object.keys(row)) if (PRE_COLS[key].includes(k.trim().toLowerCase())) return String(row[k] == null ? "" : row[k]).trim();
-  return "";
-}
-function preDayOf(s, dates) {
-  s = String(s || "").trim(); if (!s) return 0;
-  const at = (mo, d) => dates.findIndex(x => +x.slice(5, 7) === mo && +x.slice(8, 10) === d) + 1;
-  let m = s.match(/^day\s*(\d+)$/i);
-  if (m) return (+m[1] >= 1 && +m[1] <= dates.length) ? +m[1] : 0;
-  m = s.match(/(\d{1,2})\/(\d{1,2})/);
-  if (m) return at(+m[1], +m[2]);
-  m = s.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})/i);
-  if (m) return at(["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].indexOf(m[1].toLowerCase()) + 1, +m[2]);
-  m = s.match(/^(sun|mon|tue|wed|thu|fri|sat)/i);
-  if (m) {
-    const wd = ["sun","mon","tue","wed","thu","fri","sat"].indexOf(m[1].toLowerCase());
-    const hits = dates.map((x, i) => [new Date(x + "T12:00:00").getDay(), i]).filter(([w]) => w === wd);
-    return hits.length === 1 ? hits[0][1] + 1 : 0;
-  }
-  return 0;
-}
-function preTimeOf(s) {
-  s = String(s || "").trim().toLowerCase();
-  if (!s) return "";
-  if (/^0?\.\d+$/.test(s)) return fmtTime(Math.round(parseFloat(s) * 1440));   // Excel time cell
-  s = s.replace(/\s+/g, "").replace(/\./g, "");                                 // "7:30 a.m." -> "7:30am"
-  if (s === "noon") return "12:00 PM";
-  const m = s.match(/^(\d{1,2})(?::(\d{2}))?(am|pm|a|p)?$/);
-  if (!m) return "";
-  let h = +m[1]; const mn = +(m[2] || 0), ap = m[3];
-  if (h > 23 || mn > 59) return "";
-  if (ap) { if (ap[0] === "p" && h !== 12) h += 12; if (ap[0] === "a" && h === 12) h = 0; }
-  else if (h <= 6) h += 12;                    // a bare "2:30" at a show is 2:30 p.m.
-  return fmtTime(h * 60 + mn);
-}
-function preKindOf(t) {
-  t = String(t || "").toLowerCase();
-  if (/breakfast/.test(t)) return ["meal", "breakfast"];
-  if (/lunch/.test(t)) return ["meal", "lunch"];
-  if (/dinner/.test(t)) return ["meal", "dinner"];
-  if (/video/.test(t)) return ["booth", "video"];
-  if (/session/.test(t)) return ["session", ""];
-  if (/booth|visit/.test(t)) return ["booth", ""];
-  if (/meet|event|off/.test(t)) return ["offsite", ""];
-  return ["", ""];
-}
-function preFindBooth(name, booths) {
-  const n = String(name || "").trim(); if (!n) return null;
-  const lc = n.toLowerCase(), nn = preNorm(n);
-  const act = booths.filter(c => !c.x);
-  const one = hits => hits.length === 1 ? hits[0] : null;
-  return act.find(c => c.n.toLowerCase() === lc) || act.find(c => preNorm(c.n) === nn)
-    || one(act.filter(c => preNorm(c.n).startsWith(nn) || (preNorm(c.n).length > 3 && nn.startsWith(preNorm(c.n)))))
-    || one(act.filter(c => preNorm(c.n).includes(nn))) || null;
-}
-function preFindSession(name, code) {
-  const nn = preNorm(name); if (!nn) return null;
-  const list = showSessions(code);
-  return list.find(x => preNorm(x.title) === nn) || (list.filter(x => preNorm(x.title).includes(nn)).length === 1
-    ? list.find(x => preNorm(x.title).includes(nn)) : null);
-}
-function preBuildItem(o) {
-  const range = o.end ? o.start + " to " + o.end : "";
-  const also = o.others.length ? "Also going: " + o.others.join(", ") : "";
-  const join = a => a.filter(Boolean).join(" · ");
-  if (o.kind === "meal") return { kind: "meal", day: o.day, time: o.start, mealType: o.sub, company: o.comp,
-    notes: join([o.location, range, o.withTxt, also, o.notes]) };
-  if (o.kind === "offsite") return { kind: "offsite", day: o.day, time: o.start, title: o.comp || "Meeting", company: "",
-    location: o.location, notes: join([range, o.withTxt, also, o.notes]) };
-  if (o.kind === "booth") return { kind: "booth", day: o.day, time: o.start, boothName: o.booth.n, boothNum: o.booth.b,
-    video: o.sub === "video", pre: join([o.withTxt, also, o.notes]) };
-  return { kind: "session", day: o.sess.day, time: o.sess.time, sid: o.sess.id };
-}
-function preParse(wb, code) {
-  const ev = resolveEvent(code), dates = ev.dates || [], booths = ev.booths || [];
-  const named = n => wb.SheetNames.find(s => s.trim().toLowerCase() === n);
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[named("schedule") || wb.SheetNames[0]], { raw: false, defval: "" });
-  const people = named("people") ? XLSX.utils.sheet_to_json(wb.Sheets[named("people")], { raw: false, defval: "" }).map(r => {
-    const g = k => { const key = Object.keys(r).find(x => x.trim().toLowerCase() === k); return key ? String(r[key]).trim() : ""; };
-    const name = g("name"), email = g("email").toLowerCase(), team = g("team").toLowerCase();
-    return { name, email, first: name.split(/\s+/)[0].toLowerCase(),
-      dept: /sales/.test(team) ? "sales" : "edit", team: /sales/.test(team) ? "Sales" : /event/.test(team) ? "Events" : "Editorial/Digital",
-      aka: g("also known as").split(/[,;]/).map(x => x.trim().toLowerCase().replace(/\./g, "")).filter(Boolean) };
-  }).filter(p => p.name && /@/.test(p.email)) : [];
-  const issues = [], unassigned = [], byEmail = {};
-  if (!people.length) issues.push('No "People" sheet with Name, Email and Team, so nobody can be matched.');
-  const findPerson = t => {
-    const lc = t.toLowerCase().replace(/\./g, "");
-    const firsts = people.filter(p => p.first === lc);
-    return people.find(p => p.name.toLowerCase() === lc) || people.find(p => p.aka.includes(lc))
-      || (firsts.length === 1 ? firsts[0] : null) || people.find(p => p.email.split("@")[0] === lc) || null;
-  };
-  rows.forEach((r, ri) => {
-    const dayTxt = preCol(r, "day"), type = preCol(r, "type"), comp = preCol(r, "company"), whoTxt = preCol(r, "who");
-    if (!dayTxt && !type && !comp && !whoTxt) return;
-    const label = "Row " + (ri + 2) + ": " + [dayTxt, preCol(r, "start"), type, comp].filter(Boolean).join(" · ");
-    // Nobody in Who yet: list it for the admin and skip the other checks.
-    const toks = whoTxt.split(/\s*(?:,|&|;|\/|\band\b)\s*/i).map(x => x.trim()).filter(Boolean);
-    if (!toks.length) { unassigned.push(label + (preCol(r, "notes") ? " (" + preCol(r, "notes") + ")" : "")); return; }
-    const day = preDayOf(dayTxt, dates), start = preTimeOf(preCol(r, "start")), end = preTimeOf(preCol(r, "end"));
-    const [kind, sub] = preKindOf(type);
-    if (!day) { issues.push(label + ": the day isn't one of this show's dates"); return; }
-    if (!kind) { issues.push(label + ": Type should be Breakfast, Lunch, Dinner, Meeting, Event, Booth, Video or Session"); return; }
-    if (!start && kind !== "session") { issues.push(label + ": no start time"); return; }
-    let booth = null, sess = null;
-    if (kind === "booth" && !(booth = preFindBooth(comp, booths))) { issues.push(label + ': couldn\'t find "' + comp + '" on the exhibitor list'); return; }
-    if (kind === "session" && !(sess = preFindSession(comp, code))) { issues.push(label + ': "' + comp + '" isn\'t one of this show\'s sessions'); return; }
-    const who = [];
-    toks.forEach(t => { const p = findPerson(t); if (p) { if (!who.includes(p)) who.push(p); } else issues.push(label + ': "' + t + '" isn\'t on the People sheet'); });
-    who.forEach(p => {
-      const it = preBuildItem({ kind, sub, day, start, end, comp, booth, sess, withTxt: preCol(r, "with"),
-        location: preCol(r, "location"), notes: preCol(r, "notes"), others: who.filter(q => q !== p).map(q => q.name) });
-      const P = byEmail[p.email] = byEmail[p.email] || { name: p.name, email: p.email, dept: p.dept, team: p.team, items: [], issues: [] };
-      let k = preItemKey(it);
-      if (P.items.some(x => x.key === k)) {
-        if (kind === "booth") { P.issues.push(label + ": that booth is already on " + p.name + "'s schedule, so this row was skipped"); return; }
-        let n = 2; while (P.items.some(x => x.key === k + ":" + n)) n++; k += ":" + n;
-      }
-      P.items.push({ key: k, ...it });
-    });
-  });
-  Object.values(byEmail).forEach(P => P.items.sort((a, b) => (a.day - b.day) || (timeToMin(a.time) - timeToMin(b.time))));
-  return { persons: Object.values(byEmail).sort((a, b) => a.name.localeCompare(b.name)), unassigned, issues };
-}
-let preUp = { status: "idle", error: "", fileName: "", persons: [], unassigned: [], issues: [], existing: {}, existingOk: null, pick: new Set(), busy: false };
-function preItemLine(code, it) {
-  const what = it.kind === "meal" ? (MEAL_LABEL[it.mealType] || "Meal") + (it.company ? " with " + it.company : "")
-    : it.kind === "offsite" ? (it.title || "Meeting") + (it.location ? " (" + it.location + ")" : "")
-    : it.kind === "booth" ? (it.video ? "Video: " : "Booth visit: ") + it.boothName + " (Booth " + it.boothNum + ")"
-    : ((sessionById(it.sid, code) || {}).title || "Education session");
-  return showDayLabel(code, it.day) + " · " + (it.time || "") + " · " + what;
-}
-function preChange(code, P) {
-  const old = preUp.existing[preDocId(code, P.email)];
-  if (!old) return { tag: "New", n: P.items.length, changed: true };
-  const a = {}, b = {};
-  (old.items || []).forEach(x => { a[x.key] = canonJSON(x); });
-  P.items.forEach(x => { b[x.key] = canonJSON(x); });
-  let add = 0, chg = 0, rem = 0;
-  Object.keys(b).forEach(k => { if (!(k in a)) add++; else if (a[k] !== b[k]) chg++; });
-  Object.keys(a).forEach(k => { if (!(k in b)) rem++; });
-  if (!add && !chg && !rem) return { tag: "No changes", changed: false };
-  return { tag: "Update: " + [add && add + " added", chg && chg + " changed", rem && rem + " removed"].filter(Boolean).join(", "), changed: true };
-}
-function renderPre() {
-  const card = document.getElementById("preCard");
-  const code = currentEventCode();
-  let h = `<div class="settings-title">Upload schedules</div>
-    <p class="settings-dbx-note">For <strong>${esc(showLabelOf(code))}</strong> (switch shows from the header to upload another). Each person in the spreadsheet's Who column gets their items when they open the app or sign up. Upload again anytime: they get your changes, and anything they added themselves stays.</p>
-    <button class="settings-done" type="button" data-pre-pick>${preUp.persons.length ? "Choose a different spreadsheet" : "Choose spreadsheet"}</button>`;
-  if (preUp.status === "reading") h += `<div class="acct-empty">Reading ${esc(preUp.fileName)}…</div>`;
-  if (preUp.status === "error") h += `<div class="auth-error" style="display:block">${esc(preUp.error)}</div>`;
-  if (preUp.status === "ready") {
-    const n = preUp.persons.reduce((s, P) => s + P.items.length, 0);
-    h += `<div class="pre-sum"><strong>${esc(preUp.fileName)}</strong><br>${preUp.persons.length} ${preUp.persons.length === 1 ? "person" : "people"} · ${n} item${n === 1 ? "" : "s"}`
-      + (preUp.unassigned.length ? ` · ${preUp.unassigned.length} not assigned yet` : "")
-      + (preUp.issues.length ? ` · <span style="color:var(--maroon)">${preUp.issues.length} to fix</span>` : "") + `</div>`;
-    if (preUp.persons.length) {
-      const allOn = preUp.persons.every(P => preUp.pick.has(P.email));
-      h += `<label class="pre-all"><input type="checkbox" data-pre-all${allOn ? " checked" : ""}> Select everyone</label>`;
-      preUp.persons.forEach(P => {
-        const ch = preChange(code, P);
-        const kinds = {};
-        P.items.forEach(it => { const k = it.kind === "meal" ? it.mealType : it.kind === "booth" ? (it.video ? "video" : "booth visit") : it.kind === "offsite" ? "meeting" : "session"; kinds[k] = (kinds[k] || 0) + 1; });
-        const kindTxt = Object.entries(kinds).map(([k, c]) => c + " " + k + (c === 1 ? "" : (k === "lunch" ? "es" : "s"))).join(", ");
-        h += `<label class="pre-person"><input type="checkbox" data-pre-person="${esc(P.email)}"${preUp.pick.has(P.email) ? " checked" : ""}>
-          <span class="pre-p-main"><strong>${esc(P.name)}</strong><span class="pre-p-team">${esc(P.team)}</span>
-          <span class="pre-p-sub">${esc(P.email)}<br>${P.items.length} item${P.items.length === 1 ? "" : "s"}: ${esc(kindTxt)} · <b>${esc(ch.tag)}</b></span></span></label>
-          <details class="pre-items"><summary>See ${esc(P.name.split(" ")[0])}'s items</summary><ul>${P.items.map(it => `<li>${esc(preItemLine(code, it))}</li>`).join("")}</ul>
-          ${P.issues.length ? `<ul class="pre-list issues">${P.issues.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</details>`;
-      });
-      const go = preUp.persons.filter(P => preUp.pick.has(P.email) && preChange(code, P).changed).length;
-      h += `<button class="settings-done" type="button" data-pre-publish${go && !preUp.busy ? "" : " disabled"}>${preUp.busy ? "Publishing…" : go ? "Publish " + go + " schedule" + (go === 1 ? "" : "s") : "Nothing new to publish"}</button>`;
-    }
-    if (preUp.unassigned.length) h += `<div class="pre-sec">Not assigned yet (no one in Who)</div><ul class="pre-list">${preUp.unassigned.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-    if (preUp.issues.length) h += `<div class="pre-sec">To fix in the spreadsheet</div><ul class="pre-list issues">${preUp.issues.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  }
-  const ex = Object.values(preUp.existing).filter(d => d.eventCode === code).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  h += `<div class="pre-sec">Already uploaded for this show</div>`;
-  if (preUp.existingOk === false) h += `<div class="acct-empty">Couldn't load them (are the latest Firestore rules published?).</div>`;
-  else if (preUp.existingOk === null) h += `<div class="acct-empty">Loading…</div>`;
-  else if (!ex.length) h += `<div class="acct-empty">None yet.</div>`;
-  else ex.forEach(d => {
-    const st = !d.claimedBy ? "Waiting for them to sign in"
-      : (+d.claimedV || 0) < (+d.version || 0) ? "In their app; update waiting for their next open" : "In their app";
-    h += `<div class="pre-status"><span>${esc(d.name || d.email)} · v${esc(String(d.version || 1))}</span><span>${esc(st)}</span></div>`;
-  });
-  h += `<button class="settings-done share-secondary" type="button" data-pre-close>Close</button>`;
-  card.innerHTML = h;
-}
-async function loadPreExisting() {
-  const code = currentEventCode();
-  try {
-    const snap = await fbDb.collection("preloads").where("eventCode", "==", code).get();
-    preUp.existing = {};
-    snap.forEach(d => { preUp.existing[d.id] = d.data(); });
-    preUp.existingOk = true;
-  } catch (e) { preUp.existingOk = false; }
-  if (document.getElementById("preSheet").style.display === "flex") renderPre();
-}
-function openPreSheet() {
-  preUp = { status: "idle", error: "", fileName: "", persons: [], unassigned: [], issues: [], existing: {}, existingOk: null, pick: new Set(), busy: false };
-  document.getElementById("preSheet").style.display = "flex";
-  renderPre();
-  if (fbReady) loadPreExisting(); else { preUp.existingOk = false; renderPre(); }
-}
-document.getElementById("preBtn").addEventListener("click", openPreSheet);
-document.getElementById("preFile").addEventListener("change", async e => {
-  const f = e.target.files && e.target.files[0];
-  e.target.value = "";
-  if (!f) return;
-  preUp.status = "reading"; preUp.fileName = f.name; preUp.persons = []; preUp.pick = new Set(); renderPre();
-  try {
-    await loadXlsxLib();
-    const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
-    const r = preParse(wb, currentEventCode());
-    Object.assign(preUp, r, { status: "ready" });
-  } catch (err) {
-    preUp.status = "error";
-    preUp.error = /xlsx lib/.test(String(err && err.message)) ? "Couldn't load the spreadsheet reader. Check the connection and try again."
-      : "Couldn't read that file. Save it as .xlsx or .csv and try again.";
-  }
-  renderPre();
-});
-async function publishPreloads() {
-  const code = currentEventCode();
-  const go = preUp.persons.filter(P => preUp.pick.has(P.email) && preChange(code, P).changed);
-  if (!go.length || preUp.busy || !fbReady) return;
-  preUp.busy = true; renderPre();
-  const d0 = ((resolveEvent(code) || {}).dates || [])[0] || "";
-  let ok = 0;
-  for (const P of go) {
-    const old = preUp.existing[preDocId(code, P.email)];
-    const doc = { email: P.email, name: P.name, dept: P.dept, eventCode: code, d0,
-      version: ((old && +old.version) || 0) + 1, items: P.items,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: (currentUser && currentUser.name) || "" };
-    try { await fbDb.collection("preloads").doc(preDocId(code, P.email)).set(doc, { merge: true }); ok++; }
-    catch (e) { /* reported below */ }
-  }
-  preUp.busy = false;
-  toast(ok === go.length ? "Published " + ok + " schedule" + (ok === 1 ? "" : "s")
-    : "Published " + ok + " of " + go.length + " (are the latest Firestore rules published?)");
-  await loadPreExisting();
-  renderPre();
-}
-document.getElementById("preSheet").addEventListener("change", e => {
-  const pb = e.target.closest("[data-pre-person]");
-  if (pb) { if (pb.checked) preUp.pick.add(pb.dataset.prePerson); else preUp.pick.delete(pb.dataset.prePerson); renderPre(); return; }
-  if (e.target.closest("[data-pre-all]")) {
-    if (e.target.checked) preUp.persons.forEach(P => preUp.pick.add(P.email)); else preUp.pick.clear();
-    renderPre();
-  }
-});
-document.getElementById("preSheet").addEventListener("click", e => {
-  if (e.target.id === "preSheet" || e.target.closest("[data-pre-close]")) { document.getElementById("preSheet").style.display = "none"; return; }
-  if (e.target.closest("[data-pre-pick]")) { document.getElementById("preFile").click(); return; }
-  if (e.target.closest("[data-pre-publish]")) { publishPreloads(); return; }
-});
 document.getElementById("guideClose").addEventListener("click", () => {
   document.getElementById("guideSheet").style.display = "none";
 });
