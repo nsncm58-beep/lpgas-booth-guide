@@ -2368,7 +2368,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v155</div>
+      <div class="pf-ver">NCM Events Guide · v156</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5052,6 +5052,9 @@ async function applyPreload() {
     p = snap.data() || {};
   } catch (e) { return; }                       // offline, or rules not published yet
   if (code !== currentEventCode()) return;      // the show changed meanwhile
+  applyPreloadDoc(code, email, p);
+}
+function applyPreloadDoc(code, email, p) {
   const st = load();
   const prev = st._pre || { v: 0, items: {}, ids: {} };
   if (!((+p.version || 0) > (+prev.v || 0))) return;
@@ -5075,6 +5078,47 @@ async function applyPreload() {
   }).catch(() => {});
   render();
 }
+
+// Live updates (v156): a schedule Nate publishes while the app is open lands
+// within seconds instead of waiting for the next launch. Same merge and
+// toast as sign-in. It starts only AFTER the sign-in hydrate + apply, so a
+// fresh device still restores its cloud copy first, and it waits while the
+// rep is typing, has a meal/off-site form open or is uploading, then runs
+// as soon as they finish: on focusout, the next redraw, coming back to the
+// app, or a 2-second recheck (iOS doesn't always fire focusout).
+let _preUnsub = null, _prePending = null, _preBusy = false, _preRetry = null;
+function subscribePreload() {
+  if (_preUnsub) { _preUnsub(); _preUnsub = null; }
+  _prePending = null; clearTimeout(_preRetry);
+  if (!fbReady || !currentUser || isHome()) return;
+  const code = currentEventCode();
+  const email = String(currentUser.email || "").toLowerCase();
+  if (!code || !email) return;
+  _preUnsub = fbDb.collection("preloads").doc(preDocId(code, email)).onSnapshot(snap => {
+    if (!snap.exists) return;
+    _prePending = { code, email, p: snap.data() || {} };
+    flushPreload();
+  }, () => {});
+}
+function preloadMustWait() {
+  const a = document.activeElement;
+  const typing = !!(a && (a.tagName === "TEXTAREA" || a.isContentEditable
+    || (a.tagName === "INPUT" && !/^(button|checkbox|radio|file|submit)$/i.test(a.type || ""))));
+  return typing || mealFormOpen || offFormOpen || photoUploading || Object.keys(upProg).length > 0;
+}
+function flushPreload() {
+  if (!_prePending || _preBusy) return;
+  if (preloadMustWait()) { clearTimeout(_preRetry); _preRetry = setTimeout(flushPreload, 2000); return; }
+  const { code, email, p } = _prePending;
+  _prePending = null;
+  if (code !== currentEventCode() || !currentUser || isHome()) return;
+  const st = load();
+  if (!((+p.version || 0) > (+((st._pre || {}).v) || 0))) return;   // already have it (incl. our own claim stamp)
+  _preBusy = true;
+  try { applyPreloadDoc(code, email, p); } finally { _preBusy = false; }
+}
+document.addEventListener("focusout", () => setTimeout(flushPreload, 300));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushPreload(); });
 
 function subscribeTeam() {
   if (!fbReady || !currentUser) return;
@@ -6541,6 +6585,7 @@ function render() {
   // A redraw can remove the field that had focus without iOS firing
   // focusout, which left the bottom bar hidden; recheck once it's done.
   queueMicrotask(releaseKbIfNoField);
+  if (_prePending) setTimeout(flushPreload, 0);   // a schedule update waiting on a form or upload
   // Always first: the Settings card is a real DOM node living in #content
   // while its tab is open, and any other view's innerHTML would destroy it.
   parkSettingsCard();
@@ -9347,6 +9392,7 @@ async function switchToShow(code, manual) {
   // a later save can't push an empty bucket over the rep's real data.
   await hydrateFromCloud();
   await applyPreload();
+  subscribePreload();
   subscribeTeam();
   subscribeMyVideoStatus();
   updateMediaBtn();
@@ -9464,6 +9510,7 @@ if (fbReady) {
       // also migrates existing local data) and start the team subscription.
       await hydrateFromCloud();
       await applyPreload();
+      subscribePreload();
       syncMyScheduleToCloud();
       syncMyNotesToCloud();
       subscribeTeam();
@@ -9479,6 +9526,7 @@ if (fbReady) {
       maybeShowConfirmSheet();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
+      if (_preUnsub) { _preUnsub(); _preUnsub = null; } _prePending = null;
       if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
       if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
       if (_myProfUnsub) { _myProfUnsub(); _myProfUnsub = null; }
