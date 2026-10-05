@@ -2208,6 +2208,17 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 }
 
 /* ── Multiple shows per brand ── */
+/* Venue + what to wear under the Schedule day tabs (showInfoHtml) */
+.show-info { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; margin: 6px 10px 12px; overflow: hidden; }
+.si-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; color: var(--text); text-decoration: none; }
+.si-row + .si-row { border-top: 1px solid var(--border-soft); }
+.si-ic { width: 28px; height: 28px; border-radius: 8px; background: var(--blue-light); color: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.si-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.si-name { font-weight: 700; font-size: 0.8rem; }
+.si-lbl { font-weight: 700; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-2); }
+.si-sub { font-size: 0.76rem; color: var(--text-2); }
+.si-wear .si-sub { color: var(--text); font-weight: 600; font-size: 0.82rem; }
+.si-go { font-size: 0.72rem; font-weight: 700; color: var(--blue); border: 1.5px solid var(--blue-mid); border-radius: 999px; padding: 4px 10px; flex-shrink: 0; }
 .show-banner { font-size: 0.76rem; line-height: 1.45; color: var(--text-2); background: var(--surface); border: 1.5px dashed var(--border); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
 .show-card { max-height: 86vh; overflow-y: auto; }
 .show-group { margin: 2px 0 10px; }
@@ -2357,7 +2368,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v154</div>
+      <div class="pf-ver">NCM Events Guide · v155</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4439,6 +4450,8 @@ const LM_EQUIP_SESSIONS = [
 // show's local time. When today is one of them, the Schedule view opens on
 // that day instead of always Day 1. Omit `dates` and it just opens on Day 1.
 // (Ask for these whenever a booth list is loaded for a show.)
+// Optional per show: `venue` {name, address} and `attire` {"YYYY-MM-DD":
+// what to wear} show in a card under the Schedule day tabs (showInfoHtml).
 const EVENTS = {
   "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS },
   // NALP Elevate: all four conference days get tabs, since sessions, meals
@@ -4449,8 +4462,12 @@ const EVENTS = {
   // PestWorld: Day 1 is Sunday, Oct. 18 (Pelgar dinner), Day 2 Monday (PMP
   // Hall of Fame, booth setup), Days 3-6 the exhibit hall (Tue. 2-6 p.m.,
   // Wed. and Thu. 10 a.m.-2 p.m., Fri. 8-10 a.m.). Day 1 was Tuesday until
-  // Oct. 2, 2026; LEGACY_D0 shifts anything saved before that.
-  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"] },
+  // Oct. 2, 2026; LEGACY_D0 shifts anything saved before that. Attire per
+  // Nate, Oct. 5, 2026; the Hall of Fame is black tie (pmphalloffame.net).
+  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],
+    venue: { name: "Gaylord Texan Resort & Convention Center", address: "1501 Gaylord Trail, Grapevine, TX 76051" },
+    attire: { "2026-10-19": "Black tie for the Hall of Fame", "2026-10-20": "Maroon polo, black zip-up",
+              "2026-10-21": "Black polo, gray zip-up", "2026-10-22": "Gray polo, maroon zip-up", "2026-10-23": "Your choice" } },
   // NPGA Southeastern & International Propane Expo, Music City Center,
   // Nashville (the app's first show). Every show keeps its booth list loaded
   // for good: it maps saved booth data back to company names, so notes,
@@ -5380,25 +5397,60 @@ async function msGraph(path, opts, token) {
     ...(opts || {}),
     headers: { Authorization: "Bearer " + token, ...((opts || {}).headers || {}) },
   });
-  if (!r.ok) throw new Error("graph-" + r.status);
+  if (!r.ok) {
+    const err = new Error("graph-" + r.status);
+    err.status = r.status;
+    try { const j = await r.json(); err.code = (j && j.error && j.error.code) || ""; } catch (e) {}
+    throw err;
+  }
   return r.json();
 }
 // The current show's folder link (a SharePoint sharing URL) resolves to a
-// concrete drive + folder id through Graph's shares API. Cached per URL
-// on-device, so brand switches re-resolve and repeat uploads don't.
-async function msResolveFolder(token) {
+// concrete drive + folder id through Graph's shares API. "redeemSharingLink"
+// accepts the link the way opening it in a browser does, which is what lets
+// people outside the Homebase team add files: through v154 only Homebase
+// members could (Heather and Diane hit this Oct. 5, 2026). Cached per URL
+// on-device; v:2 marks a cache made with the redeem, so older ones resolve
+// once more.
+function msShareToken(url) {
+  return "u!" + btoa(unescape(encodeURIComponent(url)))
+    .replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
+}
+async function msResolveFolder(token, fresh) {
   const url = msUploadFolderUrl();
   if (!url) throw new Error("no-folder");
-  try {
-    const c = JSON.parse(localStorage.getItem("ncm_ms_drive") || "null");
-    if (c && c.url === url && c.driveId && c.itemId) return c;
-  } catch (e) {}
-  const enc = "u!" + btoa(unescape(encodeURIComponent(url)))
-    .replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
-  const item = await msGraph("/shares/" + enc + "/driveItem?$select=id,name,parentReference", null, token);
-  const out = { url: url, driveId: item.parentReference.driveId, itemId: item.id };
-  localStorage.setItem("ncm_ms_drive", JSON.stringify(out));
+  if (!fresh) {
+    try {
+      const c = JSON.parse(localStorage.getItem("ncm_ms_drive") || "null");
+      if (c && c.v === 2 && c.url === url && c.driveId && c.itemId) return c;
+    } catch (e) {}
+  }
+  const path = "/shares/" + msShareToken(url) + "/driveItem?$select=id,name,parentReference";
+  let item;
+  try { item = await msGraph(path, { headers: { Prefer: "redeemSharingLink" } }, token); }
+  catch (e) { item = await msGraph(path, null, token); }   // the pre-v155 call, as a floor
+  const out = { v: 2, url: url, driveId: item.parentReference.driveId, itemId: item.id };
+  try { localStorage.setItem("ncm_ms_drive", JSON.stringify(out)); } catch (e) {}
   return out;
+}
+// Start a resumable upload in the show folder. A 403/404 on the folder id
+// means Microsoft hasn't given this account the folder: accept the link
+// again and retry, then try creating the upload through the link itself.
+// When all three are refused, the rep hears it's an access problem (not
+// their connection) and the details land on their profile for admins.
+const MS_DENIED = st => st === 403 || st === 404;
+async function msUploadSession(name, token) {
+  const seg = ":/" + encodeURIComponent(name) + ":/createUploadSession";
+  const post = () => ({ method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) });
+  const byId = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + seg, post(), token);
+  let first;
+  try { return await byId(await msResolveFolder(token)); }
+  catch (e) { first = e; if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
+  try { return await byId(await msResolveFolder(token, true)); }
+  catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
+  try { return await msGraph("/shares/" + msShareToken(msUploadFolderUrl()) + "/driveItem" + seg, post(), token); }
+  catch (e) { recordMsError("session", first, e); throw new Error("no-access"); }
 }
 // Company_Booth_Rep.ext — the folder sorts itself alphabetically by company
 // and the bullpen can tell every file's booth at a glance. SharePoint's
@@ -5444,12 +5496,7 @@ async function msUploadNamed(name, file, onPct) {
   // tap handlers only open a picker with a fresh token, so this is rare.
   let token;
   try { token = await msSilentToken(); } catch (e) { throw new Error("token"); }
-  const folder = await msResolveFolder(token);
-  const sess = await msGraph(
-    "/drives/" + folder.driveId + "/items/" + folder.itemId + ":/" + encodeURIComponent(name) + ":/createUploadSession",
-    { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) },
-    token);
+  const sess = await msUploadSession(name, token);
   let pos = 0, stalls = 0;
   while (true) {
     const end = Math.min(pos + UP_CHUNK, file.size);
@@ -5457,13 +5504,18 @@ async function msUploadNamed(name, file, onPct) {
     const r = await putChunk(sess.uploadUrl, file.slice(pos, end),
       "bytes " + pos + "-" + (end - 1) + "/" + file.size,
       loaded => { if (onPct) onPct(Math.min(99, Math.floor((base + loaded) / file.size * 100))); });
-    if (r && (r.status === 200 || r.status === 201)) return r.json();
+    if (r && (r.status === 200 || r.status === 201)) { recordMsOk(); return r.json(); }
     if (r && r.status === 202) {
       const j = await r.json().catch(() => ({}));
       pos = parseInt(String((j.nextExpectedRanges || [])[0] || end + "-").split("-")[0], 10);
       stalls = 0;
     } else {
-      if (++stalls > 4) throw new Error("upload-failed" + (r ? "-" + r.status : ""));
+      if (++stalls > 4) {
+        const err = new Error("upload-failed" + (r ? "-" + r.status : ""));
+        err.status = r ? r.status : 0;
+        recordMsError("upload", err);
+        throw err;
+      }
       await new Promise(res => setTimeout(res, 1200 * stalls));
       try {                                          // ask the session where to resume
         const st = await fetch(sess.uploadUrl);
@@ -5514,6 +5566,8 @@ async function startVideoUpload(i, file) {
     if (msg === "token") {
       toast("Your Microsoft sign-in needs a refresh. One moment…");
       msToken(true).catch(() => {});   // round trip now; they re-pick after it lands
+    } else if (msg === "no-access") {
+      toast(MS_NO_ACCESS());
     } else if (msg !== "no-account") {
       toast("Upload didn't finish. Check your connection and try again");
     }
@@ -5555,6 +5609,24 @@ function updateMsSection() {
 }
 // Accounts shows who has connected Microsoft for uploads, so each device
 // reports what it knows. Written only when it changes.
+// Upload trouble, saved on the rep's profile so admins see it in Admin >
+// Accounts (and Claude can read it) without asking what the screen said.
+// A later successful upload stamps msOkAt, which clears it from view.
+const MS_NO_ACCESS = () => "Microsoft won't let your account add files to the " + currentShowLabel() + " folder yet. Let Nate know";
+let _msOkSaved = false;
+function recordMsError(step, e, alt) {
+  if (!fbReady || !currentUser || isHome()) return;
+  _msOkSaved = false;
+  const info = x => x ? String((x.status || "") + (x.code ? " " + x.code : x.status ? "" : " " + (x.message || ""))).trim().slice(0, 80) : "";
+  fbDb.collection("users").doc(currentUser.uid).set({ msErr: {
+    step: step, show: currentEventCode() || "", what: info(e), alt: info(alt),
+    denied: !!(e && MS_DENIED(e.status)), at: firebase.firestore.FieldValue.serverTimestamp() } }, { merge: true }).catch(() => {});
+}
+function recordMsOk() {
+  if (_msOkSaved || !fbReady || !currentUser || isHome()) return;
+  _msOkSaved = true;
+  fbDb.collection("users").doc(currentUser.uid).set({ msOkAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
+}
 function recordMsStatus() {
   if (!fbReady || !currentUser || isHome()) return;
   const acct = msAccount();
@@ -6804,7 +6876,7 @@ function renderScheduleView(state) {
       (byTime[it.time] = byTime[it.time]||[]).push(it);
     });
     const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
-    let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>`;
+    let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>` + showInfoHtml(currentEventCode(), schedDay);
     html += `<div class="ro-banner">Viewing <strong>${esc(tm.name||"teammate")}</strong> · view only</div>`;
     if (!slotTimes.length) {
       html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4>
@@ -6894,6 +6966,7 @@ function renderScheduleView(state) {
 
   let html = showStatusBannerHtml() + teamBar + `
 <div class="sched-day-tabs${manyDays}">${dayTabs}</div>
+${showInfoHtml(currentEventCode(), schedDay)}
 ${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
   <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
   <div class="sched-results" id="sched-results">${searchHtml}</div>
@@ -7820,7 +7893,7 @@ function photoWaiting() { return photoQueue.filter(p => p.state === "ready" || p
 function photoStatusHtml(p) {
   return p.state === "up" ? `<span class="ph-status" data-ph-pct="${p.id}">Uploading ${p.pct || 0}%</span>`
     : p.state === "done" ? `<span class="ph-status ok">✓ Uploaded</span>`
-    : p.state === "err" ? `<span class="ph-status err">Didn't finish. It'll retry with the next upload</span>` : "";
+    : p.state === "err" ? `<span class="ph-status err">${p.denied ? "Microsoft blocked this upload" : "Didn't finish. It'll retry with the next upload"}</span>` : "";
 }
 function photoQueueHeadText() {
   const w = photoWaiting();
@@ -7900,7 +7973,9 @@ async function sendPhotos() {
   photoUploading = true;
   refreshPhotos();
   const batch = [];                // this run's successes, for the Teams alert
+  let denied = false;
   for (const p of photoQueue) {
+    if (denied) break;             // the rest would be refused the same way
     if (p.state !== "ready" && p.state !== "err") continue;
     p.state = "up"; p.pct = 0;
     refreshPhotos();
@@ -7914,14 +7989,18 @@ async function sendPhotos() {
       p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
       batch.push(p);
       recordPhoto(p);                // bullpen Photos view (Editorial/Digital + Events)
-    } catch (e) { p.state = "err"; }
+    } catch (e) {
+      p.state = "err";
+      if (String(e && e.message) === "no-access") { denied = true; p.denied = true; }
+    }
     refreshPhotos();
   }
   photoUploading = false;
   notifyPhotosUploaded(batch);
   const ok = photoQueue.filter(p => p.state === "done").length;
   const bad = photoQueue.filter(p => p.state === "err").length;
-  toast(bad ? ok + " uploaded, " + bad + " didn't finish. Tap Upload to try again"
+  toast(denied ? MS_NO_ACCESS()
+    : bad ? ok + " uploaded, " + bad + " didn't finish. Tap Upload to try again"
             : ok + (ok === 1 ? " upload" : " uploads") + " sent to the show folder ✓");
   refreshPhotos();
   // Finished rows stay a moment so the checkmarks read, then clear.
@@ -8181,6 +8260,35 @@ function showShortLabelOf(code) {
   if (!ev) { const b = BRANDS[resolveEvent(code).brand]; return (b ? b.name : "Show") + " · TBD"; }
   const y = ((ev.dates && ev.dates[0]) || "").slice(0, 4);
   return (ev.short || ev.show) + (y ? " " + y : "");
+}
+// Venue (tap for directions) and the day's attire, under the Schedule day
+// tabs, for shows whose EVENTS entry has `venue` and/or `attire`.
+const PIN_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+const SHIRT_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>`;
+function mapsUrl(q) {
+  // Apple devices open Apple Maps; everything else gets Google Maps.
+  return /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)
+    ? "https://maps.apple.com/?q=" + encodeURIComponent(q)
+    : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+}
+function showInfoHtml(code, day) {
+  const ev = EVENTS[code];
+  if (!ev) return "";
+  const v = ev.venue;
+  const iso = (ev.dates || [])[day - 1];
+  const wear = (iso && ev.attire && ev.attire[iso]) || "";
+  if (!v && !wear) return "";
+  return `<div class="show-info">${v ? `
+    <a class="si-row" href="${esc(mapsUrl(v.name + ", " + v.address))}" target="_blank" rel="noopener">
+      <span class="si-ic">${PIN_ICON}</span>
+      <span class="si-txt"><span class="si-name">${esc(v.name)}</span><span class="si-sub">${esc(v.address)}</span></span>
+      <span class="si-go">Map</span>
+    </a>` : ""}${wear ? `
+    <div class="si-row si-wear">
+      <span class="si-ic">${SHIRT_ICON}</span>
+      <span class="si-txt"><span class="si-lbl">What to wear</span><span class="si-sub">${esc(wear)}</span></span>
+    </div>` : ""}
+  </div>`;
 }
 // Wrapped/past note for the top of the Booths and Schedule views.
 function showStatusBannerHtml() {
@@ -8907,6 +9015,14 @@ function acctDate(v) {
   const d = v && typeof v.toDate === "function" ? v.toDate() : null;
   return d ? fmtMonthDay(d) + ", " + d.getFullYear() : "";
 }
+function acctUploadProblem(a) {
+  const e = a.msErr;
+  const ms = v => v && typeof v.toMillis === "function" ? v.toMillis() : 0;
+  if (!e || !ms(e.at) || ms(a.msOkAt) > ms(e.at)) return "";
+  return acctKv("Last upload problem", acctDate(e.at) + ": "
+    + (e.denied ? "Microsoft blocked access to the show folder" : "upload didn't finish")
+    + (e.what ? " (" + e.what + ")" : ""), "warn");
+}
 function acctPersonHtml(a) {
   const d = acctDept(a), t = acctTeam(a);
   const ms = a.msConnected ? "Connected" : d === "edit" ? "Not connected yet" : "Only needed for photo uploads";
@@ -8924,6 +9040,7 @@ function acctPersonHtml(a) {
       ${acctKv("Brands", acctIsAdmin(a) ? "All brands" : (userBrands(a).map(b => BRANDS[b].name).join(", ") || "None"))}
       ${acctKv("Microsoft", ms, a.msConnected ? "ok" : d === "edit" ? "warn" : "")}
       ${a.msConnected && a.msEmail && a.msEmail !== a.email ? acctKv("Microsoft login", a.msEmail) : ""}
+      ${acctUploadProblem(a)}
       ${joined ? acctKv("Joined", joined) : ""}
       ${acctIsAdmin(a) ? acctKv("Access", "Admin") : ""}
       ${a.editedBy ? acctKv("Last changed", (edited ? edited + " by " : "By ") + a.editedBy) : ""}
