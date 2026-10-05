@@ -490,6 +490,9 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   letter-spacing: 0.3px;
   font-variant-numeric: tabular-nums;
 }
+a.booth-badge.map { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; cursor: pointer; }
+a.booth-badge.map svg { flex-shrink: 0; }
+.ro-map { display: inline-flex; align-items: center; gap: 3px; color: var(--blue); font-weight: 700; text-decoration: none; }
 .booth-badge.outdoor {
   background: var(--maroon-light);
   color: var(--maroon);
@@ -2368,7 +2371,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v156</div>
+      <div class="pf-ver">NCM Events Guide · v157</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4451,9 +4454,15 @@ const LM_EQUIP_SESSIONS = [
 // that day instead of always Day 1. Omit `dates` and it just opens on Day 1.
 // (Ask for these whenever a booth list is loaded for a show.)
 // Optional per show: `venue` {name, address} and `attire` {"YYYY-MM-DD":
-// what to wear} show in a card under the Schedule day tabs (showInfoHtml).
+// what to wear} show in a card under the Schedule day tabs (showInfoHtml);
+// `boothMap` (a floor plan URL with {booth}) turns booth badges into map links.
 const EVENTS = {
-  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS },
+  // boothMap: the official Map Your Show floor plan opened on one booth
+  // (indoor, outdoor demo and lettered booths all resolve). Equip only, per
+  // Nate, Oct. 5, 2026; the floor plan can't be embedded (it sends
+  // X-Frame-Options DENY), so booth badges link out to it.
+  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
+    boothMap: "https://equipexpo26.mapyourshow.com/8_0/floorplan/?selectedBooth=booth~{booth}" },
   // NALP Elevate: all four conference days get tabs, since sessions, meals
   // and off-site meetings run outside the Nov. 9-10 exhibit hall hours.
   // No MEDIA entry yet, so Photos says uploads aren't set up until its
@@ -6501,6 +6510,7 @@ function buildCard(c, state) {
   const status    = s.status || "unknown";
   const scheduled = s.scheduled || null;
   const outdoor   = isOutdoor(rowKey(c.b));
+  const mapUrl    = c.x ? "" : boothMapUrl(c.b);
   const npId      = "np"+c.i;
   // Customer / Non-Cust / Unsure is a sales-team concept. Editorial/Digital
   // reps never classify booths, so their cards skip the picker and the
@@ -6528,7 +6538,9 @@ function buildCard(c, state) {
         ${schedTag}
         ${myVideoDone[c.b] ? '<span class="video-done-chip">Video done</span>' : ''}
         ${c.x ? '<span class="gone-chip">No longer listed</span>' : ''}
-        <span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>
+        ${mapUrl
+          ? `<a class="booth-badge map${outdoor?" outdoor":""}" href="${esc(mapUrl)}" target="_blank" rel="noopener" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</a>`
+          : `<span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>`}
       </div>
       <div class="card-actions">
         ${salesView ? `<div class="status-group">
@@ -6822,7 +6834,10 @@ function roCardHtml(it) {
   if (it.kind === "booth") {
     return `<div class="ro-card">
       <div class="ro-card-title">${esc(it.boothName||"Booth visit")}${it.video ? ' <span class="home-chip vid">Video</span>' : ''}</div>
-      <div class="ro-card-sub">Booth ${esc(it.boothNum||"")}</div>
+      <div class="ro-card-sub">Booth ${esc(it.boothNum||"")}${(() => {
+        const u = boothMapUrl(it.boothNum, isHome() ? homeEventCode() : currentEventCode());
+        return u ? ` · <a class="ro-map" href="${esc(u)}" target="_blank" rel="noopener">${PIN_TINY}Map</a>` : "";
+      })()}</div>
     </div>`;
   }
   if (it.kind === "meal") {
@@ -8310,6 +8325,15 @@ function showShortLabelOf(code) {
 // tabs, for shows whose EVENTS entry has `venue` and/or `attire`.
 const PIN_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
 const SHIRT_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>`;
+const PIN_TINY = PIN_ICON.replace('width="16" height="16"', 'width="11" height="11"').replace('stroke-width="2"', 'stroke-width="2.6"');
+// Floor plan link for a booth on shows with a `boothMap` template. Multi-booth
+// companies ("1182 / 6052D") open on their first booth; the floor plan's
+// panel lists the others. Withdrawn companies (x:1) get no link.
+function boothMapUrl(b, code) {
+  const t = (EVENTS[code || currentEventCode()] || {}).boothMap;
+  const first = String(b || "").split("/")[0].trim();
+  return t && first ? t.replace("{booth}", encodeURIComponent(first)) : "";
+}
 function mapsUrl(q) {
   // Apple devices open Apple Maps; everything else gets Google Maps.
   return /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)
