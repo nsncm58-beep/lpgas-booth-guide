@@ -605,6 +605,8 @@ a.booth-badge.map svg { flex-shrink: 0; }
   font-family: inherit;
   color: var(--text-2);
   cursor: pointer;
+  width: 156px;
+  min-width: 156px;
   max-width: 175px;
   transition: border-color 0.15s, background-color 0.15s, color 0.15s;
   appearance: none;
@@ -2371,7 +2373,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v157</div>
+      <div class="pf-ver">NCM Events Guide · v158</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5137,13 +5139,25 @@ function subscribeTeam() {
   _teamUnsub = fbDb.collection("schedules")
     .where("eventCode", "==", code)
     .onSnapshot(snap => {
+      const mine = currentUser && currentUser.uid;
+      const others = m => Object.keys(m).filter(u => u !== mine).length;
+      const before = others(teamSchedules);
       teamSchedules = {};
       snap.forEach(doc => { const d = doc.data(); if (d && d.uid) teamSchedules[d.uid] = d; });
-      // Not mid-note: this also fires on the rep's own saves, and a redraw
-      // would close the keyboard in the middle of a sentence.
+      // Every save on any phone lands here (your own included). Through v157
+      // each one redrew the whole Schedule tab, which made it stutter mid-tap.
+      // Now: the people picker refreshes in place if it's open; your own
+      // schedule redraws only when the team count changes; a teammate's
+      // schedule redraws when that teammate's doc changes. Never mid-note.
+      const who = document.getElementById("whoSheet");
+      if (who && who.style.display === "flex") document.getElementById("whoList").innerHTML = buildWhoSheet();
+      if (activeView !== "schedule") return;
       const typing = document.activeElement && document.activeElement.classList
                   && document.activeElement.classList.contains("nf");
-      if (activeView === "schedule" && !typing) render();
+      if (typing) return;
+      const v = viewedScheduleUid;
+      const changed = new Set(snap.docChanges().map(c => (c.doc.data() || {}).uid));
+      if ((v && (changed.has(v) || !teamSchedules[v])) || others(teamSchedules) !== before) render();
     }, () => {});
 }
 
@@ -6526,11 +6540,6 @@ function buildCard(c, state) {
     ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}</span>`
     : "";
   const [schD, schT] = scheduled ? scheduled.split("|") : ["", ""];
-  const timeOpts = showDays(currentEventCode()).map(d =>
-    `<optgroup label="Day ${d}">${withTime(TIME_SLOTS, String(d) === schD ? schT : "").map(t =>
-      `<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${esc(t)}</option>`
-    ).join("")}</optgroup>`
-  ).join("");
   return `
     <div class="co-card${visited?" visited":""}${statusCls}" id="cc${c.i}" data-i="${c.i}">
       <div class="card-top">
@@ -6552,9 +6561,9 @@ function buildCard(c, state) {
           <svg width="14" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>
           Video</button>` : ""}
         ${uploadCtlHtml(c, s)}
-        <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" title="Schedule">
+        <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" data-lazy="1" title="Schedule">
           <option value="">Schedule…</option>
-          ${timeOpts}
+          ${scheduled ? `<option value="${esc(scheduled)}" selected>Day ${esc(schD)} · ${esc(schT)}</option>` : ""}
         </select>
       </div>
       <button class="notes-toggle${noteText ? " has" : ""}" type="button" data-notes="${c.i}">
@@ -6706,6 +6715,33 @@ function render() {
   updateStats(state);
 }
 
+// Booth cards' Schedule menus are filled on first touch (v158). The full list
+// is every show day x every 10 minutes (402 options on PestWorld's six days,
+// 201 on Equip), and building it into every card was ~90% of the Schedule
+// tab's elements; on the Booths tab each opened row added it per card, so
+// redraws got slower the more rows a rep had opened (7.5 s with all of
+// Equip's rows open on a desktop). touchstart/pointerdown/mousedown fire
+// before the picker opens, so the list is there when it shows.
+function schedOptionsHtml(scheduled) {
+  const [schD, schT] = scheduled ? scheduled.split("|") : ["", ""];
+  return `<option value="">Schedule…</option>` + showDays(currentEventCode()).map(d =>
+    `<optgroup label="Day ${d}">${withTime(TIME_SLOTS, String(d) === schD ? schT : "").map(t =>
+      `<option value="${d}|${esc(t)}"${scheduled===`${d}|${t}`?" selected":""}>Day ${d} · ${esc(t)}</option>`
+    ).join("")}</optgroup>`
+  ).join("");
+}
+function fillSchedSel(sel) {
+  if (!sel || !sel.dataset.lazy) return;
+  const v = sel.value;
+  sel.innerHTML = schedOptionsHtml(v || null);
+  sel.value = v;
+  delete sel.dataset.lazy;
+}
+["touchstart", "pointerdown", "mousedown", "focusin", "keydown"].forEach(type =>
+  document.addEventListener(type, e => {
+    const sel = e.target && e.target.closest && e.target.closest("select.sched-sel[data-lazy]");
+    if (sel) fillSchedSel(sel);
+  }, { capture: true, passive: true }));
 // A time list with one extra entry when the current value is off the grid
 // (an uploaded 8:45 AM breakfast), so editing never silently moves it.
 function withTime(slots, t) {
@@ -9585,17 +9621,31 @@ if (/iPad|iPhone|iPod|Android/i.test(navigator.userAgent))
 if ("serviceWorker" in navigator) {
   let swRefreshing = false;
   let swUpdatePending = false;
+  // A waiting update never reloads under an upload, a queued photo batch or
+  // an open file picker (v158): the reload killed uploads when a rep
+  // switched apps mid-send and dropped picked photos. It waits for the next
+  // safe trip to the background, or a fresh launch.
+  let pickAt = 0;
+  ["vidFileInput", "photoFileInput"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("click", () => { pickAt = Date.now(); });
+    el.addEventListener("change", () => { pickAt = 0; });
+    el.addEventListener("cancel", () => { pickAt = 0; });
+  });
+  const reloadSafe = () => !photoUploading && !Object.keys(upProg).length && !photoQueue.length
+    && Date.now() - pickAt > 120e3;
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!hadController || swRefreshing) return;
-    if (document.visibilityState === "hidden") { swRefreshing = true; location.reload(); }
+    if (document.visibilityState === "hidden" && reloadSafe()) { swRefreshing = true; location.reload(); }
     else swUpdatePending = true;
   });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").then(reg => {
       document.addEventListener("visibilitychange", () => {
         if (document.visibilityState !== "visible") {
-          if (swUpdatePending && !swRefreshing) { swRefreshing = true; location.reload(); }
+          if (swUpdatePending && !swRefreshing && reloadSafe()) { swRefreshing = true; location.reload(); }
           return;
         }
         // A waiting update applies the next time the app goes to the
