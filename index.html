@@ -2405,7 +2405,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v163</div>
+      <div class="pf-ver">NCM Events Guide · v164</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4543,7 +4543,8 @@ const EVENTS = {
   // Nate, Oct. 5, 2026; the floor plan can't be embedded (it sends
   // X-Frame-Options DENY), so booth badges link out to it.
   "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, tz: "America/New_York", dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
-    boothMap: "https://equipexpo26.mapyourshow.com/8_0/floorplan/?selectedBooth=booth~{booth}" },
+    boothMap: "https://equipexpo26.mapyourshow.com/8_0/floorplan/?selectedBooth=booth~{booth}",
+    venue: { name: "Kentucky Exposition Center", address: "937 Phillips Ln, Louisville, KY 40209" } },
   // NALP Elevate: all four conference days get tabs, since sessions, meals
   // and off-site meetings run outside the Nov. 9-10 exhibit hall hours.
   // No MEDIA entry yet, so Photos says uploads aren't set up until its
@@ -8779,6 +8780,46 @@ document.addEventListener("click", e => {
   const t = e.target.closest && e.target.closest("[data-floor]");
   if (t) { e.preventDefault(); e.stopPropagation(); openFloor(t.dataset.floor); }
 }, true);
+// Pinch to zoom (v164): two fingers scale the plan around their midpoint,
+// between fit-to-screen and 1.2x the closest zoom step; ctrl+wheel (a
+// trackpad pinch) does the same on a computer.
+function fpSetScale(next, cx, cy) {
+  const f = floorOf(fp.code), sc = document.getElementById("fpScroll"), svg = document.getElementById("fpSvg");
+  if (!f || !svg) return;
+  next = Math.max(fp.fit, Math.min(1.2, next));
+  const r = sc.getBoundingClientRect();
+  const px = cx - r.left, py = cy - r.top;
+  const ux = (sc.scrollLeft + px) / fp.scale, uy = (sc.scrollTop + py) / fp.scale;
+  fp.scale = next;
+  const W = f._box.maxX - f._box.minX, H = f._box.maxY - f._box.minY;
+  svg.setAttribute("width", Math.round(W * next)); svg.setAttribute("height", Math.round(H * next));
+  sc.scrollLeft = ux * next - px; sc.scrollTop = uy * next - py;
+}
+(() => {
+  const sc = document.getElementById("fpScroll");
+  let pinch = null, raf = 0, pend = null;
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const mid = t => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+  sc.addEventListener("touchstart", e => {
+    if (e.touches.length === 2) { pinch = { d: dist(e.touches), s: fp.scale }; raf = 0; pend = null; e.preventDefault(); }
+  }, { passive: false });
+  sc.addEventListener("touchmove", e => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    const [x, y] = mid(e.touches);
+    pend = [pinch.s * dist(e.touches) / pinch.d, x, y];
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (pend) fpSetScale(...pend); pend = null; });
+  }, { passive: false });
+  const end = e => { if (pinch && e.touches.length < 2) pinch = null; };
+  sc.addEventListener("touchend", end); sc.addEventListener("touchcancel", end);
+  // iOS also fires its own gesture events; stop them from zooming the whole page.
+  ["gesturestart", "gesturechange", "gestureend"].forEach(t => sc.addEventListener(t, e => e.preventDefault(), { passive: false }));
+  sc.addEventListener("wheel", e => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    fpSetScale(fp.scale * Math.exp(-e.deltaY / 200), e.clientX, e.clientY);
+  }, { passive: false });
+})();
 document.getElementById("fpClose").addEventListener("click", () => { document.getElementById("floorSheet").style.display = "none"; });
 document.getElementById("floorSheet").addEventListener("click", e => {
   const z = e.target.closest("[data-fp-zoom]");
@@ -8799,7 +8840,7 @@ function mapsUrl(q) {
 function showInfoHtml(code, day) {
   const ev = EVENTS[code];
   if (!ev) return "";
-  const v = ev.venue;
+  const v = day === 1 ? ev.venue : null;   // the address only on Day 1 (Nate, Oct. 8, 2026)
   const iso = (ev.dates || [])[day - 1];
   const wear = (iso && ev.attire && ev.attire[iso]) || "";
   const fl = !isHome() && floorOf(code);
