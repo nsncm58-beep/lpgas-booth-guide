@@ -1108,6 +1108,12 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   text-transform: uppercase; letter-spacing: 0.5px;
 }
 .sched-title:active { opacity: 0.7; }
+.up-next { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: calc(100% - 20px); margin: 0 10px 4px; padding: 10px 13px; border-radius: 12px; border: none; background: var(--blue); color: #fff; font: inherit; text-align: left; cursor: pointer; }
+.up-next.done { background: var(--surface); color: var(--text-2); border: 1.5px solid var(--border); cursor: default; }
+.un-k { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.85; }
+.un-t { font-family: var(--fd); font-weight: 800; font-size: 0.98rem; line-height: 1.25; }
+.un-s { font-size: 0.74rem; font-weight: 600; opacity: 0.9; }
+.ovl-chip { flex-shrink: 1; min-width: 0; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.64rem; font-weight: 700; color: #8A5A00; background: #FFF1D6; border: 1px solid #F0D49A; border-radius: 999px; padding: 2px 8px; }
 .who-list { max-height: 60vh; overflow-y: auto; }
 .who-row {
   display: flex; align-items: center; gap: 8px; width: 100%;
@@ -2352,6 +2358,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <div class="pf-label">Shows</div>
     <div class="pf-group">
       <button class="pf-row" id="pfShowRow" type="button"><span class="pf-k">Current show</span><span class="pf-v" id="curShowName"></span><span class="pf-chev" aria-hidden="true"></span></button>
+      <button class="pf-row" id="pfCalRow" type="button"><span class="pf-k">Add my schedule to my calendar</span><span class="pf-v">Phone calendar</span><span class="pf-chev" aria-hidden="true"></span></button>
       <button class="pf-row" id="oldDataBtn" type="button"><span class="pf-k">Download show data</span><span class="pf-v">CSV</span><span class="pf-chev" aria-hidden="true"></span></button>
     </div>
 
@@ -2373,7 +2380,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v161</div>
+      <div class="pf-ver">NCM Events Guide · v162</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4487,19 +4494,19 @@ const EVENTS = {
   // (indoor, outdoor demo and lettered booths all resolve). Equip only, per
   // Nate, Oct. 5, 2026; the floor plan can't be embedded (it sends
   // X-Frame-Options DENY), so booth badges link out to it.
-  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
+  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, tz: "America/New_York", dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
     boothMap: "https://equipexpo26.mapyourshow.com/8_0/floorplan/?selectedBooth=booth~{booth}" },
   // NALP Elevate: all four conference days get tabs, since sessions, meals
   // and off-site meetings run outside the Nov. 9-10 exhibit hall hours.
   // No MEDIA entry yet, so Photos says uploads aren't set up until its
   // SharePoint folder link is added.
-  "LM-ELEVATE-2026": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_BOOTHS, dates: ["2026-11-08","2026-11-09","2026-11-10","2026-11-11"] },
+  "LM-ELEVATE-2026": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_BOOTHS, tz: "America/New_York", dates: ["2026-11-08","2026-11-09","2026-11-10","2026-11-11"] },
   // PestWorld: Day 1 is Sunday, Oct. 18 (Pelgar dinner), Day 2 Monday (PMP
   // Hall of Fame, booth setup), Days 3-6 the exhibit hall (Tue. 2-6 p.m.,
   // Wed. and Thu. 10 a.m.-2 p.m., Fri. 8-10 a.m.). Day 1 was Tuesday until
   // Oct. 2, 2026; LEGACY_D0 shifts anything saved before that. Attire per
   // Nate, Oct. 5, 2026; the Hall of Fame is black tie (pmphalloffame.net).
-  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],
+  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, tz: "America/Chicago", dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],
     venue: { name: "Gaylord Texan Resort & Convention Center", address: "1501 Gaylord Trail, Grapevine, TX 76051" },
     attire: { "2026-10-19": "Black tie for the Hall of Fame", "2026-10-20": "Maroon polo, black zip-up",
               "2026-10-21": "Black polo, gray zip-up", "2026-10-22": "Gray polo, maroon zip-up", "2026-10-23": "Your choice" } },
@@ -7020,14 +7027,144 @@ function schedOwnerLabel() {
   const me = ((currentUser && currentUser.name) || "My").trim().split(/\s+/)[0];
   return me + "'s Schedule";
 }
+// ── Item timing, overlaps, Up next, calendar file (v162) ────────────────────
+// Items come from buildMyScheduleItems(). End times: the item's own `end`
+// (sessions), else the "7:00 PM to 10:00 PM" text the Schedule Publisher puts
+// in notes, else a default length by kind.
+const ITEM_LEN = { booth: 20, meal: 60, offsite: 30, session: 60 };
+const LONG_BLOCK = 240;   // 4+ hour blocks (exhibit hall hours) are context, not appointments
+function itemStart(it) { return it.time ? timeToMin(it.time) : null; }
+function itemEnd(it) {
+  const st = itemStart(it);
+  if (st == null) return null;
+  const m = it.end ? [null, null, it.end] : String(it.notes || "").match(/(\d{1,2}:\d{2} [AP]M) to (\d{1,2}:\d{2} [AP]M)/);
+  const e = m && m[2] ? timeToMin(m[2]) : null;
+  return e != null && e > st ? e : st + (ITEM_LEN[it.kind] || 30);
+}
+function itemTitle(it) {
+  if (it.kind === "booth") return (it.video ? "Video: " : "Booth visit: ") + (it.boothName || "Booth");
+  if (it.kind === "meal") return (MEAL_LABEL[it.mealType] || "Meal") + (it.company ? " with " + it.company : "");
+  return it.title || "Off-site meeting";
+}
+function itemPlace(it) {
+  if (it.kind === "booth") return "Booth " + (it.boothNum || "");
+  if (it.kind === "session") return it.room || "";
+  if (it.kind === "offsite") return it.location || "";
+  return "";
+}
+// Overlaps on one day: time label -> { others: titles starting at other
+// times that collide, double: two or more things start at this time }.
+function dayOverlaps(items, day) {
+  const list = items.filter(it => +it.day === +day && itemStart(it) != null)
+    .map(it => ({ it, s: itemStart(it), e: itemEnd(it) }))
+    .filter(x => x.e - x.s < LONG_BLOCK);
+  const out = new Map();
+  list.forEach((a, i) => list.forEach((b, j) => {
+    if (i === j || !(a.s < b.e && b.s < a.e)) return;
+    if (!out.has(a.it.time)) out.set(a.it.time, { others: new Set(), double: false });
+    const o = out.get(a.it.time);
+    if (b.it.time === a.it.time) o.double = true; else o.others.add(itemTitle(b.it));
+  }));
+  return out;
+}
+// Up next: during the show, the item running now or the next one today.
+function upNextHtml() {
+  const code = currentEventCode();
+  const day = showDayToday(code);
+  if (!day || viewedScheduleUid) return "";
+  const n = new Date(), now = n.getHours() * 60 + n.getMinutes();
+  const today = buildMyScheduleItems().filter(it => +it.day === day && itemStart(it) != null)
+    .map(it => ({ it, s: itemStart(it), e: itemEnd(it) }))
+    .filter(x => x.e - x.s < LONG_BLOCK && x.e > now)
+    .sort((a, b) => a.s - b.s);
+  const x = today[0];
+  if (!x) return `<div class="up-next done" id="upNext"><span class="un-k">Today</span><span class="un-t">You're done for the day</span></div>`;
+  const mins = x.s - now;
+  const when = mins <= 0 ? "Now · until " + fmtTime(x.e)
+    : mins < 60 ? "In " + mins + " min · " + x.it.time
+    : "At " + x.it.time;
+  const place = itemPlace(x.it);
+  return `<button class="up-next" id="upNext" type="button" data-up-next="${esc(x.it.time)}">
+    <span class="un-k">${mins <= 0 ? "Now" : "Up next"}</span>
+    <span class="un-t">${esc(itemTitle(x.it))}</span>
+    <span class="un-s">${esc(when)}${place ? " · " + esc(place) : ""}</span>
+  </button>`;
+}
+setInterval(() => {
+  const el = document.getElementById("upNext");
+  if (!el || activeView !== "schedule" || viewedScheduleUid) return;
+  const h = upNextHtml();
+  if (h) el.outerHTML = h;
+}, 30e3);
+// Calendar file: every item on your schedule for this show, each with a
+// 15-minute alert, so the phone's own calendar reminds you even while the
+// app is closed (the app itself can't run in the background).
+const ICS_TZ = {
+  "America/Chicago": ["CST", "-0600", "CDT", "-0500"],
+  "America/New_York": ["EST", "-0500", "EDT", "-0400"],
+};
+function icsEscape(t) { return String(t || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+function icsFold(line) {
+  const out = []; let l = line;
+  while (l.length > 73) { out.push(l.slice(0, 73)); l = " " + l.slice(73); }
+  out.push(l); return out.join("\r\n");
+}
+function buildIcs(code) {
+  const ev = resolveEvent(code) || {};
+  const dates = ev.dates || [];
+  const tz = ev.tz && ICS_TZ[ev.tz] ? ev.tz : "";
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//North Coast Media//NCM Events Guide//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:" + icsEscape(showLabelOf(code))];
+  if (tz) {
+    const [sn, so, dn, dof] = ICS_TZ[tz];
+    lines.push("BEGIN:VTIMEZONE", "TZID:" + tz,
+      "BEGIN:DAYLIGHT", "TZOFFSETFROM:" + so, "TZOFFSETTO:" + dof, "TZNAME:" + dn, "DTSTART:19700308T020000", "RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU", "END:DAYLIGHT",
+      "BEGIN:STANDARD", "TZOFFSETFROM:" + dof, "TZOFFSETTO:" + so, "TZNAME:" + sn, "DTSTART:19701101T020000", "RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU", "END:STANDARD",
+      "END:VTIMEZONE");
+  }
+  const at = (iso, min) => iso.replace(/-/g, "") + "T" + String(Math.floor(min / 60)).padStart(2, "0") + String(min % 60).padStart(2, "0") + "00";
+  let n = 0;
+  buildMyScheduleItems().forEach(it => {
+    const iso = dates[(+it.day || 0) - 1];
+    const st = itemStart(it);
+    if (!iso || st == null) return;
+    const en = Math.min(itemEnd(it), 24 * 60 - 1);
+    const zone = tz ? ";TZID=" + tz : "";
+    const uid = (code + "-" + preItemKey(it) + "-" + ((currentUser && currentUser.uid) || "me")).replace(/[^\w.-]/g, "") + "@ncm-events-guide";
+    const place = itemPlace(it);
+    lines.push("BEGIN:VEVENT", "UID:" + uid, "DTSTAMP:" + stamp,
+      "DTSTART" + zone + ":" + at(iso, st), "DTEND" + zone + ":" + at(iso, en),
+      icsFold("SUMMARY:" + icsEscape(itemTitle(it))));
+    if (place) lines.push(icsFold("LOCATION:" + icsEscape(place)));
+    if (it.notes) lines.push(icsFold("DESCRIPTION:" + icsEscape(it.notes)));
+    lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEscape(itemTitle(it)), "TRIGGER:-PT15M", "END:VALARM", "END:VEVENT");
+    n++;
+  });
+  lines.push("END:VCALENDAR");
+  return { text: lines.map(l => l.indexOf("\r\n") >= 0 ? l : icsFold(l)).join("\r\n") + "\r\n", count: n };
+}
+function exportCalendar() {
+  const code = currentEventCode();
+  const { text, count } = buildIcs(code);
+  if (!count) { toast("Nothing on your schedule to add yet"); return; }
+  const name = showLabelOf(code).replace(/[^\w -]/g, "") + " schedule.ics";
+  const url = URL.createObjectURL(new Blob([text], { type: "text/calendar;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60e3);
+  toast("Opening " + count + " item" + (count === 1 ? "" : "s") + " for your calendar. Tap Add All");
+}
 function buildSchedTitle() {
   const mine = currentUser ? currentUser.uid : null;
   const others = Object.values(teamSchedules).filter(s => s.uid !== mine).length;
-  return `<button class="sched-title" type="button" data-sched-who>
+  const title = `<button class="sched-title" type="button" data-sched-who>
     <span class="st-name">${esc(schedOwnerLabel())}</span>
     <span class="st-chev">▾</span>
     ${others ? `<span class="st-count">${others + 1} on the team</span>` : ""}
   </button>`;
+  return title;
 }
 // The people picker: your own schedule plus every teammate sharing one.
 function buildWhoSheet() {
@@ -7168,7 +7305,8 @@ function renderScheduleView(state) {
   const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
   const hasAny = slotTimes.length > 0;
 
-  let html = showStatusBannerHtml() + teamBar + `
+  const overlaps = dayOverlaps(buildMyScheduleItems(), schedDay);
+  let html = showStatusBannerHtml() + teamBar + upNextHtml() + `
 <div class="sched-day-tabs${manyDays}">${dayTabs}</div>
 ${showInfoHtml(currentEventCode(), schedDay)}
 ${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
@@ -7188,8 +7326,10 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
     slotTimes.forEach(t => {
       const entries = byTime[t] || [];
       if (!entries.length) return;
-      html += `<div class="time-slot">
-        <div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span><span class="time-line"></span></div>`;
+      const ovo = overlaps.get(t);
+      const ov = ovo && (ovo.others.size ? "Overlaps " + [...ovo.others].join(", ") : "Double-booked");
+      html += `<div class="time-slot" data-slot="${esc(t)}">
+        <div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span>${ov ? `<span class="ovl-chip" title="${esc(ov)}">${esc(ov)}</span>` : ""}<span class="time-line"></span></div>`;
       entries.forEach(entry => {
         if (entry.kind === "booth") {
           const c = entry.c;
@@ -7379,6 +7519,14 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  const un = e.target.closest("[data-up-next]");
+  if (un) {
+    const d = showDayToday(currentEventCode());
+    if (d && schedDay !== d) { schedDay = d; render(); }
+    const slot = [...document.querySelectorAll("[data-slot]")].find(x => x.dataset.slot === un.dataset.upNext);
+    if (slot) slot.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
   if (e.target.closest("[data-sched-who]")) {
     document.getElementById("whoList").innerHTML = buildWhoSheet();
     document.getElementById("whoSheet").style.display = "flex";
@@ -8756,6 +8904,8 @@ async function renderOldData() {
     </div>`;
   }).join("");
 }
+// Profile > Shows: the current show's schedule as a calendar file (v162).
+document.getElementById("pfCalRow").addEventListener("click", () => exportCalendar());
 document.getElementById("oldDataBtn").addEventListener("click", () => {
   document.getElementById("settingsSheet").style.display = "none";
   document.getElementById("oldDataSheet").style.display = "flex";
