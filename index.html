@@ -2373,7 +2373,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v159</div>
+      <div class="pf-ver">NCM Events Guide · v160</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4423,6 +4423,30 @@ function sortShowsByDate(codes) {
 // The show someone lands on, across every brand they cover. Ties go to the
 // home brand, so a PestWorld + Equip rep lands on their own brand during the
 // overlap.
+// Per-person landing shows (Nate, Oct. 8, 2026). Tod McCloskey covers every
+// brand but works Equip only, so he lands on Equip instead of PestWorld
+// (which starts first). Rachel Rosen and Kevin Stoltman work PestWorld, then
+// move to Equip once it starts Oct. 21. A rule applies only while its show is
+// upcoming or live; after that everyone falls back to defaultShowFor. A
+// manual pick in the show picker still wins for that session.
+const SHOW_PREFS = {
+  "tmccloskey@northcoastmedia.net": [{ code: "LM-2026" }],
+  "rrosen@northcoastmedia.net":     [{ code: "LM-2026", from: "2026-10-21" }],
+  "kstoltman@northcoastmedia.net":  [{ code: "LM-2026", from: "2026-10-21" }],
+  // Nate and Sydney cover every brand but work PestWorld; without these, the
+  // Oct. 21-23 overlap (both shows live) would land them on Equip.
+  "nstoltman@northcoastmedia.net":  [{ code: "PMP-2026" }],
+  "sfischer@northcoastmedia.net":   [{ code: "PMP-2026" }],
+};
+function preferredShow(user) {
+  const rules = SHOW_PREFS[String((user && user.email) || "").toLowerCase()];
+  if (!rules) return null;
+  const n = new Date();
+  const today = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
+  const hit = rules.find(r => EVENTS[r.code] && (!r.from || today >= r.from)
+    && ["upcoming", "live"].includes(showStatus(r.code).k));
+  return hit ? hit.code : null;
+}
 function defaultShowFor(brands, home) {
   let best = null, bestKey = Infinity;
   (brands || []).forEach(b => showsForBrand(b).forEach(code => {
@@ -4729,7 +4753,7 @@ function currentEventCode() {
   // open app.
   if (masterEventOverride) return masterEventOverride;
   if (!currentUser) return null;
-  return defaultShowFor(userBrands(currentUser), userBrand(currentUser)) || currentUser.eventCode || null;
+  return preferredShow(currentUser) || defaultShowFor(userBrands(currentUser), userBrand(currentUser)) || currentUser.eventCode || null;
 }
 
 // STATE — booth/notes/meals/off-site per event. The LP Gas / default event
@@ -7828,6 +7852,10 @@ document.addEventListener("visibilitychange", () => {
 function startFresh() {
   if (!currentUser || isHome()) return;
   if (Object.keys(upProg).length || photoQueue.length || photoUploading || _isTypingEl(document.activeElement)) return;   // mid-upload, photos waiting or mid-note: stay put
+  // People with a landing rule move when it kicks in (an app left open on
+  // PestWorld on Oct. 20 switches to Equip when they come back Oct. 21).
+  const want = !showPickedManually && preferredShow(currentUser);
+  if (want && want !== currentEventCode()) { switchToShow(want, false); return; }
   viewedScheduleUid = null; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false; sessPickOpen = false;
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   schedDay = showDayToday(currentEventCode()) || schedDay;
@@ -9641,7 +9669,7 @@ if (fbReady) {
       }
       // Everyone lands on their nearest show (live, else next up, else the
       // most recent) across every brand they cover; masters across all five.
-      masterEventOverride = defaultShowFor(pickerBrands(), userBrand(currentUser));
+      masterEventOverride = preferredShow(currentUser) || defaultShowFor(pickerBrands(), userBrand(currentUser));
       showPickedManually = false;
       // Theme + booth list for this user's event/brand.
       applyEvent(currentEventCode());
