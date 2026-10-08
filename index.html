@@ -2411,7 +2411,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v168</div>
+      <div class="pf-ver">NCM Events Guide · v169</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8730,6 +8730,7 @@ function floorOf(code) {
   return f;
 }
 let fp = { code: null, hall: null, sel: [], mine: new Set(), scale: 0.4, fit: 0.1 };
+const FP_TEXT = false;
 function fpHall() { const f = floorOf(fp.code); return f && (f.halls.find(h => h.id === fp.hall) || f.halls[0]); }
 const boothParts = b => String(b || "").split("/").map(x => x.trim()).filter(Boolean);
 function fpMine(code, day) {
@@ -8761,10 +8762,14 @@ function fpSvg(h) {
       : `<rect x="${X(r.x)}" y="${Y(r.y + r.h)}" width="${r.w}" height="${r.h}"></rect>`;
     return `<g class="${cls}" data-fb="${esc(r.b)}">${shape}</g>`;
   }).join("");
-  // Layers (v168): every booth outline, then every booth number, then the
-  // area labels, so nothing can hide behind a later or overlapping booth.
-  const nums = h._b.map(label).join("");
-  const labels = (h.labels || []).map(([t, x, y]) => `<text class="fp-label" x="${X(x)}" y="${Y(y)}">${esc(t)}</text>`).join("");
+  // No text on the plan (v169, Nate, Oct. 8, 2026): booth numbers and area
+  // labels rendered wrong on iPhones through v163-v168, so the map is shapes
+  // only. The booth you opened is filled, your booths for the day are shaded
+  // and tapping any booth shows its number and exhibitor in the footer.
+  // (label() and the area labels in the floor data are kept for a possible
+  // return; set FP_TEXT to true to draw them again.)
+  const nums = FP_TEXT ? h._b.map(label).join("") : "";
+  const labels = FP_TEXT ? (h.labels || []).map(([t, x, y]) => `<text class="fp-label" x="${X(x)}" y="${Y(y)}">${esc(t)}</text>`).join("") : "";
   return `<svg id="fpSvg" viewBox="0 0 ${W} ${H}" width="${Math.round(W * fp.scale)}" height="${Math.round(H * fp.scale)}" xmlns="http://www.w3.org/2000/svg">${shapes}<g class="fp-nums">${nums}</g><g class="fp-labels">${labels}</g></svg>`;
 }
 function fpFootHtml() {
