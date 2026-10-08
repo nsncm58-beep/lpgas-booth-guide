@@ -2373,7 +2373,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v160</div>
+      <div class="pf-ver">NCM Events Guide · v161</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6692,10 +6692,12 @@ function buildCard(c, state) {
 // keep the same key and paint instantly, so nothing flickers mid-use.
 let _paintKey = null;
 let _viewInTimer = null;
+let _quietPaint = false;   // launch: record the screen without the fade-in
 function viewTransition(key) {
   const el = document.getElementById("content");
   if (!el || _paintKey === key) return;
   _paintKey = key;
+  if (_quietPaint) { el.classList.remove("view-in"); return; }
   el.classList.remove("view-in");
   void el.offsetWidth;                    // restart the CSS animation
   el.classList.add("view-in");
@@ -9676,6 +9678,12 @@ if (fbReady) {
       // During the show itself, open on today's day rather than Day 1.
       schedDay = showDayToday(currentEventCode()) || 1;
       setupShowPicker();
+      // Draw the right show from this device's saved data BEFORE the loading
+      // screen lifts (v161). Until then the veil lifted onto the pre-sign-in
+      // placeholder and the real schedule replaced it a moment later with a
+      // fade: the split-second glitch at every launch. The redraw after the
+      // cloud checks below is the same screen, so it updates in place.
+      _quietPaint = true; render(); _quietPaint = false;
       showSignedIn(profile);
       // Pull cloud data down first if this device is empty, THEN push (which
       // also migrates existing local data) and start the team subscription.
