@@ -490,6 +490,31 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
   letter-spacing: 0.3px;
   font-variant-numeric: tabular-nums;
 }
+button.booth-badge.map { font: inherit; font-size: 0.68rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+button.ro-map { border: none; background: none; padding: 0; font: inherit; cursor: pointer; }
+.si-floor { width: 100%; border: none; background: none; font: inherit; text-align: left; cursor: pointer; }
+.floor-sheet { position: fixed; inset: 0; z-index: 700; display: flex; flex-direction: column; background: var(--surface); }
+.fp-head { display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; background: var(--blue); color: #fff; }
+.fp-titles { flex: 1; min-width: 0; }
+.fp-title { font-family: var(--fd); font-weight: 800; font-size: 1rem; }
+.fp-sub { font-size: 0.7rem; opacity: 0.85; }
+.fp-btn { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.45); background: rgba(255,255,255,0.12); color: #fff; font: inherit; font-size: 1.2rem; font-weight: 700; line-height: 1; cursor: pointer; }
+.fp-close { margin-left: 4px; }
+.fp-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; background: #F4F1EC; overscroll-behavior: contain; }
+#fpSvg { display: block; }
+.fp-b rect { fill: #fff; stroke: #9AA3AE; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.fp-b text { fill: #3B4552; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.fp-b.mine rect { fill: var(--blue-mid); stroke: var(--blue); stroke-width: 2; }
+.fp-b.sel rect { fill: var(--blue); stroke: var(--blue); stroke-width: 2.5; }
+.fp-b.sel text { fill: #fff; }
+.fp-label { fill: #6B7684; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-size: 70px; font-weight: 700; text-anchor: middle; }
+.fp-foot { padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); min-height: 54px; font-size: 0.8rem; color: var(--text-2); display: flex; flex-direction: column; gap: 3px; }
+.fp-booth { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--blue); }
+.fp-co strong { color: var(--text); font-size: 0.92rem; }
+.fp-when { display: block; font-size: 0.74rem; color: var(--blue); font-weight: 600; }
+.fp-legend { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); }
+.fp-legend i { width: 14px; height: 14px; border-radius: 3px; background: var(--blue-mid); border: 2px solid var(--blue); display: inline-block; }
+.fp-hint { font-size: 0.74rem; }
 a.booth-badge.map { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; cursor: pointer; }
 a.booth-badge.map svg { flex-shrink: 0; }
 .ro-map { display: inline-flex; align-items: center; gap: 3px; color: var(--blue); font-weight: 700; text-decoration: none; }
@@ -2380,7 +2405,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v162</div>
+      <div class="pf-ver">NCM Events Guide · v163</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2464,6 +2489,18 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 </div>
 
 <!-- ── Schedule: confirm before anything comes off a day ── -->
+<!-- ── In-app floor plan (shows whose EVENTS entry has `floor`) ── -->
+<div id="floorSheet" class="floor-sheet" style="display:none" role="dialog" aria-label="Floor plan">
+  <div class="fp-head">
+    <div class="fp-titles"><div class="fp-title" id="fpTitle">Floor plan</div><div class="fp-sub" id="fpSub"></div></div>
+    <button class="fp-btn" type="button" data-fp-zoom="-1" aria-label="Zoom out">&minus;</button>
+    <button class="fp-btn" type="button" data-fp-zoom="1" aria-label="Zoom in">+</button>
+    <button class="fp-btn fp-close" type="button" id="fpClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="fp-scroll" id="fpScroll"></div>
+  <div class="fp-foot" id="fpFoot"></div>
+</div>
+
 <div id="rmSheet" class="settings-sheet" style="display:none">
   <div class="settings-card">
     <div class="settings-title" id="rmTitle">Remove this from your schedule?</div>
@@ -4488,7 +4525,18 @@ const LM_EQUIP_SESSIONS = [
 // (Ask for these whenever a booth list is loaded for a show.)
 // Optional per show: `venue` {name, address} and `attire` {"YYYY-MM-DD":
 // what to wear} show in a card under the Schedule day tabs (showInfoHtml);
-// `boothMap` (a floor plan URL with {booth}) turns booth badges into map links.
+// `boothMap` (a floor plan URL with {booth}) turns booth badges into map links;
+// `floor` (booth rectangles) gives the show an in-app floor plan instead.
+// PestWorld floor plan (v163): every booth rectangle from the official Map
+// Your Show floor plan (Longhorn Exhibit Halls C-F, Gaylord Texan), pulled
+// Oct. 8, 2026, in its CAD units (y up), as "booth,x,y,w,h;...". Drawn in
+// the app so it opens instantly and works offline (Map Your Show's own map
+// took 30+ seconds to load). Refresh it with the booth list if booths move.
+const PMP_FLOOR = {
+  name: "Longhorn Exhibit Halls C-F",
+  labels: [["Main Entrance", 7729, 334], ["Gaylord Entrance", 10106, -1150], ["Escalators to Sessions", 8134, -564]],
+  booths: "519,6116,1858,240,600;719,6836,1858,240,600;419,5756,1858,240,480;807,7196,1138,240,480;1319,8996,1858,240,480;1407,9356,1138,240,480;231,5036,2578,240,360;335,5396,2818,240,360;207,5036,1138,240,360;631,6476,2578,240,360;407,5756,1138,240,360;607,6476,1138,240,360;819,7196,1858,240,360;1019,7916,1858,240,360;1231,8636,2578,240,360;1431,9356,2578,240,360;1207,8636,1138,240,360;1419,9356,1858,240,360;1619,10076,1858,240,360;140,4436,3178,480,240;119,4676,1858,240,240;325,5396,2218,240,240;531,6116,2578,240,240;101,4676,778,240,240;737,6836,2938,240,240;301,5396,778,240,240;513,6116,1498,240,240;501,6116,778,240,240;925,7556,2218,240,240;1131,8276,2578,240,240;701,6836,778,240,240;913,7556,1498,240,240;1337,8996,2938,240,240;1119,8276,1858,240,240;901,7556,778,240,240;1531,9716,2578,240,240;1101,8276,778,240,240;1313,8996,1498,240,240;1525,9716,2218,240,240;1519,9716,1858,240,240;1301,8996,778,240,240;1501,9716,778,240,240;122,4436,2098,120,360;443,5636,3298,360,120;104,4436,1018,120,360;718,6596,1858,120,360;1712,10196,1378,120,360;1816,10736,1726,120,360;137,4676,2938,120,240;236,4796,2938,120,240;243,5036,3298,240,120;442,5396,3298,240,120;125,4676,2218,120,240;118,4436,1858,120,240;224,4796,2218,120,240;435,5756,2818,120,240;536,5876,2938,120,240;543,6116,3298,240,120;431,5756,2578,120,240;530,5876,2578,120,240;643,6476,3298,240,120;319,5396,1858,120,240;100,4436,658,120,240;418,5516,1858,120,240;313,5396,1498,120,240;412,5516,1498,120,240;408,5516,1258,120,240;731,6836,2578,120,240;830,6956,2578,120,240;619,6476,1858,120,240;932,7316,2698,120,240;507,6116,1138,120,240;1036,7676,2938,120,240;606,6236,1138,120,240;933,7556,2698,120,240;1035,7916,2818,120,240;713,6836,1498,120,240;812,6956,1498,120,240;709,6836,1258,120,240;1137,8276,2938,120,240;808,6956,1258,120,240;1236,8396,2938,120,240;702,6596,778,120,240;1343,8996,3298,240,120;1125,8276,2218,120,240;1224,8396,2218,120,240;907,7556,1138,120,240;1443,9476,3298,240,120;1331,8996,2578,120,240;1430,9116,2578,120,240;1113,8276,1498,120,240;1320,8756,1978,120,240;1212,8396,1498,120,240;1109,8276,1258,120,240;1208,8396,1258,120,240;1643,10076,3298,240,120;1742,10316,3298,240,120;1307,8996,1138,120,240;1406,9116,1138,120,240;1731,10436,2578,120,240;1513,9716,1498,120,240;1725,10436,2218,120,240;1509,9716,1258,120,240;1610,9836,1378,120,240;1721,10436,1978,120,240;1611,10076,1378,120,240;1607,10076,1138,120,240;1706,10196,1138,120,240;1711,10436,1378,120,240;1701,10436,778,120,240;138,4436,3058,120,120;136,4436,2938,120,120;134,4436,2818,120,120;132,4436,2698,120,120;130,4436,2578,120,120;135,4676,2818,120,120;128,4436,2458,120,120;133,4676,2698,120,120;234,4796,2818,120,120;131,4676,2578,120,120;341,5276,3298,120,120;232,4796,2698,120,120;338,5154,3051,120,120;230,4796,2578,120,120;116,4436,1738,120,120;114,4436,1618,120,120;225,5036,2218,120,120;112,4436,1498,120,120;326,5156,2338,120,120;331,5396,2578,120,120;223,5036,2098,120,120;324,5156,2218,120,120;110,4436,1378,120,120;115,4676,1618,120,120;430,5516,2578,120,120;221,5036,1978,120,120;322,5156,2098,120,120;113,4676,1498,120,120;214,4796,1618,120,120;219,5036,1858,120,120;320,5156,1978,120,120;534,5876,2818,120,120;111,4676,1378,120,120;539,6116,3058,120,120;212,4796,1498,120,120;641,6356,3298,120,120;318,5156,1858,120,120;537,6116,2938,120,120;109,4676,1258,120,120;210,4796,1378,120,120;638,6236,3058,120,120;102,4436,898,120,120;107,4676,1138,120,120;636,6236,2938,120,120;208,4796,1258,120,120;314,5154,1611,120,120;206,4796,1138,120,120;741,6716,3298,120,120;738,6594,3051,120,120;743,6836,3298,120,120;842,6956,3298,120,120;311,5396,1378,120,120;309,5396,1258,120,120;201,5036,778,120,120;843,7196,3298,120,120;302,5156,898,120,120;307,5396,1138,120,120;942,7316,3298,120,120;514,5879,1611,120,120;300,5156,778,120,120;406,5516,1138,120,120;625,6476,2218,120,120;726,6596,2338,120,120;941,7436,3298,120,120;623,6476,2098,120,120;724,6596,2218,120,120;837,7196,2938,120,120;938,7316,3058,120,120;943,7556,3298,120,120;835,7196,2818,120,120;936,7316,2938,120,120;1040,7676,3298,120,120;833,7196,2698,120,120;939,7556,3058,120,120;1041,7796,3298,120,120;831,7196,2578,120,120;937,7556,2938,120,120;1043,7916,3298,120,120;401,5756,778,120,120;502,5876,898,120,120;930,7316,2578,120,120;714,6594,1611,120,120;500,5876,778,120,120;1142,8036,3298,120,120;1034,7676,2818,120,120;926,7314,2331,120,120;931,7556,2578,120,120;1032,7676,2698,120,120;1138,8036,3058,120,120;1143,8276,3298,120,120;1030,7676,2578,120,120;1136,8036,2938,120,120;1242,8396,3298,120,120;1033,7916,2698,120,120;1134,8036,2818,120,120;1031,7916,2578,120,120;1241,8516,3298,120,120;1132,8036,2698,120,120;1243,8636,3298,120,120;601,6476,778,120,120;1130,8036,2578,120,120;921,7556,1978,120,120;707,6836,1138,120,120;1342,8756,3298,120,120;919,7556,1858,120,120;1020,7676,1978,120,120;806,6956,1138,120,120;1126,8034,2331,120,120;1341,8876,3298,120,120;1018,7676,1858,120,120;1338,8758,3051,120,120;801,7196,778,120,120;1442,9356,3298,120,120;902,7316,898,120,120;1008,7676,1258,120,120;1013,7916,1498,120,120;1114,8036,1618,120,120;900,7316,778,120,120;1006,7676,1138,120,120;1011,7916,1378,120,120;1225,8636,2218,120,120;1112,8036,1498,120,120;1326,8756,2338,120,120;1223,8636,2098,120,120;1009,7916,1258,120,120;1538,9474,3051,120,120;1110,8036,1378,120,120;1324,8756,2218,120,120;1543,9716,3298,120,120;1007,7916,1138,120,120;1221,8636,1978,120,120;1108,8036,1258,120,120;1642,9836,3298,120,120;1219,8636,1858,120,120;1106,8036,1138,120,120;1539,9716,3058,120,120;1318,8756,1858,120,120;1537,9716,2938,120,120;1638,9836,3058,120,120;1001,7916,778,120,120;1102,8036,898,120,120;1107,8276,1138,120,120;1636,9836,2938,120,120;1314,8753,1611,120,120;1100,8036,778,120,120;1206,8396,1138,120,120;1526,9474,2331,120,120;CB-14,7449,-67,120,120;1637,10076,2938,120,120;1738,10196,3058,120,120;LB-13,7449,-187,120,120;1635,10076,2818,120,120;CB-18,7730,79,120,120;1736,10196,2938,120,120;1744,10556,3298,120,120;LB-12,7449,-307,120,120;1633,10076,2698,120,120;1734,10196,2818,120,120;CB-19,7850,79,120,120;1739,10436,3058,120,120;1840,10676,3298,120,120;1631,10076,2578,120,120;LB-11,7449,-427,120,120;1732,10196,2698,120,120;1737,10436,2938,120,120;1201,8636,778,120,120;1302,8756,898,120,120;1730,10196,2578,120,120;1735,10436,2818,120,120;1300,8756,778,120,120;1838,10736,3058,120,120;1728,10194,2331,120,120;1836,10736,2938,120,120;1834,10736,2818,120,120;1832,10736,2698,120,120;1614,9836,1618,120,120;1401,9356,778,120,120;1502,9476,898,120,120;1507,9716,1138,120,120;1826,10736,2326,120,120;1608,9836,1258,120,120;1500,9476,778,120,120;CB-20,8926,137,120,120;1719,10436,1858,120,120;1606,9836,1138,120,120;1717,10436,1738,120,120;LB-21,9046,137,120,120;1715,10436,1618,120,120;LB-22,9166,137,120,120;LB-23,9286,137,120,120;1709,10436,1258,120,120;1601,10076,778,120,120;1702,10196,898,120,120;1707,10436,1138,120,120;1812,10736,1486,120,120;1700,10196,778,120,120;1810,10736,1366,120,120;1808,10736,1246,120,120;1806,10736,1126,120,120;1802,10736,898,120,120;1801,10736,778,120,120;1800,10736,658,120,120"
+};
 const EVENTS = {
   // boothMap: the official Map Your Show floor plan opened on one booth
   // (indoor, outdoor demo and lettered booths all resolve). Equip only, per
@@ -4506,7 +4554,7 @@ const EVENTS = {
   // Wed. and Thu. 10 a.m.-2 p.m., Fri. 8-10 a.m.). Day 1 was Tuesday until
   // Oct. 2, 2026; LEGACY_D0 shifts anything saved before that. Attire per
   // Nate, Oct. 5, 2026; the Hall of Fame is black tie (pmphalloffame.net).
-  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, tz: "America/Chicago", dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],
+  "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, floor: PMP_FLOOR, tz: "America/Chicago", dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],
     venue: { name: "Gaylord Texan Resort & Convention Center", address: "1501 Gaylord Trail, Grapevine, TX 76051" },
     attire: { "2026-10-19": "Black tie for the Hall of Fame", "2026-10-20": "Maroon polo, black zip-up",
               "2026-10-21": "Black polo, gray zip-up", "2026-10-22": "Gray polo, maroon zip-up", "2026-10-23": "Your choice" } },
@@ -6658,7 +6706,9 @@ function buildCard(c, state) {
         ${c.x ? '<span class="gone-chip">No longer listed</span>' : ''}
         ${mapUrl
           ? `<a class="booth-badge map${outdoor?" outdoor":""}" href="${esc(mapUrl)}" target="_blank" rel="noopener" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</a>`
-          : `<span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>`}
+          : (!c.x && floorOf(currentEventCode()))
+            ? `<button class="booth-badge map${outdoor?" outdoor":""}" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</button>`
+            : `<span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>`}
       </div>
       <div class="card-actions">
         ${salesView ? `<div class="status-group">
@@ -6983,7 +7033,8 @@ function roCardHtml(it) {
       <div class="ro-card-title">${esc(it.boothName||"Booth visit")}${it.video ? ' <span class="home-chip vid">Video</span>' : ''}</div>
       <div class="ro-card-sub">Booth ${esc(it.boothNum||"")}${(() => {
         const u = boothMapUrl(it.boothNum, isHome() ? homeEventCode() : currentEventCode());
-        return u ? ` · <a class="ro-map" href="${esc(u)}" target="_blank" rel="noopener">${PIN_TINY}Map</a>` : "";
+        if (u) return ` · <a class="ro-map" href="${esc(u)}" target="_blank" rel="noopener">${PIN_TINY}Map</a>`;
+        return !isHome() && floorOf(currentEventCode()) ? ` · <button class="ro-map" type="button" data-floor="${esc(it.boothNum || "")}">${PIN_TINY}Map</button>` : "";
       })()}</div>
     </div>`;
   }
@@ -8630,6 +8681,115 @@ function boothMapUrl(b, code) {
   const first = String(b || "").split("/")[0].trim();
   return t && first ? t.replace("{booth}", encodeURIComponent(first)) : "";
 }
+// ── IN-APP FLOOR PLAN (v163) ─────────────────────────────────────────────
+function floorOf(code) {
+  const f = (EVENTS[code] || {}).floor;
+  if (!f) return null;
+  if (!f._b) {
+    f._b = f.booths.split(";").map(r => { const [b, x, y, w, h] = r.split(","); return { b, x: +x, y: +y, w: +w, h: +h }; });
+    const xs = [], ys = [];
+    f._b.forEach(r => { xs.push(r.x, r.x + r.w); ys.push(r.y, r.y + r.h); });
+    (f.labels || []).forEach(([, x, y]) => { xs.push(x - 300, x + 300); ys.push(y - 60, y + 60); });
+    f._box = { minX: Math.min(...xs) - 120, maxX: Math.max(...xs) + 120, minY: Math.min(...ys) - 120, maxY: Math.max(...ys) + 120 };
+  }
+  return f;
+}
+const FP_SCALES = [0.08, 0.12, 0.18, 0.26, 0.4, 0.56];
+let fp = { code: null, sel: [], mine: new Set(), scale: 0.4, fit: 0.1 };
+const boothParts = b => String(b || "").split("/").map(x => x.trim()).filter(Boolean);
+function fpMine(code, day) {
+  const st = load(), out = new Set();
+  CO.forEach((c, i) => { const v = st[key(i)] && st[key(i)].scheduled; if (v && +v.split("|")[0] === day) boothParts(c.b).forEach(b => out.add(b)); });
+  return out;
+}
+function fpSvg(f) {
+  const bx = f._box, W = bx.maxX - bx.minX, H = bx.maxY - bx.minY;
+  const X = x => Math.round(x - bx.minX), Y = y => Math.round(bx.maxY - y);
+  const rects = f._b.map(r => {
+    const fs = Math.min(38, r.w * 0.3, r.h * 0.3 + 6);
+    const cls = fp.sel.includes(r.b) ? "fp-b sel" : fp.mine.has(r.b) ? "fp-b mine" : "fp-b";
+    return `<g class="${cls}" data-fb="${esc(r.b)}"><rect x="${X(r.x)}" y="${Y(r.y + r.h)}" width="${r.w}" height="${r.h}"></rect>`
+      + `<text x="${X(r.x + r.w / 2)}" y="${Y(r.y + r.h / 2)}" font-size="${Math.round(fs)}">${esc(r.b)}</text></g>`;
+  }).join("");
+  const labels = (f.labels || []).map(([t, x, y]) => `<text class="fp-label" x="${X(x)}" y="${Y(y)}">${esc(t)}</text>`).join("");
+  return `<svg id="fpSvg" viewBox="0 0 ${W} ${H}" width="${Math.round(W * fp.scale)}" height="${Math.round(H * fp.scale)}" xmlns="http://www.w3.org/2000/svg">${labels}${rects}</svg>`;
+}
+function fpFootHtml() {
+  if (!fp.sel.length) return fp.mine.size
+    ? `<span class="fp-legend"><i class="mine"></i>Your booths on Day ${schedDay}</span><span class="fp-hint">Tap a booth to see who's there</span>`
+    : `<span class="fp-hint">Tap a booth to see who's there</span>`;
+  const b = fp.sel[0];
+  const st = load();
+  const cos = CO.map((c, i) => ({ ...c, i })).filter(c => !c.x && boothParts(c.b).includes(b));
+  const lines = cos.map(c => {
+    const v = st[key(c.i)] && st[key(c.i)].scheduled;
+    return `<div class="fp-co"><strong>${esc(c.n)}</strong>${v ? `<span class="fp-when">On your schedule: Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}</span>` : ""}</div>`;
+  }).join("");
+  return `<div class="fp-booth">Booth ${esc(b)}</div>${lines || `<div class="fp-co">No exhibitor listed</div>`}`;
+}
+function fpCenterOn(b) {
+  const g = document.querySelector('#fpSvg [data-fb="' + (window.CSS && CSS.escape ? CSS.escape(b) : b) + '"]');
+  const sc = document.getElementById("fpScroll");
+  if (!g || !sc) return;
+  const r = g.getBoundingClientRect(), sr = sc.getBoundingClientRect();
+  sc.scrollLeft += (r.left + r.width / 2) - (sr.left + sr.width / 2);
+  sc.scrollTop += (r.top + r.height / 2) - (sr.top + sr.height / 2);
+}
+function openFloor(boothStr) {
+  const code = currentEventCode(), f = floorOf(code);
+  if (!f) return;
+  fp = { code, sel: boothParts(boothStr), mine: fpMine(code, schedDay), scale: fp.scale };
+  const sheet = document.getElementById("floorSheet");
+  sheet.style.display = "flex";
+  document.getElementById("fpTitle").textContent = (EVENTS[code].short || EVENTS[code].show) + " floor plan";
+  document.getElementById("fpSub").textContent = f.name;
+  const sc = document.getElementById("fpScroll");
+  const bx = f._box, W = bx.maxX - bx.minX;
+  fp.fit = Math.min(0.4, (sc.clientWidth - 4) / W);   // whole hall across the screen
+  // A booth: zoom in on it. Otherwise: zoom to fit your booths for the day
+  // (the whole hall when you have none).
+  const mine = f._b.filter(r => fp.mine.has(r.b));
+  let focus = null;
+  if (fp.sel.length) fp.scale = 0.4;
+  else if (mine.length) {
+    const x0 = Math.min(...mine.map(r => r.x)) - 360, x1 = Math.max(...mine.map(r => r.x + r.w)) + 360;
+    const y0 = Math.min(...mine.map(r => r.y)) - 360, y1 = Math.max(...mine.map(r => r.y + r.h)) + 360;
+    fp.scale = Math.max(fp.fit, Math.min(0.4, sc.clientWidth / (x1 - x0), sc.clientHeight / (y1 - y0)));
+    focus = { x: (x0 + x1) / 2 - bx.minX, y: bx.maxY - (y0 + y1) / 2 };
+  } else fp.scale = fp.fit;
+  sc.innerHTML = fpSvg(f);
+  document.getElementById("fpFoot").innerHTML = fpFootHtml();
+  if (fp.sel.length) requestAnimationFrame(() => fpCenterOn(fp.sel[0]));
+  else if (focus) { sc.scrollLeft = focus.x * fp.scale - sc.clientWidth / 2; sc.scrollTop = focus.y * fp.scale - sc.clientHeight / 2; }
+  else { sc.scrollLeft = 0; sc.scrollTop = 0; }
+}
+function fpZoom(dir) {
+  const f = floorOf(fp.code), sc = document.getElementById("fpScroll"), svg = document.getElementById("fpSvg");
+  if (!f || !svg) return;
+  const steps = [...new Set([fp.fit, ...FP_SCALES.filter(v => v > fp.fit)])].sort((a, b) => a - b);
+  const next = dir > 0 ? steps.find(v => v > fp.scale + 1e-6) : steps.slice().reverse().find(v => v < fp.scale - 1e-6);
+  if (next == null) return;
+  const cx = (sc.scrollLeft + sc.clientWidth / 2) / fp.scale, cy = (sc.scrollTop + sc.clientHeight / 2) / fp.scale;
+  fp.scale = next;
+  const W = f._box.maxX - f._box.minX, H = f._box.maxY - f._box.minY;
+  svg.setAttribute("width", Math.round(W * next)); svg.setAttribute("height", Math.round(H * next));
+  sc.scrollLeft = cx * next - sc.clientWidth / 2; sc.scrollTop = cy * next - sc.clientHeight / 2;
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest && e.target.closest("[data-floor]");
+  if (t) { e.preventDefault(); e.stopPropagation(); openFloor(t.dataset.floor); }
+}, true);
+document.getElementById("fpClose").addEventListener("click", () => { document.getElementById("floorSheet").style.display = "none"; });
+document.getElementById("floorSheet").addEventListener("click", e => {
+  const z = e.target.closest("[data-fp-zoom]");
+  if (z) { fpZoom(+z.dataset.fpZoom); return; }
+  const g = e.target.closest("[data-fb]");
+  if (!g) return;
+  fp.sel = [g.dataset.fb];
+  document.querySelectorAll("#fpSvg .fp-b.sel").forEach(x => x.setAttribute("class", fp.mine.has(x.dataset.fb) ? "fp-b mine" : "fp-b"));
+  g.setAttribute("class", "fp-b sel");
+  document.getElementById("fpFoot").innerHTML = fpFootHtml();
+});
 function mapsUrl(q) {
   // Apple devices open Apple Maps; everything else gets Google Maps.
   return /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)
@@ -8642,8 +8802,14 @@ function showInfoHtml(code, day) {
   const v = ev.venue;
   const iso = (ev.dates || [])[day - 1];
   const wear = (iso && ev.attire && ev.attire[iso]) || "";
-  if (!v && !wear) return "";
-  return `<div class="show-info">${v ? `
+  const fl = !isHome() && floorOf(code);
+  if (!v && !wear && !fl) return "";
+  return `<div class="show-info">${fl ? `
+    <button class="si-row si-floor" type="button" data-floor="">
+      <span class="si-ic">${PIN_ICON}</span>
+      <span class="si-txt"><span class="si-name">Floor plan</span><span class="si-sub">${esc(fl.name)} · your Day ${schedDay} booths shaded</span></span>
+      <span class="si-go">Open</span>
+    </button>` : ""}${v ? `
     <a class="si-row" href="${esc(mapsUrl(v.name + ", " + v.address))}" target="_blank" rel="noopener">
       <span class="si-ic">${PIN_ICON}</span>
       <span class="si-txt"><span class="si-name">${esc(v.name)}</span><span class="si-sub">${esc(v.address)}</span></span>
