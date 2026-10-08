@@ -2373,7 +2373,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v158</div>
+      <div class="pf-ver">NCM Events Guide · v159</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5131,11 +5131,87 @@ function flushPreload() {
 document.addEventListener("focusout", () => setTimeout(flushPreload, 300));
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushPreload(); });
 
+// Published schedules in everyone else's view (v159). A schedule Claude
+// publishes lands on the person's own phone only when their app runs, so
+// until then teammates and the bullpen saw an empty or older agenda. Now
+// views of other people fill in whatever is published but not yet on that
+// person's phone (version newer than claimedV): published items replace
+// same-key items and add missing ones. People published but not signed up
+// appear as "not signed up yet". Field reps read the current show's
+// published docs (rules: same-brand teammates, like schedules); the bullpen
+// reads Editorial/Digital ones. Never used for your own schedule, which
+// the sign-in apply and live listener handle.
+let pubSchedules = {}, _pubUnsub = null;     // preload docId -> published doc
+function pubFor(doc) {
+  if (!doc) return null;
+  if (doc._pre) return doc._pre;
+  const ps = Object.values(pubSchedules).filter(x => x.eventCode === doc.eventCode);
+  return ps.find(x => x.claimedBy && x.claimedBy === doc.uid)
+    || ps.find(x => !x.claimedBy && preNorm(x.name) === preNorm(doc.name)) || null;
+}
+function pubPending(doc) {
+  const x = pubFor(doc);
+  return x && (+x.version || 0) > (+x.claimedV || 0) ? x : null;
+}
+function withPublished(doc) {
+  const items = docItems(doc);
+  const x = pubPending(doc);
+  if (!x) return items;
+  const sh = dayShiftFor(x.eventCode, x.d0);
+  const pub = (x.items || []).map(it => sh ? { ...it, day: (+it.day || 0) + sh } : it);
+  const byKey = new Map(pub.map(it => [it.key || preItemKey(it), it]));
+  const have = new Set();
+  const out = items.map(it => { const k = preItemKey(it); have.add(k); return byKey.get(k) || it; });
+  pub.forEach(it => { if (!have.has(it.key || preItemKey(it))) out.push(it); });
+  return out;
+}
+// Stand-in entries for published people with no schedule doc of their own.
+function addPublishedOnly(map, editOnly) {
+  Object.keys(map).forEach(k => { if (k.indexOf("pre:") === 0) delete map[k]; });
+  const myEmail = String((currentUser && currentUser.email) || "").toLowerCase();
+  Object.entries(pubSchedules).forEach(([id, x]) => {
+    if (!x.email || x.email === myEmail || (editOnly && x.dept !== "edit")) return;
+    if (Object.values(map).some(d => pubFor(d) === x)) return;
+    map["pre:" + id] = { uid: "pre:" + id, name: x.name, eventCode: x.eventCode, dept: x.dept,
+                         items: [], d0: x.d0, notSignedUp: true, _pre: x };
+  });
+}
+function subscribePublished() {
+  if (_pubUnsub) { _pubUnsub(); _pubUnsub = null; }
+  pubSchedules = {};
+  if (!fbReady || !currentUser) return;
+  const home = isHome();
+  const code = currentEventCode();
+  if (!home && !code) return;
+  const q = home ? fbDb.collection("preloads").where("dept", "==", "edit")
+                 : fbDb.collection("preloads").where("eventCode", "==", code);
+  _pubUnsub = q.onSnapshot(snap => {
+    pubSchedules = {};
+    snap.forEach(d => { const x = d.data(); if (x && x.email) pubSchedules[d.id] = x; });
+    if (home) {
+      addPublishedOnly(homeSchedules, true);
+      if (isHome() && homeView === "sched") renderHomeDashboard();
+      return;
+    }
+    const mine = currentUser && currentUser.uid;
+    const others = m => Object.keys(m).filter(u => u !== mine).length;
+    const before = others(teamSchedules);
+    addPublishedOnly(teamSchedules, false);
+    const who = document.getElementById("whoSheet");
+    if (who && who.style.display === "flex") document.getElementById("whoList").innerHTML = buildWhoSheet();
+    if (activeView !== "schedule") return;
+    const a = document.activeElement;
+    if (a && a.classList && a.classList.contains("nf")) return;
+    if (viewedScheduleUid || others(teamSchedules) !== before) render();
+  }, () => {});
+}
+
 function subscribeTeam() {
   if (!fbReady || !currentUser) return;
   const code = currentEventCode();
   if (!code) return;
   if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
+  subscribePublished();
   _teamUnsub = fbDb.collection("schedules")
     .where("eventCode", "==", code)
     .onSnapshot(snap => {
@@ -5144,6 +5220,7 @@ function subscribeTeam() {
       const before = others(teamSchedules);
       teamSchedules = {};
       snap.forEach(doc => { const d = doc.data(); if (d && d.uid) teamSchedules[d.uid] = d; });
+      addPublishedOnly(teamSchedules, false);
       // Every save on any phone lands here (your own included). Through v157
       // each one redrew the whole Schedule tab, which made it stutter mid-tap.
       // Now: the people picker refreshes in place if it's open; your own
@@ -6071,6 +6148,7 @@ function subscribeHomeSchedules() {
   _homeSchedUnsub = fbDb.collection("schedules").where("dept", "==", "edit").onSnapshot(snap => {
     homeSchedules = {};
     snap.forEach(d => { const x = d.data(); if (x && x.uid) homeSchedules[d.id] = x; });
+    addPublishedOnly(homeSchedules, true);
     if (isHome() && homeView === "sched") renderHomeDashboard();
   }, () => {});
 }
@@ -6415,7 +6493,7 @@ function buildHomeSchedView() {
   if (q) {
     let anyHit = false;
     entries.forEach(([id, s]) => {
-      const hits = docItems(s)
+      const hits = withPublished(s)
         .filter(it => vOnly(it) && schedItemMatch(it, q))
         .sort((a, b) => (a.day - b.day) || (timeToMin(a.time || "") - timeToMin(b.time || "")));
       if (!hits.length) return;
@@ -6435,8 +6513,8 @@ function buildHomeSchedView() {
   if (!homeSchedRep || !entries.some(([id]) => id === homeSchedRep)) homeSchedRep = entries[0][0];
   const sel = homeSchedules[homeSchedRep];
   h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
-    `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(showLabelOf(s.eventCode))}">${esc(s.name||"Rep")}</button>`).join("") + `</div>`;
-  const items = docItems(sel).filter(vOnly);
+    `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(showLabelOf(s.eventCode))}">${esc(s.name||"Rep")}${s.notSignedUp ? " (not signed up)" : ""}</button>`).join("") + `</div>`;
+  const items = withPublished(sel).filter(vOnly);
   const nDays = showDayCount(sel.eventCode);
   const dc = Array(nDays + 1).fill(0);
   items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
@@ -6937,8 +7015,8 @@ function buildWhoSheet() {
   </button>`;
   let h = row("", ((currentUser && currentUser.name) || "Me"), "Your schedule", !viewedScheduleUid);
   h += teammates.map(s => {
-    const n = (Array.isArray(s.items) ? s.items : []).length;
-    return row(s.uid, s.name || "Teammate", n + (n === 1 ? " item" : " items") + " · view only", viewedScheduleUid === s.uid);
+    const n = withPublished(s).length;
+    return row(s.uid, s.name || "Teammate", n + (n === 1 ? " item" : " items") + (s.notSignedUp ? " · not signed up yet" : " · view only"), viewedScheduleUid === s.uid);
   }).join("");
   if (!teammates.length) h += `<div class="who-empty">No teammates are sharing a schedule for this show yet.</div>`;
   return h;
@@ -6957,7 +7035,11 @@ function renderScheduleView(state) {
   // ── Viewing a teammate's schedule (read-only) ──
   if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
     const tm = teamSchedules[viewedScheduleUid];
-    const items = docItems(tm);
+    const items = withPublished(tm);
+    const tmFirst = (tm.name || "Teammate").trim().split(/\s+/)[0];
+    const pubNote = tm.notSignedUp
+      ? `<div class="show-banner">${esc(tmFirst)} hasn't signed up yet. This is the schedule published for them; it loads on their phone when they sign up.</div>`
+      : pubPending(tm) ? `<div class="show-banner">Includes published updates that haven't reached ${esc(tmFirst)}'s phone yet.</div>` : "";
     const nDays = showDayCount(currentEventCode());
     if (schedDay > nDays) schedDay = 1;
     const dc = Array(nDays + 1).fill(0);
@@ -6972,7 +7054,7 @@ function renderScheduleView(state) {
       (byTime[it.time] = byTime[it.time]||[]).push(it);
     });
     const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
-    let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>` + showInfoHtml(currentEventCode(), schedDay);
+    let html = teamBar + pubNote + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>` + showInfoHtml(currentEventCode(), schedDay);
     html += `<div class="ro-banner">Viewing <strong>${esc(tm.name||"teammate")}</strong> · view only</div>`;
     if (!slotTimes.length) {
       html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4>
@@ -9531,6 +9613,7 @@ if (fbReady) {
         subscribeHomeNotes();
         subscribeHomeFlags();
         subscribeHomeSchedules();
+        subscribePublished();
         subscribeHomeVideoStatus();
         subscribeHomePhotos();
         subscribeNotifyConfig();
@@ -9586,6 +9669,7 @@ if (fbReady) {
       maybeShowConfirmSheet();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
+      if (_pubUnsub) { _pubUnsub(); _pubUnsub = null; } pubSchedules = {};
       if (_preUnsub) { _preUnsub(); _preUnsub = null; } _prePending = null;
       if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
       if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }

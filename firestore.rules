@@ -116,11 +116,14 @@ service cloud.firestore {
     // per person per show, named <SHOW>__<work email>. Masters write them;
     // the person whose email is in the name reads theirs (so a missing doc
     // reads as "none" instead of an error) and may only stamp it claimed; the
-    // bullpen reads Editorial/Digital ones.
+    // bullpen reads Editorial/Digital ones; teammates on the show's brand read
+    // them like schedules, so views of others fill in what hasn't reached
+    // that person's phone yet (v159).
     match /preloads/{docId} {
       allow read: if request.auth != null && (isMaster()
                     || docId.split('__')[1] == request.auth.token.get('email', '').lower()
-                    || (isHome() && resource.data.dept == "edit"));
+                    || (isHome() && resource.data.dept == "edit")
+                    || onMyBrand(resource.data.eventCode));
       allow create, delete: if isMaster();
       allow update: if isMaster()
                     || (request.auth != null
