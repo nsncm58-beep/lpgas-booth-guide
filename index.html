@@ -501,7 +501,7 @@ button.ro-map { border: none; background: none; padding: 0; font: inherit; curso
 .fp-btn { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.45); background: rgba(255,255,255,0.12); color: #fff; font: inherit; font-size: 1.2rem; font-weight: 700; line-height: 1; cursor: pointer; }
 .fp-close { margin-left: 4px; }
 .fp-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; background: #F4F1EC; overscroll-behavior: contain; }
-#fpSvg { display: block; }
+#fpSvg { display: block; will-change: transform; }
 .fp-b rect, .fp-b polygon { fill: #fff; stroke: #9AA3AE; stroke-width: 1; vector-effect: non-scaling-stroke; }
 .fp-b text { fill: #3B4552; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
 .fp-b.mine rect, .fp-b.mine polygon { fill: var(--blue-mid); stroke: var(--blue); stroke-width: 2; }
@@ -2410,7 +2410,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v165</div>
+      <div class="pf-ver">NCM Events Guide · v166</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8842,21 +8842,38 @@ function fpSetScale(next, cx, cy) {
   fpApplyScale(Math.max(fp.fit, Math.min(1.2, next)), cx - r.left, cy - r.top);
 }
 (() => {
+  // While the fingers move, the plan is only scaled with a GPU transform
+  // around the pinch point (cheap even for Equip's 957-booth hall); the real
+  // redraw at the new size happens once, when the pinch ends (v166).
   const sc = document.getElementById("fpScroll");
-  let pinch = null, raf = 0, pend = null;
+  let pinch = null;
   const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
   const mid = t => [(t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2];
+  const finish = () => {
+    if (!pinch) return;
+    const svg = document.getElementById("fpSvg"), p = pinch;
+    pinch = null;
+    if (svg) { svg.style.transform = ""; svg.style.transformOrigin = ""; }
+    if (p.k !== 1) fpSetScale(p.s * p.k, p.mx, p.my);
+  };
   sc.addEventListener("touchstart", e => {
-    if (e.touches.length === 2) { pinch = { d: dist(e.touches), s: fp.scale }; raf = 0; pend = null; e.preventDefault(); }
+    if (e.touches.length !== 2) return;
+    e.preventDefault();
+    const svg = document.getElementById("fpSvg");
+    if (!svg) return;
+    const [mx, my] = mid(e.touches), r = sc.getBoundingClientRect();
+    pinch = { d: dist(e.touches), s: fp.scale, k: 1, mx, my };
+    svg.style.transformOrigin = (sc.scrollLeft + mx - r.left) + "px " + (sc.scrollTop + my - r.top) + "px";
   }, { passive: false });
   sc.addEventListener("touchmove", e => {
     if (!pinch || e.touches.length !== 2) return;
     e.preventDefault();
-    const [x, y] = mid(e.touches);
-    pend = [pinch.s * dist(e.touches) / pinch.d, x, y];
-    if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (pend) fpSetScale(...pend); pend = null; });
+    const target = Math.max(fp.fit, Math.min(1.2, pinch.s * dist(e.touches) / pinch.d));
+    pinch.k = target / pinch.s;
+    const svg = document.getElementById("fpSvg");
+    if (svg) svg.style.transform = "scale(" + pinch.k + ")";
   }, { passive: false });
-  const end = e => { if (pinch && e.touches.length < 2) pinch = null; };
+  const end = e => { if (pinch && e.touches.length < 2) finish(); };
   sc.addEventListener("touchend", end); sc.addEventListener("touchcancel", end);
   // iOS also fires its own gesture events; stop them from zooming the whole page.
   ["gesturestart", "gesturechange", "gestureend"].forEach(t => sc.addEventListener(t, e => e.preventDefault(), { passive: false }));
