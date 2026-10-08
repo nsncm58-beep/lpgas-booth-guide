@@ -503,11 +503,12 @@ button.ro-map { border: none; background: none; padding: 0; font: inherit; curso
 .fp-scroll { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; background: #F4F1EC; overscroll-behavior: contain; }
 #fpSvg { display: block; will-change: transform; }
 .fp-b rect, .fp-b polygon { fill: #fff; stroke: #9AA3AE; stroke-width: 1; vector-effect: non-scaling-stroke; }
-.fp-b text { fill: #3B4552; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 600; text-anchor: middle; pointer-events: none; }
+.fp-n { fill: #3B4552; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 600; text-anchor: middle; pointer-events: none; }
+.fp-n.sel { fill: #fff; }
 .fp-b.mine rect, .fp-b.mine polygon { fill: var(--blue-mid); stroke: var(--blue); stroke-width: 2; }
 .fp-b.sel rect, .fp-b.sel polygon { fill: var(--blue); stroke: var(--blue); stroke-width: 2.5; }
-.fp-b.sel text { fill: #fff; }
-.fp-label { fill: #6B7684; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 700; text-anchor: middle; }
+
+.fp-label { fill: #4A5563; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: rgba(244, 241, 236, 0.92); stroke-linejoin: round; pointer-events: none; }
 .fp-halls { display: flex; gap: 6px; padding: 8px 10px; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .fp-hall { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-2); font: inherit; font-size: 0.74rem; font-weight: 700; cursor: pointer; }
 .fp-hall.on { background: var(--blue); border-color: var(--blue); color: #fff; }
@@ -2410,7 +2411,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v167</div>
+      <div class="pf-ver">NCM Events Guide · v168</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8750,17 +8751,21 @@ function fpSvg(h) {
     const side = r.h > r.w * 1.3 && up > across * 1.2;
     const fs = Math.max(8, Math.round(side ? up : across));
     const rot = side ? ` transform="rotate(-90 ${cx} ${cy})"` : "";
-    return `<text x="${cx}" y="${Math.round(cy + fs * 0.36)}" font-size="${fs}"${rot}>${esc(r.b)}</text>`;
+    const sel = fp.sel.includes(r.b) ? " sel" : "";
+    return `<text class="fp-n${sel}" data-fn="${esc(r.b)}" x="${cx}" y="${Math.round(cy + fs * 0.36)}" font-size="${fs}"${rot}>${esc(r.b)}</text>`;
   };
   const shapes = h._b.map(r => {
     const cls = fp.sel.includes(r.b) ? "fp-b sel" : fp.mine.has(r.b) ? "fp-b mine" : "fp-b";
     const shape = r.pts
       ? `<polygon points="${r.pts.map(([x, y]) => X(x) + "," + Y(y)).join(" ")}"></polygon>`
       : `<rect x="${X(r.x)}" y="${Y(r.y + r.h)}" width="${r.w}" height="${r.h}"></rect>`;
-    return `<g class="${cls}" data-fb="${esc(r.b)}">${shape}${label(r)}</g>`;
+    return `<g class="${cls}" data-fb="${esc(r.b)}">${shape}</g>`;
   }).join("");
-  const labels = (h.labels || []).map(([t, x, y]) => `<text class="fp-label" x="${X(x)}" y="${Y(y)}" font-size="${h._lab}">${esc(t)}</text>`).join("");
-  return `<svg id="fpSvg" viewBox="0 0 ${W} ${H}" width="${Math.round(W * fp.scale)}" height="${Math.round(H * fp.scale)}" xmlns="http://www.w3.org/2000/svg">${labels}${shapes}</svg>`;
+  // Layers (v168): every booth outline, then every booth number, then the
+  // area labels, so nothing can hide behind a later or overlapping booth.
+  const nums = h._b.map(label).join("");
+  const labels = (h.labels || []).map(([t, x, y]) => `<text class="fp-label" x="${X(x)}" y="${Y(y)}">${esc(t)}</text>`).join("");
+  return `<svg id="fpSvg" viewBox="0 0 ${W} ${H}" width="${Math.round(W * fp.scale)}" height="${Math.round(H * fp.scale)}" xmlns="http://www.w3.org/2000/svg">${shapes}<g class="fp-nums">${nums}</g><g class="fp-labels">${labels}</g></svg>`;
 }
 function fpFootHtml() {
   if (!fp.sel.length) return fp.mine.size
@@ -8807,6 +8812,7 @@ function fpRender() {
     focus = { x: (x0 + x1) / 2 - bx.minX, y: bx.maxY - (y0 + y1) / 2 };
   } else fp.scale = fp.fit;
   sc.innerHTML = fpSvg(h);
+  fpLabelSize();
   document.getElementById("fpFoot").innerHTML = fpFootHtml();
   if (selHere) requestAnimationFrame(() => fpCenterOn(selHere));
   else if (focus) { sc.scrollLeft = focus.x * fp.scale - sc.clientWidth / 2; sc.scrollTop = focus.y * fp.scale - sc.clientHeight / 2; }
@@ -8824,6 +8830,10 @@ function openFloor(boothStr) {
   document.getElementById("fpTitle").textContent = (EVENTS[code].short || EVENTS[code].show) + " floor plan";
   fpRender();
 }
+function fpLabelSize() {
+  const fs = Math.round(12 / fp.scale);   // ~12px on screen at every zoom
+  document.querySelectorAll("#fpSvg .fp-label").forEach(t => { t.setAttribute("font-size", fs); t.setAttribute("stroke-width", Math.round(fs * 0.28)); });
+}
 function fpApplyScale(next, px, py) {
   const h = fpHall(), sc = document.getElementById("fpScroll"), svg = document.getElementById("fpSvg");
   if (!h || !svg) return;
@@ -8832,6 +8842,7 @@ function fpApplyScale(next, px, py) {
   const W = h._box.maxX - h._box.minX, H = h._box.maxY - h._box.minY;
   svg.setAttribute("width", Math.round(W * next)); svg.setAttribute("height", Math.round(H * next));
   sc.scrollLeft = ux * next - px; sc.scrollTop = uy * next - py;
+  fpLabelSize();
 }
 function fpZoom(dir) {
   const sc = document.getElementById("fpScroll");
@@ -8905,7 +8916,10 @@ document.getElementById("floorSheet").addEventListener("click", e => {
   if (!g) return;
   fp.sel = [g.dataset.fb];
   document.querySelectorAll("#fpSvg .fp-b.sel").forEach(x => x.setAttribute("class", fp.mine.has(x.dataset.fb) ? "fp-b mine" : "fp-b"));
+  document.querySelectorAll("#fpSvg .fp-n.sel").forEach(x => x.setAttribute("class", "fp-n"));
   g.setAttribute("class", "fp-b sel");
+  const num = [...document.querySelectorAll("#fpSvg .fp-n")].find(x => x.dataset.fn === g.dataset.fb);
+  if (num) num.setAttribute("class", "fp-n sel");
   document.getElementById("fpFoot").innerHTML = fpFootHtml();
 });
 function mapsUrl(q) {
