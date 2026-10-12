@@ -521,7 +521,12 @@ button.ro-map { border: none; background: none; padding: 0; font: inherit; curso
 .fp-when { display: block; font-size: 0.74rem; color: var(--blue); font-weight: 600; }
 .fp-legend { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); }
 .fp-legend i { width: 14px; height: 14px; border-radius: 3px; background: var(--blue-mid); border: 2px solid var(--blue); display: inline-block; }
-.fp-hint { font-size: 0.74rem; }
+/* "Tap a booth" hint (v171): a filled pill with a finger icon that pulses
+   twice when the plan opens, since the plain gray line was easy to miss. */
+.fp-hint { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 11px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 0.86rem; font-weight: 700; animation: fpHintPulse 1.1s ease-in-out 0.3s 2; }
+.fp-hint svg { width: 18px; height: 18px; flex-shrink: 0; }
+@keyframes fpHintPulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); } 50% { transform: scale(1.05); box-shadow: 0 0 0 6px var(--blue-mid); } }
+@media (prefers-reduced-motion: reduce) { .fp-hint { animation: none; } }
 a.booth-badge.map { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; cursor: pointer; }
 a.booth-badge.map svg { flex-shrink: 0; }
 .ro-map { display: inline-flex; align-items: center; gap: 3px; color: var(--blue); font-weight: 700; text-decoration: none; }
@@ -2412,7 +2417,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v170</div>
+      <div class="pf-ver">NCM Events Guide · v171</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8866,10 +8871,11 @@ function fpSvg(h) {
   const labels = FP_TEXT ? (h.labels || []).map(([t, x, y]) => `<text class="fp-label" x="${X(x)}" y="${Y(y)}">${esc(t)}</text>`).join("") : "";
   return `<svg id="fpSvg" viewBox="0 0 ${W} ${H}" width="${Math.round(W * fp.scale)}" height="${Math.round(H * fp.scale)}" xmlns="http://www.w3.org/2000/svg"${fpFarClass()}>${fpGlyphDefs()}${shapes}<g class="fp-nums">${nums}</g><g class="fp-nums-big">${big}</g><g class="fp-labels">${labels}</g></svg>`;
 }
+const FP_HINT = `<span class="fp-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5V9a1.5 1.5 0 0 1 3 0v2"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7l-2.6-4a1.5 1.5 0 0 1 2.5-1.7L9 15"/></svg>Tap any booth to see who's there</span>`;
 function fpFootHtml() {
   if (!fp.sel.length) return fp.mine.size
-    ? `<span class="fp-legend"><i class="mine"></i>Your booths on Day ${schedDay}</span><span class="fp-hint">Tap a booth to see who's there</span>`
-    : `<span class="fp-hint">Tap a booth to see who's there</span>`;
+    ? `<span class="fp-legend"><i class="mine"></i>Your booths on Day ${schedDay}</span>${FP_HINT}`
+    : FP_HINT;
   const b = fp.sel[0];
   const st = load();
   const cos = CO.map((c, i) => ({ ...c, i })).filter(c => !c.x && boothParts(c.b).includes(b));
