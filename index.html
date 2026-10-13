@@ -437,6 +437,7 @@ body.home-mode #mediaBtn { display: none !important; }  /* home gets the media b
 }
 .row-body.open { grid-template-rows: 1fr; }
 .row-body-inner { overflow: hidden; }
+.flat-head { padding: 10px 15px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-2); background: var(--surface); border-bottom: 1px solid var(--border-soft); }
 
 /* ── COMPANY CARD ── */
 .co-card {
@@ -2417,7 +2418,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v174</div>
+      <div class="pf-ver">NCM Events Guide · v175</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6872,6 +6873,23 @@ function render() {
     };
     const [title, sub] = msgs[activeFilter] || ["No results","Try a different search term."];
     el.innerHTML = `<div class="empty-wrap"><h3>${title}</h3><p>${sub}</p></div>`;
+    updateStats(state);
+    return;
+  }
+
+  // Customers and Non-Customers are short lists you act on, so they show as
+  // one flat run of cards in booth order instead of row blocks you have to
+  // open one by one (v175, Nate, Oct. 13, 2026).
+  if (activeFilter === "customer" || activeFilter === "noncustomer") {
+    const flat = list.slice().sort((x, y) => rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b))
+      || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n));
+    const what = activeFilter === "customer" ? "customer" : "non-customer";
+    _rowGroups = {};
+    el.innerHTML = showStatusBannerHtml() + `
+<div class="row-section flat-list">
+  <div class="flat-head">${flat.length} ${what}${flat.length === 1 ? "" : "s"}, in booth order</div>
+  ${flat.map(c => buildCard(c, state)).join("")}
+</div>`;
     updateStats(state);
     return;
   }
