@@ -2417,7 +2417,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v172</div>
+      <div class="pf-ver">NCM Events Guide · v173</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8591,12 +8591,22 @@ function setAuthMode(mode) {
   if (mode === "signup") authEls.foot.textContent = "Field reps: create an account and pick your brand.";
   else authEls.foot.innerHTML = 'Welcome back. Sign in to sync with your team. <a href="#" id="authForgot">Forgot password?</a>';
 }
+// First open on a phone (v173): nobody has ever signed in here, so the
+// person is almost certainly new and the form opens on Create Account.
+// Any sign-in (rep or Bullpen) marks the device, and from then on it opens
+// on Sign In. Older installs that signed in before v173 count as signed in
+// via lpgas_owner_uid.
+const SEEN_KEY = "lpgas_signed_in_before";
+function defaultAuthMode() {
+  try { return localStorage.getItem(SEEN_KEY) || localStorage.getItem("lpgas_owner_uid") ? "signin" : "signup"; }
+  catch (e) { return "signin"; }
+}
 function authErr(msg) { authEls.err.textContent = msg || ""; }
 function mapAuthError(e) {
   const c = (e && e.code) || "";
   if (c.includes("invalid-email")) return "That email doesn't look right.";
   if (c.includes("missing-password") || c.includes("weak-password")) return "Password must be at least 6 characters.";
-  if (c.includes("email-already-in-use")) return "That email already has an account — try Sign In.";
+  if (c.includes("email-already-in-use")) return "That email already has an account. Tap Sign In above.";
   if (c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("user-not-found")) return "Email or password is incorrect.";
   if (c.includes("operation-not-allowed") || c.includes("configuration-not-found")) return "Email/Password sign-in isn't enabled in Firebase yet.";
   if (c.includes("network")) return "Network error. Check your connection.";
@@ -8629,7 +8639,7 @@ document.getElementById("homeTeamBtn").addEventListener("click", () => {
   setAuthMode("home"); authEls.pass.value = ""; authEls.pass.focus();
 });
 authEls.foot.addEventListener("click", e => {
-  if (e.target && e.target.id === "homeBack") { e.preventDefault(); setAuthMode("signin"); }
+  if (e.target && e.target.id === "homeBack") { e.preventDefault(); setAuthMode(defaultAuthMode()); }
   if (e.target && e.target.id === "authForgot") { e.preventDefault(); sendPasswordReset(); }
 });
 
@@ -10057,7 +10067,7 @@ function showSignedOut() {
   currentUser = null;
   masterEventOverride = null; showPickedManually = false;
   document.body.classList.remove("has-show-pick");
-  setAuthMode("signin");
+  setAuthMode(defaultAuthMode());
   setupBrandPicker();
   applyQrPrefill();
   maybeShowInstallPrompt();
@@ -10181,6 +10191,7 @@ document.getElementById("confirmSave").addEventListener("click", async () => {
 if (fbReady) {
   fbAuth.onAuthStateChanged(async (user) => {
     if (user) {
+      try { localStorage.setItem(SEEN_KEY, "1"); } catch (e) {}
       let profile = await loadUserDoc(user.uid);
       if (!profile) profile = { name: user.email, email: user.email, eventCode: "", role: "field" };
       currentUser = { uid: user.uid, ...profile };
@@ -10287,7 +10298,7 @@ if (fbReady) {
   // If Firebase can't load (offline / blocked), don't lock the user out of the offline tool.
   showSignedIn({ name: "Offline" });
 }
-setAuthMode("signin");
+setAuthMode(defaultAuthMode());
 setupBrandPicker();
 applyQrPrefill();
 // The home desk runs on laptops; on a phone the "Enter the Bullpen" button
