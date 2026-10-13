@@ -2417,7 +2417,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v173</div>
+      <div class="pf-ver">NCM Events Guide · v174</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2912,7 +2912,9 @@ const LPGAS_BOOTHS = [
 // Equip Expo 2026 exhibitors (Landscape Management's show), pulled from the
 // official Map Your Show directory 2026-09-15 (930 companies, all boothed)
 // and refreshed 2026-09-29 (933 listed: 9 new on the end, 6 withdrawn kept
-// in place as x:1, 8 booth moves and 4 renames edited in place).
+// in place as x:1, 8 booth moves and 4 renames edited in place) and
+// 2026-10-13 (934 listed: 3 new on the end, 2 more withdrawn as x:1, 8 booth
+// moves and 5 renames in place).
 // REFRESHING ANY LIST: never insert, delete or reorder entries. Phones key
 // saved booth data by position, so edit moves/renames in place, append new
 // companies and flag withdrawn ones x:1 (hidden unless a rep saved
@@ -2924,13 +2926,13 @@ const LM_BOOTHS = [
   {n:"A&D Equipment Inc.", b:"366"},
   {n:"A-i Power", b:"592"},
   {n:"A.M. Leonard Inc.", b:"23098"},
-  {n:"AA Stone Impex", b:"26011"},
+  {n:"A A Stone Impex Pvt Ltd", b:"26011"},
   {n:"Abbott Rubber Company Inc.", b:"11024"},
   {n:"ABI Equipment", b:"7024"},
   {n:"AC Radio Com", b:"21085"},
   {n:"Accurate Laser Systems", b:"11145"},
   {n:"ACO, Inc.", b:"42914"},
-  {n:"Active Dynamics Group", b:"8020"},
+  {n:"Active Dynamics Group / Walbro Fuel and Engine Management", b:"8020"},
   {n:"Advanced Drainage Systems", b:"29047"},
   {n:"Advanced Turf Solutions", b:"10215"},
   {n:"Aebi Schmidt Group", b:"42841"},
@@ -3132,7 +3134,7 @@ const LM_BOOTHS = [
   {n:"Diamond Mowers", b:"21104"},
   {n:"DipperFox", b:"42113 / TC231"},
   {n:"Dirt Killer Pressure Washers", b:"29109"},
-  {n:"Dixie Chopper", b:"2202 / 7250D"},
+  {n:"Dixie Chopper", b:"2202 / 7250D", x:1},
   {n:"DM Carts", b:"4003"},
   {n:"DMC Strategic IT", b:"30069"},
   {n:"Doc's Diesel", b:"22082"},
@@ -3162,7 +3164,7 @@ const LM_BOOTHS = [
   {n:"EBCO Inc.", b:"29068"},
   {n:"ECHO Incorporated", b:"5112 / 7451D"},
   {n:"ECHO Social Media Patio", b:"C009"},
-  {n:"Eco-Sources-USA, Inc", b:"42323"},
+  {n:"Chatavise", b:"42323"},
   {n:"Ecolawn Applicator", b:"10134"},
   {n:"ECOVACS ROBOTICS, INC.", b:"42013"},
   {n:"Eden Valders Stone", b:"28003"},
@@ -3204,7 +3206,7 @@ const LM_BOOTHS = [
   {n:"Fill-Rite", b:"27081"},
   {n:"Fimco Industries", b:"22072"},
   {n:"Finn Corporation", b:"1160 / 7714D"},
-  {n:"Fireboulder", b:"30009 / 4012D"},
+  {n:"Fireboulder", b:"30009 / 4000D"},
   {n:"Firebuggz", b:"42807"},
   {n:"Firehawk Bioherbicide", b:"26092"},
   {n:"Firman Power Equipment", b:"11070"},
@@ -3332,7 +3334,7 @@ const LM_BOOTHS = [
   {n:"Jackrabbit Nursery", b:"21078"},
   {n:"JDNA", b:"567"},
   {n:"Jenkins Iron and Steel Inc.", b:"558"},
-  {n:"Jiangsu Atomo Intelligent Technology Corporation", b:"23078"},
+  {n:"MacBOT Inc.", b:"23078"},
   {n:"JIANGSU CHENGTAI VEHICLE CO., LTD.", b:"22080"},
   {n:"Jiangsu DongCheng Import and Export Trade Co., Ltd.", b:"42577"},
   {n:"JINHUA GAOJIU ELECTRIC EQUIPMENT CO., LTD.", b:"42673"},
@@ -3396,7 +3398,7 @@ const LM_BOOTHS = [
   {n:"Lights For Decorators", b:"21110"},
   {n:"Lil' Bubba Curb Machines/The Concrete Edge Co.", b:"9164 / 6448D"},
   {n:"Linak U.S. Inc.", b:"9030"},
-  {n:"Link Masters, Inc.", b:"42813"},
+  {n:"Link Masters, Inc.", b:"22007"},
   {n:"Linxup", b:"23101"},
   {n:"Linyishi Zhuxin Machinery Co., LTD", b:"3022"},
   {n:"LiQuiTube Total Tire Protection", b:"2001"},
@@ -3416,7 +3418,7 @@ const LM_BOOTHS = [
   {n:"Makita U.S.A., Inc.", b:"11138"},
   {n:"MAMMOTION TECHNOLOGY CO.，LIMITED", b:"11130 / 6117D"},
   {n:"MANAR, Inc.", b:"11013"},
-  {n:"Mangrove", b:"28040"},
+  {n:"Mangrove", b:"28040", x:1},
   {n:"Manitou/GEHL", b:"10039"},
   {n:"Mapei Corporation", b:"29046"},
   {n:"Maquinas Agricolas JACTO SA", b:"1000"},
@@ -3514,7 +3516,7 @@ const LM_BOOTHS = [
   {n:"PaveDrain, LLC", b:"42901"},
   {n:"Paver Buddy Inc", b:"42719"},
   {n:"PBI Gordon", b:"8042"},
-  {n:"Peacock Pavers", b:"30006"},
+  {n:"Peacock Pavers", b:"28041"},
   {n:"PECO", b:"384"},
   {n:"Peerless Gear/Comet Clutch", b:"11005"},
   {n:"PELLENC", b:"11191"},
@@ -3651,14 +3653,14 @@ const LM_BOOTHS = [
   {n:"Sollos Landscaping Lighting/ A Hayward Company", b:"42826"},
   {n:"Southeast Val 6", b:"28079"},
   {n:"Spartan Mowers & UTVs", b:"5114"},
-  {n:"Spectra Precision", b:"42712"},
+  {n:"Spectra Precision", b:"42800"},
   {n:"Spencer Products LLC", b:"9168"},
   {n:"Spider Mower USA", b:"42639"},
   {n:"Sprayer Direct USA", b:"42667"},
   {n:"Spyker Spreaders - A Brinly-Hardy Co.", b:"3126"},
   {n:"SRW Products", b:"23032"},
   {n:"Stabila Inc.", b:"540"},
-  {n:"StabilBase", b:"42722"},
+  {n:"Stable Base", b:"42722"},
   {n:"Stanley Black & Decker Outdoor Cub Cadet, Hustler and DEWALT", b:"5116"},
   {n:"Staple Wasp", b:"8034"},
   {n:"Star Industries", b:"42227"},
@@ -3699,7 +3701,7 @@ const LM_BOOTHS = [
   {n:"Synergetic Media", b:"42745"},
   {n:"SynkedUP", b:"20064"},
   {n:"Synthetic Turf Resources", b:"42519"},
-  {n:"T Design (USA) Inc.", b:"28041"},
+  {n:"T Design (USA) Inc.", b:"30006"},
   {n:"T-MAX INDUSTRIAL CO., LTD", b:"25069"},
   {n:"Tailor Made Grass", b:"42908"},
   {n:"Taizhou Chenhui Machinery Manufacturing Co., Ltd.", b:"9216"},
@@ -3732,7 +3734,7 @@ const LM_BOOTHS = [
   {n:"Titan International / Carlstar", b:"9207 / 5348D"},
   {n:"TNE Distributing LLC", b:"10212 / 7838D"},
   {n:"Tobroco Machinery LLC (GiANT Loaders North America)", b:"7630D"},
-  {n:"Tomahawk Power", b:"260"},
+  {n:"Tomahawk Power", b:"251 / 260"},
   {n:"Tompkins Bluestone Co Inc", b:"42715"},
   {n:"Topline Pro", b:"21066"},
   {n:"TotalHousehold Pro", b:"42912"},
@@ -3792,7 +3794,7 @@ const LM_BOOTHS = [
   {n:"Wacker Neuson", b:"11190 / 7836D"},
   {n:"Wado Co., Ltd. (WADO)", b:"42215"},
   {n:"Walker Manufacturing Company", b:"11142 / 7756D"},
-  {n:"Warhawk Mowers", b:"24104 / 8118D"},
+  {n:"Warhawk Mowers", b:"24104 / 7250D"},
   {n:"Warming Trends", b:"22054"},
   {n:"Warner Electric", b:"9106"},
   {n:"Weathermatic", b:"42242"},
@@ -3805,7 +3807,7 @@ const LM_BOOTHS = [
   {n:"Western Equipment Finance", b:"8194"},
   {n:"Western Products", b:"1044"},
   {n:"Western States Wholesale", b:"42513"},
-  {n:"Westinghouse Outdoor Power", b:"30060"},
+  {n:"Westinghouse Outdoor Power", b:"2202"},
   {n:"Westlake Dimex", b:"26004"},
   {n:"Westlake Pipe & Fittings", b:"26064"},
   {n:"Westpoint Design Inc.", b:"42024"},
@@ -3862,10 +3864,14 @@ const LM_BOOTHS = [
   {n:"Invoyce", b:"30013"},
   {n:"Sinnov, Inc.", b:"40019"},
   {n:"Zimmerman Manufacturing", b:"42032"},
+  {n:"Miniloaders LLC", b:"11041"},
+  {n:"TruTec", b:"42007"},
+  {n:"VeraScale", b:"42801"},
 ];
 // PestWorld 2026 exhibitors (PMP's show), from the official Map Your Show
 // directory 2026-09-15 (290 companies, hall sold out); refreshed 2026-09-29
-// to 300 (10 new on the end, 3 booth changes in place). Same refresh rule
+// to 300 (10 new on the end, 3 booth changes in place) and 2026-10-13 to 305
+// (5 new on the end, 1 rename and 2 booth changes in place). Same refresh rule
 // as LM_BOOTHS: append only, never reorder. CB-## booths are the
 // Compelling Booths corridor; they group under Other locations.
 const PMP_BOOTHS = [
@@ -3949,7 +3955,7 @@ const PMP_BOOTHS = [
   {n:"Dijital Karma Inc.", b:"1126"},
   {n:"Douglas Products & Packaging", b:"1224"},
   {n:"Draeger", b:"102"},
-  {n:"DREAM Field Service Software", b:"501 / 900"},
+  {n:"DREAM Field Service Software", b:"501"},
   {n:"Driven", b:"1337"},
   {n:"Drumroll", b:"738"},
   {n:"Duong Industrial Co., Ltd.", b:"311"},
@@ -4102,7 +4108,7 @@ const PMP_BOOTHS = [
   {n:"SEEMESIGN", b:"1537"},
   {n:"Sellify AI", b:"1717 / 933"},
   {n:"Semco Co. Ltd.", b:"1509"},
-  {n:"SenesTech, Inc.", b:"1132"},
+  {n:"SenesTech, Inc. (EVOLVE)", b:"1132"},
   {n:"Serve AI", b:"1635 / 442"},
   {n:"Sewer Assassin", b:"314"},
   {n:"Sharda USA", b:"1738"},
@@ -4163,7 +4169,7 @@ const PMP_BOOTHS = [
   // phones key saved booth data by position, so inserting mid-list would
   // hand one company's notes and visits to another.
   {n:"Align LLC", b:"1836"},
-  {n:"CLA (CliftonLarsonAllen LLP)", b:"CB-23"},
+  {n:"CLA (CliftonLarsonAllen LLP)", b:"LB-23"},
   {n:"Context Overlay Inc", b:"1040"},
   {n:"D2SYNC", b:"1801"},
   {n:"Fieldster", b:"320"},
@@ -4172,6 +4178,11 @@ const PMP_BOOTHS = [
   {n:"NM Professional Repellents by Nature’s Mace", b:"1808"},
   {n:"Rat Pak Engineering Ltd", b:"134"},
   {n:"Turf Signs / Posting Signs", b:"1007"},
+  {n:"48North Partners", b:"LB-13"},
+  {n:"Movable Voice", b:"LB-11"},
+  {n:"Rare Blue Moon Marketing", b:"900"},
+  {n:"Service Scalers", b:"LB-22"},
+  {n:"WB Global, Inc.", b:"LB-21"},
 ];
 
 // NALP Elevate 2026 exhibitors (LM's show after Equip): Tampa Convention
