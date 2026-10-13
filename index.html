@@ -2418,7 +2418,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v175</div>
+      <div class="pf-ver">NCM Events Guide · v176</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4579,7 +4579,12 @@ const EVENTS = {
   // booth~N), which loaded too slowly on the show floor.
   "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, tz: "America/New_York", dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
     floor: EQUIP_FLOOR,   // v165: replaced the slow Map Your Show boothMap link
-    venue: { name: "Kentucky Exposition Center", address: "937 Phillips Ln, Louisville, KY 40209" } },
+    venue: { name: "Kentucky Exposition Center", address: "937 Phillips Ln, Louisville, KY 40209" },
+    // Attire from the 2026 Equip Expo Schedule PDF (Nate, Oct. 13, 2026);
+    // the rest of that schedule isn't final, so only the apparel is in.
+    attire: { "2026-10-21": "Gray Travis Mathew polo, black Greg Norman quarter-zip",
+              "2026-10-22": "White polo, new maroon quarter-zip",
+              "2026-10-23": "Nike heathered polo, black Adidas quarter-zip" } },
   // NALP Elevate: all four conference days get tabs, since sessions, meals
   // and off-site meetings run outside the Nov. 9-10 exhibit hall hours.
   // No MEDIA entry yet, so Photos says uploads aren't set up until its
