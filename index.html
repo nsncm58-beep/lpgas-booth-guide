@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v182</div>
+      <div class="pf-ver">NCM Events Guide · v183</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5178,6 +5178,7 @@ function preDrop(st, k, b, ids) {
     const arr = Array.isArray(st[b.kind === "meal" ? "_meals" : "_offsite"]) ? st[b.kind === "meal" ? "_meals" : "_offsite"] : [];
     const j = ids[k] ? arr.findIndex(y => y.id === ids[k]) : -1;
     delete ids[k];
+    if (j >= 0 && (arr[j].mynotes || "").trim()) return false;   // you wrote notes on it: it's yours now
     if (j >= 0) { arr.splice(j, 1); return true; }
     return false;
   }
@@ -6836,6 +6837,23 @@ let offFormNotes    = "";
 let offEditingId    = null;    // when set, the form edits an existing off-site meeting
 let sessPickOpen    = false;   // the education-session picker (shows with `sessions`)
 const sessNotesOpen = new Set();   // session ids whose notes box is open
+// Your own notes on meals and meetings (v183, Nate, Oct. 14, 2026). Kept in
+// "mynotes", apart from the published details in "notes", so a schedule
+// update never overwrites what you wrote; they're in the CSV export. Like
+// sales booth notes, they stay on this phone (teammates never see them).
+const itemNotesOpen = new Set();   // "meal:<id>" / "offsite:<id>" with the box open
+function itemNotesHtml(kind, x) {
+  const k = kind + ":" + x.id, notes = x.mynotes || "", open = itemNotesOpen.has(k);
+  const prev = open ? "" : notes.trim().replace(/\s+/g, " ").slice(0, 80);
+  return `<button class="notes-toggle${notes.trim() ? " has" : ""}" type="button" data-item-notes="${esc(k)}">
+        <span class="nt-lbl">${notes.trim() ? "My notes" : "Add notes"}</span>
+        <span class="nt-prev">${esc(prev)}</span>
+        <span class="nt-chev${open ? " open" : ""}">▾</span>
+      </button>
+      <div class="notes-content${open ? " open" : ""}">
+        <textarea class="nf item-nf" data-ik="${esc(k)}" placeholder="What was discussed, follow-ups, impressions…">${esc(notes)}</textarea>
+      </div>`;
+}
 
 function buildCard(c, state) {
   const s = state[key(c.i)] || {};
@@ -7574,6 +7592,7 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
               <div class="meal-card-title">${esc(MEAL_LABEL[m.type])}</div>
               ${m.company ? `<div class="meal-card-with">With <strong>${esc(m.company)}</strong></div>` : `<div class="meal-card-with">No guest set</div>`}
               ${m.notes   ? `<div class="meal-card-notes">${esc(m.notes)}</div>` : ""}
+              ${itemNotesHtml("meal", m)}
             </div>
             <div class="meal-card-actions">
               <button class="meal-act-btn" data-meal-edit="${esc(m.id)}">Edit</button>
@@ -7597,6 +7616,7 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
               ${o.company  ? `<div class="meal-card-with">With <strong>${esc(o.company)}</strong></div>` : ""}
               ${o.location ? `<div class="meal-card-loc">${esc(o.location)}</div>` : ""}
               ${o.notes    ? `<div class="meal-card-notes">${esc(o.notes)}</div>` : ""}
+              ${itemNotesHtml("offsite", o)}
             </div>
             <div class="meal-card-actions">
               <button class="meal-act-btn" data-off-edit="${esc(o.id)}">Edit</button>
@@ -7999,6 +8019,21 @@ document.getElementById("content").addEventListener("click", e => {
     render();
     return;
   }
+  const iNotesBtn = e.target.closest("[data-item-notes]");
+  if (iNotesBtn) {
+    const k = iNotesBtn.dataset.itemNotes;
+    const opening = !itemNotesOpen.has(k);
+    if (opening) itemNotesOpen.add(k); else itemNotesOpen.delete(k);
+    const panel = iNotesBtn.nextElementSibling;
+    panel?.classList.toggle("open", opening);
+    iNotesBtn.querySelector(".nt-chev")?.classList.toggle("open", opening);
+    const txt = (panel?.querySelector(".item-nf")?.value || "").trim();
+    iNotesBtn.querySelector(".nt-prev").textContent = opening ? "" : txt.replace(/\s+/g, " ").slice(0, 80);
+    iNotesBtn.classList.toggle("has", !!txt);
+    iNotesBtn.querySelector(".nt-lbl").textContent = txt ? "My notes" : "Add notes";
+    if (opening) panel?.querySelector(".item-nf")?.focus();
+    return;
+  }
   const sNotesBtn = e.target.closest("[data-sess-notes]");
   if (sNotesBtn) {
     const sid = sNotesBtn.dataset.sessNotes;
@@ -8147,6 +8182,18 @@ document.getElementById("content").addEventListener("input", e => {
           </select>
         </div>`;
     }).join("");
+    return;
+  }
+  // Meal / meeting notes: same autosave, into that item's mynotes.
+  if (e.target.classList.contains("item-nf")) {
+    const k = e.target.dataset.ik, v = e.target.value;
+    const [kind, id] = [k.slice(0, k.indexOf(":")), k.slice(k.indexOf(":") + 1)];
+    clearTimeout(_dt["i:" + k]);
+    _dt["i:" + k] = setTimeout(() => {
+      const arr = kind === "meal" ? loadMeals() : loadOffsite();
+      const x = arr.find(y => y.id === id);
+      if (x) { x.mynotes = v; (kind === "meal" ? saveMeals : saveOffsite)(arr); }
+    }, 480);
     return;
   }
   // Session notes: the same 480ms autosave as booth notes, keyed by session.
@@ -8399,14 +8446,14 @@ function buildShowCsv() {
   const meals = loadMeals().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (meals.length) {
     rows.push([]);
-    rows.push(["Meal","Day","Time","With","Notes"]);
-    meals.forEach(m => rows.push([MEAL_LABEL[m.type], "Day "+m.day, m.time, m.company||"", m.notes||""]));
+    rows.push(["Meal","Day","Time","With","Details","My Notes"]);
+    meals.forEach(m => rows.push([MEAL_LABEL[m.type], "Day "+m.day, m.time, m.company||"", m.notes||"", m.mynotes||""]));
   }
   const offsite = loadOffsite().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (offsite.length) {
     rows.push([]);
-    rows.push(["Off-Site Meeting","Day","Time","With","Location","Notes"]);
-    offsite.forEach(o => rows.push([o.title||"Off-Site Meeting", "Day "+o.day, o.time, o.company||"", o.location||"", o.notes||""]));
+    rows.push(["Meeting / Event","Day","Time","With","Location","Details","My Notes"]);
+    offsite.forEach(o => rows.push([o.title||"Off-Site Meeting", "Day "+o.day, o.time, o.company||"", o.location||"", o.notes||"", o.mynotes||""]));
   }
   const sess = mySessions().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (sess.length) {
