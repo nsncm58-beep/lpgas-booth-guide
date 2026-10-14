@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v178</div>
+      <div class="pf-ver">NCM Events Guide · v179</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4622,7 +4622,11 @@ const EVENTS = {
   "PMP-2026": { brand:"pmp", show:"PestWorld", booths: PMP_BOOTHS, floor: PMP_FLOOR, tz: "America/Chicago", dates: ["2026-10-18","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23"],
     venue: { name: "Gaylord Texan Resort & Convention Center", address: "1501 Gaylord Trail, Grapevine, TX 76051" },
     attire: { "2026-10-19": "Black tie for the Hall of Fame", "2026-10-20": "Maroon polo, black zip-up",
-              "2026-10-21": "Black polo, gray zip-up", "2026-10-22": "Gray polo, maroon zip-up", "2026-10-23": "Your choice" } },
+              "2026-10-21": "Black polo, gray zip-up", "2026-10-22": "Gray polo, maroon zip-up", "2026-10-23": "Your choice" },
+    // Exhibit hall hours (v179, Nate, Oct. 14, 2026), shown under each day's tabs.
+    hours: { "2026-10-20": "Exhibit hall 2-6 p.m. (grand opening and welcome reception)",
+             "2026-10-21": "Exhibit hall 10 a.m.-2 p.m.", "2026-10-22": "Exhibit hall 10 a.m.-2 p.m.",
+             "2026-10-23": "Exhibit hall 8-10 a.m." } },
   // NPGA Southeastern & International Propane Expo, Music City Center,
   // Nashville (the app's first show). Every show keeps its booth list loaded
   // for good: it maps saved booth data back to company names, so notes,
@@ -8869,6 +8873,7 @@ function showShortLabelOf(code) {
 // Venue (tap for directions) and the day's attire, under the Schedule day
 // tabs, for shows whose EVENTS entry has `venue` and/or `attire`.
 const PIN_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`;
+const CLOCK_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>`;
 const SHIRT_ICON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>`;
 const PIN_TINY = PIN_ICON.replace('width="16" height="16"', 'width="11" height="11"').replace('stroke-width="2"', 'stroke-width="2.6"');
 // Floor plan link for a booth on shows with a `boothMap` template. Multi-booth
@@ -9223,8 +9228,9 @@ function showInfoHtml(code, day) {
   const v = day === 1 ? ev.venue : null;   // the address only on Day 1 (Nate, Oct. 8, 2026)
   const iso = (ev.dates || [])[day - 1];
   const wear = (iso && ev.attire && ev.attire[iso]) || "";
+  const hrs = (iso && ev.hours && ev.hours[iso]) || "";
   const fl = !isHome() && floorOf(code);
-  if (!v && !wear && !fl) return "";
+  if (!v && !wear && !hrs && !fl) return "";
   return `<div class="show-info">${fl ? `
     <button class="si-row si-floor" type="button" data-floor="">
       <span class="si-ic">${PIN_ICON}</span>
@@ -9235,7 +9241,11 @@ function showInfoHtml(code, day) {
       <span class="si-ic">${PIN_ICON}</span>
       <span class="si-txt"><span class="si-name">${esc(v.name)}</span><span class="si-sub">${esc(v.address)}</span></span>
       <span class="si-go">Map</span>
-    </a>` : ""}${wear ? `
+    </a>` : ""}${hrs ? `
+    <div class="si-row si-wear">
+      <span class="si-ic">${CLOCK_ICON}</span>
+      <span class="si-txt"><span class="si-lbl">Show hours</span><span class="si-sub">${esc(hrs)}</span></span>
+    </div>` : ""}${wear ? `
     <div class="si-row si-wear">
       <span class="si-ic">${SHIRT_ICON}</span>
       <span class="si-txt"><span class="si-lbl">What to wear</span><span class="si-sub">${esc(wear)}</span></span>
