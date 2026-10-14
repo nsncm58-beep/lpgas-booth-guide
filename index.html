@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v183</div>
+      <div class="pf-ver">NCM Events Guide · v184</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6901,6 +6901,7 @@ function buildCard(c, state) {
           <svg width="14" height="11" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>
           Video</button>` : ""}
         ${uploadCtlHtml(c, s)}
+        ${salesView ? `<button class="visit-btn${visited ? " on" : ""}" type="button" data-visit="${c.i}"><span class="dot"></span>${visited ? "Visited" : "Mark visited"}</button>` : ""}
         <select class="sched-sel${scheduled?" scheduled":""}" data-sched="${c.i}" data-lazy="1" title="Schedule">
           <option value="">Schedule…</option>
           ${scheduled ? `<option value="${esc(scheduled)}" selected>Day ${esc(schD)} · ${esc(schT)}</option>` : ""}
@@ -7027,13 +7028,14 @@ function render() {
   // one flat run of cards in booth order instead of row blocks you have to
   // open one by one (v175, Nate, Oct. 13, 2026).
   if (activeFilter === "customer" || activeFilter === "noncustomer") {
-    const flat = list.slice().sort((x, y) => rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b))
+    const vis1 = c => state[key(c.i)]?.visited ? 1 : 0;
+    const flat = list.slice().sort((x, y) => vis1(x) - vis1(y) || rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b))
       || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n));
     const what = activeFilter === "customer" ? "customer" : "prospect";
     _rowGroups = {};
     el.innerHTML = showStatusBannerHtml() + `
 <div class="row-section flat-list">
-  <div class="flat-head">${flat.length} ${what}${flat.length === 1 ? "" : "s"}, in booth order</div>
+  <div class="flat-head">${flat.length} ${what}${flat.length === 1 ? "" : "s"}, in booth order${flat.some(c => vis1(c)) ? ", visited at the bottom" : ""}</div>
   ${flat.map(c => buildCard(c, state)).join("")}
 </div>`;
     updateStats(state);
@@ -7045,7 +7047,10 @@ function render() {
     const rk = rowKey(c.b);
     (groups[rk] = groups[rk]||[]).push(c);
   });
-  Object.values(groups).forEach(a => a.sort((x,y) => x.n.localeCompare(y.n)));
+  // Visited booths sink to the bottom of their row (v184), so what's left
+  // to see stays on top.
+  const vis = c => state[key(c.i)]?.visited ? 1 : 0;
+  Object.values(groups).forEach(a => a.sort((x,y) => vis(x) - vis(y) || x.n.localeCompare(y.n)));
   const rowKeys = Object.keys(groups).sort((a,b) => rowOrder(a) - rowOrder(b));
 
   _rowGroups = groups;
@@ -8126,6 +8131,20 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  // Sales reps mark a visit with one tap (v184, Nate, Oct. 14, 2026) instead
+  // of having to write a post-visit note; the booth sinks to the bottom.
+  const visitBtn = e.target.closest("[data-visit]");
+  if (visitBtn) {
+    const i = parseInt(visitBtn.dataset.visit);
+    const k = key(i);
+    if (!state[k]) state[k] = {};
+    state[k].visited = !state[k].visited;
+    if (state[k].visited) state[k].vts = state[k].vts || Date.now();
+    save(state);
+    toast(state[k].visited ? "Marked visited, moved to the bottom" : "Visit cleared");
+    render();
+    return;
+  }
   const statBtn = e.target.closest("[data-sval]");
   if (statBtn) {
     const i = parseInt(statBtn.dataset.si);
