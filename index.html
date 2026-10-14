@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v179</div>
+      <div class="pf-ver">NCM Events Guide · v180</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5455,7 +5455,9 @@ function subscribeResets() {
   if (!fbReady || !currentUser || isHome()) return;
   _resetsUnsub = fbDb.collection("config").doc("resets").onSnapshot(d => {
     const x = (d.exists && d.data()) || {};
-    resetList = Array.isArray(x.list) ? x.list : [];
+    // presets (v180) sit in their own field so phones from before v180,
+    // which can't apply them, never see them and mark them done.
+    resetList = (Array.isArray(x.list) ? x.list : []).concat(Array.isArray(x.presets) ? x.presets : []);
     if (applyResets()) render();
   }, () => {});
 }
@@ -5467,9 +5469,16 @@ function applyResets() {
   const mine = resetList.filter(r => r && r.id && r.uid === currentUser.uid && r.event === code && !done.has(r.id));
   if (!mine.length || !CO.length) return false;
   const st = load();
+  // fill: true (v180) presets instead of correcting: it creates the booth's
+  // entry if needed and sets only fields the rep hasn't set themselves
+  // (used for sales reps' Customer / Non-Customer tags from Nate's sheet).
+  const blank = v => v == null || v === "" || v === "unknown";
   mine.forEach(r => {
     const i = CO.findIndex(c => c.b === r.b && c.n === r.n);
-    if (i >= 0 && st[key(i)]) Object.assign(st[key(i)], r.set || {});
+    if (i >= 0 && r.fill) {
+      const s = st[key(i)] = st[key(i)] || {};
+      Object.entries(r.set || {}).forEach(([f, v]) => { if (blank(s[f])) s[f] = v; });
+    } else if (i >= 0 && st[key(i)]) Object.assign(st[key(i)], r.set || {});
     done.add(r.id);
   });
   save(st);
