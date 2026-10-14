@@ -2347,7 +2347,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="f-pill f-novisit"  data-f="novisit">Not Visited</button>
     <button class="f-pill f-visited"  data-f="visited">Visited</button>
     <button class="f-pill f-customer" data-f="customer">Customers</button>
-    <button class="f-pill f-noncust"  data-f="noncustomer">Non-Customers</button>
+    <button class="f-pill f-noncust"  data-f="noncustomer">Prospects</button>
     <button class="f-pill f-unknown"  data-f="unknown">Unclassified</button>
   </div>
   <div class="progress-strip"><div class="bar" id="progBar"></div></div>
@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v180</div>
+      <div class="pf-ver">NCM Events Guide · v181</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5471,7 +5471,7 @@ function applyResets() {
   const st = load();
   // fill: true (v180) presets instead of correcting: it creates the booth's
   // entry if needed and sets only fields the rep hasn't set themselves
-  // (used for sales reps' Customer / Non-Customer tags from Nate's sheet).
+  // (used for sales reps' Customer / Prospect tags from Nate's sheet).
   const blank = v => v == null || v === "" || v === "unknown";
   mine.forEach(r => {
     const i = CO.findIndex(c => c.b === r.b && c.n === r.n);
@@ -6844,7 +6844,8 @@ function buildCard(c, state) {
   const outdoor   = isOutdoor(rowKey(c.b));
   const mapUrl    = c.x ? "" : boothMapUrl(c.b);
   const npId      = "np"+c.i;
-  // Customer / Non-Cust / Unsure is a sales-team concept. Editorial/Digital
+  // Customer / Prospect / Unsure is a sales-team concept (the stored value
+  // stays "noncustomer"; it was labeled Non-Cust until v181). Editorial/Digital
   // reps never classify booths, so their cards skip the picker and the
   // colored accent (any previously stored status stays in storage untouched).
   const nOpen = notesOpen.has(c.i);
@@ -6874,7 +6875,7 @@ function buildCard(c, state) {
       <div class="card-actions">
         ${salesView ? `<div class="status-group">
           <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
-          <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Non-Cust</button>
+          <button class="status-btn s-non${status==="noncustomer"?" active":""}" data-si="${c.i}" data-sval="noncustomer">Prospect</button>
           <button class="status-btn s-unk${status==="unknown"?" active":""}" data-si="${c.i}" data-sval="unknown">Unsure</button>
         </div>` : ""}
         ${myNotesAutoShare() ? `<button class="video-btn${s.video?" on":""}" data-video="${c.i}" title="Flag this booth's video for the bullpen">
@@ -6994,7 +6995,7 @@ function render() {
       visited:     ["No visits yet","A booth counts as visited once you write a post-visit note or upload its footage."],
       novisit:     ["All caught up","Every company in this view has been visited."],
       customer:    ["No customers tagged","Tap Customer on a card to flag accounts you own."],
-      noncustomer: ["No non-customers tagged","Tap Non-Cust to mark booths you can skip."],
+      noncustomer: ["No prospects tagged","Tap Prospect on a card to flag companies you'd like to sign."],
       unknown:     ["Every company classified","All booths have a customer status set."],
     };
     const [title, sub] = msgs[activeFilter] || ["No results","Try a different search term."];
@@ -7003,13 +7004,13 @@ function render() {
     return;
   }
 
-  // Customers and Non-Customers are short lists you act on, so they show as
+  // Customers and Prospects are short lists you act on, so they show as
   // one flat run of cards in booth order instead of row blocks you have to
   // open one by one (v175, Nate, Oct. 13, 2026).
   if (activeFilter === "customer" || activeFilter === "noncustomer") {
     const flat = list.slice().sort((x, y) => rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b))
       || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n));
-    const what = activeFilter === "customer" ? "customer" : "non-customer";
+    const what = activeFilter === "customer" ? "customer" : "prospect";
     _rowGroups = {};
     el.innerHTML = showStatusBannerHtml() + `
 <div class="row-section flat-list">
@@ -8104,7 +8105,7 @@ document.getElementById("content").addEventListener("click", e => {
     card.classList.remove("s-customer","s-noncustomer");
     if (ns!=="unknown") card.classList.add("s-"+ns);
     const label = ns==="customer" ? "Marked as Customer"
-                : ns==="noncustomer" ? "Marked as Non-Customer"
+                : ns==="noncustomer" ? "Marked as Prospect"
                 : "Status cleared";
     toast(label);
     return;
@@ -8387,7 +8388,7 @@ function buildShowCsv() {
       const s = state[key(c.i)] || {};
       const rk = rowKey(c.b);
       const st = s.status==="customer" ? "Existing Customer"
-               : s.status==="noncustomer" ? "Non-Customer" : "Unknown";
+               : s.status==="noncustomer" ? "Prospect" : "Unknown";
       const [schedD, schedT] = s.scheduled ? s.scheduled.split("|") : ["",""];
       rows.push([c.n, c.b,
         isOutdoor(rk) ? "Outdoor T"+rk.slice(1)+"s" : "Row "+rk+"s",
