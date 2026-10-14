@@ -1121,6 +1121,9 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
   cursor: pointer;
 }
 .sched-rm-link:active { color: var(--text); }
+.sched-slot-acts { display: flex; justify-content: center; gap: 4px; }
+.sched-slot-acts .sched-rm-link { margin: 2px 0 0; }
+.sched-rm-link.mv { color: var(--blue); }
 
 .sched-empty {
   padding: 36px 22px 22px;
@@ -1464,6 +1467,7 @@ textarea.nf.sess-nf:focus { border-color: var(--sess); box-shadow: 0 0 0 3px rgb
 }
 .meal-act-btn:active { background: var(--blue-light); color: var(--blue); border-color: var(--blue); }
 .meal-act-btn.del:active { background: var(--maroon-light); color: var(--maroon); border-color: var(--maroon); }
+.meal-act-btn[data-mv-meal], .meal-act-btn[data-mv-off] { padding: 0; letter-spacing: 0; }
 
 /* ── TEAM SCHEDULE BAR ── */
 .team-bar {
@@ -2424,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v177</div>
+      <div class="pf-ver">NCM Events Guide · v178</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2527,6 +2531,20 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <p class="settings-dbx-note" id="rmText"></p>
     <button class="settings-done" id="rmKeep" type="button">Keep it</button>
     <button class="settings-done share-secondary" id="rmGo" type="button">Remove</button>
+  </div>
+</div>
+
+<!-- ── Move a schedule item to another day/time (v178) ── -->
+<div id="moveSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card">
+    <div class="settings-title" id="mvTitle">Move this item</div>
+    <p class="settings-dbx-note" id="mvText"></p>
+    <div class="settings-dbx-title" style="margin-top:12px">Day</div>
+    <select id="mvDay" class="settings-dbx-input"></select>
+    <div class="settings-dbx-title" style="margin-top:12px">Time</div>
+    <select id="mvTime" class="settings-dbx-input"></select>
+    <button class="settings-done" id="mvSave" type="button">Move it</button>
+    <button class="settings-done share-secondary" id="mvCancel" type="button">Cancel</button>
   </div>
 </div>
 
@@ -5241,7 +5259,7 @@ function preloadMustWait() {
   const a = document.activeElement;
   const typing = !!(a && (a.tagName === "TEXTAREA" || a.isContentEditable
     || (a.tagName === "INPUT" && !/^(button|checkbox|radio|file|submit)$/i.test(a.type || ""))));
-  return typing || mealFormOpen || offFormOpen || photoUploading || Object.keys(upProg).length > 0;
+  return typing || mealFormOpen || offFormOpen || !!_mv || photoUploading || Object.keys(upProg).length > 0;
 }
 function flushPreload() {
   if (!_prePending || _preBusy) return;
@@ -7532,7 +7550,7 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
       entries.forEach(entry => {
         if (entry.kind === "booth") {
           const c = entry.c;
-          html += `<div class="sched-slot-card">${buildCard(c, state)}<button class="sched-rm-link" data-rm="${c.i}">Remove from Day ${schedDay}</button></div>`;
+          html += `<div class="sched-slot-card">${buildCard(c, state)}<div class="sched-slot-acts"><button class="sched-rm-link mv" type="button" data-mv-booth="${c.i}">Move</button><button class="sched-rm-link" data-rm="${c.i}">Remove from Day ${schedDay}</button></div></div>`;
         } else if (entry.kind === "meal") {
           const m = entry.meal;
           html += `<div class="meal-card">
@@ -7544,6 +7562,7 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
             </div>
             <div class="meal-card-actions">
               <button class="meal-act-btn" data-meal-edit="${esc(m.id)}">Edit</button>
+              <button class="meal-act-btn" type="button" data-mv-meal="${esc(m.id)}">Move</button>
               <button class="meal-act-btn del" data-meal-del="${esc(m.id)}">Del</button>
             </div>
           </div>`;
@@ -7566,6 +7585,7 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
             </div>
             <div class="meal-card-actions">
               <button class="meal-act-btn" data-off-edit="${esc(o.id)}">Edit</button>
+              <button class="meal-act-btn" type="button" data-mv-off="${esc(o.id)}">Move</button>
               <button class="meal-act-btn del" data-off-del="${esc(o.id)}">Del</button>
             </div>
           </div>`;
@@ -7740,6 +7760,13 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  const mvBtn = e.target.closest("[data-mv-booth],[data-mv-meal],[data-mv-off]");
+  if (mvBtn) {
+    if (mvBtn.dataset.mvBooth != null) openMove("booth", parseInt(mvBtn.dataset.mvBooth));
+    else if (mvBtn.dataset.mvMeal != null) openMove("meal", mvBtn.dataset.mvMeal);
+    else openMove("offsite", mvBtn.dataset.mvOff);
+    return;
+  }
   const rmBtn = e.target.closest("[data-rm]");
   if (rmBtn) {
     const i = parseInt(rmBtn.dataset.rm);
@@ -9379,6 +9406,64 @@ function confirmRemove(title, text, action) {
   document.getElementById("rmText").textContent = text;
   document.getElementById("rmSheet").style.display = "flex";
 }
+// Move (v178, Nate, Oct. 14, 2026): any booth visit/video, meal or off-site
+// item on your own schedule can change day and time from one sheet.
+// Sessions keep their official times. A schedule Nate republishes still
+// wins for items he changes in the sheet; items he leaves alone keep the
+// move (the merge tracks meals and off-site items by id, and booths by
+// booth).
+let _mv = null;   // { kind, ref } while the sheet is open
+function moveTarget(kind, ref) {
+  if (kind === "booth") {
+    const s = load()[key(ref)] || {}, c = CO[ref] || {};
+    const [d, t] = (s.scheduled || "").split("|");
+    return d ? { day: +d, time: t, label: (c.n || "Booth") + (c.b ? " (Booth " + c.b + ")" : "") } : null;
+  }
+  const arr = kind === "meal" ? loadMeals() : loadOffsite();
+  const x = arr.find(y => y.id === ref);
+  if (!x) return null;
+  const label = kind === "meal" ? (MEAL_LABEL[x.type] || "Meal") + (x.company ? " with " + x.company : "")
+                                : (x.title || x.company || "Off-site meeting");
+  return { day: +x.day, time: x.time, label };
+}
+function openMove(kind, ref) {
+  const t = moveTarget(kind, ref);
+  if (!t) return;
+  _mv = { kind, ref };
+  const code = currentEventCode();
+  document.getElementById("mvTitle").textContent = "Move " + t.label;
+  document.getElementById("mvText").textContent = "Now: " + showDayLabel(code, t.day) + " at " + t.time + ".";
+  document.getElementById("mvDay").innerHTML = showDays(code).map(d =>
+    `<option value="${d}"${d === t.day ? " selected" : ""}>${esc(showDayLabel(code, d))}</option>`).join("");
+  document.getElementById("mvTime").innerHTML = withTime(TIME_SLOTS, t.time).map(x =>
+    `<option value="${esc(x)}"${x === t.time ? " selected" : ""}>${esc(x)}</option>`).join("");
+  document.getElementById("moveSheet").style.display = "flex";
+}
+function closeMove() { _mv = null; document.getElementById("moveSheet").style.display = "none"; }
+document.getElementById("mvCancel").addEventListener("click", closeMove);
+document.getElementById("moveSheet").addEventListener("click", e => { if (e.target.id === "moveSheet") closeMove(); });
+document.getElementById("mvSave").addEventListener("click", () => {
+  if (!_mv) return;
+  const { kind, ref } = _mv;
+  const d = parseInt(document.getElementById("mvDay").value), t = document.getElementById("mvTime").value;
+  closeMove();
+  if (!d || !t) return;
+  if (kind === "booth") {
+    const st = load(), k = key(ref);
+    st[k] = st[k] || {};
+    st[k].scheduled = d + "|" + t;
+    save(st);
+  } else {
+    const arr = kind === "meal" ? loadMeals() : loadOffsite();
+    const x = arr.find(y => y.id === ref);
+    if (!x) return;
+    x.day = d; x.time = t;
+    (kind === "meal" ? saveMeals : saveOffsite)(arr);
+  }
+  schedDay = d;   // show where it landed
+  toast("Moved to " + showDayLabel(currentEventCode(), d) + " at " + t);
+  render();
+});
 function closeRemove() { _rmAction = null; document.getElementById("rmSheet").style.display = "none"; }
 document.getElementById("rmKeep").addEventListener("click", closeRemove);
 document.getElementById("rmGo").addEventListener("click", () => { const a = _rmAction; closeRemove(); if (a) a(); });
