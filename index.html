@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v184</div>
+      <div class="pf-ver">NCM Events Guide · v185</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4525,8 +4525,8 @@ function sortShowsByDate(codes) {
 // manual pick in the show picker still wins for that session.
 const SHOW_PREFS = {
   "tmccloskey@northcoastmedia.net": [{ code: "LM-2026" }],
-  "rrosen@northcoastmedia.net":     [{ code: "LM-2026", from: "2026-10-21" }],
-  "kstoltman@northcoastmedia.net":  [{ code: "LM-2026", from: "2026-10-21" }],
+  "rrosen@northcoastmedia.net":     [{ code: "LM-2026", from: "2026-10-21" }, { code: "PMP-2026" }],
+  "kstoltman@northcoastmedia.net":  [{ code: "LM-2026", from: "2026-10-21" }, { code: "PMP-2026" }],
   // Nate and Sydney cover every brand but work PestWorld; without these, the
   // Oct. 21-23 overlap (both shows live) would land them on Equip.
   "nstoltman@northcoastmedia.net":  [{ code: "PMP-2026" }],
@@ -4558,16 +4558,16 @@ function defaultShowFor(brands, home) {
 // and it shows on every card. A show gets the "Add education session" menu
 // item only when its EVENTS entry lists `sessions`.
 const LM_EQUIP_SESSIONS = [
-  { id:"eq1",  day:1, time:"9:30 AM",  end:"10:30 AM", title:"Winning in a Tighter Market: How Smart Companies Protect and Grow Profit", speakers:"Jeffrey Scott, Jeffrey Scott Consulting" },
-  { id:"eq2",  day:1, time:"12:30 PM", end:"1:30 PM",  title:"From Startup to Scalable: Understanding the Growth Phases of Your Landscape Business", speakers:"Ben Gandy and Ken Thomas, Envisor Consulting" },
-  { id:"eq3",  day:1, time:"2:00 PM",  end:"3:00 PM",  title:"The Sales to Production Handoff: It's More Than an AI Integration", speakers:"Chris Psencik and Kevin Keim, McFarlin Stanford" },
-  { id:"eq4",  day:1, time:"3:30 PM",  end:"4:30 PM",  title:"The Anatomy of a Winning Snow and Grounds Bid", speakers:"Mike McCarron, Image Works Landscape Management" },
-  { id:"eq5",  day:2, time:"8:00 AM",  end:"9:00 AM",  title:"The $10 Million Landscape Company Playbook: How to Build It and Grow Beyond It", speakers:"Jeffrey Scott, Jeffrey Scott Consulting" },
-  { id:"eq6",  day:2, time:"9:30 AM",  end:"10:30 AM", title:"The Sales Execution Playbook: How to Tactically Drive Sales Initiatives to Grow Your Company Today", speakers:"Chris Psencik and Kevin Keim, McFarlin Stanford" },
-  { id:"eq7",  day:2, time:"11:00 AM", end:"12:00 PM", title:"Grow What You've Got: Mastering Enhancement Sales to Maintenance Clients", speakers:"Ben Gandy and Ken Thomas, Envisor Consulting" },
-  { id:"eq8",  day:2, time:"12:30 PM", end:"1:30 PM",  title:"The Culture Blueprint: How to Design and Build a Great Place to Work", speakers:"Katelyn Manes, Fisk Lawnscapes" },
-  { id:"eq9",  day:2, time:"2:00 PM",  end:"3:00 PM",  title:"Leadership Lessons from the Landscape Management 150", speakers:"Moderated by Seth Jones and Scott Hollister of Landscape Management, with senior leaders from LM150 companies" },
-  { id:"eq10", day:2, time:"3:30 PM",  end:"4:30 PM",  title:"Lead From the Middle: Yes, You!", speakers:"Sam Gembel, Atlas Outdoor" },
+  { id:"eq1",  day:2, time:"9:30 AM",  end:"10:30 AM", title:"Winning in a Tighter Market: How Smart Companies Protect and Grow Profit", speakers:"Jeffrey Scott, Jeffrey Scott Consulting" },
+  { id:"eq2",  day:2, time:"12:30 PM", end:"1:30 PM",  title:"From Startup to Scalable: Understanding the Growth Phases of Your Landscape Business", speakers:"Ben Gandy and Ken Thomas, Envisor Consulting" },
+  { id:"eq3",  day:2, time:"2:00 PM",  end:"3:00 PM",  title:"The Sales to Production Handoff: It's More Than an AI Integration", speakers:"Chris Psencik and Kevin Keim, McFarlin Stanford" },
+  { id:"eq4",  day:2, time:"3:30 PM",  end:"4:30 PM",  title:"The Anatomy of a Winning Snow and Grounds Bid", speakers:"Mike McCarron, Image Works Landscape Management" },
+  { id:"eq5",  day:3, time:"8:00 AM",  end:"9:00 AM",  title:"The $10 Million Landscape Company Playbook: How to Build It and Grow Beyond It", speakers:"Jeffrey Scott, Jeffrey Scott Consulting" },
+  { id:"eq6",  day:3, time:"9:30 AM",  end:"10:30 AM", title:"The Sales Execution Playbook: How to Tactically Drive Sales Initiatives to Grow Your Company Today", speakers:"Chris Psencik and Kevin Keim, McFarlin Stanford" },
+  { id:"eq7",  day:3, time:"11:00 AM", end:"12:00 PM", title:"Grow What You've Got: Mastering Enhancement Sales to Maintenance Clients", speakers:"Ben Gandy and Ken Thomas, Envisor Consulting" },
+  { id:"eq8",  day:3, time:"12:30 PM", end:"1:30 PM",  title:"The Culture Blueprint: How to Design and Build a Great Place to Work", speakers:"Katelyn Manes, Fisk Lawnscapes" },
+  { id:"eq9",  day:3, time:"2:00 PM",  end:"3:00 PM",  title:"Leadership Lessons from the Landscape Management 150", speakers:"Moderated by Seth Jones and Scott Hollister of Landscape Management, with senior leaders from LM150 companies" },
+  { id:"eq10", day:3, time:"3:30 PM",  end:"4:30 PM",  title:"Lead From the Middle: Yes, You!", speakers:"Sam Gembel, Atlas Outdoor" },
 ];
 // Show dates, newest list wins. `dates` is Day 1/2/3 as "YYYY-MM-DD" in the
 // show's local time. When today is one of them, the Schedule view opens on
@@ -4602,9 +4602,14 @@ const EVENTS = {
   // Equip's booth badges open the in-app floor plan (v165). From v157 to
   // v164 they linked out to Map Your Show (`boothMap`, ?selectedBooth=
   // booth~N), which loaded too slowly on the show floor.
-  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, tz: "America/New_York", dates: ["2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
+  // Day 1 is Tuesday, Oct. 20 (welcome reception and team dinners) since
+  // v185; it was Wednesday before, and LEGACY_D0 shifts older saved days.
+  "LM-2026": { brand:"lm", show:"Equip Expo", booths: LM_BOOTHS, tz: "America/New_York", dates: ["2026-10-20","2026-10-21","2026-10-22","2026-10-23"], sessions: LM_EQUIP_SESSIONS,
     floor: EQUIP_FLOOR,   // v165: replaced the slow Map Your Show boothMap link
     venue: { name: "Kentucky Exposition Center", address: "937 Phillips Ln, Louisville, KY 40209" },
+    hotel: { name: "AC Hotel Louisville Downtown", address: "727 E. Market St., Louisville, KY 40202" },
+    hours: { "2026-10-21": "Exhibit hall 9 a.m.-5 p.m.", "2026-10-22": "Exhibit hall 9 a.m.-5 p.m.",
+             "2026-10-23": "Exhibit hall 9 a.m.-2 p.m." },
     // Attire from the 2026 Equip Expo Schedule PDF (Nate, Oct. 13, 2026);
     // the rest of that schedule isn't final, so only the apparel is in.
     attire: { "2026-10-21": "Gray Travis Mathew polo, black Greg Norman quarter-zip",
@@ -4656,7 +4661,7 @@ function showDays(code) {
 // the Day 1 a show's data was saved against before its dates changed.
 // Local buckets written since carry a _d0 stamp and cloud schedule docs a
 // d0 field; anything without one is shifted from LEGACY_D0 when read.
-const LEGACY_D0 = { "PMP-2026": "2026-10-20" };
+const LEGACY_D0 = { "PMP-2026": "2026-10-20", "LM-2026": "2026-10-21" };
 function dayShiftFor(code, d0) {
   const ds = (resolveEvent(code) || {}).dates || [];
   const base = d0 || LEGACY_D0[code];
@@ -9303,11 +9308,12 @@ function showInfoHtml(code, day) {
   const ev = EVENTS[code];
   if (!ev) return "";
   const v = day === 1 ? ev.venue : null;   // the address only on Day 1 (Nate, Oct. 8, 2026)
+  const ho = day === 1 ? ev.hotel : null;   // team hotel, same rule (v185)
   const iso = (ev.dates || [])[day - 1];
   const wear = (iso && ev.attire && ev.attire[iso]) || "";
   const hrs = (iso && ev.hours && ev.hours[iso]) || "";
   const fl = !isHome() && floorOf(code);
-  if (!v && !wear && !hrs && !fl) return "";
+  if (!v && !ho && !wear && !hrs && !fl) return "";
   return `<div class="show-info">${fl ? `
     <button class="si-row si-floor" type="button" data-floor="">
       <span class="si-ic">${PIN_ICON}</span>
@@ -9317,6 +9323,11 @@ function showInfoHtml(code, day) {
     <a class="si-row" href="${esc(mapsUrl(v.name + ", " + v.address))}" target="_blank" rel="noopener">
       <span class="si-ic">${PIN_ICON}</span>
       <span class="si-txt"><span class="si-name">${esc(v.name)}</span><span class="si-sub">${esc(v.address)}</span></span>
+      <span class="si-go">Map</span>
+    </a>` : ""}${ho ? `
+    <a class="si-row" href="${esc(mapsUrl(ho.name + ", " + ho.address))}" target="_blank" rel="noopener">
+      <span class="si-ic">${PIN_ICON}</span>
+      <span class="si-txt"><span class="si-lbl">Hotel</span><span class="si-name">${esc(ho.name)}</span><span class="si-sub">${esc(ho.address)}</span></span>
       <span class="si-go">Map</span>
     </a>` : ""}${hrs ? `
     <div class="si-row si-wear">
