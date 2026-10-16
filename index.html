@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v187</div>
+      <div class="pf-ver">NCM Events Guide · v188</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6985,10 +6985,22 @@ function viewTransition(key) {
   clearTimeout(_viewInTimer);
   _viewInTimer = setTimeout(() => el.classList.remove("view-in"), 400);
 }
+// Notes boxes grow to fit what's in them (v188). At a fixed three lines,
+// published pre-visit notes (like interview questions under an "Also
+// going" line) sat below the fold inside the box, and iPhones give no
+// hint that a text box scrolls.
+function fitNf(el) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight + 3, 640) + "px";
+}
+function fitOpenNotes() { document.querySelectorAll(".notes-content.open textarea.nf").forEach(fitNf); }
+document.addEventListener("input", e => { if (e.target && e.target.matches && e.target.matches("textarea.nf")) fitNf(e.target); }, true);
 function render() {
   // A redraw can remove the field that had focus without iOS firing
   // focusout, which left the bottom bar hidden; recheck once it's done.
   queueMicrotask(releaseKbIfNoField);
+  queueMicrotask(fitOpenNotes);
   if (_prePending) setTimeout(flushPreload, 0);   // a schedule update waiting on a form or upload
   if (resetList.length) applyResets();             // a cleanup for the show just switched to
   // Always first: the Settings card is a real DOM node living in #content
@@ -7894,6 +7906,7 @@ document.getElementById("content").addEventListener("click", e => {
     if (opening) notesOpen.add(i); else notesOpen.delete(i);
     const panel = document.getElementById("np" + i);
     panel?.classList.toggle("open", opening);
+    if (opening) panel?.querySelectorAll("textarea.nf").forEach(fitNf);
     ntBtn.querySelector(".nt-chev")?.classList.toggle("open", opening);
     // Refresh the collapsed preview from whatever was just typed.
     const prev = ntBtn.querySelector(".nt-prev");
@@ -8071,6 +8084,7 @@ document.getElementById("content").addEventListener("click", e => {
     if (opening) itemNotesOpen.add(k); else itemNotesOpen.delete(k);
     const panel = iNotesBtn.nextElementSibling;
     panel?.classList.toggle("open", opening);
+    if (opening) panel?.querySelectorAll("textarea.nf").forEach(fitNf);
     iNotesBtn.querySelector(".nt-chev")?.classList.toggle("open", opening);
     const txt = (panel?.querySelector(".item-nf")?.value || "").trim();
     iNotesBtn.querySelector(".nt-prev").textContent = opening ? "" : txt.replace(/\s+/g, " ").slice(0, 80);
@@ -8086,6 +8100,7 @@ document.getElementById("content").addEventListener("click", e => {
     if (opening) sessNotesOpen.add(sid); else sessNotesOpen.delete(sid);
     const panel = sNotesBtn.nextElementSibling;
     panel?.classList.toggle("open", opening);
+    if (opening) panel?.querySelectorAll("textarea.nf").forEach(fitNf);
     sNotesBtn.querySelector(".nt-chev")?.classList.toggle("open", opening);
     const txt = (panel?.querySelector(".sess-nf")?.value || "").trim();
     sNotesBtn.querySelector(".nt-prev").textContent = opening ? "" : txt.replace(/\s+/g, " ").slice(0, 80);
