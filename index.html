@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v186</div>
+      <div class="pf-ver">NCM Events Guide · v187</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5134,6 +5134,38 @@ function preItemKey(it) {
   if (it.kind === "meal") return "m:" + it.day + ":" + (it.mealType || it.type) + ":" + preNorm(it.company);
   return "o:" + it.day + ":" + preNorm(it.title || it.company);
 }
+// Is this booth's pre-visit box still just text we published? (v187) True
+// when it's empty, equals what we last wrote (prePub) or the previous
+// publish, or, for boxes filled before prePub existed, is made only of
+// published pieces: "Also going: ..." lines and parts of the current or
+// previous published text. Anything the rep typed fails the test, so their
+// notes are never replaced. (v186 only compared with the previous publish,
+// but a box filled by an older version kept that older "Also going" line,
+// so the Nisus interview questions never landed.)
+function preUntouched(s, pub, prev) {
+  const was = String(s.pre || "").trim();
+  if (!was || was === String(pub || "").trim()) return true;
+  if (s.prePub != null) return was === String(s.prePub).trim() || was === String(prev || "").trim();
+  if (was === String(prev || "").trim()) return true;
+  const known = new Set((String(pub || "") + " · " + String(prev || "")).split(" · ").map(x => x.trim()).filter(Boolean));
+  return was.split(" · ").every(x => { x = x.trim(); return !x || known.has(x) || /^Also going:/.test(x); });
+}
+// Bring every booth's published pre-visit text up to date on this phone
+// (runs at each sign-in/launch against the last applied publish), so a fix
+// to the merge reaches schedules that were already loaded (v187).
+function refreshPublishedPre() {
+  const st = load();
+  const pre = st._pre && st._pre.items;
+  if (!pre) return;
+  let n = 0;
+  Object.values(pre).forEach(it => {
+    if (!it || it.kind !== "booth" || !it.pre) return;
+    const i = preBoothIndex(it); if (i < 0) return;
+    const s = st["c" + i]; if (!s || String(s.pre || "").trim() === String(it.pre).trim()) return;
+    if (preUntouched(s, it.pre, null)) { s.pre = it.pre; s.prePub = it.pre; n++; }
+  });
+  if (n) save(st);
+}
 function preBoothIndex(it) {
   let i = CO.findIndex(c => c.b === it.boothNum && c.n === it.boothName);
   if (i < 0) i = CO.findIndex(c => !c.x && c.n === it.boothName);
@@ -5147,11 +5179,9 @@ function prePut(st, k, n, b, ids) {
     s.scheduled = n.day + "|" + n.time;
     if (n.video) s.video = true;
     else if (b && b.video && !s.vlink && !(s.vclips || []).length) s.video = false;
-    // Published pre-visit notes fill an empty box, and replace the previous
-    // published text when the rep hasn't touched it (v186: updates like
-    // interview questions reached only people who hadn't loaded yet).
-    const was = (s.pre || "").trim();
-    if (n.pre && (!was || (b && was === String(b.pre || "").trim()))) s.pre = n.pre;
+    // Published pre-visit notes fill an empty box, and replace earlier
+    // published text the rep hasn't touched (v186, v187).
+    if (n.pre && preUntouched(s, n.pre, b && b.pre)) { s.pre = n.pre; s.prePub = n.pre; }
     return true;
   }
   if (n.kind === "meal" || n.kind === "offsite") {
@@ -5215,6 +5245,7 @@ async function applyPreload() {
   const code = currentEventCode();
   const email = String(currentUser.email || "").toLowerCase();
   if (!code || !email) return;
+  refreshPublishedPre();
   let p;
   try {
     const snap = await fbDb.collection("preloads").doc(preDocId(code, email)).get();
