@@ -2428,7 +2428,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v185</div>
+      <div class="pf-ver">NCM Events Guide · v186</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5147,7 +5147,11 @@ function prePut(st, k, n, b, ids) {
     s.scheduled = n.day + "|" + n.time;
     if (n.video) s.video = true;
     else if (b && b.video && !s.vlink && !(s.vclips || []).length) s.video = false;
-    if (n.pre && !(s.pre || "").trim()) s.pre = n.pre;
+    // Published pre-visit notes fill an empty box, and replace the previous
+    // published text when the rep hasn't touched it (v186: updates like
+    // interview questions reached only people who hadn't loaded yet).
+    const was = (s.pre || "").trim();
+    if (n.pre && (!was || (b && was === String(b.pre || "").trim()))) s.pre = n.pre;
     return true;
   }
   if (n.kind === "meal" || n.kind === "offsite") {
