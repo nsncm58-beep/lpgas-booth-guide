@@ -755,6 +755,12 @@ body.home-mode .user-chip-name { max-width: none; }
 body.has-nav .hdr-photos,
 body.has-nav .user-chip-gear { display: none !important; }
 
+/* Interview questions on a booth card (v190) */
+.iq-box { margin: 10px 0 2px; padding: 9px 12px 10px; background: #FFF5D1; border: 1.5px solid #F0D27A; border-left: 4px solid #E0A800; border-radius: 9px; }
+.iq-title { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #7A5A00; margin-bottom: 4px; }
+.iq-list { margin: 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.4; color: #2B2B2B; }
+.iq-list li + li { margin-top: 4px; }
+
 /* ── NOTES PANEL ── */
 /* Collapsed by default: 226 cards x two open textareas was a wall of empty
    boxes. The toggle shows a one-line preview when there's something written. */
@@ -958,6 +964,8 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 }
 .sched-day-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
 .sched-day-tab.active .stdt-count { color: rgba(255,255,255,0.8); }
+.sched-day-tab .stdt-wd { font-size: 0.68rem; font-weight: 700; margin-top: -2px; }
+.sched-day-tabs.many .stdt-wd { font-size: 0.64rem; }
 .sched-day-tab:active { opacity: 0.85; }
 .sched-day-tabs.many { gap: 4px; padding: 10px 8px 4px; }
 .sched-day-tabs.many .sched-day-tab { padding: 8px 1px; border-radius: 9px; }
@@ -2429,7 +2437,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v189</div>
+      <div class="pf-ver">NCM Events Guide · v190</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4943,6 +4951,19 @@ function mySessions() {
     return x ? { ...x, notes: e.notes || "" } : null;
   }).filter(Boolean);
 }
+// Weekday under "Day N" on the day tabs (v190, Nate, Oct. 20, 2026): the
+// full name when the show has four days or fewer, AP abbreviations when
+// five or six tabs share a phone's width.
+function dayWeekdayHtml(code, d) {
+  const ds = (resolveEvent(code) || {}).dates || [];
+  const iso = ds[d - 1];
+  if (!iso) return "";
+  const [y, m, dd] = iso.split("-").map(Number);
+  const w = new Date(y, m - 1, dd).getDay();
+  const full = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][w];
+  const ap = ["Sun.","Mon.","Tues.","Wed.","Thurs.","Fri.","Sat."][w];
+  return `<span class="stdt-wd">${ds.length >= 5 ? ap : full}</span>`;
+}
 // "Day 1 · Wednesday, Oct. 21" from the show's dates ("Day 1" without them).
 function showDayLabel(code, d) {
   const iso = ((resolveEvent(code) || {}).dates || [])[d - 1];
@@ -6804,7 +6825,7 @@ function buildHomeSchedView() {
   if (homeSchedDay > nDays) homeSchedDay = 1;
   h += `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">` + showDays(sel.eventCode).map(d => `
     <button class="sched-day-tab${homeSchedDay===d?" active":""}" data-hs-day="${d}">
-      <span class="stdt-day">Day ${d}</span>
+      <span class="stdt-day">Day ${d}</span>${dayWeekdayHtml(sel.eventCode, d)}
       <span class="stdt-count">${dc[d]} booked</span>
     </button>`).join("") + `</div>`;
   const ago = fmtAgo(homeDocTs(sel));
@@ -6896,6 +6917,22 @@ function itemNotesHtml(kind, x) {
       </div>`;
 }
 
+// Interview questions in a booth's pre-visit notes (published under an
+// "Interview questions:" line) show on the card itself in a highlighted
+// box, so nobody has to open Notes to find them (v190, Nate, Oct. 20, 2026).
+function interviewQsHtml(pre) {
+  const t = String(pre || "");
+  const at = t.search(/interview questions:/i);
+  if (at < 0) return "";
+  const qs = [];
+  t.slice(at).split("\n").slice(1).forEach(line => {
+    if (/^\s*also going:/i.test(line)) return;
+    const m = line.match(/^\s*\d+[.)]\s*(.+)$/);
+    if (m) qs.push(m[1].trim());
+  });
+  if (!qs.length) return "";
+  return `<div class="iq-box"><div class="iq-title">Interview questions</div><ol class="iq-list">${qs.map(q => `<li>${esc(q)}</li>`).join("")}</ol></div>`;
+}
 function buildCard(c, state) {
   const s = state[key(c.i)] || {};
   const visited   = !!s.visited;
@@ -6932,6 +6969,7 @@ function buildCard(c, state) {
             ? `<button class="booth-badge map${outdoor?" outdoor":""}" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</button>`
             : `<span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>`}
       </div>
+      ${interviewQsHtml(s.pre)}
       <div class="card-actions">
         ${salesView ? `<div class="status-group">
           <button class="status-btn s-cust${status==="customer"?" active":""}" data-si="${c.i}" data-sval="customer">Customer</button>
@@ -7517,7 +7555,7 @@ function renderScheduleView(state) {
     items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
     const dayTabs = showDays(currentEventCode()).map(d => `
       <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
-        <span class="stdt-day">Day ${d}</span>
+        <span class="stdt-day">Day ${d}</span>${dayWeekdayHtml(currentEventCode(), d)}
         <span class="stdt-count">${dc[d]} booked</span>
       </button>`).join("");
     const byTime = {};
@@ -7565,7 +7603,7 @@ function renderScheduleView(state) {
 
   const dayTabs = showDays(currentEventCode()).map(d => `
     <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
-      <span class="stdt-day">Day ${d}</span>
+      <span class="stdt-day">Day ${d}</span>${dayWeekdayHtml(currentEventCode(), d)}
       <span class="stdt-count">${dayCount[d]} booked</span>
     </button>`).join("");
   const manyDays = nDays >= 5 ? " many" : "";
