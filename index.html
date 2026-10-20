@@ -2437,7 +2437,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v190</div>
+      <div class="pf-ver">NCM Events Guide · v191</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4534,8 +4534,10 @@ function sortShowsByDate(codes) {
 // manual pick in the show picker still wins for that session.
 const SHOW_PREFS = {
   "tmccloskey@northcoastmedia.net": [{ code: "LM-2026" }],
-  "rrosen@northcoastmedia.net":     [{ code: "LM-2026", from: "2026-10-21" }, { code: "PMP-2026" }],
-  "kstoltman@northcoastmedia.net":  [{ code: "LM-2026", from: "2026-10-21" }, { code: "PMP-2026" }],
+  // Rachel and Kevin open on Equip from 2 p.m. Eastern on Wed., Oct. 21
+  // (Nate, Oct. 20, 2026); PestWorld until then. Tod is always Equip.
+  "rrosen@northcoastmedia.net":     [{ code: "LM-2026", at: "2026-10-21T14:00:00-04:00" }, { code: "PMP-2026" }],
+  "kstoltman@northcoastmedia.net":  [{ code: "LM-2026", at: "2026-10-21T14:00:00-04:00" }, { code: "PMP-2026" }],
   // Nate and Sydney cover every brand but work PestWorld; without these, the
   // Oct. 21-23 overlap (both shows live) would land them on Equip.
   "nstoltman@northcoastmedia.net":  [{ code: "PMP-2026" }],
@@ -4546,7 +4548,7 @@ function preferredShow(user) {
   if (!rules) return null;
   const n = new Date();
   const today = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
-  const hit = rules.find(r => EVENTS[r.code] && (!r.from || today >= r.from)
+  const hit = rules.find(r => EVENTS[r.code] && (!r.from || today >= r.from) && (!r.at || Date.now() >= Date.parse(r.at))
     && ["upcoming", "live"].includes(showStatus(r.code).k));
   return hit ? hit.code : null;
 }
