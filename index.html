@@ -1948,6 +1948,17 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .acct-chg i { font-style: normal; color: var(--muted); padding: 0 3px; }
 .acct-effects { margin: 12px 0 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
 .acct-effects li { margin-top: 4px; }
+/* ── Bullpen photo folders as tabs (v199) ── */
+.hp-folderbar { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.hp-fchips { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.hp-fchip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-2); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+.hp-fchip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.hp-fchip-n { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--blue-light); color: var(--blue); font-size: 0.7rem; text-align: center; }
+.hp-fchip.on .hp-fchip-n { background: rgba(255,255,255,0.25); color: #fff; }
+.hp-fhead { display: flex; align-items: center; gap: 10px; margin: 2px 2px 10px; }
+.hp-fhead-name { font-family: var(--fd); font-weight: 800; font-size: 1.05rem; color: var(--text); }
+.hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
+
 /* ── Photo folders (v196) ── */
 .ph-folder { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: 0.78rem; font-weight: 700; color: var(--text-2); }
 .ph-folder-sel { flex: 1; min-width: 0; padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); }
@@ -2470,7 +2481,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v198</div>
+      <div class="pf-ver">NCM Events Guide · v199</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6051,10 +6062,10 @@ function putSmall(url, file, token, onPct) {
 const _msSub = {};   // "<folder url>|<lower name>" -> { driveId, itemId }
 async function msListSubfolders(token, base) {
   const out = [];
-  let path = "/drives/" + base.driveId + "/items/" + base.itemId + "/children?$select=id,name,folder&$top=200";
+  let path = "/drives/" + base.driveId + "/items/" + base.itemId + "/children?$select=id,name,folder,webUrl&$top=200";
   for (let n = 0; path && n < 5; n++) {
     const j = await msGraph(path, null, token);
-    (j.value || []).forEach(x => { if (x.folder) out.push({ name: x.name, driveId: base.driveId, itemId: x.id }); });
+    (j.value || []).forEach(x => { if (x.folder) out.push({ name: x.name, driveId: base.driveId, itemId: x.id, webUrl: x.webUrl || "" }); });
     path = j["@odata.nextLink"] ? j["@odata.nextLink"].replace("https://graph.microsoft.com/v1.0", "") : null;
   }
   return out;
@@ -6070,7 +6081,7 @@ async function msSubfolder(token, name, fresh) {
       const j = await msGraph("/drives/" + base.driveId + "/items/" + base.itemId + "/children", { method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) }, token);
-      hit = { name: j.name, driveId: base.driveId, itemId: j.id };
+      hit = { name: j.name, driveId: base.driveId, itemId: j.id, webUrl: j.webUrl || "" };
     } catch (e) {
       if (e.status !== 409) throw e;
       hit = await find();          // someone made it a moment ago
@@ -6789,32 +6800,68 @@ function subscribeHomePhotos() {
     if (isHome()) renderHomeDashboard();
   }, () => {});
 }
+// Bullpen Photos, organized by folder (v199, Nate, Oct. 26, 2026): a row of
+// folder tabs with counts (All, Main show folder, then every folder the
+// bullpen made or a photo landed in), each opening just that folder's
+// photos with a link to it in SharePoint. Adding and removing folder names
+// sits behind Manage folders.
+let homePhotoFolder = "";          // "" = all, "__main" = main show folder, else lowercased folder name
+let homePfManage = false;
 function buildHomePhotosView() {
   const code = homeEventCode();
   const q = homePhotoQ.trim().toLowerCase();
   const all = Object.entries(homePhotos).map(([id, p]) => ({ id, ...p }))
     .filter(p => effectiveDept(p.uid, p.dept) === "edit" && p.eventCode === code)
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  const shown = all.filter(p => !q || String(p.caption || "").toLowerCase().includes(q)
-    || String(p.name || "").toLowerCase().includes(q));
+  const fk = p => p.folder ? String(p.folder).trim().toLowerCase() : "__main";
   const fnames = Object.entries(photoFolderDocs).filter(([, x]) => x.eventCode === code)
     .sort((a, b) => String(a[1].name).localeCompare(String(b[1].name)));
-  let html = `<div class="hp-folders">
-      <div class="hp-folders-head">Photo folders for ${esc(showShortLabelOf(code) || "this show")}</div>
+  // Every folder: the bullpen's names plus any folder a photo landed in.
+  const folders = new Map();   // key -> { name, n, url, docId }
+  fnames.forEach(([id, x]) => folders.set(String(x.name).toLowerCase(), { name: x.name, n: 0, url: "", docId: id }));
+  all.forEach(p => {
+    if (!p.folder) return;
+    const k = fk(p), f = folders.get(k) || { name: p.folder, n: 0, url: "", docId: null };
+    f.n++; if (!f.url && p.folderUrl) f.url = p.folderUrl;
+    folders.set(k, f);
+  });
+  const nMain = all.filter(p => !p.folder).length;
+  if (homePhotoFolder && homePhotoFolder !== "__main" && !folders.has(homePhotoFolder)) homePhotoFolder = "";
+  const sel = homePhotoFolder;
+  const inSel = all.filter(p => !sel || fk(p) === sel);
+  const shown = inSel.filter(p => !q || String(p.caption || "").toLowerCase().includes(q)
+    || String(p.name || "").toLowerCase().includes(q));
+  const chip = (key, label, n) => `<button type="button" class="hp-fchip${sel === key ? " on" : ""}" data-hp-folder="${esc(key)}">${esc(label)}<span class="hp-fchip-n">${n}</span></button>`;
+  const sorted = [...folders.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name));
+  let html = `<div class="hp-folderbar">
+      <div class="hp-fchips">${chip("", "All photos", all.length)}${chip("__main", "Main show folder", nMain)}${sorted.map(([k, f]) => chip(k, f.name, f.n)).join("")}</div>
+      <button class="home-rem-btn" type="button" data-pf-manage>${homePfManage ? "Done" : "Manage folders"}</button>
+    </div>`;
+  if (homePfManage) html += `<div class="hp-folders">
+      <div class="hp-folders-head">Folders reps can upload to: ${esc(showShortLabelOf(code) || "this show")}</div>
       <div class="hp-folders-list">${fnames.length ? fnames.map(([id, x]) =>
         `<span class="hp-folder">${esc(x.name)}<button type="button" class="hp-folder-x" data-pf-del="${esc(id)}" title="Take this folder out of the reps' menu. Files already in it stay in SharePoint.">&#10005;</button></span>`).join("")
-        : `<span class="hp-folders-none">None yet. Reps upload to the main show folder.</span>`}</div>
+        : `<span class="hp-folders-none">None added here yet.</span>`}</div>
       <div class="hp-folders-new"><input class="hp-folder-inp" type="text" maxlength="60" placeholder="New folder, e.g. Hall of Fame" autocomplete="off" value="${esc(hpFolderDraft)}">
         <button class="home-rem-btn watch" type="button" data-pf-add>Add folder</button></div>
-      <div class="hp-folders-note">Reps pick a folder when they upload. Subfolders you make in SharePoint show up for them too.</div>
-    </div>
-    <div class="home-search-box">
-      <input class="home-search-input hp-search-input" type="text" placeholder="Search photos: caption or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homePhotoQ)}">
+      <div class="hp-folders-note">Reps pick a folder when they upload. Subfolders made in SharePoint show up for them too. Removing a name here never deletes anything in SharePoint.</div>
+    </div>`;
+  // The open folder's header, with its SharePoint link when known.
+  if (sel) {
+    const f = sel === "__main" ? { name: "Main show folder", url: (eventMedia(code) || {}).folder || "" } : folders.get(sel);
+    html += `<div class="hp-fhead"><span class="hp-fhead-name">${esc(f.name)}</span><span class="hp-fhead-n">${inSel.length} photo${inSel.length === 1 ? "" : "s"}</span>
+      ${f.url ? `<a class="home-rem-btn watch" href="${esc(f.url)}" target="_blank" rel="noopener">Open in SharePoint</a>` : ""}</div>`;
+  }
+  html += `<div class="home-search-box">
+      <input class="home-search-input hp-search-input" type="text" placeholder="Search ${sel ? "this folder" : "photos"}: caption or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homePhotoQ)}">
     </div>`;
   if (!all.length) return html + `<div class="empty-wrap"><h3>No photos yet</h3>
       <p>When Editorial/Digital reps upload from the app's Photos tab, their photos show up here with the captions they wrote.</p></div>`;
-  const reps = new Set(all.map(p => p.uid)).size;
-  html += `<div class="home-vids-summary">${all.length} photo${all.length === 1 ? "" : "s"} from ${reps} rep${reps === 1 ? "" : "s"}</div>`;
+  if (!sel) {
+    const reps = new Set(all.map(p => p.uid)).size;
+    html += `<div class="home-vids-summary">${all.length} photo${all.length === 1 ? "" : "s"} from ${reps} rep${reps === 1 ? "" : "s"}</div>`;
+  }
+  if (!inSel.length) return html + `<div class="home-rem-empty">Nothing in this folder yet.</div>`;
   if (!shown.length) return html + `<div class="home-rem-empty">No photos match that search.</div>`;
   return html + `<div class="hp-grid">${shown.map(p => {
     const open = p.webUrl ? `href="${esc(p.webUrl)}" target="_blank" rel="noopener"` : "";
@@ -6825,7 +6872,7 @@ function buildHomePhotosView() {
           <div class="hp-cap${p.caption ? "" : " none"}${homePhotoOpen.has(p.id) ? " open" : ""}"${String(p.caption || "").length > 140 ? ` data-hp-more="${esc(p.id)}" title="Click to show all"` : ""}>${esc(p.caption || "No caption")}</div>
           ${p.caption ? `<button class="hp-copy" type="button" data-photo-copy="${esc(p.id)}" title="Copy the caption">Copy</button>` : ""}
         </div>
-        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}${p.folder ? " · " + esc(p.folder) : ""}</div>
+        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}${!sel ? " · " + esc(p.folder || "Main folder") : ""}</div>
         <div class="hp-actions">${p.webUrl ? `<a class="home-rem-btn watch" ${open}>Open</a>` : ""}
           <button class="home-rem-btn hide" type="button" data-photo-del="${esc(p.id)}" title="Remove from the bullpen. The file stays in SharePoint.">Remove</button></div>
       </div>
@@ -8051,6 +8098,9 @@ document.getElementById("content").addEventListener("click", e => {
     pmore.classList.toggle("open", homePhotoOpen.has(id));
     return;
   }
+  const hpf = e.target.closest("[data-hp-folder]");
+  if (hpf) { homePhotoFolder = hpf.dataset.hpFolder; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-pf-manage]")) { homePfManage = !homePfManage; renderHomeDashboard(); return; }
   if (e.target.closest("[data-pf-add]")) {
     const inp = document.querySelector(".hp-folder-inp");
     const name = String((inp && inp.value) || "").replace(/[\\/:*?"<>|#%]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
@@ -9056,6 +9106,7 @@ async function sendPhotos() {
         if (s) s.textContent = "Uploading " + pct + "%";
       }, folder);
       p.state = "done"; p.folder = folder;
+      if (folder) { const hit = Object.entries(_msSub).find(([k]) => k.endsWith("|" + folder.toLowerCase())); p.folderUrl = (hit && hit[1].webUrl) || ""; }
       p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
       batch.push(p);
       recordPhoto(p);                // bullpen Photos view (Editorial/Digital + Events)
@@ -9097,7 +9148,7 @@ function recordPhoto(p) {
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
     caption: String(p.caption || "").trim().slice(0, 2200),
-    fileName: p.upName || "", webUrl: p.webUrl || "", folder: p.folder || "",
+    fileName: p.upName || "", webUrl: p.webUrl || "", folder: p.folder || "", folderUrl: p.folderUrl || "",
     thumb: thumb || "", ts: Date.now()
   })).catch(() => {});
 }
