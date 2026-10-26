@@ -2470,7 +2470,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v197</div>
+      <div class="pf-ver">NCM Events Guide · v198</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8989,7 +8989,8 @@ function renderPhotosView() {
   const rows = photoQueue.map(p => {
     const locked = photoLocked(p);
     return `<div class="ph-row" data-ph-row="${p.id}">
-      ${p.url ? `<img class="ph-thumb" src="${p.url}" alt="">` : `<div class="ph-thumb ph-thumb-vid">&#9654;</div>`}
+      ${p.thumb ? `<img class="ph-thumb" data-ph-img="${p.id}" src="${p.thumb}" alt="">`
+        : p.isImg ? `<div class="ph-thumb" data-ph-img="${p.id}"></div>` : `<div class="ph-thumb ph-thumb-vid">&#9654;</div>`}
       <div class="ph-row-main">
         <textarea class="ph-cap" data-ph-cap="${p.id}" rows="2" placeholder="${edit ? "Caption for the bullpen, e.g. Rinnai front display" : "Caption, e.g. Rinnai front display"}" maxlength="2200" autocomplete="off"${locked ? " disabled" : ""}>${esc(p.caption)}</textarea>
         <div class="ph-status-slot">${photoStatusHtml(p)}</div>
@@ -9092,7 +9093,7 @@ async function sendPhotos() {
 function recordPhoto(p) {
   if (!fbReady || !currentUser || !myNotesAutoShare() || /^video\//.test(p.file.type)) return;
   const code = currentEventCode();
-  photoThumb(p.file).catch(() => "").then(thumb => fbDb.collection("photos").add({
+  (p.thumb ? Promise.resolve(p.thumb) : photoThumb(p.file).catch(() => "")).then(thumb => fbDb.collection("photos").add({
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
     caption: String(p.caption || "").trim().slice(0, 2200),
@@ -9112,6 +9113,9 @@ function photoThumb(file) {
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
       const out = c.toDataURL("image/jpeg", 0.6);
+      // Hand the memory back now: iPhones cap total canvas memory and free
+      // it lazily, so 20 thumbnails in a row could hit the cap (v198).
+      c.width = c.height = 0; img.src = "";
       out.length < 78000 ? resolve(out) : reject(new Error("thumb-too-big"));
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("thumb")); };
@@ -9145,15 +9149,39 @@ function notifyPhotosUploaded(batch) {
 document.getElementById("content").addEventListener("change", e => {
   if (e.target && e.target.matches && e.target.matches("[data-ph-folder-sel]")) photoFolderPick = e.target.value;
 });
+// Queue previews are small JPEGs made one photo at a time (v198). Showing
+// each picked photo itself (a full 12-megapixel decode per 56-px square)
+// ran an iPhone out of memory around 20 photos and the app glitched or
+// reloaded mid-upload. The same small JPEG becomes the bullpen thumbnail,
+// so nothing is decoded twice.
+let _thumbBusy = false;
+async function makeQueueThumbs() {
+  if (_thumbBusy) return;
+  _thumbBusy = true;
+  try {
+    for (;;) {
+      const p = photoQueue.find(x => x.isImg && x.thumb == null);
+      if (!p) break;
+      p.thumb = await photoThumb(p.file).catch(() => "");
+      const slot = document.querySelector('[data-ph-img="' + p.id + '"]');
+      if (slot && p.thumb) {
+        if (slot.tagName === "IMG") slot.src = p.thumb;
+        else slot.outerHTML = `<img class="ph-thumb" data-ph-img="${p.id}" src="${p.thumb}" alt="">`;
+      }
+      await new Promise(r => setTimeout(r, 0));   // let the page breathe between decodes
+    }
+  } finally { _thumbBusy = false; }
+}
 document.getElementById("photoFileInput").addEventListener("change", e => {
   const files = [...(e.target.files || [])];
   e.target.value = "";
   files.forEach(f => {
     if (!f || !f.size) return;
     photoQueue.push({ id: Math.random().toString(36).slice(2, 10), file: f,
-      url: /^image\//.test(f.type) ? URL.createObjectURL(f) : "", caption: "", state: "ready", pct: 0 });
+      isImg: /^image\//.test(f.type), thumb: /^image\//.test(f.type) ? null : "", url: "", caption: "", state: "ready", pct: 0 });
   });
   refreshPhotos();
+  makeQueueThumbs();
 });
 document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-ph-pick]")) { pickPhotos(); return; }
