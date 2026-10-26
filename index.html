@@ -709,6 +709,8 @@ a.booth-badge.map svg { flex-shrink: 0; }
 @keyframes upReady { 50% { transform: scale(1.06); box-shadow: 0 0 0 5px var(--blue-mid); } }
 @media (prefers-reduced-motion: reduce) { .upload-btn.ready, .up-spin { animation: none; } }
 .upload-btn.done { border-color: #BCDDC6; background: #EDF7F0; color: #2D7140; }
+.upload-btn.allin { border-style: dashed; }
+.upload-btn.allin.on { border-style: solid; border-color: var(--green); background: var(--green); color: #fff; }
 .home-vid-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
 .home-rem-btn.watch { text-decoration: none; display: inline-flex; align-items: center; }
 /* Bullpen: flat list of every clip uploaded from the app */
@@ -2083,6 +2085,8 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-chip.non  { color: #8B1538; background: #F6E6EB; }
 .home-chip.vid  { color: #5B2D71; background: #F1E8F6; }
 .home-chip.planned { color: #6b7280; background: #eef1f4; }
+.home-chip.allin { color: #fff; background: #2D7140; margin-left: 6px; }
+.home-chip.more { color: #8A5A00; background: #FFF1CC; margin-left: 6px; }
 .home-chip.multi { color: var(--blue-deeper); background: var(--blue-mid); }
 .home-note.vid-done { opacity: 0.72; }
 .home-vids-summary {
@@ -2437,7 +2441,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v191</div>
+      <div class="pf-ver">NCM Events Guide · v192</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5000,7 +5004,7 @@ function buildSharedNotes() {
     if (!s.visited && !pre && !post && !s.status && !s.video) return;
     items.push({ boothName:c.n, boothNum:c.b, visited:!!s.visited, video:!!s.video, vts: s.vts || 0, status:s.status||"", pre, post,
       vlink: s.vlink || "", vfile: s.vfile || "", vupAt: s.vupAt || 0,
-      vclips: Array.isArray(s.vclips) ? s.vclips : [] });
+      vclips: Array.isArray(s.vclips) ? s.vclips : [], vall: !!s.vall, vallAt: s.vallAt || 0 });
   });
   return items;
 }
@@ -5111,7 +5115,7 @@ async function hydrateFromCloud() {
       fresh["c"+i] = { visited: !!it.visited, video: !!it.video, vts: it.vts || 0,
         status: it.status || "", pre: it.pre || "", post: it.post || "",
         vlink: it.vlink || "", vfile: it.vfile || "", vupAt: it.vupAt || 0,
-        vclips: Array.isArray(it.vclips) ? it.vclips : [] };
+        vclips: Array.isArray(it.vclips) ? it.vclips : [], vall: !!it.vall, vallAt: it.vallAt || 0 };
     });
     if (sd.exists) {
       const meals = [], offs = [], sess = [];
@@ -5994,11 +5998,13 @@ async function startVideoUpload(i, file) {
     s.vclips = (s.vclips || []).concat([{ u: item.webUrl || "", f: item.name || "", t: Date.now() }]).slice(-12);
     s.vlink = item.webUrl || ""; s.vfile = item.name || ""; s.vupAt = Date.now();
     s.video = true;                                  // footage exists; keep it in the pipeline
+    const wasAllIn = !!s.vall;
+    s.vall = false; s.vallAt = 0;                    // more footage came after "all in": ask again (v192)
     // Footage means the booth was visited (there's no Mark Visit button
     // anymore). The upload's own "footage uploaded" alert goes out below.
     if (!s.visited) { s.visited = true; s.vts = s.vts || Date.now(); }
     save(st); render();
-    toast("Uploaded to the show folder ✓");
+    toast(wasAllIn ? "Uploaded ✓ Tap Mark all footage in again when you're done" : "Uploaded to the show folder ✓");
     if (notifyOnce("upload|" + currentEventCode() + "|" + c.b)) {
       const who = (currentUser && currentUser.name) || "A rep";
       const brand = (BRANDS[resolveEvent(currentEventCode()).brand] || BRANDS.ncm).name;
@@ -6036,7 +6042,13 @@ function uploadCtlHtml(c, s) {
   const view = s.vlink
     ? `<a class="upload-btn done" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the uploaded file")}">▶ Uploaded${nClips > 1 ? " (" + nClips + ")" : ""}</a>`
     : "";
-  return view + up;
+  // "All footage in" (v192, Nate, Oct. 26, 2026): the shooter says nothing
+  // more is coming (no B-roll or second angle on the way), so the bullpen
+  // stops waiting. Shows once at least one clip is uploaded.
+  const allIn = nClips
+    ? `<button class="upload-btn allin${s.vall ? " on" : ""}" type="button" data-vall="${c.i}" title="${s.vall ? "Tap if more footage is coming after all" : "Tell the bullpen this booth's footage is complete"}">${s.vall ? "✓ All footage in" : "Mark all footage in"}</button>`
+    : "";
+  return view + up + allIn;
 }
 function updateMsSection() {
   const row = document.getElementById("pfMsRow");
@@ -6608,6 +6620,7 @@ function buildHomeVideosView() {
           pre: it.pre || "", post: it.post || "",
           clips: (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips
                : (it.vlink ? [{ u: it.vlink, f: it.vfile || "", t: it.vupAt || 0 }] : []),
+          vall: !!it.vall, vallAt: it.vallAt || 0,
           done: !!homeVideoStatus[fsId(d.eventCode + "__" + d.uid + "__" + it.boothNum)] });
       });
     });
@@ -6651,6 +6664,13 @@ function buildHomeVideosView() {
     const allClips = repsIn.flatMap(r => r.clips.map((c, ci) => ({ ...c, rep: r.name || "Rep", ci, of: r.clips.length })));
     const lastUp = allClips.length ? Math.max(...allClips.map(c => c.t || 0)) : 0;
     const waiting = v.done ? [] : v.reps.filter(r => !r.clips.length).map(r => (r.name || "Rep").split(/\s+/)[0]);
+    // Has every shooter said "all footage in"? (v192) Green when nothing more
+    // is coming; amber while any clip's shooter hasn't confirmed.
+    const allIn = repsIn.length > 0 && !waiting.length && repsIn.every(r => r.vall);
+    const moreFrom = repsIn.filter(r => !r.vall).map(r => (r.name || "Rep").split(/\s+/)[0]);
+    const allInChip = v.done || !repsIn.length ? ""
+      : allIn ? '<span class="home-chip allin">All footage in</span>'
+      : `<span class="home-chip more" title="${esc(moreFrom.length ? "Not confirmed by " + moreFrom.join(", ") : "")}">More may be coming</span>`;
     const ledger = allClips.length
       ? " · " + (v.reps.length > 1
           ? allClips.length + " clip" + (allClips.length === 1 ? "" : "s") + " in from " + repsIn.length + " of " + v.reps.length + " reps"
@@ -6684,7 +6704,7 @@ function buildHomeVideosView() {
       ${notesBtn}
       <button class="home-rem-btn hide" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove</button>`;
     return `<div class="home-note${v.done ? " vid-done" : ""}${v.hidden ? " vid-hidden" : ""}">
-    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}</div>
+    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}${allInChip}</div>
     <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${esc(ledger)}</div>
     ${linksHtml}
     <div class="home-note-flags">
@@ -8169,6 +8189,21 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  const vallBtn = e.target.closest("[data-vall]");
+  if (vallBtn) {
+    const i = parseInt(vallBtn.dataset.vall), k = key(i), c = CO[i] || {};
+    if (!state[k]) state[k] = {};
+    state[k].vall = !state[k].vall;
+    state[k].vallAt = state[k].vall ? Date.now() : 0;
+    save(state); render();
+    toast(state[k].vall ? "Bullpen told: all footage is in" : "Marked as more footage coming");
+    if (state[k].vall && notifyOnce("allin|" + currentEventCode() + "|" + c.b)) {
+      const who = (currentUser && currentUser.name) || "A rep";
+      notifyHome(esc(showLabelOf(currentEventCode())) + ": all footage is in for <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
+        ") from " + esc(who) + ". Nothing more is coming.", null, true);
+    }
+    return;
+  }
   const upBtn = e.target.closest("[data-upv]");
   if (upBtn) {
     const i = parseInt(upBtn.dataset.upv);
