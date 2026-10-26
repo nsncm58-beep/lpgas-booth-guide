@@ -2454,7 +2454,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v193</div>
+      <div class="pf-ver">NCM Events Guide · v194</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4534,8 +4534,14 @@ function showStatusText(code) {
 // upcoming, then the most recent wrapped (inside its window), then a brand
 // with no show loaded, then the most recent past show.
 const SHOW_TIER = { live: 0, upcoming: 1, wrapped: 2, tbd: 3, past: 4 };
+// A show that just ended keeps first place (after any live show) for a week,
+// so the app still opens on it while people follow up, before moving to the
+// next show (v194, Nate, Oct. 26, 2026).
+const LAND_GRACE_DAYS = 7;
+function inLandGrace(code) { const s = showStatus(code); return s.k === "wrapped" && s.daysSince <= LAND_GRACE_DAYS; }
 function showRank(code) {
   const s = showStatus(code);
+  if (inLandGrace(code)) return 0.5e6 + s.daysSince;   // between live and upcoming
   const t = s.k === "upcoming" ? s.daysUntil : (s.k === "wrapped" || s.k === "past") ? s.daysSince : 0;
   return SHOW_TIER[s.k] * 1e6 + t;
 }
@@ -4551,8 +4557,9 @@ function sortShowsByDate(codes) {
 // Per-person landing shows (Nate, Oct. 8, 2026). Tod McCloskey covers every
 // brand but works Equip only, so he lands on Equip instead of PestWorld
 // (which starts first). Rachel Rosen and Kevin Stoltman work PestWorld, then
-// move to Equip once it starts Oct. 21. A rule applies only while its show is
-// upcoming or live; after that everyone falls back to defaultShowFor. A
+// move to Equip once it starts Oct. 21. A rule applies while its show is
+// upcoming, live or in its week-after grace (v194); after that everyone
+// falls back to defaultShowFor. A
 // manual pick in the show picker still wins for that session.
 const SHOW_PREFS = {
   "tmccloskey@northcoastmedia.net": [{ code: "LM-2026" }],
@@ -4571,7 +4578,7 @@ function preferredShow(user) {
   const n = new Date();
   const today = n.getFullYear() + "-" + String(n.getMonth() + 1).padStart(2, "0") + "-" + String(n.getDate()).padStart(2, "0");
   const hit = rules.find(r => EVENTS[r.code] && (!r.from || today >= r.from) && (!r.at || Date.now() >= Date.parse(r.at))
-    && ["upcoming", "live"].includes(showStatus(r.code).k));
+    && (["upcoming", "live"].includes(showStatus(r.code).k) || inLandGrace(r.code)));
   return hit ? hit.code : null;
 }
 function defaultShowFor(brands, home) {
