@@ -132,6 +132,19 @@ service cloud.firestore {
                              .hasOnly(["claimedBy", "claimedName", "claimedAt", "claimedV"]));
     }
 
+    // Photo folders (v196): folder names the bullpen adds for a show; reps
+    // see them in the Photos tab's "Upload to" menu, and the app creates the
+    // SharePoint subfolder on the first upload. Everyone signed in reads;
+    // the bullpen and masters add and remove.
+    match /photoFolders/{docId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && (isHome() || isMaster())
+                            && validEvent(request.resource.data.eventCode)
+                            && request.resource.data.name is string
+                            && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 60;
+      allow delete: if request.auth != null && (isHome() || isMaster());
+    }
+
     // Notes backups (v193): each rep's booth notes, tags, meal/meeting and
     // session notes for a show, from every team, so admins can view and
     // download them (Profile > Admin > People's notes). The rep writes and

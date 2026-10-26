@@ -1948,6 +1948,18 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .acct-chg i { font-style: normal; color: var(--muted); padding: 0 3px; }
 .acct-effects { margin: 12px 0 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
 .acct-effects li { margin-top: 4px; }
+/* ── Photo folders (v196) ── */
+.ph-folder { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: 0.78rem; font-weight: 700; color: var(--text-2); }
+.ph-folder-sel { flex: 1; min-width: 0; padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); }
+.hp-folders { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.hp-folders-head { font-weight: 800; font-size: 0.82rem; margin-bottom: 8px; }
+.hp-folders-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.hp-folder { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px; background: var(--blue-light); color: var(--blue); font-size: 0.76rem; font-weight: 700; }
+.hp-folder-x { border: none; background: none; color: inherit; cursor: pointer; font-size: 0.7rem; padding: 2px 4px; }
+.hp-folders-none, .hp-folders-note { font-size: 0.74rem; color: var(--muted); }
+.hp-folders-new { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.hp-folders-new .hp-folder-inp { flex: 1; min-width: 0; margin: 0; }
+
 /* ── Admin > People's notes (v193) ── */
 .pn-row { border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--surface); }
 .pn-head { display: flex; align-items: center; gap: 10px; }
@@ -2454,7 +2466,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v195</div>
+      <div class="pf-ver">NCM Events Guide · v196</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5954,11 +5966,17 @@ async function msResolveFolder(token, fresh) {
 // When all three are refused, the rep hears it's an access problem (not
 // their connection) and the details land on their profile for admins.
 const MS_DENIED = st => st === 403 || st === 404;
-async function msUploadSession(name, token) {
+async function msUploadSession(name, token, folder) {
   const seg = ":/" + encodeURIComponent(name) + ":/createUploadSession";
   const post = () => ({ method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) });
   const byId = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + seg, post(), token);
+  if (folder) {                                     // a photo folder: by id only
+    try { return await byId(await msSubfolder(token, folder)); }
+    catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
+    try { return await byId(await msSubfolder(token, folder, true)); }
+    catch (e) { recordMsError("session", e); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e; }
+  }
   let first;
   try { return await byId(await msResolveFolder(token)); }
   catch (e) { first = e; if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
@@ -6022,10 +6040,46 @@ function putSmall(url, file, token, onPct) {
     xhr.send(file);
   });
 }
-async function msUploadSmall(name, file, token, onPct) {
+// Photo folders (v196): subfolders of the show folder. Reps pick one per
+// batch; the list is every subfolder in SharePoint plus the names the
+// bullpen made in the app (photoFolders), and a bullpen-named folder is
+// created in SharePoint the first time someone uploads into it.
+const _msSub = {};   // "<folder url>|<lower name>" -> { driveId, itemId }
+async function msListSubfolders(token, base) {
+  const out = [];
+  let path = "/drives/" + base.driveId + "/items/" + base.itemId + "/children?$select=id,name,folder&$top=200";
+  for (let n = 0; path && n < 5; n++) {
+    const j = await msGraph(path, null, token);
+    (j.value || []).forEach(x => { if (x.folder) out.push({ name: x.name, driveId: base.driveId, itemId: x.id }); });
+    path = j["@odata.nextLink"] ? j["@odata.nextLink"].replace("https://graph.microsoft.com/v1.0", "") : null;
+  }
+  return out;
+}
+async function msSubfolder(token, name, fresh) {
+  const base = await msResolveFolder(token, fresh);
+  const ck = base.url + "|" + name.toLowerCase();
+  if (!fresh && _msSub[ck]) return _msSub[ck];
+  const find = async () => (await msListSubfolders(token, base)).find(x => x.name.toLowerCase() === name.toLowerCase());
+  let hit = await find();
+  if (!hit) {
+    try {
+      const j = await msGraph("/drives/" + base.driveId + "/items/" + base.itemId + "/children", { method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) }, token);
+      hit = { name: j.name, driveId: base.driveId, itemId: j.id };
+    } catch (e) {
+      if (e.status !== 409) throw e;
+      hit = await find();          // someone made it a moment ago
+      if (!hit) throw e;
+    }
+  }
+  _msSub[ck] = hit;
+  return hit;
+}
+async function msUploadSmall(name, file, token, onPct, folder) {
   for (const fresh of [false, true]) {
     let f;
-    try { f = await msResolveFolder(token, fresh); } catch (e) { return null; }
+    try { f = folder ? await msSubfolder(token, folder, fresh) : await msResolveFolder(token, fresh); } catch (e) { return null; }
     const url = "https://graph.microsoft.com/v1.0/drives/" + f.driveId + "/items/" + f.itemId + ":/" +
       encodeURIComponent(name) + ":/content?@microsoft.graph.conflictBehavior=rename";
     const r = await putSmall(url, file, token, onPct);
@@ -6034,16 +6088,16 @@ async function msUploadSmall(name, file, token, onPct) {
   }
   return null;
 }
-async function msUploadNamed(name, file, onPct) {
+async function msUploadNamed(name, file, onPct, folder) {
   // Never redirect from in here: a navigation now would drop the file. The
   // tap handlers only open a picker with a fresh token, so this is rare.
   let token;
   try { token = await msSilentToken(); } catch (e) { throw new Error("token"); }
   if (file.size <= SMALL_UP) {
-    const item = await msUploadSmall(name, file, token, onPct);
+    const item = await msUploadSmall(name, file, token, onPct, folder);
     if (item) return item;
   }
-  const sess = await msUploadSession(name, token);
+  const sess = await msUploadSession(name, token, folder);
   let pos = 0, stalls = 0;
   while (true) {
     const end = Math.min(pos + UP_CHUNK, file.size);
@@ -6655,6 +6709,57 @@ function copyText(t) {
     ? navigator.clipboard.writeText(t).then(() => true, fallback)
     : Promise.resolve(fallback());
 }
+// Bullpen-named photo folders, per show (photoFolders/{id}: eventCode, name).
+let photoFolderDocs = {}, _photoFoldersUnsub = null;
+function subscribePhotoFolders() {
+  if (_photoFoldersUnsub) { _photoFoldersUnsub(); _photoFoldersUnsub = null; }
+  photoFolderDocs = {};
+  if (!fbReady || !currentUser) return;
+  _photoFoldersUnsub = fbDb.collection("photoFolders").onSnapshot(snap => {
+    photoFolderDocs = {};
+    snap.forEach(d => { const x = d.data(); if (x && x.name) photoFolderDocs[d.id] = x; });
+    if (isHome()) { if (homeView === "photos") renderHomeDashboard(); }
+    else if (activeView === "photos") refreshPhotoFolderSel();
+  }, () => {});
+}
+function bullpenFolderNames(code) {
+  return Object.values(photoFolderDocs).filter(x => x.eventCode === code).map(x => x.name);
+}
+// The rep's menu: SharePoint subfolders (fetched when the Photos tab opens)
+// plus the bullpen's names, no duplicates, A to Z.
+let spFolders = { code: null, names: [], at: 0 };
+let photoFolderPick = "";
+function photoFolderOptions() {
+  const code = currentEventCode();
+  const seen = new Map();
+  (spFolders.code === code ? spFolders.names : []).concat(bullpenFolderNames(code))
+    .forEach(n => { const k = n.trim().toLowerCase(); if (k && !seen.has(k)) seen.set(k, n.trim()); });
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+async function loadSpFolders() {
+  const code = currentEventCode();
+  if (!msUploadsActive() || !msAccount() || (spFolders.code === code && Date.now() - spFolders.at < 60e3)) return;
+  try {
+    const token = await msSilentToken(true);
+    const names = (await msListSubfolders(token, await msResolveFolder(token))).map(x => x.name);
+    spFolders = { code, names, at: Date.now() };
+    refreshPhotoFolderSel();
+  } catch (e) {}
+}
+function photoFolderSelHtml() {
+  const opts = photoFolderOptions();
+  if (!opts.length) return "";
+  if (photoFolderPick && !opts.includes(photoFolderPick)) photoFolderPick = "";
+  return `<label class="ph-folder"><span>Upload to</span>
+      <select class="ph-folder-sel" data-ph-folder-sel${photoUploading ? " disabled" : ""}>
+        <option value="">Main show folder</option>
+        ${opts.map(n => `<option value="${esc(n)}"${n === photoFolderPick ? " selected" : ""}>${esc(n)}</option>`).join("")}
+      </select></label>`;
+}
+function refreshPhotoFolderSel() {
+  const slot = document.querySelector(".ph-folder-slot");
+  if (slot) slot.innerHTML = photoFolderSelHtml();
+}
 function subscribeHomePhotos() {
   if (_homePhotosUnsub) { _homePhotosUnsub(); _homePhotosUnsub = null; }
   homePhotos = {};
@@ -6673,7 +6778,18 @@ function buildHomePhotosView() {
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const shown = all.filter(p => !q || String(p.caption || "").toLowerCase().includes(q)
     || String(p.name || "").toLowerCase().includes(q));
-  let html = `<div class="home-search-box">
+  const fnames = Object.entries(photoFolderDocs).filter(([, x]) => x.eventCode === code)
+    .sort((a, b) => String(a[1].name).localeCompare(String(b[1].name)));
+  let html = `<div class="hp-folders">
+      <div class="hp-folders-head">Photo folders for ${esc(showShortLabelOf(code) || "this show")}</div>
+      <div class="hp-folders-list">${fnames.length ? fnames.map(([id, x]) =>
+        `<span class="hp-folder">${esc(x.name)}<button type="button" class="hp-folder-x" data-pf-del="${esc(id)}" title="Take this folder out of the reps' menu. Files already in it stay in SharePoint.">&#10005;</button></span>`).join("")
+        : `<span class="hp-folders-none">None yet. Reps upload to the main show folder.</span>`}</div>
+      <div class="hp-folders-new"><input class="home-search-input hp-folder-inp" type="text" maxlength="60" placeholder="New folder, e.g. Hall of Fame" autocomplete="off">
+        <button class="home-rem-btn watch" type="button" data-pf-add>Add folder</button></div>
+      <div class="hp-folders-note">Reps pick a folder when they upload. Subfolders you make in SharePoint show up for them too.</div>
+    </div>
+    <div class="home-search-box">
       <input class="home-search-input hp-search-input" type="text" placeholder="Search photos: caption or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homePhotoQ)}">
     </div>`;
   if (!all.length) return html + `<div class="empty-wrap"><h3>No photos yet</h3>
@@ -6690,7 +6806,7 @@ function buildHomePhotosView() {
           <div class="hp-cap${p.caption ? "" : " none"}${homePhotoOpen.has(p.id) ? " open" : ""}"${String(p.caption || "").length > 140 ? ` data-hp-more="${esc(p.id)}" title="Click to show all"` : ""}>${esc(p.caption || "No caption")}</div>
           ${p.caption ? `<button class="hp-copy" type="button" data-photo-copy="${esc(p.id)}" title="Copy the caption">Copy</button>` : ""}
         </div>
-        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}</div>
+        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}${p.folder ? " · " + esc(p.folder) : ""}</div>
         <div class="hp-actions">${p.webUrl ? `<a class="home-rem-btn watch" ${open}>Open</a>` : ""}
           <button class="home-rem-btn hide" type="button" data-photo-del="${esc(p.id)}" title="Remove from the bullpen. The file stays in SharePoint.">Remove</button></div>
       </div>
@@ -7916,6 +8032,24 @@ document.getElementById("content").addEventListener("click", e => {
     pmore.classList.toggle("open", homePhotoOpen.has(id));
     return;
   }
+  if (e.target.closest("[data-pf-add]")) {
+    const inp = document.querySelector(".hp-folder-inp");
+    const name = String((inp && inp.value) || "").replace(/[\\/:*?"<>|#%]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+    if (!name) { toast("Type a folder name first"); return; }
+    const code = homeEventCode();
+    if (bullpenFolderNames(code).some(n => n.toLowerCase() === name.toLowerCase())) { toast("That folder is already there"); return; }
+    fbDb.collection("photoFolders").doc(fsId(code + "__" + name.toLowerCase())).set({ eventCode: code, name, by: homeMember() || "", ts: Date.now() })
+      .then(() => toast("Folder added: reps can upload to " + name))
+      .catch(() => toast("Couldn't add it (are the latest Firestore rules published?)"));
+    return;
+  }
+  const pfDel = e.target.closest("[data-pf-del]");
+  if (pfDel) {
+    const x = photoFolderDocs[pfDel.dataset.pfDel] || {};
+    if (confirm("Take \"" + (x.name || "this folder") + "\" out of the reps' folder menu? Files already in it stay in SharePoint."))
+      fbDb.collection("photoFolders").doc(pfDel.dataset.pfDel).delete().catch(() => toast("Couldn't remove it"));
+    return;
+  }
   const pdel = e.target.closest("[data-photo-del]");
   if (pdel) {
     if (confirm("Remove this photo from the bullpen? The file stays in the SharePoint folder."))
@@ -8790,6 +8924,7 @@ function refreshPhotos() {
   if (head) head.textContent = photoQueueHeadText();
   const slot = document.querySelector(".ph-send-slot");
   if (slot) slot.innerHTML = photoSendHtml();
+  refreshPhotoFolderSel();
 }
 // Caption boxes grow with the text up to about eight lines, then scroll.
 function fitCaption(t) {
@@ -8846,6 +8981,7 @@ function renderPhotosView() {
   const queue = photoQueue.length ? `<div class="ph-card ph-queue">
       <div class="ph-queue-head">${photoQueueHeadText()}</div>
       ${rows}
+      <div class="ph-folder-slot">${photoFolderSelHtml()}</div>
       <div class="ph-send-slot">${photoSendHtml()}</div>
       <p class="ph-sub">${edit ? "Captions show up in the bullpen with each photo and become the file names." : "Captions become the file names, so the bullpen knows what each one shows."} Keep the app open until they finish.</p>
     </div>` : "";
@@ -8860,6 +8996,7 @@ function renderPhotosView() {
   </div>`;
   // Long captions keep their full height after a redraw.
   el.querySelectorAll(".ph-cap").forEach(t => { if (t.value) fitCaption(t); });
+  loadSpFolders();
 }
 // Same token rules as booth videos: the picker opens only with a fresh token
 // in hand (synchronously, or iOS drops it), so picked photos can never be
@@ -8887,6 +9024,7 @@ async function sendPhotos() {
   let denied = false;
   // Three at a time (v195): one-at-a-time made a 30-photo dump crawl.
   const todo = photoQueue.filter(p => p.state === "ready" || p.state === "err");
+  const folder = photoFolderPick || "";
   let next = 0;
   const one = async p => {
     p.state = "up"; p.pct = 0;
@@ -8896,8 +9034,8 @@ async function sendPhotos() {
         p.pct = pct;
         const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
         if (s) s.textContent = "Uploading " + pct + "%";
-      });
-      p.state = "done";
+      }, folder);
+      p.state = "done"; p.folder = folder;
       p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
       batch.push(p);
       recordPhoto(p);                // bullpen Photos view (Editorial/Digital + Events)
@@ -8939,7 +9077,7 @@ function recordPhoto(p) {
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
     caption: String(p.caption || "").trim().slice(0, 2200),
-    fileName: p.upName || "", webUrl: p.webUrl || "",
+    fileName: p.upName || "", webUrl: p.webUrl || "", folder: p.folder || "",
     thumb: thumb || "", ts: Date.now()
   })).catch(() => {});
 }
@@ -8980,10 +9118,14 @@ function notifyPhotosUploaded(batch) {
   });
   const list = labels.length <= 6 ? joinAnd(labels) : labels.slice(0, 5).join(", ") + " and " + (labels.length - 5) + " more";
   const folder = msUploadFolderUrl();
-  notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + ": " + list +
+  const sub = (batch[0] && batch[0].folder) || "";
+  notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + (sub ? " to the <strong>" + esc(sub) + "</strong> folder" : "") + ": " + list +
     (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : ".") +
     (myNotesAutoShare() ? ' · <a href="' + APP_LINK + '">See them in the bullpen</a>' : ""), null, nVid > 0);
 }
+document.getElementById("content").addEventListener("change", e => {
+  if (e.target && e.target.matches && e.target.matches("[data-ph-folder-sel]")) photoFolderPick = e.target.value;
+});
 document.getElementById("photoFileInput").addEventListener("change", e => {
   const files = [...(e.target.files || [])];
   e.target.value = "";
@@ -10881,6 +11023,7 @@ if (fbReady) {
         subscribePublished();
         subscribeHomeVideoStatus();
         subscribeHomePhotos();
+        subscribePhotoFolders();
         subscribeNotifyConfig();
         renderHomeDashboard();
         return;
@@ -10932,6 +11075,7 @@ if (fbReady) {
       subscribeMyVideoStatus();
       subscribeNotifyConfig();
       subscribeResets();
+      subscribePhotoFolders();
       subscribeUploadConfig();
       subscribeMyProfile();
       if (isMaster()) { prefetchBullpenPasscode().catch(() => {}); loadQrLib().catch(() => {}); }
