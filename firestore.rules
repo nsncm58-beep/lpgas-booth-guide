@@ -132,6 +132,18 @@ service cloud.firestore {
                              .hasOnly(["claimedBy", "claimedName", "claimedAt", "claimedV"]));
     }
 
+    // Notes backups (v193): each rep's booth notes, tags, meal/meeting and
+    // session notes for a show, from every team, so admins can view and
+    // download them (Profile > Admin > People's notes). The rep writes and
+    // reads their own; only masters read anyone's. The bullpen has no access.
+    match /backups/{docId} {
+      allow read: if request.auth != null && (ownDoc(docId) || isMaster());
+      allow create, update: if request.auth != null && ownDoc(docId)
+                            && request.resource.data.uid == request.auth.uid
+                            && validEvent(request.resource.data.eventCode);
+      allow delete: if request.auth != null && (ownDoc(docId) || isMaster());
+    }
+
     // Archived past-show CSVs. Each doc is owned by the rep who archived it
     // (readable by them or a master); created by the owner; deletable by owner/master.
     match /archives/{docId} {

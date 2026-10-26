@@ -1948,6 +1948,18 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .acct-chg i { font-style: normal; color: var(--muted); padding: 0 3px; }
 .acct-effects { margin: 12px 0 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
 .acct-effects li { margin-top: 4px; }
+/* ── Admin > People's notes (v193) ── */
+.pn-row { border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--surface); }
+.pn-head { display: flex; align-items: center; gap: 10px; }
+.pn-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pn-acts { display: flex; gap: 6px; flex-shrink: 0; }
+.pn-who .acct-meta { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+.pn-detail { margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.pn-item { padding: 6px 0 8px; }
+.pn-item + .pn-item { border-top: 1px solid var(--border-soft); }
+.pn-it-title { font-weight: 700; font-size: 0.84rem; }
+.pn-it-sub { font-weight: 500; font-size: 0.72rem; color: var(--muted); }
+
 /* ── Profile > Video progress (view only) ── */
 .vp-sum { font-size: 0.8rem; font-weight: 700; color: var(--text-2); padding: 10px 2px 4px; }
 .vp-item { padding: 12px 2px; border-bottom: 1px solid var(--border-soft); }
@@ -2434,6 +2446,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
       <div class="pf-label">Admin</div>
       <div class="pf-group">
         <button class="pf-row" id="accountsBtn" type="button"><span class="pf-k">Accounts</span><span class="pf-v" id="accountsCount"></span><span class="pf-chev" aria-hidden="true"></span></button>
+        <button class="pf-row" id="pnBtn" type="button"><span class="pf-k">People's notes</span><span class="pf-v">View or download</span><span class="pf-chev" aria-hidden="true"></span></button>
         <button class="pf-row" id="guideBtn" type="button"><span class="pf-k">Install QR and bullpen passcode</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
       </div>
     </div>
@@ -2441,8 +2454,8 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v192</div>
-      <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically; Sales booth notes stay on your device. Show data collected in this app belongs to North Coast Media.</p>
+      <div class="pf-ver">NCM Events Guide · v193</div>
+      <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
   </div>
@@ -2454,7 +2467,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <div class="settings-title">Your team</div>
     <div class="pf-opts" id="teamOpts">
       <label class="pf-opt"><input type="radio" name="teamPick" value="edit"><span><strong>Editorial/Digital</strong><small>Your booth notes, schedule and videos go to the bullpen automatically.</small></span></label>
-      <label class="pf-opt"><input type="radio" name="teamPick" value="sales"><span><strong>Sales</strong><small>Your booth notes stay on your device, and nothing goes to the bullpen.</small></span></label>
+      <label class="pf-opt"><input type="radio" name="teamPick" value="sales"><span><strong>Sales</strong><small>Your booth notes never go to the bullpen. They're backed up so admins can view them.</small></span></label>
     </div>
     <p class="settings-dbx-note" id="teamLockNote" style="display:none"></p>
     <button class="settings-done" id="teamSave" type="button">Save</button>
@@ -2487,6 +2500,11 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <!-- ── Admin: every account, with guarded team and brand edits (master only) ── -->
 <div id="accountsSheet" class="settings-sheet" style="display:none">
   <div class="settings-card acct-card" id="acctCard"></div>
+</div>
+
+<!-- ── Admin: everyone's notes for the current show (v193) ── -->
+<div id="pnSheet" class="settings-sheet" style="display:none">
+  <div class="settings-card acct-card" id="pnCard"></div>
 </div>
 
 <!-- ── Profile > Video progress: the bullpen's steps, view only ── -->
@@ -4917,7 +4935,7 @@ const load  = () => {
   if (code && shiftLocalDays(st, code)) { try { localStorage.setItem(storeKey(), JSON.stringify(st)); } catch(e){} }
   return st;
 };
-const save  = s  => { try { const ds = (resolveEvent(currentEventCode()) || {}).dates; if (ds && ds.length) s._d0 = ds[0]; localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); if (typeof queueNotesSync === "function") queueNotesSync(); };
+const save  = s  => { try { const ds = (resolveEvent(currentEventCode()) || {}).dates; if (ds && ds.length) s._d0 = ds[0]; localStorage.setItem(storeKey(), JSON.stringify(s)); } catch(e){} if (typeof queueScheduleSync === "function") queueScheduleSync(); if (typeof queueNotesSync === "function") queueNotesSync(); if (typeof queueBackupSync === "function") queueBackupSync(); };
 const key   = i  => "c"+i;
 // Withdrawn exhibitors (x:1) stay in their list slot so saved data keeps
 // its company. They're hidden unless this rep saved something on them.
@@ -5015,6 +5033,46 @@ function queueNotesSync() {
   if (!fbReady || !myNotesAutoShare()) return;
   clearTimeout(_notesSyncTimer);
   _notesSyncTimer = setTimeout(syncMyNotesToCloud, 1400);
+}
+// Notes backup (v193, Nate, Oct. 26, 2026): every rep's booth notes,
+// customer/prospect tags, meal and meeting notes and session notes, from
+// every team, go to backups/{docId} so admins can view and download them in
+// Profile > Admin > People's notes. Only admins (and the rep) can read
+// them; the bullpen still sees Editorial/Digital booth notes only.
+let _backupTimer = null;
+function queueBackupSync() {
+  if (!fbReady || !currentUser || isHome()) return;
+  clearTimeout(_backupTimer);
+  _backupTimer = setTimeout(syncBackupToCloud, 2500);
+}
+function buildBackup() {
+  const state = load();
+  const booths = [];
+  CO.forEach((c, i) => {
+    const x = state[key(i)];
+    if (!x) return;
+    const st = x.status && x.status !== "unknown" ? x.status : "";
+    if (!st && !x.visited && !x.scheduled && !(x.pre || "").trim() && !(x.post || "").trim()) return;
+    booths.push({ n: c.n, b: c.b, status: st, scheduled: x.scheduled || "", visited: !!x.visited,
+                  pre: x.pre || "", post: x.post || "", video: !!x.video });
+  });
+  return { booths,
+    meals: loadMeals().map(m => ({ type: m.type, day: m.day, time: m.time, company: m.company || "", notes: m.notes || "", mynotes: m.mynotes || "" })),
+    offsite: loadOffsite().map(o => ({ day: o.day, time: o.time, title: o.title || "", company: o.company || "", location: o.location || "", notes: o.notes || "", mynotes: o.mynotes || "" })),
+    sessions: loadSessions().map(x => ({ sid: x.sid, notes: x.notes || "" })) };
+}
+async function syncBackupToCloud() {
+  if (!fbReady || !currentUser || isHome()) return;
+  const code = currentEventCode();
+  if (!code || !CO.length) return;   // never push nothing over something
+  try {
+    await fbDb.collection("backups").doc(myScheduleDocId()).set({
+      uid: currentUser.uid, name: currentUser.name || "", email: String(currentUser.email || "").toLowerCase(),
+      eventCode: code, dept: effectiveDept(currentUser.uid, currentUser.dept) || "",
+      d0: ((resolveEvent(code) || {}).dates || [])[0] || "",
+      ...buildBackup(), updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { /* offline, or rules not published yet: retry on the next save */ }
 }
 async function syncMyNotesToCloud() {
   // Editorial/Digital notes share automatically. For Sales/unclassified this
@@ -8578,12 +8636,19 @@ function csvForShow(code) {
 }
 function buildShowCsv() {
   const state = load();
-  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
-  [...CO].map((c,i) => ({...c,i}))
+  const booths = [...CO].map((c,i) => ({...c,i}))
     .filter(c => boothShown(c, c.i, state))
+    .map(c => ({ n: c.n, b: c.b, s: state[key(c.i)] || {} }));
+  return csvFromParts(booths, loadMeals(), loadOffsite(), mySessions());
+}
+// One CSV layout for both a rep's own export and an admin's download of
+// someone's notes (v193). booths: [{ n, b, s }] with s = that booth's data.
+function csvFromParts(booths, mealsIn, offsiteIn, sessIn) {
+  const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  booths.slice()
     .sort((a,b) => a.n.localeCompare(b.n))
     .forEach(c => {
-      const s = state[key(c.i)] || {};
+      const s = c.s || {};
       const rk = rowKey(c.b);
       const st = s.status==="customer" ? "Existing Customer"
                : s.status==="noncustomer" ? "Prospect" : "Unknown";
@@ -8593,19 +8658,19 @@ function buildShowCsv() {
         st, schedD ? "Day "+schedD : "", schedT||"",
         s.visited ? "Yes" : "No", s.pre||"", s.post||""]);
     });
-  const meals = loadMeals().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
+  const meals = mealsIn.slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (meals.length) {
     rows.push([]);
     rows.push(["Meal","Day","Time","With","Details","My Notes"]);
     meals.forEach(m => rows.push([MEAL_LABEL[m.type], "Day "+m.day, m.time, m.company||"", m.notes||"", m.mynotes||""]));
   }
-  const offsite = loadOffsite().slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
+  const offsite = offsiteIn.slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (offsite.length) {
     rows.push([]);
     rows.push(["Meeting / Event","Day","Time","With","Location","Details","My Notes"]);
     offsite.forEach(o => rows.push([o.title||"Off-Site Meeting", "Day "+o.day, o.time, o.company||"", o.location||"", o.notes||"", o.mynotes||""]));
   }
-  const sess = mySessions().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
+  const sess = sessIn.slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (sess.length) {
     rows.push([]);
     rows.push(["Education Session","Day","Time","Speakers","Notes"]);
@@ -10118,6 +10183,111 @@ function renderVideoProgress() {
     <button class="settings-done share-secondary" type="button" data-vp-close>Close</button>`;
 }
 document.getElementById("vpBtn").addEventListener("click", openVideoProgress);
+// ── Admin > People's notes (v193) ────────────────────────────────────────
+// Every rep's backed-up notes for the current show: open one to read it,
+// or download the same CSV the rep gets from their own Profile.
+let pnData = { code: null, docs: [], got: false, error: false, open: null };
+async function openPeoplesNotes() {
+  if (!fbReady || !isMaster()) return;
+  const code = currentEventCode();
+  pnData = { code, docs: [], got: false, error: false, open: null };
+  document.getElementById("pnSheet").style.display = "flex";
+  renderPeoplesNotes();
+  try {
+    const snap = await fbDb.collection("backups").where("eventCode", "==", code).get();
+    pnData.docs = []; snap.forEach(d => pnData.docs.push({ id: d.id, ...d.data() }));
+    pnData.docs.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+    pnData.got = true;
+  } catch (e) { pnData.error = true; }
+  renderPeoplesNotes();
+}
+// A backup's days, counted from the show's Day 1 now.
+function pnShift(doc) { return dayShiftFor(doc.eventCode, doc.d0); }
+function pnParts(doc) {
+  const sh = pnShift(doc);
+  const day = d => (+d || 0) + sh;
+  // Every booth on the show's list, like the rep's own export, with their
+  // data laid over it (withdrawn booths only if they saved something).
+  const mine = {};
+  (doc.booths || []).forEach(x => {
+    const s = { ...x };
+    if (s.scheduled && sh) { const [d, t] = s.scheduled.split("|"); s.scheduled = day(d) + "|" + t; }
+    mine[x.b + "||" + x.n] = s;
+  });
+  const list = (resolveEvent(doc.eventCode) || {}).booths || [];
+  const booths = list.map(c => ({ n: c.n, b: c.b, s: mine[c.b + "||" + c.n] || {}, x: c.x }))
+    .filter(c => !c.x || mine[c.b + "||" + c.n]);
+  const known = new Set(list.map(c => c.b + "||" + c.n));
+  Object.entries(mine).forEach(([k, sv]) => { if (!known.has(k)) booths.push({ n: sv.n, b: sv.b, s: sv }); });
+  const meals = (doc.meals || []).map(m => ({ ...m, day: day(m.day) }));
+  const offsite = (doc.offsite || []).map(o => ({ ...o, day: day(o.day) }));
+  const sessions = (doc.sessions || []).map(e => { const x = sessionById(e.sid, doc.eventCode); return x ? { ...x, notes: e.notes || "" } : null; }).filter(Boolean);
+  return { booths, meals, offsite, sessions };
+}
+function pnCount(doc) {
+  const t = v => !!String(v || "").trim();
+  return (doc.booths || []).filter(x => t(x.pre) || t(x.post)).length
+    + (doc.meals || []).filter(m => t(m.mynotes)).length
+    + (doc.offsite || []).filter(o => t(o.mynotes)).length
+    + (doc.sessions || []).filter(x => t(x.notes)).length;
+}
+function pnDetailHtml(doc) {
+  const P = pnParts(doc), t = v => String(v || "").trim();
+  const blk = (title, sub, lines) => `<div class="pn-item"><div class="pn-it-title">${esc(title)}${sub ? ` <span class="pn-it-sub">${esc(sub)}</span>` : ""}</div>${lines.filter(l => l[1]).map(([k, v]) => `<div class="home-note-label">${esc(k)}</div><div class="home-note-text">${esc(v)}</div>`).join("")}</div>`;
+  const stLbl = s => s === "customer" ? "Customer" : s === "noncustomer" ? "Prospect" : "";
+  const bs = P.booths.filter(x => t(x.s.pre) || t(x.s.post)).sort((a, b) => a.n.localeCompare(b.n))
+    .map(x => blk(x.n, ["Booth " + x.b, stLbl(x.s.status), x.s.visited ? "Visited" : ""].filter(Boolean).join(" · "), [["Pre-visit", t(x.s.pre)], ["Post-visit", t(x.s.post)]]));
+  const ms = P.meals.filter(m => t(m.mynotes)).map(m => blk((MEAL_LABEL[m.type] || "Meal") + (m.company ? " with " + m.company : ""), "Day " + m.day + " · " + m.time, [["Notes", t(m.mynotes)]]));
+  const os = P.offsite.filter(o => t(o.mynotes)).map(o => blk(o.title || "Meeting", "Day " + o.day + " · " + o.time, [["Notes", t(o.mynotes)]]));
+  const ss = P.sessions.filter(x => t(x.notes)).map(x => blk(x.title, "Day " + x.day + " · " + x.time, [["Notes", t(x.notes)]]));
+  const all = bs.concat(ms, os, ss);
+  return all.length ? `<div class="pn-detail">${all.join("")}</div>` : `<div class="pn-detail"><div class="acct-empty">No notes written yet. The CSV still has their tags, visits and schedule.</div></div>`;
+}
+function renderPeoplesNotes() {
+  const card = document.getElementById("pnCard");
+  if (!card) return;
+  const code = pnData.code;
+  let body;
+  if (pnData.error) body = `<div class="acct-empty">Couldn't load notes. Check your connection and try again.</div>`;
+  else if (!pnData.got) body = `<div class="acct-empty">Loading…</div>`;
+  else if (!pnData.docs.length) body = `<div class="acct-empty">No one's notes have backed up for this show yet. Each person's notes back up the next time they open the app.</div>`;
+  else body = pnData.docs.map(d => {
+    const n = pnCount(d), open = pnData.open === d.id;
+    const ts = d.updatedAt && d.updatedAt.toMillis ? d.updatedAt.toMillis() : 0;
+    const team = d.dept === "sales" ? "Sales" : d.dept === "edit" ? "Editorial/Digital" : "";
+    return `<div class="pn-row">
+      <div class="pn-head">
+        <div class="pn-who"><span class="acct-name">${esc(d.name || d.email || "Rep")}</span>
+          <span class="acct-meta">${esc([team, n + " note" + (n === 1 ? "" : "s"), (d.booths || []).length + " booths", ts ? "updated " + fmtAgo(ts) : ""].filter(Boolean).join(" · "))}</span></div>
+        <div class="pn-acts">
+          <button class="home-rem-btn" type="button" data-pn-view="${esc(d.id)}">${open ? "Hide" : "View"}</button>
+          <button class="home-rem-btn watch" type="button" data-pn-csv="${esc(d.id)}">CSV</button>
+        </div>
+      </div>
+      ${open ? pnDetailHtml(d) : ""}
+    </div>`;
+  }).join("");
+  card.innerHTML = `<div class="acct-top">
+      <div class="settings-title">People's notes</div>
+      <div class="acct-sum">${esc(showLabelOf(code) || "This show")}. Everyone's notes, tags and visits as of their last app open. Switch shows with the button at the top.</div>
+    </div>
+    <div class="acct-list">${body}</div>
+    <button class="settings-done share-secondary" type="button" data-pn-close>Close</button>`;
+}
+document.getElementById("pnBtn").addEventListener("click", openPeoplesNotes);
+document.getElementById("pnSheet").addEventListener("click", e => {
+  if (e.target.id === "pnSheet" || e.target.closest("[data-pn-close]")) { document.getElementById("pnSheet").style.display = "none"; return; }
+  const v = e.target.closest("[data-pn-view]");
+  if (v) { pnData.open = pnData.open === v.dataset.pnView ? null : v.dataset.pnView; renderPeoplesNotes(); return; }
+  const c = e.target.closest("[data-pn-csv]");
+  if (c) {
+    const d = pnData.docs.find(x => x.id === c.dataset.pnCsv);
+    if (!d) return;
+    const P = pnParts(d);
+    const who = String(d.name || d.email || "rep").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
+    downloadCsv(csvFromParts(P.booths, P.meals, P.offsite, P.sessions), csvFileName(d.eventCode).replace(/\.csv$/, "") + "_" + who + ".csv");
+  }
+});
 document.getElementById("vpSheet").addEventListener("click", e => {
   if (e.target.id === "vpSheet" || e.target.closest("[data-vp-close]")) { closeVideoProgress(); return; }
   if (e.target.closest("[data-vp-done]")) { vpShowDone = !vpShowDone; renderVideoProgress(); }
@@ -10713,6 +10883,7 @@ if (fbReady) {
       subscribePreload();
       syncMyScheduleToCloud();
       syncMyNotesToCloud();
+      syncBackupToCloud();
       subscribeTeam();
       subscribeMyVideoStatus();
       subscribeNotifyConfig();
