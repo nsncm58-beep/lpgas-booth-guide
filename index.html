@@ -1958,7 +1958,11 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-folder-x { border: none; background: none; color: inherit; cursor: pointer; font-size: 0.7rem; padding: 2px 4px; }
 .hp-folders-none, .hp-folders-note { font-size: 0.74rem; color: var(--muted); }
 .hp-folders-new { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-.hp-folders-new .hp-folder-inp { flex: 1; min-width: 0; margin: 0; }
+/* Its own class (v197): sharing .home-search-input made every keystroke run
+   the bullpen search and redraw the page, wiping the box. */
+.hp-folder-inp { flex: 1; min-width: 0; margin: 0; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+  font-family: var(--ft); font-size: 0.9rem; color: var(--text); background: var(--surface); }
+.hp-folder-inp:focus { outline: none; border-color: var(--blue); }
 
 /* ── Admin > People's notes (v193) ── */
 .pn-row { border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--surface); }
@@ -2466,7 +2470,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v196</div>
+      <div class="pf-ver">NCM Events Guide · v197</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6678,9 +6682,13 @@ function renderHomeDashboard() {
     html += buildHomeOverview();
   }
   html += `</div></div>`;
+  const folderFocus = !!(document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("hp-folder-inp"));
   el.innerHTML = html;
   const activeQ = homeView === "sched" ? homeSchedQ : homeView === "photos" ? homePhotoQ : homeSearchQ;
-  if (activeQ.trim()) {
+  if (folderFocus) {
+    const fi = document.querySelector(".hp-folder-inp");
+    if (fi) { fi.focus(); fi.setSelectionRange(fi.value.length, fi.value.length); }
+  } else if (activeQ.trim()) {
     const si = document.querySelector(homeView === "sched" ? ".hs-search-input" : homeView === "photos" ? ".hp-search-input" : ".home-search-input");
     if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
   }
@@ -6709,6 +6717,17 @@ function copyText(t) {
     ? navigator.clipboard.writeText(t).then(() => true, fallback)
     : Promise.resolve(fallback());
 }
+// The bullpen's half-typed folder name survives live redraws (new notes or
+// photos arriving), and Enter adds it.
+let hpFolderDraft = "";
+document.addEventListener("input", e => {
+  if (e.target && e.target.classList && e.target.classList.contains("hp-folder-inp")) hpFolderDraft = e.target.value;
+}, true);
+document.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target && e.target.classList && e.target.classList.contains("hp-folder-inp")) {
+    e.preventDefault(); document.querySelector("[data-pf-add]")?.click();
+  }
+}, true);
 // Bullpen-named photo folders, per show (photoFolders/{id}: eventCode, name).
 let photoFolderDocs = {}, _photoFoldersUnsub = null;
 function subscribePhotoFolders() {
@@ -6785,7 +6804,7 @@ function buildHomePhotosView() {
       <div class="hp-folders-list">${fnames.length ? fnames.map(([id, x]) =>
         `<span class="hp-folder">${esc(x.name)}<button type="button" class="hp-folder-x" data-pf-del="${esc(id)}" title="Take this folder out of the reps' menu. Files already in it stay in SharePoint.">&#10005;</button></span>`).join("")
         : `<span class="hp-folders-none">None yet. Reps upload to the main show folder.</span>`}</div>
-      <div class="hp-folders-new"><input class="home-search-input hp-folder-inp" type="text" maxlength="60" placeholder="New folder, e.g. Hall of Fame" autocomplete="off">
+      <div class="hp-folders-new"><input class="hp-folder-inp" type="text" maxlength="60" placeholder="New folder, e.g. Hall of Fame" autocomplete="off" value="${esc(hpFolderDraft)}">
         <button class="home-rem-btn watch" type="button" data-pf-add>Add folder</button></div>
       <div class="hp-folders-note">Reps pick a folder when they upload. Subfolders you make in SharePoint show up for them too.</div>
     </div>
@@ -8039,7 +8058,7 @@ document.getElementById("content").addEventListener("click", e => {
     const code = homeEventCode();
     if (bullpenFolderNames(code).some(n => n.toLowerCase() === name.toLowerCase())) { toast("That folder is already there"); return; }
     fbDb.collection("photoFolders").doc(fsId(code + "__" + name.toLowerCase())).set({ eventCode: code, name, by: homeMember() || "", ts: Date.now() })
-      .then(() => toast("Folder added: reps can upload to " + name))
+      .then(() => { hpFolderDraft = ""; const i2 = document.querySelector(".hp-folder-inp"); if (i2) i2.value = ""; toast("Folder added: reps can upload to " + name); })
       .catch(() => toast("Couldn't add it (are the latest Firestore rules published?)"));
     return;
   }
