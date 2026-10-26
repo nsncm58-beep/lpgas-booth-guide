@@ -2454,7 +2454,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v194</div>
+      <div class="pf-ver">NCM Events Guide · v195</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6006,11 +6006,43 @@ function putChunk(url, blob, range, onLoaded) {
 async function msUploadFile(c, file, onPct) { return msUploadNamed(msFileName(c, file), file, onPct); }
 // Upload any file into the show folder as `name`: booth videos from the
 // booth cards, photos from the Photos tab. Resumable chunks, byte progress.
+// Files up to 4 MB (nearly every photo) go up in ONE request straight into
+// the folder instead of opening an upload session first (v195). Any failure
+// falls back to the resumable session below.
+const SMALL_UP = 4 * 1024 * 1024;
+function putSmall(url, file, token, onPct) {
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Authorization", "Bearer " + token);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.upload.onprogress = ev => { if (onPct && ev.lengthComputable) onPct(Math.min(99, Math.floor(ev.loaded / ev.total * 100))); };
+    xhr.onload = () => { let j = null; try { j = JSON.parse(xhr.responseText || "null"); } catch (e) {} resolve({ status: xhr.status, json: j }); };
+    xhr.onerror = xhr.ontimeout = xhr.onabort = () => resolve(null);
+    xhr.send(file);
+  });
+}
+async function msUploadSmall(name, file, token, onPct) {
+  for (const fresh of [false, true]) {
+    let f;
+    try { f = await msResolveFolder(token, fresh); } catch (e) { return null; }
+    const url = "https://graph.microsoft.com/v1.0/drives/" + f.driveId + "/items/" + f.itemId + ":/" +
+      encodeURIComponent(name) + ":/content?@microsoft.graph.conflictBehavior=rename";
+    const r = await putSmall(url, file, token, onPct);
+    if (r && (r.status === 200 || r.status === 201) && r.json) { recordMsOk(); return r.json; }
+    if (!r || !MS_DENIED(r.status)) return null;   // network trouble or anything odd: use a session
+  }
+  return null;
+}
 async function msUploadNamed(name, file, onPct) {
   // Never redirect from in here: a navigation now would drop the file. The
   // tap handlers only open a picker with a fresh token, so this is rare.
   let token;
   try { token = await msSilentToken(); } catch (e) { throw new Error("token"); }
+  if (file.size <= SMALL_UP) {
+    const item = await msUploadSmall(name, file, token, onPct);
+    if (item) return item;
+  }
   const sess = await msUploadSession(name, token);
   let pos = 0, stalls = 0;
   while (true) {
@@ -8853,9 +8885,10 @@ async function sendPhotos() {
   refreshPhotos();
   const batch = [];                // this run's successes, for the Teams alert
   let denied = false;
-  for (const p of photoQueue) {
-    if (denied) break;             // the rest would be refused the same way
-    if (p.state !== "ready" && p.state !== "err") continue;
+  // Three at a time (v195): one-at-a-time made a 30-photo dump crawl.
+  const todo = photoQueue.filter(p => p.state === "ready" || p.state === "err");
+  let next = 0;
+  const one = async p => {
     p.state = "up"; p.pct = 0;
     refreshPhotos();
     try {
@@ -8873,7 +8906,11 @@ async function sendPhotos() {
       if (String(e && e.message) === "no-access") { denied = true; p.denied = true; }
     }
     refreshPhotos();
-  }
+  };
+  const worker = async () => {
+    while (next < todo.length && !denied) await one(todo[next++]);   // the rest would be refused the same way
+  };
+  await Promise.all([worker(), worker(), worker()]);
   photoUploading = false;
   notifyPhotosUploaded(batch);
   const ok = photoQueue.filter(p => p.state === "done").length;
