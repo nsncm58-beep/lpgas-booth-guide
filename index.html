@@ -2481,7 +2481,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v200</div>
+      <div class="pf-ver">NCM Events Guide · v201</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4836,7 +4836,33 @@ const MEDIA = {
     folder:  "https://northcoastcle.sharepoint.com/:f:/s/Homebase/IgAzKN31RRHzQIn3hF50GTcEAYjq2LKFXq3QAFDu51Hko4M?e=1wOy74"
   },
 };
-function eventMedia(code) { return MEDIA[code] || null; }
+// A show with no folder of its own uploads into its brand's folder for that
+// year (LM-2026 for every 2026 LM show, and so on), inside a show folder
+// the app names and creates, split into Photos and Videos (v201, Nate,
+// Oct. 26, 2026). Shows that already had their own entry keep uploading
+// loose into it, as they always have.
+function eventMedia(code) {
+  if (MEDIA[code]) return MEDIA[code];
+  const ev = EVENTS[code];
+  const y = ev && Array.isArray(ev.dates) && ev.dates[0] ? ev.dates[0].slice(0, 4) : "";
+  const brandYear = String(code || "").split("-")[0] + "-" + y;
+  return y && MEDIA[brandYear] ? { ...MEDIA[brandYear], sub: true } : null;
+}
+// "NALP Elevate 2026": the show's folder inside its brand-year folder.
+function showFolderName(code) {
+  const ev = EVENTS[code] || {};
+  const y = (ev.dates || [])[0] ? ev.dates[0].slice(0, 4) : "";
+  return (String(ev.show || code).replace(/[\\/:*?"<>|#%]+/g, " ").replace(/\s+/g, " ").trim() + (y ? " " + y : "")).trim();
+}
+// Where an upload goes, as folders under the show's link: [] for a show with
+// its own folder; [show, "Photos" or "Videos", photo folder?] otherwise. A
+// show with its own folder still puts bullpen photo folders right inside it.
+function uploadSegs(kind, photoFolder) {
+  const code = currentEventCode(), m = eventMedia(code) || {};
+  const segs = m.sub ? [showFolderName(code), kind === "video" ? "Videos" : "Photos"] : [];
+  if (kind !== "video" && photoFolder) segs.push(photoFolder);
+  return segs;
+}
 function inferBrand(code) {
   const c = (code || "").toUpperCase();
   if (c.startsWith("LPG"))  return "lpgas";
@@ -5997,15 +6023,15 @@ async function msResolveFolder(token, fresh) {
 // When all three are refused, the rep hears it's an access problem (not
 // their connection) and the details land on their profile for admins.
 const MS_DENIED = st => st === 403 || st === 404;
-async function msUploadSession(name, token, folder) {
+async function msUploadSession(name, token, segs) {
   const seg = ":/" + encodeURIComponent(name) + ":/createUploadSession";
   const post = () => ({ method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) });
   const byId = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + seg, post(), token);
-  if (folder) {                                     // a photo folder: by id only
-    try { return await byId(await msSubfolder(token, folder)); }
+  if (segs && segs.length) {                        // a subfolder: by id only
+    try { return await byId(await msTarget(token, segs)); }
     catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
-    try { return await byId(await msSubfolder(token, folder, true)); }
+    try { return await byId(await msTarget(token, segs, true)); }
     catch (e) { recordMsError("session", e); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e; }
   }
   let first;
@@ -6052,7 +6078,7 @@ function putChunk(url, blob, range, onLoaded) {
     xhr.send(blob);
   });
 }
-async function msUploadFile(c, file, onPct) { return msUploadNamed(msFileName(c, file), file, onPct); }
+async function msUploadFile(c, file, onPct) { return msUploadNamed(msFileName(c, file), file, onPct, uploadSegs("video")); }
 // Upload any file into the show folder as `name`: booth videos from the
 // booth cards, photos from the Photos tab. Resumable chunks, byte progress.
 // Files up to 4 MB (nearly every photo) go up in ONE request straight into
@@ -6086,31 +6112,48 @@ async function msListSubfolders(token, base) {
   }
   return out;
 }
-async function msSubfolder(token, name, fresh) {
-  const base = await msResolveFolder(token, fresh);
-  const ck = base.url + "|" + name.toLowerCase();
-  if (!fresh && _msSub[ck]) return _msSub[ck];
-  const find = async () => (await msListSubfolders(token, base)).find(x => x.name.toLowerCase() === name.toLowerCase());
+// One child folder of `parent`, found by name (any capitalization) or made.
+async function msChild(token, parent, name, noCreate) {
+  const find = async () => (await msListSubfolders(token, parent)).find(x => x.name.toLowerCase() === name.toLowerCase());
   let hit = await find();
-  if (!hit) {
-    try {
-      const j = await msGraph("/drives/" + base.driveId + "/items/" + base.itemId + "/children", { method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) }, token);
-      hit = { name: j.name, driveId: base.driveId, itemId: j.id, webUrl: j.webUrl || "" };
-    } catch (e) {
-      if (e.status !== 409) throw e;
-      hit = await find();          // someone made it a moment ago
-      if (!hit) throw e;
-    }
+  if (hit || noCreate) return hit || null;
+  try {
+    const j = await msGraph("/drives/" + parent.driveId + "/items/" + parent.itemId + "/children", { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, folder: {}, "@microsoft.graph.conflictBehavior": "fail" }) }, token);
+    return { name: j.name, driveId: parent.driveId, itemId: j.id, webUrl: j.webUrl || "" };
+  } catch (e) {
+    if (e.status !== 409) throw e;
+    hit = await find();            // someone made it a moment ago
+    if (!hit) throw e;
+    return hit;
   }
-  _msSub[ck] = hit;
-  return hit;
 }
-async function msUploadSmall(name, file, token, onPct, folder) {
+const msSegKey = (url, segs) => url + "|" + segs.map(x => String(x).toLowerCase()).join("/");
+// The folder at `segs` under the show's link, made as needed (noCreate:
+// null when any part is missing). Cached per path.
+async function msTarget(token, segs, fresh, noCreate) {
+  const base = await msResolveFolder(token, fresh);
+  if (!segs || !segs.length) return base;
+  const ck = msSegKey(base.url, segs);
+  if (!fresh && _msSub[ck]) return _msSub[ck];
+  let cur = base;
+  for (let i = 0; i < segs.length; i++) {
+    const k = msSegKey(base.url, segs.slice(0, i + 1));
+    const next = (!fresh && _msSub[k]) || await msChild(token, cur, segs[i], noCreate);
+    if (!next) return null;
+    _msSub[k] = next; cur = next;
+  }
+  return cur;
+}
+function msCachedTarget(segs) {
+  const url = msUploadFolderUrl();
+  return segs && segs.length ? _msSub[msSegKey(url, segs)] || null : null;
+}
+async function msUploadSmall(name, file, token, onPct, segs) {
   for (const fresh of [false, true]) {
     let f;
-    try { f = folder ? await msSubfolder(token, folder, fresh) : await msResolveFolder(token, fresh); } catch (e) { return null; }
+    try { f = await msTarget(token, segs, fresh); } catch (e) { return null; }
     const url = "https://graph.microsoft.com/v1.0/drives/" + f.driveId + "/items/" + f.itemId + ":/" +
       encodeURIComponent(name) + ":/content?@microsoft.graph.conflictBehavior=rename";
     const r = await putSmall(url, file, token, onPct);
@@ -6119,16 +6162,16 @@ async function msUploadSmall(name, file, token, onPct, folder) {
   }
   return null;
 }
-async function msUploadNamed(name, file, onPct, folder) {
+async function msUploadNamed(name, file, onPct, segs) {
   // Never redirect from in here: a navigation now would drop the file. The
   // tap handlers only open a picker with a fresh token, so this is rare.
   let token;
   try { token = await msSilentToken(); } catch (e) { throw new Error("token"); }
   if (file.size <= SMALL_UP) {
-    const item = await msUploadSmall(name, file, token, onPct, folder);
+    const item = await msUploadSmall(name, file, token, onPct, segs);
     if (item) return item;
   }
-  const sess = await msUploadSession(name, token, folder);
+  const sess = await msUploadSession(name, token, segs);
   let pos = 0, stalls = 0;
   while (true) {
     const end = Math.min(pos + UP_CHUNK, file.size);
@@ -6787,7 +6830,8 @@ async function loadSpFolders() {
   if (!msUploadsActive() || !msAccount() || (spFolders.code === code && Date.now() - spFolders.at < 60e3)) return;
   try {
     const token = await msSilentToken(true);
-    const names = (await msListSubfolders(token, await msResolveFolder(token))).map(x => x.name);
+    const root = await msTarget(token, uploadSegs("photo", ""), false, true);   // never creates just to look
+    const names = root ? (await msListSubfolders(token, root)).map(x => x.name) : [];
     spFolders = { code, names, at: Date.now() };
     refreshPhotoFolderSel();
   } catch (e) {}
@@ -6864,7 +6908,8 @@ function buildHomePhotosView() {
     </div>`;
   // The open folder's header, with its SharePoint link when known.
   if (sel) {
-    const f = sel === "__main" ? { name: "Main show folder", url: (eventMedia(code) || {}).folder || "" } : folders.get(sel);
+    const showUrl = (all.find(p => p.showUrl) || {}).showUrl || "";
+    const f = sel === "__main" ? { name: "Main show folder", url: showUrl || (eventMedia(code) || {}).folder || "" } : folders.get(sel);
     html += `<div class="hp-fhead"><span class="hp-fhead-name">${esc(f.name)}</span><span class="hp-fhead-n">${inSel.length} photo${inSel.length === 1 ? "" : "s"}</span>
       ${f.url ? `<a class="home-rem-btn watch" href="${esc(f.url)}" target="_blank" rel="noopener">Open in SharePoint</a>` : ""}</div>`;
   }
@@ -9116,13 +9161,16 @@ async function sendPhotos() {
     p.state = "up"; p.pct = 0;
     refreshPhotos();
     try {
+      const isVid = /^video\//.test(p.file.type);
+      const segs = uploadSegs(isVid ? "video" : "photo", isVid ? "" : folder);
       const item = await msUploadNamed(msPhotoName(p.caption, p.file), p.file, pct => {
         p.pct = pct;
         const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
         if (s) s.textContent = "Uploading " + pct + "%";
-      }, folder);
-      p.state = "done"; p.folder = folder;
-      if (folder) { const hit = Object.entries(_msSub).find(([k]) => k.endsWith("|" + folder.toLowerCase())); p.folderUrl = (hit && hit[1].webUrl) || ""; }
+      }, segs);
+      p.state = "done"; p.folder = isVid ? "" : folder;
+      p.folderUrl = (p.folder && (msCachedTarget(segs) || {}).webUrl) || "";
+      p.showUrl = (msCachedTarget(uploadSegs("photo", "")) || {}).webUrl || "";
       p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
       batch.push(p);
       recordPhoto(p);                // bullpen Photos view (Editorial/Digital + Events)
@@ -9164,7 +9212,7 @@ function recordPhoto(p) {
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
     caption: String(p.caption || "").trim().slice(0, 2200),
-    fileName: p.upName || "", webUrl: p.webUrl || "", folder: p.folder || "", folderUrl: p.folderUrl || "",
+    fileName: p.upName || "", webUrl: p.webUrl || "", folder: p.folder || "", folderUrl: p.folderUrl || "", showUrl: p.showUrl || "",
     thumb: thumb || "", ts: Date.now()
   })).catch(() => {});
 }
@@ -9207,7 +9255,7 @@ function notifyPhotosUploaded(batch) {
     return p.webUrl ? '<a href="' + esc(p.webUrl) + '">' + label + '</a>' : label;
   });
   const list = labels.length <= 6 ? joinAnd(labels) : labels.slice(0, 5).join(", ") + " and " + (labels.length - 5) + " more";
-  const folder = msUploadFolderUrl();
+  const folder = (batch[0] && (batch[0].folderUrl || batch[0].showUrl)) || msUploadFolderUrl();
   const sub = (batch[0] && batch[0].folder) || "";
   notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + (sub ? " to the <strong>" + esc(sub) + "</strong> folder" : "") + ": " + list +
     (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : ".") +
