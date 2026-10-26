@@ -2481,7 +2481,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v199</div>
+      <div class="pf-ver">NCM Events Guide · v200</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4399,7 +4399,7 @@ const ELEVATE_BOOTHS = [
   {n:"National Association of Landscape Professionals (NALP)", b:"1019"},
   {n:"Natural Repellents, LLC", b:"1430"},
   {n:"Nature'sMACE", b:"1827"},
-  {n:"NE PARADIGM", b:"404"},
+  {n:"PARADIGM", b:"404"},
   {n:"NeedTurfEquipment", b:"1032"},
   {n:"NEI Distributors", b:"1437"},
   {n:"Never Deer", b:"1822"},
@@ -4447,7 +4447,7 @@ const ELEVATE_BOOTHS = [
   {n:"Soil & Plant Laboratory", b:"1611"},
   {n:"Spectrum Marketing Companies, Inc.", b:"1038"},
   {n:"Sprayer Direct USA", b:"1337"},
-  {n:"STAFF A BIZ", b:"432"},
+  {n:"STAFF A BIZ", b:"432", x:1},
   {n:"Stanley Black & Decker Outdoor", b:"819 / 919"},
   {n:"Steel Green Manufacturing", b:"1619"},
   {n:"Sterling Seacrest Pritchard", b:"1708"},
@@ -4461,7 +4461,7 @@ const ELEVATE_BOOTHS = [
   {n:"The French Drain Man", b:"1432"},
   {n:"The Harvest Group", b:"1028"},
   {n:"The Toro Company", b:"811 / 1600"},
-  {n:"ThruputNow", b:"940"},
+  {n:"ThruputNow", b:"940", x:1},
   {n:"TOP Green", b:"1802"},
   {n:"Towa Industries, Inc.", b:"518"},
   {n:"TRAKTA", b:"1931"},
@@ -4469,7 +4469,7 @@ const ELEVATE_BOOTHS = [
   {n:"True Pro", b:"1505"},
   {n:"TruGreen", b:"609"},
   {n:"TruTec", b:"329"},
-  {n:"Turf Magazine", b:"1538"},
+  {n:"Turf Magazine", b:"1538", x:1},
   {n:"Turf Producers Association", b:"1428"},
   {n:"TURFCO", b:"1419"},
   {n:"Turfware Equipment, Inc.", b:"825"},
@@ -4487,6 +4487,20 @@ const ELEVATE_BOOTHS = [
   {n:"Wright Manufacturing, Inc.", b:"719"},
   {n:"Yarbo International Inc.", b:"1530"},
   {n:"Youngblood & Associates, PLLC", b:"1338"},
+  // Oct. 26, 2026 refresh from a2z (append only): 12 new; NE PARADIGM renamed
+  // PARADIGM; STAFF A BIZ, ThruputNow and Turf Magazine withdrawn (x:1).
+  {n:"AreticAI", b:"311"},
+  {n:"BambooHR", b:"333"},
+  {n:"GoMaterials, Inc.", b:"309"},
+  {n:"InterQuip USA", b:"1538"},
+  {n:"Keep It Green Turf, LLC", b:"629"},
+  {n:"Labor Consultants International", b:"323"},
+  {n:"Route4Me", b:"302"},
+  {n:"SeaGlass Advisors", b:"940"},
+  {n:"Service Autopilot", b:"1930"},
+  {n:"Southgate Lease Services, Inc.", b:"432"},
+  {n:"Spruce Systems", b:"305"},
+  {n:"Unlimited Labor Solutions, LLP", b:"313"},
 ];
 
 // ── BRANDS + EVENTS (multi-brand theming) ───────────────────────────────
@@ -4686,7 +4700,9 @@ const EVENTS = {
   // and off-site meetings run outside the Nov. 9-10 exhibit hall hours.
   // No MEDIA entry yet, so Photos says uploads aren't set up until its
   // SharePoint folder link is added.
-  "LM-ELEVATE-2026": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_BOOTHS, tz: "America/New_York", dates: ["2026-11-08","2026-11-09","2026-11-10","2026-11-11"] },
+  "LM-ELEVATE-2026": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_BOOTHS, tz: "America/New_York", dates: ["2026-11-08","2026-11-09","2026-11-10","2026-11-11"],
+    venue: { name: "Tampa Convention Center", address: "333 S. Franklin St., Tampa, FL 33602" },
+    hours: { "2026-11-09": "Exhibit hall 2-6 p.m.", "2026-11-10": "Exhibit hall 10 a.m.-2 p.m." } },
   // PestWorld: Day 1 is Sunday, Oct. 18 (Pelgar dinner), Day 2 Monday (PMP
   // Hall of Fame, booth setup), Days 3-6 the exhibit hall (Tue. 2-6 p.m.,
   // Wed. and Thu. 10 a.m.-2 p.m., Fri. 8-10 a.m.). Day 1 was Tuesday until
