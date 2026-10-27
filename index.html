@@ -2555,7 +2555,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v208</div>
+      <div class="pf-ver">NCM Events Guide · v209</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -9233,7 +9233,7 @@ function startFresh() {
   if (Object.keys(upProg).length || photoQueue.length || photoUploading || _isTypingEl(document.activeElement)) return;   // mid-upload, photos waiting or mid-note: stay put
   // People with a landing rule move when it kicks in (an app left open on
   // PestWorld on Oct. 20 switches to Equip when they come back Oct. 21).
-  if (isMaster() && !pickerShows().some(c => showStatus(c).k === "live")) {
+  if (wantsAdminHome()) {
     viewedScheduleUid = null; schedAllView = false;
     forgetTabScroll(); setBottomTab("admin"); render(); scrollAppTo(0);
     return;
@@ -11608,11 +11608,8 @@ document.getElementById("content").addEventListener("change", e => {
   const f = e.target.closest("[data-ah-for]");
   if (f) _ahToolShow = f.value;
 });
-function maybeOpenAdminHome() {
-  if (!isMaster() || isHome()) return;
-  if (pickerShows().some(c => showStatus(c).k === "live")) return;
-  setBottomTab("admin");
-  render();
+function wantsAdminHome() {
+  return isMaster() && !isHome() && !pickerShows().some(c => showStatus(c).k === "live");
 }
 async function switchToShow(code, manual) {
   if (!code) return;
@@ -11746,6 +11743,10 @@ if (fbReady) {
       // During the show itself, open on today's day rather than Day 1.
       schedDay = showDayToday(currentEventCode()) || 1;
       setupShowPicker();
+      // Admins between shows open on Home: decided here, before the first
+      // paint, so PestWorld no longer flashes up first (v209). Until v208 the
+      // switch waited for the cloud checks below.
+      if (wantsAdminHome()) setBottomTab("admin");
       // Draw the right show from this device's saved data BEFORE the loading
       // screen lifts (v161). Until then the veil lifted onto the pre-sign-in
       // placeholder and the real schedule replaced it a moment later with a
@@ -11775,7 +11776,6 @@ if (fbReady) {
       render();
       forgetTabScroll(); scrollAppTo(0);
       maybeShowConfirmSheet();
-      maybeOpenAdminHome();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_pubUnsub) { _pubUnsub(); _pubUnsub = null; } pubSchedules = {};
