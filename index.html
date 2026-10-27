@@ -2502,7 +2502,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v205</div>
+      <div class="pf-ver">NCM Events Guide · v206</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2630,7 +2630,8 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <!-- ── Show picker: every brand you cover, with its shows ── -->
 <div id="showSheet" class="settings-sheet" style="display:none">
   <div class="settings-card show-card">
-    <div class="settings-title">Switch show</div>
+    <div class="settings-title" id="showSheetTitle">Switch show</div>
+    <p class="settings-dbx-note" id="showSheetIntro" style="display:none"></p>
     <div id="showList"></div>
     <button class="settings-done share-secondary" id="showSheetClose" type="button">Close</button>
   </div>
@@ -11297,10 +11298,23 @@ function renderShowSheet() {
   }
   document.getElementById("showList").innerHTML = h;
 }
-function openShowSheet() {
+function openShowSheet(home) {
   _showSheetPast = false;
   renderShowSheet();
+  document.getElementById("showSheetTitle").textContent = home ? "Pick a show" : "Switch show";
+  const intro = document.getElementById("showSheetIntro");
+  intro.style.display = home ? "" : "none";
+  intro.textContent = home ? "No show is live right now. Choose one to view, or close this to stay on " + showShortLabelOf(currentEventCode()) + "." : "";
   document.getElementById("showSheet").style.display = "flex";
+}
+// Admins opening the app between shows start on the show list instead of
+// whichever show the app guessed (v206, Nate, Oct. 27, 2026). During a live
+// show they land on it as before.
+function maybeOpenAdminHome() {
+  if (!isMaster() || isHome()) return;
+  if (pickerShows().some(c => showStatus(c).k === "live")) return;
+  if (document.getElementById("confirmSheet").style.display === "flex") return;
+  openShowSheet(true);
 }
 async function switchToShow(code, manual) {
   if (!code) return;
@@ -11324,7 +11338,7 @@ async function switchToShow(code, manual) {
   updateMediaBtn();
   render();
 }
-document.getElementById("showPickBtn").addEventListener("click", openShowSheet);
+document.getElementById("showPickBtn").addEventListener("click", () => openShowSheet(false));
 document.getElementById("showSheet").addEventListener("click", e => {
   const sheet = document.getElementById("showSheet");
   if (e.target.id === "showSheet" || e.target.closest("#showSheetClose")) { sheet.style.display = "none"; return; }
@@ -11463,6 +11477,7 @@ if (fbReady) {
       render();
       forgetTabScroll(); scrollAppTo(0);
       maybeShowConfirmSheet();
+      maybeOpenAdminHome();
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_pubUnsub) { _pubUnsub(); _pubUnsub = null; } pubSchedules = {};
