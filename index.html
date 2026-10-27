@@ -2502,7 +2502,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v204</div>
+      <div class="pf-ver">NCM Events Guide · v205</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4299,6 +4299,9 @@ const PMP_BOOTHS = [
 // boothed, 22 booths still for sale. PGMS Transform shares the hall. NALP's
 // "View Exhibitors" button still opens the 2025 plan, so don't use it.
 // Refresh the week before the show, APPEND ONLY (see LM_BOOTHS).
+// New York Pest Expo 2026 vendors: empty until Bug Off sends a list
+// (APPEND ONLY once filled, like the others).
+const NYPEST_BOOTHS = [];
 const ELEVATE_BOOTHS = [
   {n:"A.M. Leonard Inc.", b:"1404"},
   {n:"Adams Keegan, Inc.", b:"400"},
@@ -4737,6 +4740,15 @@ const EVENTS = {
     hours: { "2026-10-20": "Exhibit hall 2-6 p.m. (grand opening and welcome reception)",
              "2026-10-21": "Exhibit hall 10 a.m.-2 p.m.", "2026-10-22": "Exhibit hall 10 a.m.-2 p.m.",
              "2026-10-23": "Exhibit hall 8-10 a.m." } },
+  // New York Pest Expo (Bug Off Pest Control Center), PMP's next show after
+  // PestWorld (Nate, Oct. 27, 2026): one day, Thursday, Nov. 12, 2026, at the
+  // DoubleTree by Hilton Fort Lee / George Washington Bridge (Fort Lee, N.J.),
+  // 8 a.m. to 6 p.m. per mypmp.net. Bug Off publishes logos, not a vendor
+  // list with tables, so the booth list starts empty (NYPEST_BOOTHS).
+  // Uploads file themselves in the PMP 2026 folder under "New York Pest Expo 2026".
+  "PMP-NYPEST-2026": { brand:"pmp", show:"New York Pest Expo", short:"NY Pest Expo", booths: NYPEST_BOOTHS, tz: "America/New_York", dates: ["2026-11-12"],
+    venue: { name: "DoubleTree by Hilton Fort Lee / George Washington Bridge", address: "2117 Route 4 East, Fort Lee, NJ 07024" },
+    hours: { "2026-11-12": "Expo 8 a.m.-6 p.m." } },
   // NPGA Southeastern & International Propane Expo, Music City Center,
   // Nashville (the app's first show). Every show keeps its booth list loaded
   // for good: it maps saved booth data back to company names, so notes,
