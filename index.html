@@ -1959,6 +1959,11 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-fhead-name { font-family: var(--fd); font-weight: 800; font-size: 1.05rem; color: var(--text); }
 .hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
+/* ── Upload banner (v202) ── */
+.up-banner { position: fixed; left: 10px; right: 10px; top: calc(8px + env(safe-area-inset-top)); z-index: 3000; padding: 10px 14px; border-radius: 12px;
+  background: var(--blue); color: #fff; font-size: 0.8rem; font-weight: 700; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.25); pointer-events: none; }
+.up-banner.off { background: #8A5A00; }
+
 /* ── Photo folders (v196) ── */
 .ph-folder { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: 0.78rem; font-weight: 700; color: var(--text-2); }
 .ph-folder-sel { flex: 1; min-width: 0; padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); }
@@ -2481,7 +2486,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v201</div>
+      <div class="pf-ver">NCM Events Guide · v202</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6064,6 +6069,7 @@ function msPhotoName(caption, file) {
   return (clean(caption) || "Photo") + "_" + rep + ext;
 }
 const UP_CHUNK = 10 * 1024 * 1024;   // multiple of 320 KiB per Graph's rules
+const UP_CHUNK_SMALL = 10 * 320 * 1024;   // 3.2 MB, after a piece fails (v202)
 // PUT one chunk with byte-level upload progress. fetch() can't report upload
 // progress, and per-chunk ticks made a 30 MB clip read 0% → 33% → done.
 function putChunk(url, blob, range, onLoaded) {
@@ -6172,9 +6178,16 @@ async function msUploadNamed(name, file, onPct, segs) {
     if (item) return item;
   }
   const sess = await msUploadSession(name, token, segs);
-  let pos = 0, stalls = 0;
+  // Show-floor Wi-Fi (v202, after Equip 2026): the upload no longer gives up
+  // after five failed pieces. A failed piece shrinks the piece size (less to
+  // resend on a flaky link); with no signal it waits for the signal to come
+  // back; with signal it backs off and retries, asking Microsoft where to
+  // resume each time. It only stops if the session itself is gone (404/410)
+  // or 30 minutes pass with no progress at all.
+  let pos = 0, fails = 0, chunk = UP_CHUNK, lastProgress = Date.now();
+  const pct = () => Math.min(99, Math.round(pos / file.size * 100));
   while (true) {
-    const end = Math.min(pos + UP_CHUNK, file.size);
+    const end = Math.min(pos + chunk, file.size);
     const base = pos;
     const r = await putChunk(sess.uploadUrl, file.slice(pos, end),
       "bytes " + pos + "-" + (end - 1) + "/" + file.size,
@@ -6182,39 +6195,102 @@ async function msUploadNamed(name, file, onPct, segs) {
     if (r && (r.status === 200 || r.status === 201)) { recordMsOk(); return r.json(); }
     if (r && r.status === 202) {
       const j = await r.json().catch(() => ({}));
-      pos = parseInt(String((j.nextExpectedRanges || [])[0] || end + "-").split("-")[0], 10);
-      stalls = 0;
+      const next = parseInt(String((j.nextExpectedRanges || [])[0] || end + "-").split("-")[0], 10);
+      if (next > pos) lastProgress = Date.now();
+      pos = next; fails = 0;
     } else {
-      if (++stalls > 4) {
-        const err = new Error("upload-failed" + (r ? "-" + r.status : ""));
-        err.status = r ? r.status : 0;
-        recordMsError("upload", err);
-        throw err;
+      if (r && (r.status === 404 || r.status === 410)) {
+        const err = new Error("upload-failed-" + r.status); err.status = r.status;
+        recordMsError("upload", err); throw err;
       }
-      await new Promise(res => setTimeout(res, 1200 * stalls));
+      if (Date.now() - lastProgress > 30 * 60e3) {
+        const err = new Error("upload-stalled"); err.status = r ? r.status : 0;
+        recordMsError("upload", err); throw err;
+      }
+      fails++;
+      chunk = UP_CHUNK_SMALL;                        // resend less on a flaky link
+      if (!navigator.onLine) {
+        if (onPct) onPct(pct(), "offline");
+        await waitForOnline();
+      } else {
+        if (onPct) onPct(pct(), "retry");
+        await new Promise(res => setTimeout(res, Math.min(30e3, 1500 * fails)));
+      }
       try {                                          // ask the session where to resume
         const st = await fetch(sess.uploadUrl);
         if (st.ok) {
           const j = await st.json();
-          pos = parseInt(String((j.nextExpectedRanges || [])[0] || pos + "-").split("-")[0], 10);
+          const next = parseInt(String((j.nextExpectedRanges || [])[0] || pos + "-").split("-")[0], 10);
+          if (next > pos) lastProgress = Date.now();
+          pos = next;
+        } else if (st.status === 404 || st.status === 410) {
+          const err = new Error("upload-failed-" + st.status); err.status = st.status;
+          recordMsError("upload", err); throw err;
         }
-      } catch (e) {}
+      } catch (e) { if (e && (e.status === 404 || e.status === 410)) throw e; }
     }
-    if (onPct) onPct(Math.min(99, Math.round(pos / file.size * 100)));
+    if (onPct) onPct(pct());
   }
+}
+// While anything uploads (v202): keep the screen awake so the phone doesn't
+// lock and stop the upload (newer iPhones allow this), and show a banner
+// saying to keep the app open. Both end when the last upload finishes.
+let _wakeLock = null;
+function uploadsRunning() { return Object.keys(upProg).length + (photoUploading ? 1 : 0); }
+async function holdWake() {
+  try {
+    if (!_wakeLock && navigator.wakeLock && document.visibilityState === "visible") {
+      _wakeLock = await navigator.wakeLock.request("screen");
+      _wakeLock.addEventListener("release", () => { _wakeLock = null; });
+    }
+  } catch (e) { _wakeLock = null; }
+}
+function uploadBanner() {
+  const n = uploadsRunning();
+  let b = document.getElementById("upBanner");
+  if (!n) {
+    if (b) b.remove();
+    if (_wakeLock) { _wakeLock.release().catch(() => {}); _wakeLock = null; }
+    return;
+  }
+  holdWake();
+  if (!b) {
+    b = document.createElement("div");
+    b.id = "upBanner"; b.className = "up-banner"; b.setAttribute("role", "status");
+    document.body.appendChild(b);
+  }
+  const off = !navigator.onLine;
+  b.textContent = off ? "No signal. Uploads will resume on their own; keep the app open"
+    : "Uploading… keep the app open and the screen on until it finishes";
+  b.classList.toggle("off", off);
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && uploadsRunning()) uploadBanner(); });
+window.addEventListener("online", () => { if (uploadsRunning()) uploadBanner(); });
+window.addEventListener("offline", () => { if (uploadsRunning()) uploadBanner(); });
+// Resolves once the phone says it has a connection again (or after 20 s, to
+// try anyway: iPhones don't always fire "online").
+function waitForOnline() {
+  return new Promise(res => {
+    if (navigator.onLine) return res();
+    const done = () => { window.removeEventListener("online", done); clearTimeout(t); res(); };
+    const t = setTimeout(done, 20e3);
+    window.addEventListener("online", done);
+  });
 }
 async function startVideoUpload(i, file) {
   const c = CO[i]; if (!c) return;
   if (!file || !file.size) { toast("That file looks empty. Try picking it again"); return; }
-  upProg[i] = 0; render();
-  const onPct = p => {
+  upProg[i] = 0; render(); uploadBanner();
+  const onPct = (p, wait) => {
     upProg[i] = p;
     const btn = document.querySelector('[data-upprog="' + i + '"]');
-    if (btn) btn.textContent = "Uploading " + p + "%";
+    if (btn) btn.textContent = wait === "offline" ? "No signal · " + p + "%, will resume"
+      : wait === "retry" ? "Weak signal · retrying " + p + "%" : "Uploading " + p + "%";
+    uploadBanner();
   };
   try {
     const item = await msUploadFile({ ...c, i }, file, onPct);
-    delete upProg[i];
+    delete upProg[i]; uploadBanner();
     const st = load(); const k = key(i);
     const s = st[k] = st[k] || {};
     // Shows want multiple angles: every upload APPENDS to the booth's clip
@@ -6238,7 +6314,7 @@ async function startVideoUpload(i, file) {
         (item.webUrl ? '. <a href="' + esc(item.webUrl) + '">Watch it</a>' : ""), null, true);
     }
   } catch (e) {
-    delete upProg[i]; render();
+    delete upProg[i]; render(); uploadBanner();
     const msg = String(e && e.message);
     if (msg === "token") {
       toast("Your Microsoft sign-in needs a refresh. One moment…");
@@ -9150,7 +9226,7 @@ async function sendPhotos() {
   try { await msSilentToken(); }
   catch (e) { toast("Microsoft sign-in expired. Reconnect under Profile, then pick the photos again"); return; }
   photoUploading = true;
-  refreshPhotos();
+  refreshPhotos(); uploadBanner();
   const batch = [];                // this run's successes, for the Teams alert
   let denied = false;
   // Three at a time (v195): one-at-a-time made a 30-photo dump crawl.
@@ -9163,10 +9239,11 @@ async function sendPhotos() {
     try {
       const isVid = /^video\//.test(p.file.type);
       const segs = uploadSegs(isVid ? "video" : "photo", isVid ? "" : folder);
-      const item = await msUploadNamed(msPhotoName(p.caption, p.file), p.file, pct => {
+      const item = await msUploadNamed(msPhotoName(p.caption, p.file), p.file, (pct, wait) => {
         p.pct = pct;
         const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
-        if (s) s.textContent = "Uploading " + pct + "%";
+        if (s) s.textContent = wait === "offline" ? "No signal · " + pct + "%, will resume"
+          : wait === "retry" ? "Weak signal · retrying " + pct + "%" : "Uploading " + pct + "%";
       }, segs);
       p.state = "done"; p.folder = isVid ? "" : folder;
       p.folderUrl = (p.folder && (msCachedTarget(segs) || {}).webUrl) || "";
@@ -9184,7 +9261,7 @@ async function sendPhotos() {
     while (next < todo.length && !denied) await one(todo[next++]);   // the rest would be refused the same way
   };
   await Promise.all([worker(), worker(), worker()]);
-  photoUploading = false;
+  photoUploading = false; uploadBanner();
   notifyPhotosUploaded(batch);
   const ok = photoQueue.filter(p => p.state === "done").length;
   const bad = photoQueue.filter(p => p.state === "err").length;
