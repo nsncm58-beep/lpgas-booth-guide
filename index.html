@@ -1959,6 +1959,19 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-fhead-name { font-family: var(--fd); font-weight: 800; font-size: 1.05rem; color: var(--text); }
 .hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
+/* ── Shared accounts (v203) ── */
+.acct-own { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; }
+.own-chip { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: #EEF1F4; color: #4B5563; }
+.own-chip.adv { background: #FFF1CC; color: #7A5A00; }
+.own-chip.mine { background: var(--blue); color: #fff; }
+.own-chip.open { background: #2D7140; color: #fff; }
+.own-claim { border: 1.5px solid #2D7140; color: #2D7140; background: var(--surface); border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
+.own-claim.un { border-color: var(--border); color: var(--muted); }
+.f-pill.active.f-mine { background: var(--blue); border-color: var(--blue); color: #fff; }
+.f-pill.active.f-open { background: #2D7140; border-color: #2D7140; color: #fff; }
+.mine-head { margin: 8px 10px 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.row-header.static { cursor: default; }
+
 /* ── Upload banner (v202) ── */
 .up-banner { position: fixed; left: 10px; right: 10px; top: calc(8px + env(safe-area-inset-top)); z-index: 3000; padding: 10px 14px; border-radius: 12px;
   background: var(--blue); color: #fff; font-size: 0.8rem; font-weight: 700; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.25); pointer-events: none; }
@@ -2406,6 +2419,8 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="f-pill f-customer" data-f="customer">Customers</button>
     <button class="f-pill f-noncust"  data-f="noncustomer">Prospects</button>
     <button class="f-pill f-unknown"  data-f="unknown">Unclassified</button>
+    <button class="f-pill f-mine"     data-f="mine">My accounts</button>
+    <button class="f-pill f-open"     data-f="open">Open</button>
   </div>
   <div class="progress-strip"><div class="bar" id="progBar"></div></div>
 </header>
@@ -2486,7 +2501,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v202</div>
+      <div class="pf-ver">NCM Events Guide · v203</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5413,6 +5428,7 @@ async function applyPreload() {
   const email = String(currentUser.email || "").toLowerCase();
   if (!code || !email) return;
   refreshPublishedPre();
+  subscribeAccounts();
   let p;
   try {
     const snap = await fbDb.collection("preloads").doc(preDocId(code, email)).get();
@@ -6874,6 +6890,73 @@ document.addEventListener("keydown", e => {
     e.preventDefault(); document.querySelector("[data-pf-add]")?.click();
   }
 }, true);
+// ── Shared accounts (v203, Nate, Oct. 27, 2026) ──────────────────────────
+// Who owns each booth at a show, for Sales and admins only: accounts/{id}
+// = { eventCode, b, n, rep, repEmail, repUid?, status: "advertiser" |
+// "prospect", src: "sheet" | "claim" }. Nate loads them from a spreadsheet
+// (Account Publisher); any sales rep can Claim an open booth (as a
+// prospect) or let go of a booth they claimed. Every booth card shows its
+// owner, open booths get a green Open tag, and a rep's own accounts fill in
+// their Customer / Prospect tags (blanks only) and gather under My accounts.
+let accounts = {}, _accountsUnsub = null;          // "b||n" -> account doc
+const acctId = (code, c) => fsId(code + "__" + c.b + "__" + c.n);
+const acctKey = c => c.b + "||" + c.n;
+function canSeeAccounts() {
+  return !!currentUser && !isHome() && (isMaster() || effectiveDept(currentUser.uid, currentUser.dept) === "sales");
+}
+function myEmail() { return String((currentUser && currentUser.email) || "").toLowerCase(); }
+function isMyAcct(a) { return !!a && (a.repEmail === myEmail() || (a.repUid && currentUser && a.repUid === currentUser.uid)); }
+function subscribeAccounts() {
+  if (_accountsUnsub) { _accountsUnsub(); _accountsUnsub = null; }
+  accounts = {};
+  if (!fbReady || !canSeeAccounts()) return;
+  const code = currentEventCode();
+  if (!code) return;
+  _accountsUnsub = fbDb.collection("accounts").where("eventCode", "==", code).onSnapshot(snap => {
+    accounts = {};
+    snap.forEach(d => { const x = d.data(); if (x && x.b != null) accounts[x.b + "||" + x.n] = { id: d.id, ...x }; });
+    fillMyAccountTags();
+    if (activeView === "booths" || activeView === "schedule") render();
+  }, () => {});
+}
+// My accounts set my own tags (only where I haven't chosen one).
+function fillMyAccountTags() {
+  if (!currentUser || effectiveDept(currentUser.uid, currentUser.dept) !== "sales") return;
+  const st = load(); let n = 0;
+  CO.forEach((c, i) => {
+    const a = accounts[acctKey(c)];
+    if (!isMyAcct(a) || c.x) return;
+    const s = st[key(i)] = st[key(i)] || {};
+    if (!s.status || s.status === "unknown") { s.status = a.status === "advertiser" ? "customer" : "noncustomer"; n++; }
+  });
+  if (n) save(st);
+}
+function acctChipHtml(c) {
+  if (!canSeeAccounts() || c.x) return "";
+  const a = accounts[acctKey(c)];
+  if (!a) return `<div class="acct-own"><span class="own-chip open">Open</span>${effectiveDept(currentUser.uid, currentUser.dept) === "sales" ? `<button class="own-claim" type="button" data-claim="${c.i}">Claim</button>` : ""}</div>`;
+  const mine = isMyAcct(a);
+  const who = mine ? "Yours" : firstNameOf(a.rep || a.repEmail || "Rep");
+  const kind = a.status === "advertiser" ? "Advertiser" : "Prospect";
+  return `<div class="acct-own"><span class="own-chip${mine ? " mine" : ""}${a.status === "advertiser" ? " adv" : ""}">${esc(who)} · ${kind}</span>${mine && a.src === "claim" ? `<button class="own-claim un" type="button" data-unclaim="${c.i}">Let go</button>` : ""}</div>`;
+}
+async function claimBooth(i) {
+  const c = CO[i]; if (!c || !currentUser) return;
+  const code = currentEventCode();
+  try {
+    await fbDb.collection("accounts").doc(acctId(code, c)).set({ eventCode: code, b: c.b, n: c.n,
+      rep: currentUser.name || "", repEmail: myEmail(), repUid: currentUser.uid,
+      status: "prospect", src: "claim", ts: Date.now() });
+    toast("Claimed " + c.n + " as your prospect");
+  } catch (e) { toast("Someone already has " + c.n + " (or you're offline). Try again in a moment"); }
+}
+async function unclaimBooth(i) {
+  const c = CO[i]; if (!c) return;
+  const a = accounts[acctKey(c)];
+  if (!a || !isMyAcct(a) || a.src !== "claim") return;
+  try { await fbDb.collection("accounts").doc(a.id).delete(); toast(c.n + " is open again"); }
+  catch (e) { toast("Couldn't let it go. Check your connection"); }
+}
 // Bullpen-named photo folders, per show (photoFolders/{id}: eventCode, name).
 let photoFolderDocs = {}, _photoFoldersUnsub = null;
 function subscribePhotoFolders() {
@@ -7407,6 +7490,7 @@ function buildCard(c, state) {
             ? `<button class="booth-badge map${outdoor?" outdoor":""}" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</button>`
             : `<span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>`}
       </div>
+      ${acctChipHtml(c)}
       ${interviewQsHtml(s.pre)}
       <div class="card-actions">
         ${salesView ? `<div class="status-group">
@@ -7494,6 +7578,14 @@ function render() {
   const statusPills = !myNotesAutoShare();
   document.querySelectorAll(".f-pill.f-customer, .f-pill.f-noncust, .f-pill.f-unknown")
     .forEach(p => { p.style.display = statusPills ? "" : "none"; });
+  // My accounts: sales reps; Open: sales and admins (v203).
+  const salesRep = !!currentUser && effectiveDept(currentUser.uid, currentUser.dept) === "sales";
+  document.querySelectorAll(".f-pill.f-mine").forEach(p => { p.style.display = salesRep ? "" : "none"; });
+  document.querySelectorAll(".f-pill.f-open").forEach(p => { p.style.display = canSeeAccounts() ? "" : "none"; });
+  if ((activeFilter === "mine" && !salesRep) || (activeFilter === "open" && !canSeeAccounts())) {
+    activeFilter = "all";
+    document.querySelectorAll(".f-pill").forEach(p => p.classList.toggle("active", p.dataset.f === "all"));
+  }
   if (!statusPills && (activeFilter === "customer" || activeFilter === "noncustomer" || activeFilter === "unknown")) {
     activeFilter = "all";
     document.querySelectorAll(".f-pill").forEach(p => p.classList.toggle("active", p.dataset.f === "all"));
@@ -7506,6 +7598,8 @@ function render() {
   if (activeFilter==="customer")    list = list.filter(c => state[key(c.i)]?.status==="customer");
   if (activeFilter==="noncustomer") list = list.filter(c => state[key(c.i)]?.status==="noncustomer");
   if (activeFilter==="unknown")     list = list.filter(c => !state[key(c.i)]?.status || state[key(c.i)]?.status==="unknown");
+  if (activeFilter==="mine")        list = list.filter(c => !c.x && isMyAcct(accounts[acctKey(c)]));
+  if (activeFilter==="open")        list = list.filter(c => !c.x && !accounts[acctKey(c)]);
 
   const el = document.getElementById("content");
   const filterBar = document.querySelector(".filter-bar");
@@ -7546,6 +7640,8 @@ function render() {
       customer:    ["No customers tagged","Tap Customer on a card to flag accounts you own."],
       noncustomer: ["No prospects tagged","Tap Prospect on a card to flag companies you'd like to sign."],
       unknown:     ["Every company classified","All booths have a customer status set."],
+      mine:        ["No accounts yet","Your advertisers and prospects for this show land here once they're assigned, or when you tap Claim on an open booth."],
+      open:        ["Nothing open","Every booth at this show has a rep."],
     };
     const [title, sub] = msgs[activeFilter] || ["No results","Try a different search term."];
     el.innerHTML = `<div class="empty-wrap"><h3>${title}</h3><p>${sub}</p></div>`;
@@ -7553,6 +7649,32 @@ function render() {
     return;
   }
 
+  // My accounts and Open (v203): every row open at once, in walking order,
+  // so a rep works the floor aisle by aisle. In My accounts, advertisers
+  // come first in each row, then prospects; visited booths sink.
+  if (activeFilter === "mine" || activeFilter === "open") {
+    const vis = c => state[key(c.i)]?.visited ? 1 : 0;
+    const adv = c => (accounts[acctKey(c)] || {}).status === "advertiser" ? 0 : 1;
+    const rows = {};
+    list.forEach(c => { (rows[rowKey(c.b)] = rows[rowKey(c.b)] || []).push(c); });
+    const keys = Object.keys(rows).sort((a, b) => rowOrder(a) - rowOrder(b));
+    const nVis = list.filter(vis).length;
+    _rowGroups = {};
+    el.innerHTML = showStatusBannerHtml() + `<div class="flat-head mine-head">${activeFilter === "mine"
+        ? list.length + " of your account" + (list.length === 1 ? "" : "s") + " · " + nVis + " visited"
+        : list.length + " open booth" + (list.length === 1 ? "" : "s") + ". Tap Claim to make one yours"}</div>` +
+      keys.map(rk => {
+        const cs = rows[rk].sort((x, y) => vis(x) - vis(y) || (activeFilter === "mine" ? adv(x) - adv(y) : 0)
+          || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n));
+        const done = cs.filter(vis).length;
+        return `<div class="row-section open-row">
+  <div class="row-header static"><span class="row-title">${esc(rowLabel(rk))}</span><span class="row-right"><span class="row-pill${done === cs.length ? " done" : ""}">${done}/${cs.length}</span></span></div>
+  ${cs.map(c => buildCard(c, state)).join("")}
+</div>`;
+      }).join("");
+    updateStats(state);
+    return;
+  }
   // Customers and Prospects are short lists you act on, so they show as
   // one flat run of cards in booth order instead of row blocks you have to
   // open one by one (v175, Nate, Oct. 13, 2026).
@@ -8626,6 +8748,10 @@ document.getElementById("content").addEventListener("click", e => {
     return;
   }
 
+  const clm = e.target.closest("[data-claim]");
+  if (clm) { claimBooth(parseInt(clm.dataset.claim)); return; }
+  const ucl = e.target.closest("[data-unclaim]");
+  if (ucl) { unclaimBooth(parseInt(ucl.dataset.unclaim)); return; }
   const vallBtn = e.target.closest("[data-vall]");
   if (vallBtn) {
     const i = parseInt(vallBtn.dataset.vall), k = key(i), c = CO[i] || {};
@@ -11315,6 +11441,7 @@ if (fbReady) {
       subscribeNotifyConfig();
       subscribeResets();
       subscribePhotoFolders();
+      subscribeAccounts();
       subscribeUploadConfig();
       subscribeMyProfile();
       if (isMaster()) { prefetchBullpenPasscode().catch(() => {}); loadQrLib().catch(() => {}); }

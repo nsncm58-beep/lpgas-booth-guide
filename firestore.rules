@@ -132,6 +132,26 @@ service cloud.firestore {
                              .hasOnly(["claimedBy", "claimedName", "claimedAt", "claimedV"]));
     }
 
+    // Shared accounts (v203): who owns each booth at a show. Sales reps and
+    // masters read. Masters write anything (the Account Publisher loads
+    // Nate's sheet). A sales rep may claim an OPEN booth for themselves
+    // (create only, so a booth someone has can't be taken) and let go of a
+    // booth they claimed. The bullpen and Editorial have no access.
+    function isSales() { return request.auth != null && me().get('dept', '') == 'sales'; }
+    match /accounts/{docId} {
+      allow read: if isMaster() || isSales();
+      allow create: if isMaster()
+                    || (isSales()
+                        && validEvent(request.resource.data.eventCode)
+                        && request.resource.data.src == "claim"
+                        && request.resource.data.status == "prospect"
+                        && request.resource.data.repUid == request.auth.uid
+                        && request.resource.data.repEmail == request.auth.token.get('email', '').lower());
+      allow update: if isMaster();
+      allow delete: if isMaster()
+                    || (isSales() && resource.data.src == "claim" && resource.data.repUid == request.auth.uid);
+    }
+
     // Photo folders (v196): folder names the bullpen adds for a show; reps
     // see them in the Photos tab's "Upload to" menu, and the app creates the
     // SharePoint subfolder on the first upload. Everyone signed in reads;
