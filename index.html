@@ -1960,12 +1960,13 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
 /* ── Shared accounts (v203) ── */
-.acct-own { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; }
-.own-chip { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: #EEF1F4; color: #4B5563; }
+/* v204: chip and Claim share one 26px height so they line up, with more room above */
+.acct-own { display: flex; align-items: center; gap: 8px; margin: 10px 0 8px; }
+.own-chip { display: inline-flex; align-items: center; height: 26px; box-sizing: border-box; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.3px; line-height: 1; text-transform: uppercase; padding: 0 10px; border-radius: 999px; background: #EEF1F4; color: #4B5563; }
 .own-chip.adv { background: #FFF1CC; color: #7A5A00; }
 .own-chip.mine { background: var(--blue); color: #fff; }
 .own-chip.open { background: #2D7140; color: #fff; }
-.own-claim { border: 1.5px solid #2D7140; color: #2D7140; background: var(--surface); border-radius: 999px; padding: 3px 11px; font: inherit; font-size: 0.72rem; font-weight: 800; cursor: pointer; }
+.own-claim { display: inline-flex; align-items: center; height: 26px; box-sizing: border-box; border: 1.5px solid #2D7140; color: #2D7140; background: var(--surface); border-radius: 999px; padding: 0 12px; font: inherit; font-size: 0.72rem; font-weight: 800; line-height: 1; cursor: pointer; }
 .own-claim.un { border-color: var(--border); color: var(--muted); }
 .f-pill.active.f-mine { background: var(--blue); border-color: var(--blue); color: #fff; }
 .f-pill.active.f-open { background: #2D7140; border-color: #2D7140; color: #fff; }
@@ -2501,7 +2502,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v203</div>
+      <div class="pf-ver">NCM Events Guide · v204</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
