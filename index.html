@@ -2555,7 +2555,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v209</div>
+      <div class="pf-ver">NCM Events Guide · v210</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4356,6 +4356,14 @@ const PMP_BOOTHS = [
 // New York Pest Expo 2026 vendors: empty until Bug Off sends a list
 // (APPEND ONLY once filled, like the others).
 const NYPEST_BOOTHS = [];
+// 2027 shows (v210, from NCM Event Schedule.xlsx, Oct. 28, 2026): exhibitor
+// lists start empty and get filled in as each show publishes its list.
+const GCSAA_2027_BOOTHS = [];
+const AGG1_2027_BOOTHS = [];
+const SEPROPANE_2027_BOOTHS = [];
+const EQUIP_2027_BOOTHS = [];
+const PESTWORLD_2027_BOOTHS = [];
+const ELEVATE_2027_BOOTHS = [];
 const ELEVATE_BOOTHS = [
   {n:"A.M. Leonard Inc.", b:"1404"},
   {n:"Adams Keegan, Inc.", b:"400"},
@@ -4808,6 +4816,42 @@ const EVENTS = {
   // for good: it maps saved booth data back to company names, so notes,
   // uploads and CSV exports keep working long after the show.
   "LPGAS-2026": { brand:"lpgas", show:"Southeastern Propane Expo", short:"SE Propane Expo", booths: LPGAS_BOOTHS, dates: ["2026-04-19","2026-04-20","2026-04-21"] },
+
+  // ── 2027 (v210) ── From the 2027 NCM Event Schedule (Nate, Oct. 28, 2026),
+  // checked against each show's own announcement. Summits, the P&Q
+  // Roundtable and staff meetings stay out of the app; a Hall of Fame is
+  // Day 1 of the show that follows it, as PestWorld 2026 did. Show hours are
+  // still TBD except where noted.
+  // GCSAA: the sheet's Jan. 15-21 includes the GCSAA Golf Championships in
+  // Biloxi (Jan. 16-18). The conference runs Mon.-Thu., Jan. 18-21, at the
+  // Morial center (the sheet's "Orange County Convention Center" was last
+  // year's venue); trade show Jan. 20-21. The Golfdom 100th Anniversary party
+  // is Tuesday, Jan. 19, at Lucy's Retired Surfers Bar.
+  "GOLFDOM-2027": { brand:"golfdom", show:"GCSAA Conference and Trade Show", short:"GCSAA", booths: GCSAA_2027_BOOTHS, tz: "America/Chicago",
+    dates: ["2027-01-18","2027-01-19","2027-01-20","2027-01-21"],
+    venue: { name: "Ernest N. Morial Convention Center", address: "900 Convention Center Blvd., New Orleans, LA 70130" },
+    hours: { "2027-01-20": "Trade show 8:15 a.m.-5 p.m. (grand opening)", "2027-01-21": "Trade show (hours TBD)" } },
+  // AGG1 (with World of Asphalt), March 15-17; Day 1 is the P&Q Hall of
+  // Fame, Sunday, March 14, at the New Orleans Marriott.
+  "PQ-2027": { brand:"pq", show:"AGG1", booths: AGG1_2027_BOOTHS, tz: "America/Chicago",
+    dates: ["2027-03-14","2027-03-15","2027-03-16","2027-03-17"],
+    venue: { name: "Ernest N. Morial Convention Center", address: "900 Convention Center Blvd., New Orleans, LA 70130" } },
+  // NPGA Southeastern & International Propane Expo, April 4-6; Day 1 is the
+  // LP Gas Hall of Fame, Saturday, April 3, at the Omni Nashville Hotel.
+  "LPGAS-2027": { brand:"lpgas", show:"Southeastern Propane Expo", short:"SE Propane Expo", booths: SEPROPANE_2027_BOOTHS, tz: "America/Chicago",
+    dates: ["2027-04-03","2027-04-04","2027-04-05","2027-04-06"],
+    venue: { name: "Music City Center", address: "201 Rep. John Lewis Way S., Nashville, TN 37203" } },
+  "LM-2027": { brand:"lm", show:"Equip Expo", booths: EQUIP_2027_BOOTHS, tz: "America/New_York",
+    dates: ["2027-10-19","2027-10-20","2027-10-21","2027-10-22"],
+    venue: { name: "Kentucky Exposition Center", address: "937 Phillips Ln, Louisville, KY 40209" } },
+  "PMP-2027": { brand:"pmp", show:"PestWorld", booths: PESTWORLD_2027_BOOTHS, tz: "America/New_York",
+    dates: ["2027-10-26","2027-10-27","2027-10-28","2027-10-29"],
+    venue: { name: "Hynes Convention Center", address: "900 Boylston St., Boston, MA 02115" } },
+  // Elevate 2027 is in Anaheim (the sheet's "Tampa Convention Center" was
+  // this year's venue).
+  "LM-ELEVATE-2027": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_2027_BOOTHS, tz: "America/Los_Angeles",
+    dates: ["2027-11-07","2027-11-08","2027-11-09","2027-11-10"],
+    venue: { name: "Anaheim Convention Center", address: "800 W. Katella Ave., Anaheim, CA 92802" } },
 };
 // Which show day is today? 1/2/3 during the show, else null.
 function showDayToday(code) {
@@ -8083,6 +8127,7 @@ setInterval(() => {
 const ICS_TZ = {
   "America/Chicago": ["CST", "-0600", "CDT", "-0500"],
   "America/New_York": ["EST", "-0500", "EDT", "-0400"],
+  "America/Los_Angeles": ["PST", "-0800", "PDT", "-0700"],
 };
 function icsEscape(t) { return String(t || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
 function icsFold(line) {
