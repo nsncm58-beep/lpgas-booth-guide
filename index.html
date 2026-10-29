@@ -2559,7 +2559,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v213</div>
+      <div class="pf-ver">NCM Events Guide · v214</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4981,7 +4981,13 @@ function eventMedia(code) {
   const ev = EVENTS[code];
   const y = ev && Array.isArray(ev.dates) && ev.dates[0] ? ev.dates[0].slice(0, 4) : "";
   const brandYear = String(code || "").split("-")[0] + "-" + y;
-  return y && MEDIA[brandYear] ? { ...MEDIA[brandYear], sub: true } : null;
+  if (y && MEDIA[brandYear]) return { ...MEDIA[brandYear], sub: true };
+  // No folder for that year yet (v214): the brand's newest one stands in, and
+  // the show still gets its own "<Show> <year>" folder inside it, so uploads
+  // work the day a show is added instead of waiting on a folder link.
+  const pre = String(code || "").split("-")[0] + "-";
+  const latest = Object.keys(MEDIA).filter(k => k.indexOf(pre) === 0 && /^[A-Z]+-\d{4}$/.test(k)).sort().pop();
+  return latest ? { ...MEDIA[latest], sub: true } : null;
 }
 // "NALP Elevate 2026": the show's folder inside its brand-year folder.
 function showFolderName(code) {
@@ -5908,15 +5914,21 @@ const MS_SCOPES = ["Files.ReadWrite.All"];
 // launch on a good one. The server's copy still wins whenever it arrives
 // (disabled: true turns uploads off everywhere).
 const UPCFG_KEY = "ncm_upload_cfg";
+// False until this device has a config (saved or from the server) or the
+// server says uploads are off. While false, video booths show "Upload
+// connecting…" rather than no button at all (v214).
+let _upCfgKnown = false;
 function subscribeUploadConfig() {
   if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
-  uploadCfg = null; _msBooted = false;
+  uploadCfg = null; _msBooted = false; _upCfgKnown = false;
   if (!fbReady || !currentUser) return;
   try { const c = JSON.parse(localStorage.getItem(UPCFG_KEY) || "null"); if (c && c.clientId && c.tenantId) uploadCfg = c; } catch (e) {}
+  _upCfgKnown = !!uploadCfg;
   if (uploadCfg) msBootstrap();
   _uploadCfgUnsub = fbDb.collection("config").doc("uploads").onSnapshot(d => {
     if (!d.exists && d.metadata.fromCache) return;   // offline, nothing cached: keep this device's copy
-    const was = msUploadsActive();
+    const was = msUploadsActive() + "|" + _upCfgKnown;
+    _upCfgKnown = true;
     const x = (d.exists && d.data()) || {};
     uploadCfg = (x.clientId && x.tenantId && !x.disabled)
       ? { clientId: String(x.clientId).trim(), tenantId: String(x.tenantId).trim(),
@@ -5924,7 +5936,7 @@ function subscribeUploadConfig() {
       : null;
     try { uploadCfg ? localStorage.setItem(UPCFG_KEY, JSON.stringify(uploadCfg)) : localStorage.removeItem(UPCFG_KEY); } catch (e) {}
     msBootstrap();
-    if (msUploadsActive() !== was && currentUser && !isHome()) render();
+    if (msUploadsActive() + "|" + _upCfgKnown !== was && currentUser && !isHome()) render();
   }, () => {});
 }
 // Uploads land in the CURRENT SHOW's folder — the same per-show MEDIA link
@@ -6228,7 +6240,23 @@ function putChunk(url, blob, range, onLoaded) {
     xhr.send(blob);
   });
 }
-async function msUploadFile(c, file, onPct) { return msUploadNamed(msFileName(c, file), file, onPct, uploadSegs("video")); }
+async function msUploadFile(c, file, onPct) { return msUploadNamed(msFileName(c, file), file, onPct, uploadSegs("video"), upResumeKey(c)); }
+// Unfinished booth uploads (v214). The phone can close the app while it's in
+// the background (shooting with the camera does it), which loses the picked
+// file. Each upload's Microsoft session is saved here, so picking the same
+// video again (same size) carries on from where it stopped, not from zero.
+const UP_PENDING_KEY = "ncm_up_pending";
+function upResumeKey(c) { return currentEventCode() + "|" + c.b + "|" + c.n; }
+function upPending() { try { return JSON.parse(localStorage.getItem(UP_PENDING_KEY) || "{}") || {}; } catch (e) { return {}; } }
+function setUpPending(k, v) {
+  const m = upPending();
+  if (v) m[k] = v; else delete m[k];
+  try { localStorage.setItem(UP_PENDING_KEY, JSON.stringify(m)); } catch (e) {}
+}
+// Time away from the app doesn't count toward giving up on an upload: iOS
+// pauses it while you're in another app, and it carries on when you return.
+let _upBackAt = 0;
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") _upBackAt = Date.now(); });
 // Upload any file into the show folder as `name`: booth videos from the
 // booth cards, photos from the Photos tab. Resumable chunks, byte progress.
 // Files up to 4 MB (nearly every photo) go up in ONE request straight into
@@ -6312,7 +6340,7 @@ async function msUploadSmall(name, file, token, onPct, segs) {
   }
   return null;
 }
-async function msUploadNamed(name, file, onPct, segs) {
+async function msUploadNamed(name, file, onPct, segs, resumeKey) {
   // Never redirect from in here: a navigation now would drop the file. The
   // tap handlers only open a picker with a fresh token, so this is rare.
   let token;
@@ -6321,14 +6349,30 @@ async function msUploadNamed(name, file, onPct, segs) {
     const item = await msUploadSmall(name, file, token, onPct, segs);
     if (item) return item;
   }
-  const sess = await msUploadSession(name, token, segs);
+  let sess = null, pos = 0;
+  const old = resumeKey && upPending()[resumeKey];
+  if (old && old.size === file.size && old.uploadUrl && (!old.exp || Date.parse(old.exp) > Date.now() + 60e3)) {
+    try {
+      const st = await fetch(old.uploadUrl);
+      if (st.ok) {
+        const j = await st.json();
+        pos = parseInt(String((j.nextExpectedRanges || [])[0] || "0-").split("-")[0], 10) || 0;
+        sess = { uploadUrl: old.uploadUrl };
+      }
+    } catch (e) {}
+  }
+  if (!sess) {
+    pos = 0;
+    sess = await msUploadSession(name, token, segs);
+    if (resumeKey) setUpPending(resumeKey, { uploadUrl: sess.uploadUrl, exp: sess.expirationDateTime || "", size: file.size, at: Date.now() });
+  }
   // Show-floor Wi-Fi (v202, after Equip 2026): the upload no longer gives up
   // after five failed pieces. A failed piece shrinks the piece size (less to
   // resend on a flaky link); with no signal it waits for the signal to come
   // back; with signal it backs off and retries, asking Microsoft where to
   // resume each time. It only stops if the session itself is gone (404/410)
   // or 30 minutes pass with no progress at all.
-  let pos = 0, fails = 0, chunk = UP_CHUNK, lastProgress = Date.now();
+  let fails = 0, chunk = UP_CHUNK, lastProgress = Date.now();
   const pct = () => Math.min(99, Math.round(pos / file.size * 100));
   while (true) {
     const end = Math.min(pos + chunk, file.size);
@@ -6336,7 +6380,7 @@ async function msUploadNamed(name, file, onPct, segs) {
     const r = await putChunk(sess.uploadUrl, file.slice(pos, end),
       "bytes " + pos + "-" + (end - 1) + "/" + file.size,
       loaded => { if (onPct) onPct(Math.min(99, Math.floor((base + loaded) / file.size * 100))); });
-    if (r && (r.status === 200 || r.status === 201)) { recordMsOk(); return r.json(); }
+    if (r && (r.status === 200 || r.status === 201)) { recordMsOk(); if (resumeKey) setUpPending(resumeKey, null); return r.json(); }
     if (r && r.status === 202) {
       const j = await r.json().catch(() => ({}));
       const next = parseInt(String((j.nextExpectedRanges || [])[0] || end + "-").split("-")[0], 10);
@@ -6344,10 +6388,11 @@ async function msUploadNamed(name, file, onPct, segs) {
       pos = next; fails = 0;
     } else {
       if (r && (r.status === 404 || r.status === 410)) {
+        if (resumeKey) setUpPending(resumeKey, null);
         const err = new Error("upload-failed-" + r.status); err.status = r.status;
         recordMsError("upload", err); throw err;
       }
-      if (Date.now() - lastProgress > 30 * 60e3) {
+      if (Date.now() - Math.max(lastProgress, _upBackAt) > 30 * 60e3) {
         const err = new Error("upload-stalled"); err.status = r ? r.status : 0;
         recordMsError("upload", err); throw err;
       }
@@ -6368,6 +6413,7 @@ async function msUploadNamed(name, file, onPct, segs) {
           if (next > pos) lastProgress = Date.now();
           pos = next;
         } else if (st.status === 404 || st.status === 410) {
+          if (resumeKey) setUpPending(resumeKey, null);
           const err = new Error("upload-failed-" + st.status); err.status = st.status;
           recordMsError("upload", err); throw err;
         }
@@ -6474,15 +6520,20 @@ async function startVideoUpload(i, file) {
 // mid-upload progress (pointer-events off), and Uploaded (opens the file)
 // with a slim button beside it for extra takes.
 function uploadCtlHtml(c, s) {
-  if (!msUploadsActive() || !s.video) return "";
+  if (!s.video) return "";
+  if (!msUploadsActive()) {
+    return (!_upCfgKnown && currentUser && !isHome() && myNotesAutoShare())
+      ? `<button class="upload-btn busy checking" type="button" data-up-wait><span class="up-spin"></span>Upload connecting…</button>` : "";
+  }
   if (upProg[c.i] != null)
     return `<button class="upload-btn busy" type="button" data-upprog="${c.i}">Uploading ${upProg[c.i]}%</button>`;
   if (msChecking === c.i)
     return `<button class="upload-btn busy checking" type="button"><span class="up-spin"></span>Checking Microsoft…</button>`;
   if (msReadyFor === c.i)
     return `<button class="upload-btn ready" type="button" data-upv="${c.i}"><svg width="12" height="14" viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 25V6"/><path d="M4 13l8-8 8 8"/></svg>Pick video</button>`;
-  const up = `<button class="upload-btn" type="button" data-upv="${c.i}" title="Send this booth's video to the show folder">
-      <svg width="12" height="14" viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 25V6"/><path d="M4 13l8-8 8 8"/></svg>${s.vlink ? "More" : "Upload video"}</button>`;
+  const resume = !!upPending()[upResumeKey(c)];
+  const up = `<button class="upload-btn${resume ? " ready" : ""}" type="button" data-upv="${c.i}" title="${resume ? "Pick the same video and it picks up where it stopped" : "Send this booth's video to the show folder"}">
+      <svg width="12" height="14" viewBox="0 0 24 28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 25V6"/><path d="M4 13l8-8 8 8"/></svg>${resume ? "Resume upload" : s.vlink ? "More" : "Upload video"}</button>`;
   const nClips = (s.vclips && s.vclips.length) || (s.vlink ? 1 : 0);
   const view = s.vlink
     ? `<a class="upload-btn done" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the uploaded file")}">▶ Uploaded${nClips > 1 ? " (" + nClips + ")" : ""}</a>`
@@ -9041,6 +9092,10 @@ document.getElementById("content").addEventListener("click", e => {
       notifyHome(esc(showLabelOf(currentEventCode())) + ": all footage is in for <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
         ") from " + esc(who) + ". Nothing more is coming.", null, true);
     }
+    return;
+  }
+  if (e.target.closest("[data-up-wait]")) {
+    toast("Uploads turn on as soon as the app reaches the internet. No need to reopen it");
     return;
   }
   const upBtn = e.target.closest("[data-upv]");
@@ -11870,6 +11925,9 @@ if (fbReady) {
       render();
       forgetTabScroll(); scrollAppTo(0);
       maybeShowConfirmSheet();
+      const cut = Object.keys(upPending()).filter(k => k.indexOf(currentEventCode() + "|") === 0).length;
+      if (cut) setTimeout(() => toast(cut === 1 ? "A video upload didn't finish. Tap Resume upload on its booth and pick the same video"
+        : cut + " video uploads didn't finish. Tap Resume upload on each booth and pick the same videos"), 1500);
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_pubUnsub) { _pubUnsub(); _pubUnsub = null; } pubSchedules = {};
@@ -11880,7 +11938,7 @@ if (fbReady) {
       closeVideoProgress();
       acctRows = []; acctState = "idle";
       _bullpenPass = null; _bullpenPassP = null;
-      uploadCfg = null; _msBooted = false;   // MS tokens stay: device-level, like home_member
+      uploadCfg = null; _msBooted = false; _upCfgKnown = false;   // MS tokens stay: device-level, like home_member
       teamSchedules = {};
       myVideoDone = {};
       viewedScheduleUid = null; schedAllView = false;
