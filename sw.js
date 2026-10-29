@@ -3,7 +3,7 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v218';
+const CACHE_NAME = 'ncm-events-guide-v219';
 // Files from other sites (Firebase's sign-in and sync code on gstatic, the
 // QR library on cdnjs) live in their OWN cache that app updates never clear
 // (v202). Before, every update wiped them, so the first launch after an

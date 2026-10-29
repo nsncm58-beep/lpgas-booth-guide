@@ -1177,18 +1177,19 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .eg-in { position: relative; }
 .eg-head { position: sticky; top: 0; z-index: 4; display: flex; background: var(--surface); border-bottom: 1.5px solid var(--border); }
 .eg-corner { position: sticky; left: 0; z-index: 5; flex: none; width: 46px; background: var(--surface); }
-.eg-name { flex: none; width: 100px; padding: 8px 6px; text-align: center; font-weight: 800; font-size: 0.8rem; color: var(--text); border-left: 1px solid var(--border-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eg-name { flex: none; width: 116px; padding: 8px 6px; text-align: center; font-weight: 800; font-size: 0.8rem; color: var(--text); border-left: 1px solid var(--border-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eg-name.me { color: var(--blue); }
 .eg-pend { display: block; font-size: 0.58rem; font-weight: 600; color: var(--muted); }
 .eg-body { position: relative; display: flex; background-image: repeating-linear-gradient(to bottom, var(--border-soft) 0 1px, transparent 1px var(--eg-hr)); }
 .eg-times { position: sticky; left: 0; z-index: 3; flex: none; width: 46px; height: 100%; background: var(--surface); border-right: 1px solid var(--border); }
 .eg-t { position: absolute; right: 5px; transform: translateY(-50%); font-size: 0.6rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .eg-t:first-child { transform: none; }
-.eg-col { position: relative; flex: none; width: 100px; height: 100%; border-left: 1px solid var(--border-soft); }
+.eg-col { position: relative; flex: none; width: 116px; height: 100%; border-left: 1px solid var(--border-soft); }
 .eg-it, .eg-long { position: absolute; display: flex; flex-direction: column; overflow: hidden; padding: 3px 5px; border: none; border-left: 3px solid #2F6FA3; border-radius: 6px; background: #E7F0F8; color: var(--text); font: inherit; text-align: left; cursor: pointer; z-index: 1; }
 .eg-long { left: 2px; right: 2px; z-index: 0; opacity: 0.55; border-radius: 6px; background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(255,255,255,0.6) 6px 12px); }
-.eg-it-t { font-size: 0.66rem; font-weight: 700; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.eg-it-s { font-size: 0.58rem; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eg-it-t { font-size: 0.66em; font-weight: 700; line-height: 1.15; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
+.eg-it-s { font-size: 0.6em; color: var(--text-2); line-height: 1.15; overflow-wrap: break-word; }
+.eg-it, .eg-long { font-size: 16px; }
 .k-video { border-left-color: #A3243B !important; background-color: #F8E4E8 !important; }
 .k-meal { border-left-color: var(--green) !important; background-color: var(--green-light) !important; }
 .k-offsite { border-left-color: #B86E00 !important; background-color: #FFF2DE !important; }
@@ -2563,7 +2564,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v218</div>
+      <div class="pf-ver">NCM Events Guide · v219</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8316,8 +8317,8 @@ function buildWhoSheet() {
 // One column per person (you first), times down the side, a red line at the
 // current time on a show day. The grid scrolls inside its own box both ways
 // so names stay on top and times stay on the left.
-const EG_PX = 1.5;    // pixels per minute: a 20-minute booth visit is 30px tall
-const EG_COL = 100;   // column width
+const EG_PX = 2.2;    // pixels per minute: a 20-minute booth visit is 44px tall (v219: room for name + booth)
+const EG_COL = 116;   // column width (v219: wider so names fit)
 const EG_GUT = 46;    // time gutter
 function egPeople() {
   const mine = currentUser ? currentUser.uid : null;
@@ -8374,7 +8375,7 @@ function renderEveryoneGrid(el, teamBar) {
   });
   const today = showDayToday(code) === schedDay;
   const now = egNowMin();
-  let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>` + showInfoHtml(code, schedDay);
+  let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>`;   // v219: no venue/attire card here
   if (!Number.isFinite(lo)) {
     html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4><p>No one on the team has anything scheduled for this day.</p></div>`;
     el.innerHTML = html;
@@ -8392,19 +8393,25 @@ function renderEveryoneGrid(el, teamBar) {
     const longs = p.day.filter(x => x.e - x.s >= LONG_BLOCK);
     const reg = p.day.filter(x => x.e - x.s < LONG_BLOCK);
     egLanes(reg);
+    // Double-booked: the column widens so each side-by-side block keeps a
+    // full column's width and its words stay readable (v219).
+    p.w = EG_COL * Math.max(1, ...reg.map(x => x.n || 1));
     const block = (x, cls, style) => {
       const place = itemPlace(x.it);
+      // Main booth number only ("9094", not "9094 / 6372D"): the outdoor
+      // lot is on the booth card and the map.
+      const num = x.it.kind === "booth" && x.it.boothNum ? "Booth " + String(x.it.boothNum).split("/")[0].trim() : "";
       return `<button class="${cls} k-${x.it.kind === "booth" && x.it.video ? "video" : esc(x.it.kind || "offsite")}" type="button"
         data-eg-uid="${esc(p.uid)}" data-eg-time="${esc(x.it.time || "")}" style="${style}"
         title="${esc(itemTitle(x.it) + " · " + fmtTime(x.s) + " to " + fmtTime(x.e) + (place ? " · " + place : ""))}">
-        <span class="eg-it-t">${esc(egTitle(x.it))}</span><span class="eg-it-s">${esc(fmtTime(x.s))}${place ? " · " + esc(place) : ""}</span></button>`;
+        <span class="eg-it-t">${esc(egTitle(x.it))}</span>${num ? `<span class="eg-it-s">${esc(num)}</span>` : ""}</button>`;
     };
-    return `<div class="eg-col">${longs.map(x => block(x, "eg-long", `top:${y(x.s)}px;height:${y(x.e) - y(x.s)}px`)).join("")}${
+    return `<div class="eg-col" style="width:${p.w}px">${longs.map(x => block(x, "eg-long", `top:${y(x.s)}px;height:${y(x.e) - y(x.s)}px`)).join("")}${
       reg.map(x => block(x, "eg-it", `top:${y(x.s)}px;height:${Math.max(18, y(x.e) - y(x.s) - 2)}px;left:calc(${x.lane} * 100% / ${x.n} + 2px);width:calc(100% / ${x.n} - 4px)`)).join("")}</div>`;
   }).join("");
-  const W = EG_GUT + people.length * EG_COL;
+  const W = EG_GUT + people.reduce((t, p) => t + p.w, 0);
   html += `<div class="eg" id="egGrid"><div class="eg-in" style="width:${W}px">
-    <div class="eg-head"><div class="eg-corner"></div>${people.map(p => `<div class="eg-name${p.uid ? "" : " me"}">${esc(p.name)}${p.pending ? '<span class="eg-pend">not signed up</span>' : ""}</div>`).join("")}</div>
+    <div class="eg-head"><div class="eg-corner"></div>${people.map(p => `<div class="eg-name${p.uid ? "" : " me"}" style="width:${p.w}px">${esc(p.name)}${p.pending ? '<span class="eg-pend">not signed up</span>' : ""}</div>`).join("")}</div>
     <div class="eg-body" style="height:${H}px;--eg-hr:${60 * EG_PX}px">
       <div class="eg-times">${times}</div>${cols}
       ${today ? `<div class="eg-now" id="egNow" style="top:${y(now)}px"></div>` : ""}
@@ -8421,6 +8428,13 @@ function renderEveryoneGrid(el, teamBar) {
   const nav = document.getElementById("bottomNav");
   const navH = nav && nav.offsetParent !== null ? nav.getBoundingClientRect().height : 0;
   g.style.maxHeight = Math.max(300, window.innerHeight - (g.getBoundingClientRect().top + window.scrollY) - navH - 40) + "px";
+  g.querySelectorAll(".eg-it, .eg-long").forEach(b => {
+    let f = 16;
+    while (f > 11 && b.scrollHeight > b.clientHeight + 1) { f -= 0.5; b.style.fontSize = f + "px"; }
+    // Still cut off (two short things side by side): let it run longer than
+    // its time slot rather than hide words, drawn above its neighbors.
+    if (b.scrollHeight > b.clientHeight + 1) { b.style.height = b.scrollHeight + "px"; b.style.zIndex = 2; }
+  });
   if (keep) { g.scrollLeft = keep.l; g.scrollTop = keep.t; }
   else {
     let firstS = Infinity;
