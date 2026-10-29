@@ -509,6 +509,7 @@ button.ro-map { border: none; background: none; padding: 0; font: inherit; curso
 .fp-n.sel { fill: #fff; }
 .fp-b.mine rect, .fp-b.mine polygon { fill: var(--blue-mid); stroke: var(--blue); stroke-width: 2; }
 .fp-b.sel rect, .fp-b.sel polygon { fill: var(--blue); stroke: var(--blue); stroke-width: 2.5; }
+.fp-b.ours rect, .fp-b.ours polygon { fill: #F7C948; stroke: #B7791F; stroke-width: 2.5; }
 
 .fp-label { fill: #4A5563; font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; font-weight: 700; text-anchor: middle; paint-order: stroke; stroke: rgba(244, 241, 236, 0.92); stroke-linejoin: round; pointer-events: none; }
 .fp-halls { display: flex; gap: 6px; padding: 8px 10px; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
@@ -522,6 +523,8 @@ button.ro-map { border: none; background: none; padding: 0; font: inherit; curso
 .fp-when { display: block; font-size: 0.74rem; color: var(--blue); font-weight: 600; }
 .fp-legend { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text); }
 .fp-legend i { width: 14px; height: 14px; border-radius: 3px; background: var(--blue-mid); border: 2px solid var(--blue); display: inline-block; }
+.fp-legend i.ours { background: #F7C948; border-color: #B7791F; }
+.fp-legends { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 /* "Tap a booth" hint (v171): a filled pill with a finger icon that pulses
    twice when the plan opens, since the plain gray line was easy to miss. */
 .fp-hint { align-self: center; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 11px; border-radius: 999px; background: var(--blue); color: #fff; font-size: 0.86rem; font-weight: 700; animation: fpHintPulse 1.1s ease-in-out 0.3s 2; }
@@ -2559,7 +2562,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v214</div>
+      <div class="pf-ver">NCM Events Guide · v215</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4792,7 +4795,10 @@ const EVENTS = {
   // SharePoint folder link is added.
   "LM-ELEVATE-2026": { brand:"lm", show:"NALP Elevate", short:"Elevate", booths: ELEVATE_BOOTHS, tz: "America/New_York", dates: ["2026-11-08","2026-11-09","2026-11-10","2026-11-11"],
     venue: { name: "Tampa Convention Center", address: "333 S. Franklin St., Tampa, FL 33602" },
-    hours: { "2026-11-09": "Exhibit hall 2-6 p.m.", "2026-11-10": "Exhibit hall 10 a.m.-2 p.m." } },
+    hours: { "2026-11-09": "Exhibit hall 2-6 p.m.", "2026-11-10": "Exhibit hall 10 a.m.-2 p.m." },
+    // Attire for the two exhibit hall days (Nate, Oct. 29, 2026).
+    attire: { "2026-11-09": "Gray polo, black Adidas pullover",
+              "2026-11-10": "White polo, maroon pullover" } },
   // PestWorld: Day 1 is Sunday, Oct. 18 (Pelgar dinner), Day 2 Monday (PMP
   // Hall of Fame, booth setup), Days 3-6 the exhibit hall (Tue. 2-6 p.m.,
   // Wed. and Thu. 10 a.m.-2 p.m., Fri. 8-10 a.m.). Day 1 was Tuesday until
@@ -10206,7 +10212,7 @@ function fpSvg(h) {
     return [fs, `<g class="fp-n${sel}" data-fn="${esc(q.b)}" transform="translate(${cx} ${cy})${side ? " rotate(-90)" : ""} scale(${k.toFixed(4)}) translate(${-n * FP_GW / 2} ${FP_CAP / 2})">${uses}</g>`];
   };
   const shapes = h._b.map(r => {
-    const cls = fp.sel.includes(r.b) ? "fp-b sel" : fp.mine.has(r.b) ? "fp-b mine" : "fp-b";
+    const cls = fpCls(r.b);
     const shape = r.pts
       ? `<polygon points="${r.pts.map(([x, y]) => X(x) + "," + Y(y)).join(" ")}"></polygon>`
       : `<rect x="${X(r.x)}" y="${Y(r.y + r.h)}" width="${r.w}" height="${r.h}"></rect>`;
@@ -10222,8 +10228,9 @@ function fpSvg(h) {
 }
 const FP_HINT = `<span class="fp-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5V9a1.5 1.5 0 0 1 3 0v2"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7l-2.6-4a1.5 1.5 0 0 1 2.5-1.7L9 15"/></svg>Tap any booth to see who's there</span>`;
 function fpFootHtml() {
-  if (!fp.sel.length) return fp.mine.size
-    ? `<span class="fp-legend"><i class="mine"></i>Your booths on Day ${schedDay}</span>${FP_HINT}`
+  const oursKey = fp.ours && fp.ours.size ? `<span class="fp-legend"><i class="ours"></i>Our booth (${esc([...fp.ours].join(", "))})</span>` : "";
+  if (!fp.sel.length) return (fp.mine.size || oursKey)
+    ? `<span class="fp-legends">${fp.mine.size ? `<span class="fp-legend"><i class="mine"></i>Your booths on Day ${schedDay}</span>` : ""}${oursKey}</span>${FP_HINT}`
     : FP_HINT;
   const b = fp.sel[0];
   const st = load();
@@ -10256,7 +10263,8 @@ function fpRender() {
     return `<button type="button" class="fp-hall${x.id === h.id ? " on" : ""}" data-fp-hall="${esc(x.id)}">${esc(x.name)}${n ? `<span class="fp-hall-n">${n}</span>` : ""}</button>`;
   }).join("") : "";
   const selHere = fp.sel.find(b => h._set.has(b));
-  const mine = h._b.filter(r => fp.mine.has(r.b));
+  let mine = h._b.filter(r => fp.mine.has(r.b));
+  if (!mine.length && fp.ours) mine = h._b.filter(r => fp.ours.has(r.b));
   let focus = null;
   if (selHere) fp.scale = 0.4;
   else if (mine.length) {
@@ -10272,6 +10280,20 @@ function fpRender() {
   else if (focus) { sc.scrollLeft = focus.x * fp.scale - sc.clientWidth / 2; sc.scrollTop = focus.y * fp.scale - sc.clientHeight / 2; }
   else { sc.scrollLeft = 0; sc.scrollTop = 0; }
 }
+// Our own booth (v215): always highlighted on the floor plan, in gold so it
+// never reads as a selected or scheduled booth. Found by our brand names in
+// the show's booth list; a show can also set `ours: ["4019"]`.
+const OUR_NAMES = /^(Landscape Management|Pest Management Professional|LP Gas|Golfdom|Pit & Quarry|Portable Plants|North Coast Media)( Magazine)?$/i;
+function ourBooths(code) {
+  const ev = EVENTS[code] || {};
+  if (Array.isArray(ev.ours)) return new Set(ev.ours);
+  const out = new Set();
+  (ev.booths || []).forEach(c => { if (!c.x && OUR_NAMES.test(String(c.n).trim())) boothParts(c.b).forEach(b => out.add(b)); });
+  return out;
+}
+function fpCls(b, noSel) {
+  return !noSel && fp.sel.includes(b) ? "fp-b sel" : fp.ours && fp.ours.has(b) ? "fp-b ours" : fp.mine.has(b) ? "fp-b mine" : "fp-b";
+}
 function openFloor(boothStr) {
   const code = currentEventCode(), f = floorOf(code);
   if (!f) return;
@@ -10279,7 +10301,10 @@ function openFloor(boothStr) {
   // The area holding the booth, else the one with most of your booths today.
   const hall = sel.map(b => f.halls.find(h => h._set.has(b))).find(Boolean)
     || f.halls.slice().sort((x, y) => y._b.filter(r => mine.has(r.b)).length - x._b.filter(r => mine.has(r.b)).length)[0];
-  fp = { code, hall: hall.id, sel, mine, scale: fp.scale, fit: fp.fit };
+  const ours = ourBooths(code);
+  const hall2 = hall._b.some(r => mine.has(r.b)) || sel.length ? hall
+    : (f.halls.find(h => h._b.some(r => ours.has(r.b))) || hall);   // nothing of yours to show: open on our booth's area
+  fp = { code, hall: hall2.id, sel, mine, ours, scale: fp.scale, fit: fp.fit };
   document.getElementById("floorSheet").style.display = "flex";
   document.getElementById("fpTitle").textContent = (EVENTS[code].short || EVENTS[code].show) + " floor plan";
   fpRender();
@@ -10379,7 +10404,7 @@ document.getElementById("floorSheet").addEventListener("click", e => {
   const g = e.target.closest("[data-fb]");
   if (!g) return;
   fp.sel = [g.dataset.fb];
-  document.querySelectorAll("#fpSvg .fp-b.sel").forEach(x => x.setAttribute("class", fp.mine.has(x.dataset.fb) ? "fp-b mine" : "fp-b"));
+  document.querySelectorAll("#fpSvg .fp-b.sel").forEach(x => x.setAttribute("class", fpCls(x.dataset.fb, true)));
   document.querySelectorAll("#fpSvg .fp-n.sel").forEach(x => x.setAttribute("class", "fp-n"));
   g.setAttribute("class", "fp-b sel");
   const num = [...document.querySelectorAll("#fpSvg .fp-n")].find(x => x.dataset.fn === g.dataset.fb);
