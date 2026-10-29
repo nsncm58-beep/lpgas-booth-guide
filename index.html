@@ -2563,7 +2563,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v216</div>
+      <div class="pf-ver">NCM Events Guide · v217</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4706,6 +4706,9 @@ const SHOW_PREFS = {
   // Oct. 21-23 overlap (both shows live) would land them on Equip.
   "nstoltman@northcoastmedia.net":  [{ code: "PMP-2026" }],
   "sfischer@northcoastmedia.net":   [{ code: "PMP-2026" }],
+  // Nathan Mader (Golfdom, covers LM) isn't going to Elevate (Nate, Oct. 29,
+  // 2026): Equip through its week-after grace, then GCSAA, never Elevate.
+  "nmader@northcoastmedia.net":     [{ code: "LM-2026" }, { code: "GOLFDOM-2027" }],
 };
 function preferredShow(user) {
   const rules = SHOW_PREFS[String((user && user.email) || "").toLowerCase()];
