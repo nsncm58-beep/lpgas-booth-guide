@@ -2564,7 +2564,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v219</div>
+      <div class="pf-ver">NCM Events Guide · v220</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4362,9 +4362,22 @@ const PMP_BOOTHS = [
 // boothed, 22 booths still for sale. PGMS Transform shares the hall. NALP's
 // "View Exhibitors" button still opens the 2025 plan, so don't use it.
 // Refresh the week before the show, APPEND ONLY (see LM_BOOTHS).
-// New York Pest Expo 2026 vendors: empty until Bug Off sends a list
-// (APPEND ONLY once filled, like the others).
-const NYPEST_BOOTHS = [];
+// New York Pest Expo 2026: the 29 sponsors whose logos Bug Off posts on
+// bugoffpccenter.com/pest-management-new-york-pest-expo/ (read off the logo
+// files, Oct. 29, 2026; Nate: "just put the sponsors in the booth list").
+// Bug Off publishes no table numbers, so `b` is empty and they show as
+// "Sponsor". APPEND ONLY like every list; table numbers can be filled in
+// later if Bug Off sends a layout.
+const NYPEST_BOOTHS = [
+  {n:"AP&G Co., Inc.", b:""}, {n:"Aprehend", b:""}, {n:"BASF", b:""}, {n:"Bell Laboratories", b:""},
+  {n:"B&G Equipment", b:""}, {n:"Birchmeier", b:""}, {n:"Bird Barrier", b:""}, {n:"Bird-B-Gone", b:""},
+  {n:"BurrowRx", b:""}, {n:"Chris Gill Sales & Marketing", b:""}, {n:"Detour", b:""}, {n:"EcoVenger", b:""},
+  {n:"Envu", b:""}, {n:"J.T. Eaton", b:""}, {n:"Liphatech", b:""}, {n:"Mattress Safe", b:""},
+  {n:"MGK", b:""}, {n:"Neogen", b:""}, {n:"Nisus", b:""}, {n:"PelGar", b:""},
+  {n:"Pelsis", b:""}, {n:"Pest Management Professional", b:""}, {n:"Polti", b:""}, {n:"Rockwell Labs", b:""},
+  {n:"Select Insurance Agency", b:""}, {n:"Sterifab", b:""}, {n:"Synergetic (Pelsis Group)", b:""}, {n:"Syngenta", b:""},
+  {n:"Wildlife Control Supplies", b:""},
+];
 // 2027 shows (v210, from NCM Event Schedule.xlsx, Oct. 28, 2026): exhibitor
 // lists start empty and get filled in as each show publishes its list.
 const GCSAA_2027_BOOTHS = [];
@@ -4844,7 +4857,7 @@ const EVENTS = {
   // PestWorld (Nate, Oct. 27, 2026): one day, Thursday, Nov. 12, 2026, at the
   // DoubleTree by Hilton Fort Lee / George Washington Bridge (Fort Lee, N.J.),
   // 8 a.m. to 6 p.m. per mypmp.net. Bug Off publishes logos, not a vendor
-  // list with tables, so the booth list starts empty (NYPEST_BOOTHS).
+  // list with tables, so the booth list is its sponsors (NYPEST_BOOTHS, v220).
   // Uploads file themselves in the PMP 2026 folder under "New York Pest Expo 2026".
   "PMP-NYPEST-2026": { brand:"pmp", show:"New York Pest Expo", short:"NY Pest Expo", booths: NYPEST_BOOTHS, tz: "America/New_York", dates: ["2026-11-12"],
     venue: { name: "DoubleTree by Hilton Fort Lee / George Washington Bridge", address: "2117 Route 4 East, Fort Lee, NJ 07024" },
@@ -7410,13 +7423,13 @@ function buildHomeVideosView() {
       : "";
     const actions = v.hidden
       ? `<button class="home-rem-btn" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>
-      <button class="home-rem-btn hide" type="button" data-vid-purge="${esc(gk)}" data-vid-purge-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Delete this card from the bullpen for good">Delete permanently</button>`
+      <button class="home-rem-btn hide" type="button" data-vid-purge="${esc(gk)}" data-vid-purge-name="${esc(v.boothName)} (${esc(boothLbl(v.boothNum))})" title="Delete this card from the bullpen for good">Delete permanently</button>`
       : `${workBtn}
       ${stepBtns}
       ${notesBtn}
-      <button class="home-rem-btn hide" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${esc(v.boothName)} (Booth ${esc(v.boothNum)})" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove</button>`;
+      <button class="home-rem-btn hide" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${esc(v.boothName)} (${esc(boothLbl(v.boothNum))})" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove</button>`;
     return `<div class="home-note${v.done ? " vid-done" : ""}${v.hidden ? " vid-hidden" : ""}">
-    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">Booth ${esc(v.boothNum)}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}${allInChip}</div>
+    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">${esc(boothLbl(v.boothNum))}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}${allInChip}</div>
     <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${esc(ledger)}</div>
     ${linksHtml}
     <div class="home-note-flags">
@@ -7464,7 +7477,7 @@ function buildHomeVideosView() {
           <a class="home-rem-btn watch" href="${esc(c.vlink)}" target="_blank" rel="noopener">▶ Watch</a>
           <div class="home-clip-body">
             <div class="home-clip-file">${esc(c.vfile)}</div>
-            <div class="home-clip-meta">${esc(c.boothName)} (Booth ${esc(c.boothNum)}) · ${esc(c.rep)}${c.vupAt ? " · " + esc(fmtExact(c.vupAt)) : ""}</div>
+            <div class="home-clip-meta">${esc(c.boothName)} (${esc(boothLbl(c.boothNum))}) · ${esc(c.rep)}${c.vupAt ? " · " + esc(fmtExact(c.vupAt)) : ""}</div>
           </div>
         </div>`).join("") : `<div class="home-rem-empty">No uploads match "${esc(homeSearchQ)}".</div>`) + `</div>`;
     }
@@ -7503,7 +7516,7 @@ function schedNoteHtml(n, sel) {
   // yet still surfaces its production steps under the agenda card.
   if (!n || (!n.pre && !n.post && !n.visited && !n.video)) return "";
   return `<div class="home-note hs-note">
-    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">Booth ${esc(n.boothNum)}</span>${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}${n.visited && n.vts ? `<span class="hs-vtime">${esc(fmtExact(n.vts))}</span>` : ""}</div>
+    <div class="home-note-co">${esc(n.boothName)} <span class="home-note-booth">${esc(boothLbl(n.boothNum))}</span>${n.video?'<span class="home-chip vid">Video</span>':''}${n.visited?'<span class="home-visited">Visited</span>':''}${n.visited && n.vts ? `<span class="hs-vtime">${esc(fmtExact(n.vts))}</span>` : ""}</div>
     ${n.pre ? `<div class="home-note-label">Pre-visit</div><div class="home-note-text">${esc(n.pre)}</div>` : ''}
     ${n.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(n.post)}</div>` : ''}
     ${n.video ? `<div class="home-note-flags">${vidStepButtons(sel.eventCode, n.boothNum, vidGroupDone(sel.eventCode, n.boothNum))}</div>` : ''}
@@ -7598,7 +7611,10 @@ function rowKey(b) {
   return String(Math.floor(n/100)*100);
 }
 function rowOrder(rk) { return rk === "OTHER" ? 999999 : rk[0]==="T" ? 100000+parseInt(rk.slice(1)) : parseInt(rk); }
-function rowLabel(rk) { return rk === "OTHER" ? "Other locations" : rk[0]==="T" ? "Outdoor · Row "+rk.slice(1)+"s" : "Row "+rk+"s"; }
+// A show whose list has no booth numbers at all (sponsors only, like the
+// New York Pest Expo) labels them "Sponsor" instead of "Booth " (v220).
+function boothLbl(b) { return String(b || "").trim() ? "Booth " + String(b).trim() : "Sponsor"; }
+function rowLabel(rk) { return rk === "OTHER" ? (CO.length && CO.every(c => !c.b) ? "Sponsors" : "Other locations") : rk[0]==="T" ? "Outdoor · Row "+rk.slice(1)+"s" : "Row "+rk+"s"; }
 function isOutdoor(rk){ return rk[0]==="T"; }
 
 function esc(s){
@@ -7698,10 +7714,10 @@ function buildCard(c, state) {
         ${myVideoDone[c.b] ? '<span class="video-done-chip">Video done</span>' : ''}
         ${c.x ? '<span class="gone-chip">No longer listed</span>' : ''}
         ${mapUrl
-          ? `<a class="booth-badge map${outdoor?" outdoor":""}" href="${esc(mapUrl)}" target="_blank" rel="noopener" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</a>`
+          ? `<a class="booth-badge map${outdoor?" outdoor":""}" href="${esc(mapUrl)}" target="_blank" rel="noopener" title="Show on the floor plan">${PIN_TINY}${esc(boothLbl(c.b))}</a>`
           : (!c.x && floorOf(currentEventCode()))
-            ? `<button class="booth-badge map${outdoor?" outdoor":""}" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}Booth ${esc(c.b)}</button>`
-            : `<span class="booth-badge${outdoor?" outdoor":""}">Booth ${esc(c.b)}</span>`}
+            ? `<button class="booth-badge map${outdoor?" outdoor":""}" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}${esc(boothLbl(c.b))}</button>`
+            : `<span class="booth-badge${outdoor?" outdoor":""}">${esc(boothLbl(c.b))}</span>`}
       </div>
       ${acctChipHtml(c)}
       ${interviewQsHtml(s.pre)}
@@ -8105,7 +8121,7 @@ function roCardHtml(it) {
   if (it.kind === "booth") {
     return `<div class="ro-card">
       <div class="ro-card-title">${esc(it.boothName||"Booth visit")}${it.video ? ' <span class="home-chip vid">Video</span>' : ''}</div>
-      <div class="ro-card-sub">Booth ${esc(it.boothNum||"")}${(() => {
+      <div class="ro-card-sub">${esc(boothLbl(it.boothNum||""))}${(() => {
         const u = boothMapUrl(it.boothNum, isHome() ? homeEventCode() : currentEventCode());
         if (u) return ` · <a class="ro-map" href="${esc(u)}" target="_blank" rel="noopener">${PIN_TINY}Map</a>`;
         return !isHome() && floorOf(currentEventCode()) ? ` · <button class="ro-map" type="button" data-floor="${esc(it.boothNum || "")}">${PIN_TINY}Map</button>` : "";
@@ -8173,7 +8189,7 @@ function itemTitle(it) {
   return it.title || "Off-site meeting";
 }
 function itemPlace(it) {
-  if (it.kind === "booth") return "Booth " + (it.boothNum || "");
+  if (it.kind === "booth") return boothLbl(it.boothNum);
   if (it.kind === "session") return it.room || "";
   if (it.kind === "offsite") return it.location || "";
   return "";
@@ -8400,7 +8416,7 @@ function renderEveryoneGrid(el, teamBar) {
       const place = itemPlace(x.it);
       // Main booth number only ("9094", not "9094 / 6372D"): the outdoor
       // lot is on the booth card and the map.
-      const num = x.it.kind === "booth" && x.it.boothNum ? "Booth " + String(x.it.boothNum).split("/")[0].trim() : "";
+      const num = x.it.kind === "booth" ? boothLbl(String(x.it.boothNum || "").split("/")[0].trim()) : "";
       return `<button class="${cls} k-${x.it.kind === "booth" && x.it.video ? "video" : esc(x.it.kind || "offsite")}" type="button"
         data-eg-uid="${esc(p.uid)}" data-eg-time="${esc(x.it.time || "")}" style="${style}"
         title="${esc(itemTitle(x.it) + " · " + fmtTime(x.s) + " to " + fmtTime(x.e) + (place ? " · " + place : ""))}">
@@ -10284,7 +10300,7 @@ function fpFootHtml() {
     const v = st[key(c.i)] && st[key(c.i)].scheduled;
     return `<div class="fp-co"><strong>${esc(c.n)}</strong>${v ? `<span class="fp-when">On your schedule: Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}</span>` : ""}</div>`;
   }).join("");
-  return `<div class="fp-booth">Booth ${esc(b)}</div>${lines || `<div class="fp-co">No exhibitor listed</div>`}`;
+  return `<div class="fp-booth">${esc(boothLbl(b))}</div>${lines || `<div class="fp-co">No exhibitor listed</div>`}`;
 }
 function fpCenterOn(b) {
   const g = document.querySelector('#fpSvg [data-fb="' + (window.CSS && CSS.escape ? CSS.escape(b) : b) + '"]');
@@ -11134,7 +11150,7 @@ function renderVideoProgress() {
           .filter(x => x && x[1].ts).sort((a, b) => b[1].ts - a[1].ts)[0];
         const names = [...new Set(v.reps.map(r => r.name))].join(", ");
         return `<div class="vp-item">
-          <div class="vp-co">${esc(v.boothName)}<span class="vp-booth">Booth ${esc(v.boothNum)}</span></div>
+          <div class="vp-co">${esc(v.boothName)}<span class="vp-booth">${esc(boothLbl(v.boothNum))}</span></div>
           <div class="vp-meta">${esc(names)} · ${v.visited ? "visited" : "not visited yet"}${v.clips ? " · " + v.clips + " clip" + (v.clips === 1 ? "" : "s") + " in" : ""}${last ? "<br>Last step: " + esc(last[0]) + (last[1].member ? " by " + esc(memberName(last[1].member)) : "") + ", " + esc(fmtExact(last[1].ts)) : ""}</div>
           <div class="vp-chips">${v.done ? "" : chip("Working on", wk, "work")}${recs.map(([s, r]) => chip(s.label, r, s.k === "sales" ? "final" : "")).join("")}</div>
         </div>`;
@@ -11206,7 +11222,7 @@ function pnDetailHtml(doc) {
   const blk = (title, sub, lines) => `<div class="pn-item"><div class="pn-it-title">${esc(title)}${sub ? ` <span class="pn-it-sub">${esc(sub)}</span>` : ""}</div>${lines.filter(l => l[1]).map(([k, v]) => `<div class="home-note-label">${esc(k)}</div><div class="home-note-text">${esc(v)}</div>`).join("")}</div>`;
   const stLbl = s => s === "customer" ? "Customer" : s === "noncustomer" ? "Prospect" : "";
   const bs = P.booths.filter(x => t(x.s.pre) || t(x.s.post)).sort((a, b) => a.n.localeCompare(b.n))
-    .map(x => blk(x.n, ["Booth " + x.b, stLbl(x.s.status), x.s.visited ? "Visited" : ""].filter(Boolean).join(" · "), [["Pre-visit", t(x.s.pre)], ["Post-visit", t(x.s.post)]]));
+    .map(x => blk(x.n, [boothLbl(x.b), stLbl(x.s.status), x.s.visited ? "Visited" : ""].filter(Boolean).join(" · "), [["Pre-visit", t(x.s.pre)], ["Post-visit", t(x.s.post)]]));
   const ms = P.meals.filter(m => t(m.mynotes)).map(m => blk((MEAL_LABEL[m.type] || "Meal") + (m.company ? " with " + m.company : ""), "Day " + m.day + " · " + m.time, [["Notes", t(m.mynotes)]]));
   const os = P.offsite.filter(o => t(o.mynotes)).map(o => blk(o.title || "Meeting", "Day " + o.day + " · " + o.time, [["Notes", t(o.mynotes)]]));
   const ss = P.sessions.filter(x => t(x.notes)).map(x => blk(x.title, "Day " + x.day + " · " + x.time, [["Notes", t(x.notes)]]));
