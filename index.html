@@ -1989,10 +1989,9 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
 /* ── Admin home (v207); its own space, apart from any show (v208) ── */
-body.ah-mode #showPickBtn, body.ah-mode #mediaBtn, body.ah-mode .filter-bar, body.ah-mode .booths-search,
-body.ah-mode .progress-strip, body.ah-mode #bottomNav [data-v="schedule"], body.ah-mode #bottomNav [data-v="booths"],
-body.ah-mode #bottomNav [data-v="photos"] { display: none !important; }
-body.ah-mode.has-show-pick .user-chip-name, body.ah-mode.has-show-pick .admin-tag { display: inline; }
+body.ah-mode #mediaBtn, body.ah-mode .filter-bar, body.ah-mode .booths-search,
+body.ah-mode .progress-strip, body.ah-mode #bottomNav { display: none !important; }
+.show-row.home .show-row-dot svg { width: 15px; height: 15px; display: block; }
 .ah-for { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.8rem; color: var(--text-2); font-weight: 600; }
 .ah-for select { flex: 1; min-width: 0; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px; background: var(--surface); font: inherit; color: var(--text); }
 .ah-wrap { padding: 12px 10px 120px; display: flex; flex-direction: column; gap: 12px; }
@@ -2487,10 +2486,6 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <input type="file" id="vidFileInput" accept="video/*" style="display:none">
 <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
-  <button class="bn-btn" type="button" id="bnAdmin" data-v="admin" style="display:none">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg>
-    <span>Home</span>
-  </button>
   <button class="bn-btn active" type="button" data-v="schedule">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
     <span>Schedule</span>
@@ -2555,7 +2550,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v210</div>
+      <div class="pf-ver">NCM Events Guide · v211</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -9318,6 +9313,7 @@ function setBottomTab(v) {
   document.body.classList.toggle("ah-mode", on);
   const b = on ? "ncm" : (resolveEvent(currentEventCode()) || {}).brand;
   if (on || b) { applyBrand(b); updateHeaderBrand(b); }
+  setupShowPicker();
 }
 
 // iOS lifts position:fixed elements above the on-screen keyboard, so the
@@ -11531,9 +11527,7 @@ function setupShowPicker() {
   btn.style.display = on ? "" : "none";
   document.body.classList.toggle("has-show-pick", on);
   if (!on) return;
-  document.getElementById("showPickLbl").textContent = showShortLabelOf(currentEventCode());
-  const bnA = document.getElementById("bnAdmin");
-  if (bnA) bnA.style.display = isMaster() ? "" : "none";
+  document.getElementById("showPickLbl").textContent = document.body.classList.contains("ah-mode") ? "Home" : showShortLabelOf(currentEventCode());
   btn.title = "Switch show: " + showLabelOf(currentEventCode());
 }
 let _showSheetPast = false;
@@ -11541,13 +11535,19 @@ function renderShowSheet() {
   const cur = currentEventCode();
   const row = c => {
     const s = showStatus(c);
-    return `<button class="show-row${c === cur ? " current" : ""}" type="button" data-pick-show="${esc(c)}">
-        <span class="show-row-dot">${c === cur ? "●" : ""}</span>
+    const here = c === cur && !document.body.classList.contains("ah-mode");
+    return `<button class="show-row${here ? " current" : ""}" type="button" data-pick-show="${esc(c)}">
+        <span class="show-row-dot">${here ? "●" : ""}</span>
         <span class="show-row-name">${esc(isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c))}</span>
         <span class="show-row-status ${s.k}">${esc(showStatusText(c))}</span>
       </button>`;
   };
-  let h = "", past = [];
+  const onHome = document.body.classList.contains("ah-mode");
+  let h = isMaster() ? `<div class="show-group"><button class="show-row home${onHome ? " current" : ""}" type="button" data-pick-home>
+        <span class="show-row-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg></span>
+        <span class="show-row-name">Home</span>
+        <span class="show-row-status">All shows and admin tools</span>
+      </button></div>` : "", past = [];
   pickerBrands().forEach(b => {
     const codes = sortShowsByDate(showsForBrand(b));
     const active = codes.filter(c => showStatus(c).k !== "past");
@@ -11574,8 +11574,9 @@ function openShowSheet(home) {
 }
 // ── ADMIN HOME (v207, Nate, Oct. 27, 2026) ──────────────────────────────
 // Admins only: a Home tab with every show by brand (tap one to open it) and
-// the admin tools that used to sit in Profile > Admin. The Home button in
-// the bottom bar always comes back here. Between shows the app opens on it;
+// the admin tools that used to sit in Profile > Admin. "Home" at the top of
+// the show picker (the pill, top right) always comes back here (v211; it was
+// a bottom-bar button in v207-v210). Between shows the app opens on it;
 // during a live show admins land on the show as before.
 let _adminPast = false;
 let _ahToolShow = null;
@@ -11622,7 +11623,7 @@ function renderAdminHome() {
   const tool = (id, label, sub) => `<button class="ah-tool" type="button" data-ah-tool="${id}"><span class="ah-tool-name">${esc(label)}</span><span class="ah-tool-sub">${esc(sub)}</span><span class="ah-chev" aria-hidden="true">›</span></button>`;
   el.innerHTML = `<div class="ah-wrap">
     <div class="ah-head"><div class="ah-title">Home</div>
-      <div class="ah-sub">${live.length ? "Live now: " + live.map(c => esc(showShortLabelOf(c))).join(", ") : "No show is live right now."} Tap a show to open it; the Home button brings you back.</div></div>
+      <div class="ah-sub">${live.length ? "Live now: " + live.map(c => esc(showShortLabelOf(c))).join(", ") : "No show is live right now."} Tap a show to open it. To come back, tap the show name at the top and pick Home.</div></div>
     <div class="ah-card"><div class="ah-card-head">Shows</div>${shows}</div>
     <div class="ah-card"><div class="ah-card-head">Admin</div>
       ${tool("accounts", "Accounts", "Everyone's team and brands")}
@@ -11683,11 +11684,17 @@ document.getElementById("showSheet").addEventListener("click", e => {
   const sheet = document.getElementById("showSheet");
   if (e.target.id === "showSheet" || e.target.closest("#showSheetClose")) { sheet.style.display = "none"; return; }
   if (e.target.closest("[data-show-past-toggle]")) { _showSheetPast = !_showSheetPast; renderShowSheet(); return; }
+  if (e.target.closest("[data-pick-home]")) {
+    sheet.style.display = "none";
+    viewedScheduleUid = null; schedAllView = false;
+    forgetTabScroll(); setBottomTab("admin"); render(); scrollAppTo(0);
+    return;
+  }
   const r = e.target.closest("[data-pick-show]");
   if (!r) return;
   sheet.style.display = "none";
   const code = r.dataset.pickShow;
-  if (code === currentEventCode()) return;
+  if (code === currentEventCode() && !document.body.classList.contains("ah-mode")) return;
   switchToShow(code, true).then(() => toast("Switched to " + showLabelOf(code)));
 });
 // One-time "confirm your team and brands" for accounts made before signup
