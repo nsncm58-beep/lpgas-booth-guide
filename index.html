@@ -1989,8 +1989,9 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
 /* ── Admin home (v207); its own space, apart from any show (v208) ── */
-body.ah-mode #mediaBtn, body.ah-mode .filter-bar, body.ah-mode .booths-search,
-body.ah-mode .progress-strip, body.ah-mode #bottomNav { display: none !important; }
+body.ah-mode #mediaBtn, body.ah-mode .filter-bar, body.ah-mode .booths-search, body.ah-mode .progress-strip,
+body.ah-mode #bottomNav [data-v="schedule"], body.ah-mode #bottomNav [data-v="booths"],
+body.ah-mode #bottomNav [data-v="photos"], body:not(.ah-mode) #bottomNav .bn-home { display: none !important; }
 .show-row.home .show-row-dot svg { width: 15px; height: 15px; display: block; }
 .ah-for { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.8rem; color: var(--text-2); font-weight: 600; }
 .ah-for select { flex: 1; min-width: 0; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px; background: var(--surface); font: inherit; color: var(--text); }
@@ -2498,6 +2499,14 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></svg>
     <span>Videos</span>
   </button>
+  <button class="bn-btn bn-home" type="button" data-v="admin">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg>
+    <span>Shows</span>
+  </button>
+  <button class="bn-btn bn-home" type="button" data-v="adminTools">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></svg>
+    <span>Tools</span>
+  </button>
   <button class="bn-btn" type="button" id="bnSettings" data-v="settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.2" r="4"/><path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7"/></svg>
     <span>Profile</span>
@@ -2550,7 +2559,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v211</div>
+      <div class="pf-ver">NCM Events Guide · v212</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -7724,7 +7733,7 @@ function render() {
     renderPhotosView();
     return;
   }
-  if (activeView === "admin") {
+  if (activeView === "admin" || activeView === "adminTools") {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
     if (isMaster()) { renderAdminHome(); return; }
@@ -9308,7 +9317,7 @@ function setBottomTab(v) {
   // show pill, and only Home + Profile in the bar. Profile opened from Home
   // stays in that mode; opening a show brings the show's look back.
   const was = document.body.classList.contains("ah-mode");
-  const on = v === "admin" || (v === "settings" && was);
+  const on = v === "admin" || v === "adminTools" || (v === "settings" && was);
   if (on === was) return;
   document.body.classList.toggle("ah-mode", on);
   const b = on ? "ncm" : (resolveEvent(currentEventCode()) || {}).brand;
@@ -11621,10 +11630,16 @@ function renderAdminHome() {
   const tSel = `<label class="ah-for">Show <select data-ah-for>${tShows.map(c =>
     `<option value="${esc(c)}"${c === _ahToolShow ? " selected" : ""}>${esc(showLabelOf(c))}</option>`).join("")}</select></label>`;
   const tool = (id, label, sub) => `<button class="ah-tool" type="button" data-ah-tool="${id}"><span class="ah-tool-name">${esc(label)}</span><span class="ah-tool-sub">${esc(sub)}</span><span class="ah-chev" aria-hidden="true">›</span></button>`;
-  el.innerHTML = `<div class="ah-wrap">
-    <div class="ah-head"><div class="ah-title">Home</div>
+  if (activeView !== "adminTools") {
+    el.innerHTML = `<div class="ah-wrap">
+    <div class="ah-head"><div class="ah-title">Shows</div>
       <div class="ah-sub">${live.length ? "Live now: " + live.map(c => esc(showShortLabelOf(c))).join(", ") : "No show is live right now."} Tap a show to open it. To come back, tap the show name at the top and pick Home.</div></div>
-    <div class="ah-card"><div class="ah-card-head">Shows</div>${shows}</div>
+    <div class="ah-card">${shows}</div>
+  </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="ah-wrap">
+    <div class="ah-head"><div class="ah-title">Tools</div></div>
     <div class="ah-card"><div class="ah-card-head">Admin</div>
       ${tool("accounts", "Accounts", "Everyone's team and brands")}
       ${tool("guide", "Install QR and bullpen passcode", "Sign-up QR codes and the bullpen login")}
@@ -11637,7 +11652,7 @@ function renderAdminHome() {
   </div>`;
 }
 document.getElementById("content").addEventListener("click", e => {
-  if (activeView !== "admin") return;
+  if (activeView !== "admin" && activeView !== "adminTools") return;
   if (e.target.closest("[data-ah-for]")) return;
   const sh = e.target.closest("[data-ah-show]");
   if (sh) { switchToShow(sh.dataset.ahShow); return; }
