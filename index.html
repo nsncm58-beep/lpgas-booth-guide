@@ -2216,6 +2216,7 @@ body.home-mode .user-chip-gear { display: none !important; }
 .home-rem-btn.work.other { color: #8A5D00; border-color: #ECD9A8; background: #FDF6E3; }
 /* Bullpen Photos view (v141) */
 .hp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.hp-vid { font-size: 1.6rem; color: var(--blue); }
 .hp-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
 .hp-thumb { display: block; aspect-ratio: 4 / 3; background: var(--border-soft); overflow: hidden; }
 .hp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -2562,7 +2563,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v215</div>
+      <div class="pf-ver">NCM Events Guide · v216</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -7271,7 +7272,7 @@ function buildHomePhotosView() {
   return html + `<div class="hp-grid">${shown.map(p => {
     const open = p.webUrl ? `href="${esc(p.webUrl)}" target="_blank" rel="noopener"` : "";
     return `<div class="hp-card">
-      <a class="hp-thumb" ${open}>${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : `<span class="hp-noimg">${PH_CAMERA}</span>`}</a>
+      <a class="hp-thumb" ${open}>${p.thumb ? `<img src="${esc(p.thumb)}" alt="">` : p.video ? `<span class="hp-noimg hp-vid">&#9654;</span>` : `<span class="hp-noimg">${PH_CAMERA}</span>`}</a>
       <div class="hp-body">
         <div class="hp-cap-row">
           <div class="hp-cap${p.caption ? "" : " none"}${homePhotoOpen.has(p.id) ? " open" : ""}"${String(p.caption || "").length > 140 ? ` data-hp-more="${esc(p.id)}" title="Click to show all"` : ""}>${esc(p.caption || "No caption")}</div>
@@ -9562,7 +9563,7 @@ function updateMediaBtn() {
   // reps booth videos have their own path (the booth card's Upload button),
   // so their tab reads Photos and never competes for the word "Videos".
   // Sales reps keep "Videos/Pics": the folder is their path for both.
-  const label = myNotesAutoShare() ? "Photos" : "Videos/Pics";
+  const label = "Videos/Pics";   // v216: the tab takes videos from everyone
   const nav = document.getElementById("bnVideos");
   if (nav) {
     nav.style.display = (currentUser && !isHome()) ? "" : "none";   // always a tab; the page says if uploads aren't set up
@@ -9618,7 +9619,10 @@ function fitCaption(t) {
   t.style.overflowY = full > 220 ? "auto" : "hidden";
 }
 function photoLocked(p) { return p.state === "up" || p.state === "done" || photoUploading; }
-function photoNoun(n) { return myNotesAutoShare() ? (n === 1 ? "photo" : "photos") : (n === 1 ? "file" : "files"); }
+function photoNoun(n) {
+  const anyVid = photoQueue.some(p => !p.isImg);
+  return myNotesAutoShare() && !anyVid ? (n === 1 ? "photo" : "photos") : (n === 1 ? "file" : "files");
+}
 function photoWaiting() { return photoQueue.filter(p => p.state === "ready" || p.state === "err").length; }
 function photoStatusHtml(p) {
   return p.state === "up" ? `<span class="ph-status" data-ph-pct="${p.id}">Uploading ${p.pct || 0}%</span>`
@@ -9639,14 +9643,14 @@ function renderPhotosView() {
   const edit = myNotesAutoShare();
   const m = eventMedia(currentEventCode()) || {};
   const head = `<div class="ph-icon">${PH_CAMERA}</div>
-      <div class="ph-title">${edit ? "Photos" : "Photos and videos"}</div>
+      <div class="ph-title">Photos and videos</div>
       <div class="ph-show">${esc(currentShowLabel())}</div>`;
   if (!msPhotosActive()) {
     el.innerHTML = `<div class="ph-wrap"><div class="ph-card">${head}
       <p class="ph-text">Uploads aren't set up for this show yet. Once its shared folder is ready, you can upload right here.</p></div></div>`;
     return;
   }
-  const what = edit ? "photos" : "photos or videos";
+  const what = "photos or videos";
   const main = msHasLogin()
     ? `<button class="ph-btn" type="button" data-ph-pick>Choose ${what}</button>`
     : `<button class="ph-btn" type="button" data-ph-connect>Connect Microsoft account</button>
@@ -9657,7 +9661,7 @@ function renderPhotosView() {
       ${p.thumb ? `<img class="ph-thumb" data-ph-img="${p.id}" src="${p.thumb}" alt="">`
         : p.isImg ? `<div class="ph-thumb" data-ph-img="${p.id}"></div>` : `<div class="ph-thumb ph-thumb-vid">&#9654;</div>`}
       <div class="ph-row-main">
-        <textarea class="ph-cap" data-ph-cap="${p.id}" rows="2" placeholder="${edit ? "Caption for the bullpen, e.g. Rinnai front display" : "Caption, e.g. Rinnai front display"}" maxlength="2200" autocomplete="off"${locked ? " disabled" : ""}>${esc(p.caption)}</textarea>
+        <textarea class="ph-cap" data-ph-cap="${p.id}" rows="2" placeholder="${p.isImg ? (edit ? "Caption for the bullpen, e.g. Rinnai front display" : "Caption, e.g. Rinnai front display") : "What is it? e.g. Day 2 recap"}" maxlength="2200" autocomplete="off"${locked ? " disabled" : ""}>${esc(p.caption)}</textarea>
         <div class="ph-status-slot">${photoStatusHtml(p)}</div>
       </div>
       <button class="ph-del" type="button" data-ph-del="${p.id}" aria-label="Remove"${locked ? ' style="display:none"' : ""}>&#10005;</button>
@@ -9676,7 +9680,7 @@ function renderPhotosView() {
       ${main}
     </div>
     ${queue}
-    ${edit ? `<div class="ph-note"><strong>Booth videos</strong> have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen.</div>` : ""}
+    ${edit ? `<div class="ph-note"><strong>Booth videos</strong> still have their own button: on any booth you've flagged for video, tap Upload on the booth's card and the clip is named, filed and linked for the bullpen. Use this page for every other video, like daily recaps, B-roll and interviews.</div>` : ""}
     ${edit && m.folder ? `<button class="ph-link" type="button" data-ph-folder>Browse the shared folder</button>` : ""}
   </div>`;
   // Long captions keep their full height after a redraw.
@@ -9688,7 +9692,7 @@ function renderPhotosView() {
 // lost to a sign-in redirect.
 function pickPhotos() {
   const inp = document.getElementById("photoFileInput");
-  inp.accept = myNotesAutoShare() ? "image/*" : "image/*,video/*";
+  inp.accept = "image/*,video/*";   // v216: Editorial too (recaps, B-roll); booth videos keep their own button
   if (msalApp && msAccount() && msTokenFresh()) { inp.click(); return; }
   if (msalApp && msAccount()) {
     toast("Checking Microsoft…");
@@ -9722,7 +9726,7 @@ async function sendPhotos() {
         const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
         if (s) s.textContent = wait === "offline" ? "No signal · " + pct + "%, will resume"
           : wait === "retry" ? "Weak signal · retrying " + pct + "%" : "Uploading " + pct + "%";
-      }, segs);
+      }, segs, isVid ? currentEventCode() + "|file|" + p.file.name + "|" + p.file.size : "");   // videos resume like booth clips (v216)
       p.state = "done"; p.folder = isVid ? "" : folder;
       p.folderUrl = (p.folder && (msCachedTarget(segs) || {}).webUrl) || "";
       p.showUrl = (msCachedTarget(uploadSegs("photo", "")) || {}).webUrl || "";
@@ -9761,9 +9765,10 @@ async function sendPhotos() {
 // SharePoint. Sales photos stay out of the bullpen, like the rest of Sales'
 // data (they still reach the folder and the Teams alert).
 function recordPhoto(p) {
-  if (!fbReady || !currentUser || !myNotesAutoShare() || /^video\//.test(p.file.type)) return;
-  const code = currentEventCode();
-  (p.thumb ? Promise.resolve(p.thumb) : photoThumb(p.file).catch(() => "")).then(thumb => fbDb.collection("photos").add({
+  if (!fbReady || !currentUser || !myNotesAutoShare()) return;
+  const code = currentEventCode(), vid = /^video\//.test(p.file.type);
+  (vid ? Promise.resolve("") : p.thumb ? Promise.resolve(p.thumb) : photoThumb(p.file).catch(() => "")).then(thumb => fbDb.collection("photos").add({
+    video: vid,
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
     caption: String(p.caption || "").trim().slice(0, 2200),
@@ -11950,9 +11955,11 @@ if (fbReady) {
       render();
       forgetTabScroll(); scrollAppTo(0);
       maybeShowConfirmSheet();
-      const cut = Object.keys(upPending()).filter(k => k.indexOf(currentEventCode() + "|") === 0).length;
+      const cutKeys = Object.keys(upPending()).filter(k => k.indexOf(currentEventCode() + "|") === 0);
+      const cut = cutKeys.filter(k => k.indexOf(currentEventCode() + "|file|") !== 0).length, cutFiles = cutKeys.length - cut;
       if (cut) setTimeout(() => toast(cut === 1 ? "A video upload didn't finish. Tap Resume upload on its booth and pick the same video"
         : cut + " video uploads didn't finish. Tap Resume upload on each booth and pick the same videos"), 1500);
+      else if (cutFiles) setTimeout(() => toast("A video from Videos/Pics didn't finish. Pick it again there and it picks up where it stopped"), 1500);
     } else {
       if (_teamUnsub) { _teamUnsub(); _teamUnsub = null; }
       if (_pubUnsub) { _pubUnsub(); _pubUnsub = null; } pubSchedules = {};
