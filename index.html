@@ -2559,7 +2559,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v212</div>
+      <div class="pf-ver">NCM Events Guide · v213</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5902,17 +5902,29 @@ let msChecking = null, msReadyFor = null;
 let msUploadTarget = null;     // c.i the file picker was opened for
 const MS_SCOPES = ["Files.ReadWrite.All"];
 
+// Upload buttons start from the last config this device saw (v213), so a
+// launch on dead show-floor wifi still shows them. Until v212 they waited on
+// this read, and with no connection the button stayed hidden until a later
+// launch on a good one. The server's copy still wins whenever it arrives
+// (disabled: true turns uploads off everywhere).
+const UPCFG_KEY = "ncm_upload_cfg";
 function subscribeUploadConfig() {
   if (_uploadCfgUnsub) { _uploadCfgUnsub(); _uploadCfgUnsub = null; }
   uploadCfg = null; _msBooted = false;
   if (!fbReady || !currentUser) return;
+  try { const c = JSON.parse(localStorage.getItem(UPCFG_KEY) || "null"); if (c && c.clientId && c.tenantId) uploadCfg = c; } catch (e) {}
+  if (uploadCfg) msBootstrap();
   _uploadCfgUnsub = fbDb.collection("config").doc("uploads").onSnapshot(d => {
+    if (!d.exists && d.metadata.fromCache) return;   // offline, nothing cached: keep this device's copy
+    const was = msUploadsActive();
     const x = (d.exists && d.data()) || {};
     uploadCfg = (x.clientId && x.tenantId && !x.disabled)
       ? { clientId: String(x.clientId).trim(), tenantId: String(x.tenantId).trim(),
           folderUrl: String(x.folderUrl || "").trim() }   // optional global override
       : null;
+    try { uploadCfg ? localStorage.setItem(UPCFG_KEY, JSON.stringify(uploadCfg)) : localStorage.removeItem(UPCFG_KEY); } catch (e) {}
     msBootstrap();
+    if (msUploadsActive() !== was && currentUser && !isHome()) render();
   }, () => {});
 }
 // Uploads land in the CURRENT SHOW's folder — the same per-show MEDIA link
@@ -11394,9 +11406,24 @@ document.getElementById("accountsSheet").addEventListener("click", async e => {
   renderAccounts();
   toast("Updated " + first + "'s account");
 });
+// The last profile this device saw (v213). On show-floor wifi the profile
+// read could fail at launch; the fallback profile had no team, so an
+// Editorial rep lost the Video and Upload buttons until a later launch on a
+// good connection (Nathan Mader, Equip 2026).
+const PROF_KEY = "ncm_prof_";
+const PROF_FIELDS = ["name", "email", "brand", "brands", "eventCode", "dept", "role", "brandsConfirmed"];
 async function loadUserDoc(uid) {
-  try { const snap = await fbDb.collection("users").doc(uid).get(); return snap.exists ? snap.data() : null; }
-  catch (e) { return null; }
+  try {
+    const snap = await fbDb.collection("users").doc(uid).get();
+    if (snap.exists) {
+      const d = snap.data(), keep = {};
+      PROF_FIELDS.forEach(k => { if (d[k] !== undefined) keep[k] = d[k]; });
+      try { localStorage.setItem(PROF_KEY + uid, JSON.stringify(keep)); } catch (e) {}
+      return d;
+    }
+    if (!snap.metadata.fromCache) return null;   // the server says there's no profile
+  } catch (e) {}
+  try { return JSON.parse(localStorage.getItem(PROF_KEY + uid) || "null"); } catch (e) { return null; }
 }
 function showSignedIn(profile) {
   liftVeil(() => {
@@ -11814,6 +11841,7 @@ if (fbReady) {
       // paint, so PestWorld no longer flashes up first (v209). Until v208 the
       // switch waited for the cloud checks below.
       if (wantsAdminHome()) setBottomTab("admin");
+      subscribeUploadConfig();   // v213: before the first paint, so Upload buttons draw with it
       // Draw the right show from this device's saved data BEFORE the loading
       // screen lifts (v161). Until then the veil lifted onto the pre-sign-in
       // placeholder and the real schedule replaced it a moment later with a
@@ -11835,7 +11863,6 @@ if (fbReady) {
       subscribeResets();
       subscribePhotoFolders();
       subscribeAccounts();
-      subscribeUploadConfig();
       subscribeMyProfile();
       if (isMaster()) { prefetchBullpenPasscode().catch(() => {}); loadQrLib().catch(() => {}); }
       updateMediaBtn();
