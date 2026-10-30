@@ -1993,6 +1993,7 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
 /* ── Admin home (v207); its own space, apart from any show (v208) ── */
+body.no-booths #bottomNav [data-v="booths"], body.no-booths [data-fab-booth] { display: none !important; }
 body.ah-mode #mediaBtn, body.ah-mode .filter-bar, body.ah-mode .booths-search, body.ah-mode .progress-strip,
 body.ah-mode #bottomNav [data-v="schedule"], body.ah-mode #bottomNav [data-v="booths"],
 body.ah-mode #bottomNav [data-v="photos"], body:not(.ah-mode) #bottomNav .bn-home { display: none !important; }
@@ -2564,7 +2565,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v220</div>
+      <div class="pf-ver">NCM Events Guide · v221</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4862,6 +4863,18 @@ const EVENTS = {
   "PMP-NYPEST-2026": { brand:"pmp", show:"New York Pest Expo", short:"NY Pest Expo", booths: NYPEST_BOOTHS, tz: "America/New_York", dates: ["2026-11-12"],
     venue: { name: "DoubleTree by Hilton Fort Lee / George Washington Bridge", address: "2117 Route 4 East, Fort Lee, NJ 07024" },
     hours: { "2026-11-12": "Expo 8 a.m.-6 p.m." } },
+  // CSI Tech Summit (Control Solutions Inc., PMP), Dec. 2-4, 2026: Ryan
+  // Karapa's draft agenda (Nate, Oct. 30, 2026). Welcome dinner Wed. at
+  // Villa Capri; Thu. plant tour and CSI session at the Pasadena, Texas,
+  // plant, lunch and breakouts at the hotel, NASA tour, dinner at Opus; Fri.
+  // everyone flies home. No booths, so no Booths tab (noBooths). A hired
+  // videographer shoots 7:30 a.m.-2:30 p.m. Thursday; our team sends photos
+  // and short clips to the bullpen from the Videos/Pics tab. Going: Nate,
+  // Heather Gooch, Mike Joyce; the agenda is preloaded for them.
+  "PMP-CSI-2026": { brand:"pmp", show:"CSI Tech Summit", short:"CSI Summit", booths: [], noBooths: true, tz: "America/Chicago",
+    dates: ["2026-12-02","2026-12-03","2026-12-04"],
+    venue: { name: "Control Solutions Inc.", address: "5903 Genoa Red Bluff Rd., Pasadena, TX 77507" },
+    going: ["nstoltman", "hgooch", "mjoyce"] },
   // NPGA Southeastern & International Propane Expo, Music City Center,
   // Nashville (the app's first show). Every show keeps its booth list loaded
   // for good: it maps saved booth data back to company names, so notes,
@@ -5102,6 +5115,9 @@ function updateHomeMemberChip() {
 }
 function applyEvent(code) {
   const ev = resolveEvent(code);
+  // A show with no exhibitors (a summit, v221) hides Booths and Add booth.
+  document.body.classList.toggle("no-booths", !!ev.noBooths);
+  if (ev.noBooths && activeView === "booths") setBottomTab("schedule");
   applyBrand(ev.brand);
   updateHeaderBrand(ev.brand, ev.show);
   CO = (ev.booths && ev.booths.length) ? ev.booths : [];
@@ -9441,6 +9457,7 @@ document.getElementById("bottomNav").addEventListener("click", e => {
   }
 });
 function setBottomTab(v) {
+  if (v === "booths" && (resolveEvent(currentEventCode()) || {}).noBooths) v = "schedule";   // v221
   activeView = v;
   document.querySelectorAll("#bottomNav [data-v]").forEach(t => t.classList.toggle("active", t.dataset.v === v));
   // Admin Home stands apart from every show (v208): NCM colors and logo, no
