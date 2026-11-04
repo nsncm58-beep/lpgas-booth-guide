@@ -853,6 +853,14 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .home-aside-media-main { font-family: var(--fd); font-weight: 800; font-size: 0.95rem; line-height: 1.25; min-width: 0; }
 .home-aside-media-sub { display: block; font-family: var(--ft); font-weight: 600; font-size: 0.66rem; opacity: 0.85; margin-top: 3px; }
 
+/* Launch intro (v224): Nate's floor-plan animation plays full screen once
+   per cold launch, then fades into the app. Tap skips it. If it can't start
+   (Low Power Mode blocks autoplay, first visit on slow Wi-Fi) it gets out of
+   the way after 1.5s and the skyline loader below takes over. */
+#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #0f385b url(intro-poster.jpg) center / cover no-repeat; transition: opacity 0.3s ease; }
+#bootIntro video { display: block; width: 100%; height: 100%; object-fit: cover; }
+#bootIntro.gone { opacity: 0; pointer-events: none; }
+
 /* NCM skyline loader: the three towers from the logo mark rise in rhythm
    over a still baseline. Replaces the stock ring spinner everywhere. */
 .ncm-loader { display: flex; flex-direction: column; align-items: center; gap: 9px; }
@@ -2445,6 +2453,36 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 </style>
 </head>
 <body>
+<div id="bootIntro" aria-hidden="true"><video id="bootIntroVid" muted playsinline webkit-playsinline preload="auto"></video></div>
+<script>
+// Loaded as a blob, not by URL: iOS Safari needs byte-range answers to play a
+// video by URL, and the service worker's cached copy can't give it those.
+(function () {
+  var box = document.getElementById("bootIntro"), v = document.getElementById("bootIntroVid");
+  var done, started = false;
+  window._introFinished = false;
+  window._introDone = new Promise(function (r) { done = r; });
+  function finish() {
+    if (window._introFinished) return;
+    window._introFinished = true; done();
+    box.classList.add("gone");
+    setTimeout(function () { box.remove(); }, 400);
+  }
+  v.addEventListener("playing", function () { started = true; });
+  v.addEventListener("ended", finish);
+  v.addEventListener("error", finish);
+  box.addEventListener("click", finish);
+  setTimeout(function () { if (!started) finish(); }, 1500);
+  setTimeout(finish, 6000);
+  try {
+    fetch("intro.mp4").then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
+      if (window._introFinished) return;
+      v.src = URL.createObjectURL(b);
+      var p = v.play(); if (p && p.catch) p.catch(finish);
+    }).catch(finish);
+  } catch (e) { finish(); }
+})();
+</script>
 <div id="topBleed" aria-hidden="true"></div>
 <div id="bottomBleed" aria-hidden="true"></div>
 
@@ -2565,7 +2603,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v223</div>
+      <div class="pf-ver">NCM Events Guide · v224</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -11671,10 +11709,13 @@ function applyQrPrefill() {
 // preloads plus the service worker cache this is a same-tick no-op; the
 // 600ms race is a first-ever-visit safety valve so one slow font file can't
 // hold the app hostage.
+// v224: it also waits for the launch intro to finish.
 function liftVeil(reveal) {
+  const waits = [];
   if (document.fonts && document.fonts.status !== "loaded")
-    Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 600))]).then(reveal);
-  else reveal();
+    waits.push(Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 600))]));
+  if (!window._introFinished && window._introDone) waits.push(window._introDone);
+  if (waits.length) Promise.all(waits).then(reveal); else reveal();
 }
 function showSignedOut() {
   liftVeil(() => authEls.overlay.classList.remove("checking"));

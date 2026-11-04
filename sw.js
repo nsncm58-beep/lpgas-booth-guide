@@ -3,7 +3,7 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v223';
+const CACHE_NAME = 'ncm-events-guide-v224';
 // Files from other sites (Firebase's sign-in and sync code on gstatic, the
 // QR library on cdnjs) live in their OWN cache that app updates never clear
 // (v202). Before, every update wiped them, so the first launch after an
@@ -16,7 +16,7 @@ const ASSETS = [
     './Forza-Medium.woff2', './Forza-Bold.woff2', './Forza-Black.woff2',
     './Gotham-Book.woff2', './Gotham-Medium.woff2', './Gotham-Bold.woff2',
     './Camber-Medium.woff2', './Camber-Bold.woff2',
-    './msal-browser.min.js'
+    './msal-browser.min.js', './intro.mp4', './intro-poster.jpg'
 ];
 
 self.addEventListener('install', event => {
