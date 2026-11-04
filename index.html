@@ -854,11 +854,10 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .home-aside-media-sub { display: block; font-family: var(--ft); font-weight: 600; font-size: 0.66rem; opacity: 0.85; margin-top: 3px; }
 
 /* Launch intro (v224): Nate's floor-plan animation plays full screen once
-   per cold launch, then fades into the app. Tap skips it. If it can't start
-   (Low Power Mode blocks autoplay, first visit on slow Wi-Fi) it gets out of
-   the way after 1.5s and the skyline loader below takes over. */
-#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #0f385b url(intro-poster.jpg) center / cover no-repeat; transition: opacity 0.3s ease; }
-#bootIntro video { display: block; width: 100%; height: 100%; object-fit: cover; }
+   per cold launch, then fades into the app. Tap skips it. See the script
+   right after <body> for the Low Power Mode and bad-connection handling. */
+#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #0f385b url(intro-v1-poster.jpg) center / cover no-repeat; transition: opacity 0.3s ease; }
+#bootIntro video, #bootIntro img { display: block; width: 100%; height: 100%; object-fit: cover; }
 #bootIntro.gone { opacity: 0; pointer-events: none; }
 
 /* NCM skyline loader: the three towers from the logo mark rise in rhythm
@@ -2455,11 +2454,16 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <body>
 <div id="bootIntro" aria-hidden="true"><video id="bootIntroVid" muted playsinline webkit-playsinline preload="auto"></video></div>
 <script>
-// Loaded as a blob, not by URL: iOS Safari needs byte-range answers to play a
-// video by URL, and the service worker's cached copy can't give it those.
+// Launch intro (v225): always plays. The video is loaded as a blob, not by
+// URL, because iOS needs byte-range answers to play a video by URL and the
+// service worker's cached copy can't give them. If the phone won't autoplay
+// it (Low Power Mode), the same animation plays as an animated image instead.
+// The skyline loader only takes over if neither file has arrived after 5s
+// (first-ever launch on a really bad connection; afterward both live on the
+// phone).
 (function () {
   var box = document.getElementById("bootIntro"), v = document.getElementById("bootIntroVid");
-  var done, started = false;
+  var done, shown = false, imgTried = false;
   window._introFinished = false;
   window._introDone = new Promise(function (r) { done = r; });
   function finish() {
@@ -2468,19 +2472,30 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     box.classList.add("gone");
     setTimeout(function () { box.remove(); }, 400);
   }
-  v.addEventListener("playing", function () { started = true; });
+  function started() { if (shown) return; shown = true; setTimeout(finish, 5200); }
+  function useImage() {
+    if (imgTried || window._introFinished) return; imgTried = true;
+    var img = new Image();
+    img.onload = function () {
+      if (window._introFinished) return;
+      v.remove(); box.appendChild(img); started(); setTimeout(finish, 3700);
+    };
+    img.onerror = finish;
+    img.alt = ""; img.src = "intro-v1.webp";
+  }
+  v.addEventListener("playing", started);
   v.addEventListener("ended", finish);
-  v.addEventListener("error", finish);
+  v.addEventListener("error", useImage);
   box.addEventListener("click", finish);
-  setTimeout(function () { if (!started) finish(); }, 1500);
-  setTimeout(finish, 6000);
+  setTimeout(function () { if (!shown) finish(); }, 5000);
   try {
-    fetch("intro.mp4").then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
+    fetch("intro-v1.mp4").then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
       if (window._introFinished) return;
       v.src = URL.createObjectURL(b);
-      var p = v.play(); if (p && p.catch) p.catch(finish);
-    }).catch(finish);
-  } catch (e) { finish(); }
+      var p = v.play(); if (p && p.catch) p.catch(useImage);
+      setTimeout(function () { if (!shown) useImage(); }, 1200);
+    }).catch(useImage);
+  } catch (e) { useImage(); }
 })();
 </script>
 <div id="topBleed" aria-hidden="true"></div>
@@ -2603,7 +2618,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v224</div>
+      <div class="pf-ver">NCM Events Guide · v225</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>

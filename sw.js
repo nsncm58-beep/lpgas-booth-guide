@@ -3,25 +3,34 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v224';
+const CACHE_NAME = 'ncm-events-guide-v225';
 // Files from other sites (Firebase's sign-in and sync code on gstatic, the
 // QR library on cdnjs) live in their OWN cache that app updates never clear
 // (v202). Before, every update wiped them, so the first launch after an
 // update had to download them again over show-floor Wi-Fi before the app
 // would start: the "app won't load" reports at Equip and PestWorld.
 const RUNTIME = 'ncm-events-guide-runtime';
+const INTRO = ['./intro-v1.mp4', './intro-v1.webp', './intro-v1-poster.jpg'];
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './favicon.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
     './Forza-Medium.woff2', './Forza-Bold.woff2', './Forza-Black.woff2',
     './Gotham-Book.woff2', './Gotham-Medium.woff2', './Gotham-Bold.woff2',
     './Camber-Medium.woff2', './Camber-Bold.woff2',
-    './msal-browser.min.js', './intro.mp4', './intro-poster.jpg'
+    './msal-browser.min.js'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+        Promise.all([
+            caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)),
+            // The launch intro (v225) goes in the cache app updates never
+            // clear, so phones download it once, not on every update. A new
+            // intro gets a new filename (intro-v2.*).
+            caches.open(RUNTIME).then(async c => {
+                for (const f of INTRO) if (!(await c.match(f))) { try { await c.add(f); } catch (e) {} }
+            })
+        ])
     );
     self.skipWaiting();
 });
