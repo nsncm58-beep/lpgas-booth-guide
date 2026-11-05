@@ -2655,7 +2655,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v227</div>
+      <div class="pf-ver">NCM Events Guide · v228</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -9672,6 +9672,7 @@ function buildShowCsv() {
 // someone's notes (v193). booths: [{ n, b, s }] with s = that booth's data.
 function csvFromParts(booths, mealsIn, offsiteIn, sessIn) {
   const rows = [["Company","Booth","Row","Customer Status","Scheduled Day","Scheduled Time","Visited","Pre-Visit Notes","Post-Visit Notes"]];
+  if (!booths.length && (mealsIn.length || offsiteIn.length || sessIn.length)) rows.length = 0;   // v228: no empty booth table on booth-less shows
   booths.slice()
     .sort((a,b) => a.n.localeCompare(b.n))
     .forEach(c => {
@@ -9687,19 +9688,19 @@ function csvFromParts(booths, mealsIn, offsiteIn, sessIn) {
     });
   const meals = mealsIn.slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (meals.length) {
-    rows.push([]);
+    if (rows.length) rows.push([]);
     rows.push(["Meal","Day","Time","With","Details","My Notes"]);
     meals.forEach(m => rows.push([MEAL_LABEL[m.type], "Day "+m.day, m.time, m.company||"", m.notes||"", m.mynotes||""]));
   }
   const offsite = offsiteIn.slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (offsite.length) {
-    rows.push([]);
+    if (rows.length) rows.push([]);
     rows.push(["Meeting / Event","Day","Time","With","Location","Details","My Notes"]);
     offsite.forEach(o => rows.push([o.title||"Off-Site Meeting", "Day "+o.day, o.time, o.company||"", o.location||"", o.notes||"", o.mynotes||""]));
   }
   const sess = sessIn.slice().sort((a,b) => a.day - b.day || timeToMin(a.time) - timeToMin(b.time));
   if (sess.length) {
-    rows.push([]);
+    if (rows.length) rows.push([]);
     rows.push(["Education Session","Day","Time","Speakers","Notes"]);
     sess.forEach(x => rows.push([x.title, "Day "+x.day, x.time + (x.end ? " to " + x.end : ""), x.speakers||"", x.notes||""]));
   }
@@ -10899,6 +10900,18 @@ document.getElementById("vidFileInput").addEventListener("change", e => {
 });
 // Access old show data (archived CSVs)
 let _archiveCache = {};
+let _showCsvCache = {};   // v228: CSVs built from the rep's cloud backups
+// Anything saved on this device for a show: booth notes/tags/visits, meals,
+// meetings or sessions.
+function localShowHasData(code) {
+  const prev = masterEventOverride;
+  masterEventOverride = code;
+  try {
+    const st = load();
+    return Object.keys(st).some(k => /^c\d+$/.test(k) && hasBoothData(st[k]))
+      || loadMeals().length > 0 || loadOffsite().length > 0 || loadSessions().length > 0;
+  } catch (e) { return false; } finally { masterEventOverride = prev; }
+}
 async function renderOldData() {
   const el = document.getElementById("oldDataList");
   el.innerHTML = `<div class="cleanup-empty">Loading…</div>`;
@@ -10909,17 +10922,36 @@ async function renderOldData() {
     snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
   } catch (e) {}
   docs.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  // Every real show on this rep's brands; each exports straight from this
-  // device's data for it (nothing gets archived away any more).
+  // Every real show on this rep's brands. v228: a show exports from this
+  // device's data, or from the rep's cloud backup when this device has none
+  // for it (new or reset phone). Shows with nothing saved anywhere (every
+  // 2027 show, for now) list under "Nothing saved yet" with no Download:
+  // they used to sit at the top of the list and export a header-only CSV
+  // (Jim Cummins, Nov. 2026).
   const codes = sortShowsByDate(pickerShows().filter(c => EVENTS[c])).reverse();
-  const past = codes.map(code => `<div class="cleanup-row">
+  _showCsvCache = {};
+  await Promise.all(codes.filter(c => !localShowHasData(c)).map(async code => {
+    try {
+      const snap = await fbDb.collection("backups").doc(code === currentUser.eventCode ? currentUser.uid : currentUser.uid + "__" + code).get();
+      const d = snap.exists ? snap.data() : null;
+      if (d && d.eventCode === code && ((d.booths || []).length || (d.meals || []).length || (d.offsite || []).length || (d.sessions || []).length)) {
+        const P = pnParts(d);
+        _showCsvCache[code] = csvFromParts(P.booths, P.meals, P.offsite, P.sessions);
+      }
+    } catch (e) {}
+  }));
+  const row = (code, btn) => `<div class="cleanup-row">
       <div class="cleanup-row-main">
         <div class="cleanup-row-name">${esc(showLabelOf(code))}</div>
         <div class="cleanup-row-meta">${code === currentEventCode() ? "Viewing now · " : ""}${esc(showStatusText(code))}</div>
-      </div>
-      <button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>
-    </div>`).join("");
-  const pastBlock = past ? `<div class="cleanup-head">Your shows</div>${past}` : "";
+      </div>${btn ? `
+      <button class="cleanup-del" style="border-color:var(--blue);color:var(--blue);" data-past-dl="${esc(code)}">Download</button>` : ""}
+    </div>`;
+  const has = c => localShowHasData(c) || _showCsvCache[c] !== undefined;
+  const past = codes.filter(has).map(c => row(c, true)).join("");
+  const empty = codes.filter(c => !has(c)).map(c => row(c, false)).join("");
+  const pastBlock = (past ? `<div class="cleanup-head">Your shows</div>${past}` : "")
+    + (empty ? `<div class="cleanup-head">Nothing saved yet</div>${empty}` : "");
   if (!docs.length) {
     el.innerHTML = pastBlock || `<div class="cleanup-empty">No shows yet.</div>`;
     return;
@@ -10950,7 +10982,11 @@ document.getElementById("oldDataList").addEventListener("click", e => {
   // A wrapped show that's still the rep's current one exports live from the
   // device; anything genuinely archived comes from the stored CSV.
   const live = e.target.closest("[data-past-dl]");
-  if (live) { downloadCsv(csvForShow(live.dataset.pastDl), csvFileName(live.dataset.pastDl)); toast("CSV downloaded"); return; }
+  if (live) {
+    const code = live.dataset.pastDl;
+    downloadCsv(localShowHasData(code) || _showCsvCache[code] === undefined ? csvForShow(code) : _showCsvCache[code], csvFileName(code));
+    toast("CSV downloaded"); return;
+  }
   const btn = e.target.closest("[data-arch-id]");
   if (!btn) return;
   const a = _archiveCache[btn.dataset.archId];
