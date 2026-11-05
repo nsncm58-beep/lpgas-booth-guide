@@ -3,14 +3,14 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v225';
+const CACHE_NAME = 'ncm-events-guide-v226';
 // Files from other sites (Firebase's sign-in and sync code on gstatic, the
 // QR library on cdnjs) live in their OWN cache that app updates never clear
 // (v202). Before, every update wiped them, so the first launch after an
 // update had to download them again over show-floor Wi-Fi before the app
 // would start: the "app won't load" reports at Equip and PestWorld.
 const RUNTIME = 'ncm-events-guide-runtime';
-const INTRO = ['./intro-v1.mp4', './intro-v1.webp', './intro-v1-poster.jpg'];
+const INTRO = ['./intro-v2.mp4', './intro-v2.webp', './intro-v2-poster.jpg'];
 const ASSETS = [
     './index.html', './manifest.json', './icon-192.png', './icon-512.png', './favicon.png', './ncm-logo.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
@@ -53,6 +53,12 @@ self.addEventListener('activate', event => {
             } catch (e) {}
         }
         await Promise.all(old.map(k => caches.delete(k)));
+        // Drop launch-intro files a newer intro replaced (v226).
+        try {
+            const keep = INTRO.map(f => new URL(f, self.location).href);
+            for (const req of await runtime.keys())
+                if (/\/intro-v\d+/.test(req.url) && !keep.includes(req.url)) await runtime.delete(req);
+        } catch (e) {}
     })());
     self.clients.claim();
 });

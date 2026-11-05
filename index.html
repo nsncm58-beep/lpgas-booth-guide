@@ -856,7 +856,7 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 /* Launch intro (v224): Nate's floor-plan animation plays full screen once
    per cold launch, then fades into the app. Tap skips it. See the script
    right after <body> for the Low Power Mode and bad-connection handling. */
-#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #0f385b url(intro-v1-poster.jpg) center / cover no-repeat; transition: opacity 0.3s ease; }
+#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #0f385b url(intro-v2-poster.jpg) center / cover no-repeat; transition: opacity 0.3s ease; }
 #bootIntro video, #bootIntro img { display: block; width: 100%; height: 100%; object-fit: cover; }
 #bootIntro.gone { opacity: 0; pointer-events: none; }
 
@@ -2454,7 +2454,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
 <body>
 <div id="bootIntro" aria-hidden="true"><video id="bootIntroVid" muted playsinline webkit-playsinline preload="auto"></video></div>
 <script>
-// Launch intro (v225): always plays. The video is loaded as a blob, not by
+// Launch intro (v225, full-res files v226): always plays. The video is loaded as a blob, not by
 // URL, because iOS needs byte-range answers to play a video by URL and the
 // service worker's cached copy can't give them. If the phone won't autoplay
 // it (Low Power Mode), the same animation plays as an animated image instead.
@@ -2481,7 +2481,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
       v.remove(); box.appendChild(img); started(); setTimeout(finish, 3700);
     };
     img.onerror = finish;
-    img.alt = ""; img.src = "intro-v1.webp";
+    img.alt = ""; img.src = "intro-v2.webp";
   }
   v.addEventListener("playing", started);
   v.addEventListener("ended", finish);
@@ -2489,7 +2489,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
   box.addEventListener("click", finish);
   setTimeout(function () { if (!shown) finish(); }, 5000);
   try {
-    fetch("intro-v1.mp4").then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
+    fetch("intro-v2.mp4").then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
       if (window._introFinished) return;
       v.src = URL.createObjectURL(b);
       var p = v.play(); if (p && p.catch) p.catch(useImage);
@@ -2618,7 +2618,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v225</div>
+      <div class="pf-ver">NCM Events Guide · v226</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
