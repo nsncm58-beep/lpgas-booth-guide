@@ -2655,7 +2655,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v229</div>
+      <div class="pf-ver">NCM Events Guide · v230</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -4811,7 +4811,7 @@ function sortShowsByDate(codes) {
 // falls back to defaultShowFor. A
 // manual pick in the show picker still wins for that session.
 const SHOW_PREFS = {
-  "tmccloskey@northcoastmedia.net": [{ code: "LM-2026" }, { code: "LM-2027" }],   // Equip only, so next Equip (v218)
+  "tmccloskey@northcoastmedia.net": [{ code: "LM-2026" }, { code: "LM-ELEVATE-2026" }, { code: "LM-2027" }],   // Equip, then Elevate (on the Elevate schedule, Nov. 6), then next Equip
   // Rachel and Kevin open on Equip from 2 p.m. Eastern on Wed., Oct. 21
   // (Nate, Oct. 20, 2026); PestWorld until then. Tod is always Equip.
   "rrosen@northcoastmedia.net":     [{ code: "LM-2026", at: "2026-10-21T14:00:00-04:00" }, { code: "PMP-2026" }],
@@ -4936,7 +4936,7 @@ const EVENTS = {
     floor: ELEVATE_FLOOR,
     // Who's going (Nate, Oct. 29, 2026). Only they land on Elevate by
     // themselves; anyone else on LM can still pick it (v218).
-    going: ["jgoodman", "nhassen", "jcummins", "sjones", "shollister", "pszymczak", "kstoltman", "rrosen"],
+    going: ["jgoodman", "nhassen", "jcummins", "sjones", "shollister", "pszymczak", "kstoltman", "rrosen", "tmccloskey"],   // Tod added Nov. 6 (on the Elevate schedule)
     hours: { "2026-11-09": "Exhibit hall 2-6 p.m.", "2026-11-10": "Exhibit hall 10 a.m.-2 p.m." },
     // Attire for the two exhibit hall days (Nate, Oct. 29, 2026).
     attire: { "2026-11-09": "Gray polo, black Adidas pullover",
