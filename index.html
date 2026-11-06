@@ -2473,6 +2473,10 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
   var done, shown = false, imgTried = false, appReady = false, held = false, imgMode = false, holdCap = null;
   window._introFinished = false;
   window._introDone = new Promise(function (r) { done = r; });
+  // v232: desktop never sees the intro (Nate, Nov. 6, 2026: desktop users are
+  // all Homebase). The box goes away before anything can paint.
+  var phone = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
+  if (!phone) { window._introFinished = true; done(); box.remove(); return; }
   function finish() {
     if (window._introFinished) return;
     window._introFinished = true; done(); clearTimeout(holdCap);
@@ -2656,7 +2660,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v231</div>
+      <div class="pf-ver">NCM Events Guide · v232</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
