@@ -656,6 +656,7 @@ a.booth-badge.map svg { flex-shrink: 0; }
   background-repeat: no-repeat;
   background-position: right 9px center;
 }
+.again-card .again-note { font-size: 0.76rem; color: var(--muted); margin-top: 6px; }
 .sched-sel.scheduled {
   border-color: var(--blue);
   color: var(--blue);
@@ -2655,7 +2656,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v230</div>
+      <div class="pf-ver">NCM Events Guide · v231</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5064,8 +5065,9 @@ function shiftLocalDays(st, code) {
     Object.keys(st).forEach(k => {
       const s = st[k];
       if (k[0] !== "c" || !s || !s.scheduled) return;
-      const [d, t] = s.scheduled.split("|");
-      s.scheduled = ((+d || 0) + sh) + "|" + t;
+      const mv = v => { const [d, t] = v.split("|"); return ((+d || 0) + sh) + "|" + t; };
+      s.scheduled = mv(s.scheduled);
+      if (Array.isArray(s.more)) s.more = s.more.map(mv);
     });
     (st._meals || []).forEach(m => { m.day = (+m.day || 0) + sh; });
     (st._offsite || []).forEach(o => { o.day = (+o.day || 0) + sh; });
@@ -5434,7 +5436,7 @@ function buildBackup() {
     if (!x) return;
     const st = x.status && x.status !== "unknown" ? x.status : "";
     if (!st && !x.visited && !x.scheduled && !(x.pre || "").trim() && !(x.post || "").trim()) return;
-    booths.push({ n: c.n, b: c.b, status: st, scheduled: x.scheduled || "", visited: !!x.visited,
+    booths.push({ n: c.n, b: c.b, status: st, scheduled: x.scheduled || "", more: Array.isArray(x.more) ? x.more : [], visited: !!x.visited,
                   pre: x.pre || "", post: x.post || "", video: !!x.video });
   });
   return { booths,
@@ -5480,10 +5482,12 @@ function buildMyScheduleItems() {
   const state = load();
   const items = [];
   CO.forEach((c,i) => {
-    const sv = state[key(i)]?.scheduled;
-    if (!sv) return;
-    const [d,t] = sv.split("|");
-    items.push({ kind:"booth", day:parseInt(d), time:t, boothName:c.n, boothNum:c.b, video: !!state[key(i)]?.video });
+    boothSlots(state[key(i)]).forEach((sv, j) => {
+      const [d,t] = sv.split("|");
+      const it = { kind:"booth", day:parseInt(d), time:t, boothName:c.n, boothNum:c.b, video: !!state[key(i)]?.video };
+      if (j) it.again = true;
+      items.push(it);
+    });
   });
   loadMeals().forEach(m => items.push({ kind:"meal", day:m.day, time:m.time, mealType:m.type, company:m.company||"", notes:m.notes||"" }));
   loadOffsite().forEach(o => items.push({ kind:"offsite", day:o.day, time:o.time, title:o.title||"", company:o.company||"", location:o.location||"", notes:o.notes||"" }));
@@ -5561,7 +5565,7 @@ async function hydrateFromCloud() {
       docItems(sd.data()).forEach(it => {
         if (it.kind === "booth") {
           const i = findBooth(it.boothNum, it.boothName);
-          if (i != null) { fresh["c"+i] = fresh["c"+i] || {}; fresh["c"+i].scheduled = it.day + "|" + it.time; }
+          if (i != null) { fresh["c"+i] = fresh["c"+i] || {}; addBoothVisit(fresh["c"+i], it.day + "|" + it.time); }
         } else if (it.kind === "meal") {
           meals.push({ id: mealId(), type: it.mealType, day: it.day, time: it.time, company: it.company || "", notes: it.notes || "" });
         } else if (it.kind === "session") {
@@ -5595,8 +5599,41 @@ async function hydrateFromCloud() {
 // order than they were written, so compare with the keys sorted.
 function canonJSON(o) { return JSON.stringify(o, Object.keys(o || {}).sort()); }
 function preNorm(s) { return String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, ""); }
+// Extra visits (v231, Nate, Nov. 6, 2026): a booth can be on your schedule
+// more than once. `scheduled` stays the main visit, so older phones and every
+// existing path keep working; `more` holds extra "day|time" visits. Extra
+// visits travel as booth items with again: true and their own key.
+function boothSlots(s) {
+  if (!s) return [];
+  return (s.scheduled ? [s.scheduled] : []).concat(Array.isArray(s.more) ? s.more.filter(x => x && x !== s.scheduled) : []);
+}
+function tidyVisits(s) {
+  if (!Array.isArray(s.more)) return;
+  const seen = new Set(s.scheduled ? [s.scheduled] : []);
+  s.more = s.more.filter(x => x && !seen.has(x) && seen.add(x));
+  if (!s.scheduled && s.more.length) s.scheduled = s.more.shift();
+  if (!s.more.length) delete s.more;
+}
+function addBoothVisit(s, v) {
+  if (!v) return;
+  if (!s.scheduled) s.scheduled = v;
+  else if (s.scheduled !== v) s.more = (Array.isArray(s.more) ? s.more : []).concat(v);
+  tidyVisits(s);
+}
+// Removing the main visit promotes the next extra one.
+function dropBoothVisit(s, v) {
+  if (s.scheduled === v) s.scheduled = null;
+  if (Array.isArray(s.more)) s.more = s.more.filter(x => x !== v);
+  tidyVisits(s);
+}
+function moveBoothVisit(s, from, to) {
+  if (s.scheduled === from) s.scheduled = to;
+  else if (Array.isArray(s.more)) s.more = s.more.map(x => x === from ? to : x);
+  else s.scheduled = to;
+  tidyVisits(s);
+}
 function preItemKey(it) {
-  if (it.kind === "booth") return "b:" + it.boothNum;
+  if (it.kind === "booth") return "b:" + it.boothNum + (it.again ? "@" + it.day + "|" + it.time : "");
   if (it.kind === "session") return "s:" + it.sid;
   if (it.kind === "meal") return "m:" + it.day + ":" + (it.mealType || it.type) + ":" + preNorm(it.company);
   return "o:" + it.day + ":" + preNorm(it.title || it.company);
@@ -5643,7 +5680,15 @@ function prePut(st, k, n, b, ids) {
   if (n.kind === "booth") {
     const i = preBoothIndex(n); if (i < 0) return false;
     const s = st["c" + i] = st["c" + i] || {};
+    if (n.again) {   // an extra visit; ids remembers where it is now, even after the rep moves it
+      if (b && b.again) dropBoothVisit(s, (ids[k] || "").split("@")[1] || b.day + "|" + b.time);
+      addBoothVisit(s, n.day + "|" + n.time);
+      ids[k] = "c" + i + "@" + n.day + "|" + n.time;
+      return true;
+    }
+    if (b && s.scheduled !== b.day + "|" + b.time && boothSlots(s).includes(b.day + "|" + b.time)) dropBoothVisit(s, b.day + "|" + b.time);
     s.scheduled = n.day + "|" + n.time;
+    tidyVisits(s);
     if (n.video) s.video = true;
     else if (b && b.video && !s.vlink && !(s.vclips || []).length) s.video = false;
     // Published pre-visit notes fill an empty box, and replace earlier
@@ -5676,7 +5721,9 @@ function preDrop(st, k, b, ids) {
     const i = preBoothIndex(b); if (i < 0) return false;
     const s = st["c" + i]; if (!s) return false;
     let hit = false;
-    if (s.scheduled === b.day + "|" + b.time) { s.scheduled = null; hit = true; }   // the rep moved it? then it's theirs
+    const at = (b.again && ids[k] && ids[k].split("@")[1]) || b.day + "|" + b.time;
+    if (b.again) delete ids[k];
+    if (boothSlots(s).includes(at)) { dropBoothVisit(s, at); hit = true; }   // the rep moved a main visit? then it's theirs
     if (b.video && !s.vlink && !(s.vclips || []).length && !s.scheduled) s.video = false;
     return hit;
   }
@@ -7818,8 +7865,9 @@ function buildCard(c, state) {
   const statusCls = !salesView ? ""
                   : status === "customer" ? " s-customer"
                   : status === "noncustomer" ? " s-noncustomer" : "";
+  const moreN = boothSlots(s).length - (scheduled ? 1 : 0);
   const schedTag = scheduled
-    ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}</span>`
+    ? `<span class="sched-tag">D${scheduled.split("|")[0]} ${esc(scheduled.split("|")[1])}${moreN > 0 ? " +" + moreN : ""}</span>`
     : "";
   const [schD, schT] = scheduled ? scheduled.split("|") : ["", ""];
   return `
@@ -8641,10 +8689,10 @@ function renderScheduleView(state) {
   if (schedDay > nDays) schedDay = 1;
   const dayCount = Array(nDays + 1).fill(0);
   CO.forEach((c,i) => {
-    const sv = state[key(i)]?.scheduled;
-    if (!sv) return;
-    const d = parseInt(sv.split("|")[0]);
-    if (d>=1 && d<=nDays) dayCount[d]++;
+    boothSlots(state[key(i)]).forEach(sv => {
+      const d = parseInt(sv.split("|")[0]);
+      if (d>=1 && d<=nDays) dayCount[d]++;
+    });
   });
   meals.forEach(m => { if (m.day>=1 && m.day<=nDays) dayCount[m.day]++; });
   offsite.forEach(o => { if (o.day>=1 && o.day<=nDays) dayCount[o.day]++; });
@@ -8665,8 +8713,8 @@ function renderScheduleView(state) {
     if (!matches.length)
       return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
     return matches.map(c => {
-      const cur = state[key(c.i)]?.scheduled || null;
-      const meta = cur ? `Currently Day ${esc(cur.split("|")[0])} · ${esc(cur.split("|")[1])}` : "";
+      const cur = boothSlots(state[key(c.i)]);
+      const meta = cur.length ? "On your schedule: " + cur.map(v => `Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}`).join(", ") + ". Pick a time to add another visit." : "";
       return `
         <div class="sched-result-row">
           <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
@@ -8682,11 +8730,12 @@ function renderScheduleView(state) {
   // Interleave booth meetings + meals into one time-sorted agenda for the active day.
   const byTime = {};
   CO.forEach((c,i) => {
-    const sv = state[key(i)]?.scheduled;
-    if (!sv) return;
-    const [d,t] = sv.split("|");
-    if (parseInt(d) === schedDay)
-      (byTime[t] = byTime[t]||[]).push({ kind: "booth", c: {...c, i} });
+    const s = state[key(i)];
+    boothSlots(s).forEach(sv => {
+      const [d,t] = sv.split("|");
+      if (parseInt(d) === schedDay)
+        (byTime[t] = byTime[t]||[]).push({ kind: "booth", c: {...c, i}, slot: sv, extra: sv !== s.scheduled });
+    });
   });
   meals.filter(m => m.day === schedDay).forEach(m => {
     (byTime[m.time] = byTime[m.time]||[]).push({ kind: "meal", meal: m });
@@ -8726,9 +8775,19 @@ ${sessPickOpen ? buildSessionPicker() : ""}`;
       html += `<div class="time-slot" data-slot="${esc(t)}">
         <div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span>${ov ? `<span class="ovl-chip" title="${esc(ov)}">${esc(ov)}</span>` : ""}<span class="time-line"></span></div>`;
       entries.forEach(entry => {
-        if (entry.kind === "booth") {
+        if (entry.kind === "booth" && entry.extra) {
+          // Another visit to a booth already on your schedule: a compact card
+          // (the full card, with its notes, sits at the main visit).
+          const c = entry.c, main = (state[key(c.i)] || {}).scheduled || "";
+          html += `<div class="sched-slot-card"><div class="co-card again-card">
+            <div class="card-top"><span class="co-name">${esc(c.n)}</span>${floorOf(currentEventCode()) && !c.x
+              ? `<button class="booth-badge map" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}${esc(boothLbl(c.b))}</button>`
+              : `<span class="booth-badge">${esc(boothLbl(c.b))}</span>`}</div>
+            <div class="again-note">Another visit · notes are on the Day ${esc(main.split("|")[0])}, ${esc(main.split("|")[1] || "")} visit</div>
+          </div><div class="sched-slot-acts"><button class="sched-rm-link mv" type="button" data-mv-booth="${c.i}" data-mv-slot="${esc(entry.slot)}">Move</button><button class="sched-rm-link" data-rm="${c.i}" data-rm-slot="${esc(entry.slot)}">Remove from Day ${schedDay}</button></div></div>`;
+        } else if (entry.kind === "booth") {
           const c = entry.c;
-          html += `<div class="sched-slot-card">${buildCard(c, state)}<div class="sched-slot-acts"><button class="sched-rm-link mv" type="button" data-mv-booth="${c.i}">Move</button><button class="sched-rm-link" data-rm="${c.i}">Remove from Day ${schedDay}</button></div></div>`;
+          html += `<div class="sched-slot-card">${buildCard(c, state)}<div class="sched-slot-acts"><button class="sched-rm-link mv" type="button" data-mv-booth="${c.i}" data-mv-slot="${esc(entry.slot)}">Move</button><button class="sched-rm-link" data-rm="${c.i}" data-rm-slot="${esc(entry.slot)}">Remove from Day ${schedDay}</button></div></div>`;
         } else if (entry.kind === "meal") {
           const m = entry.meal;
           html += `<div class="meal-card">
@@ -8980,7 +9039,7 @@ document.getElementById("content").addEventListener("click", e => {
 
   const mvBtn = e.target.closest("[data-mv-booth],[data-mv-meal],[data-mv-off]");
   if (mvBtn) {
-    if (mvBtn.dataset.mvBooth != null) openMove("booth", parseInt(mvBtn.dataset.mvBooth));
+    if (mvBtn.dataset.mvBooth != null) openMove("booth", parseInt(mvBtn.dataset.mvBooth) + (mvBtn.dataset.mvSlot ? "@" + mvBtn.dataset.mvSlot : ""));
     else if (mvBtn.dataset.mvMeal != null) openMove("meal", mvBtn.dataset.mvMeal);
     else openMove("offsite", mvBtn.dataset.mvOff);
     return;
@@ -8990,8 +9049,10 @@ document.getElementById("content").addEventListener("click", e => {
     const i = parseInt(rmBtn.dataset.rm);
     const c = CO[i] || {};
     const s0 = state[key(i)] || {};
-    const day = (s0.scheduled || "").split("|")[0] || schedDay;
-    const vidNote = (s0.video && !s0.visited && !s0.vlink)
+    const slot = rmBtn.dataset.rmSlot || s0.scheduled || "";
+    const day = slot.split("|")[0] || schedDay;
+    const others = boothSlots(s0).filter(x => x !== slot).length;
+    const vidNote = (!others && s0.video && !s0.visited && !s0.vlink)
       ? " Its video flag comes off too, so it leaves the bullpen's Videos list." : "";
     confirmRemove("Remove this booth from Day " + day + "?",
       (c.n || "This booth") + " (Booth " + (c.b || "") + ") comes off your schedule. Your notes on it stay." + vidNote,
@@ -9000,11 +9061,11 @@ document.getElementById("content").addEventListener("click", e => {
         const k = key(i);
         let clearedVideo = false;
         if (st[k]) {
-          st[k].scheduled = null;
+          dropBoothVisit(st[k], slot);
           // Cancelling a planned visit cancels its video plan too, so the home
           // team stops waiting on it. A visited booth keeps its flag: that
-          // footage was already shot.
-          if (st[k].video && !st[k].visited && !st[k].vlink) { st[k].video = false; clearedVideo = true; }
+          // footage was already shot. (Only when no other visit is left.)
+          if (!st[k].scheduled && st[k].video && !st[k].visited && !st[k].vlink) { st[k].video = false; clearedVideo = true; }
         }
         save(st);
         toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
@@ -9393,8 +9454,8 @@ document.getElementById("content").addEventListener("input", e => {
     if (!schedSearchQ) { rEl.innerHTML = ""; return; }
     if (!matches.length) { rEl.innerHTML = `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`; return; }
     rEl.innerHTML = matches.map(c => {
-      const cur = state[key(c.i)]?.scheduled || null;
-      const meta = cur ? `Currently Day ${esc(cur.split("|")[0])} · ${esc(cur.split("|")[1])}` : "";
+      const cur = boothSlots(state[key(c.i)]);
+      const meta = cur.length ? "On your schedule: " + cur.map(v => `Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}`).join(", ") + ". Pick a time to add another visit." : "";
       return `
         <div class="sched-result-row">
           <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
@@ -9467,13 +9528,14 @@ document.getElementById("content").addEventListener("change", e => {
     const k = key(i);
     const state = load();
     if (!state[k]) state[k] = {};
-    state[k].scheduled = v || null;
+    if (v) { state[k].scheduled = v; tidyVisits(state[k]); }
+    else dropBoothVisit(state[k], state[k].scheduled);   // an extra visit, if any, becomes the main one
     // Same rule as the Remove button: unscheduling an unvisited booth
     // withdraws its video plan from the bullpen's Videos tab.
     let clearedVideo = false;
-    if (!v && state[k].video && !state[k].visited && !state[k].vlink) { state[k].video = false; clearedVideo = true; }
+    if (!state[k].scheduled && state[k].video && !state[k].visited && !state[k].vlink) { state[k].video = false; clearedVideo = true; }
     save(state);
-    sel.classList.toggle("scheduled", !!v);
+    sel.classList.toggle("scheduled", !!state[k].scheduled);
     if (v) { const [d,t] = v.split("|"); toast(`Day ${d} · ${t}`); }
     else toast(clearedVideo ? "Removed from schedule · video flag cleared" : "Removed from schedule");
     render();
@@ -9487,10 +9549,11 @@ document.getElementById("content").addEventListener("change", e => {
     const k = key(i);
     const state = load();
     if (!state[k]) state[k] = {};
-    state[k].scheduled = `${schedDay}|${t}`;
+    const again = !!state[k].scheduled && state[k].scheduled !== `${schedDay}|${t}`;
+    addBoothVisit(state[k], `${schedDay}|${t}`);   // already on your schedule? this adds another visit (v231)
     save(state);
     schedSearchQ = "";
-    toast(`Day ${schedDay} · ${t}`);
+    toast(again ? `Another visit added: Day ${schedDay} · ${t}` : `Day ${schedDay} · ${t}`);
     render();
     return;
   }
@@ -9684,7 +9747,9 @@ function csvFromParts(booths, mealsIn, offsiteIn, sessIn) {
       const rk = rowKey(c.b);
       const st = s.status==="customer" ? "Existing Customer"
                : s.status==="noncustomer" ? "Prospect" : "Unknown";
-      const [schedD, schedT] = s.scheduled ? s.scheduled.split("|") : ["",""];
+      const [schedD, schedT0] = s.scheduled ? s.scheduled.split("|") : ["",""];
+      const extra = (Array.isArray(s.more) ? s.more : []).filter(Boolean);
+      const schedT = (schedT0 || "") + (extra.length ? " (also " + extra.map(v => "Day " + v.split("|")[0] + " " + v.split("|")[1]).join(", ") + ")" : "");
       rows.push([c.n, c.b,
         isOutdoor(rk) ? "Outdoor T"+rk.slice(1)+"s" : "Row "+rk+"s",
         st, schedD ? "Day "+schedD : "", schedT||"",
@@ -10367,7 +10432,7 @@ function fpHall() { const f = floorOf(fp.code); return f && (f.halls.find(h => h
 const boothParts = b => String(b || "").split("/").map(x => x.trim()).filter(Boolean);
 function fpMine(code, day) {
   const st = load(), out = new Set();
-  CO.forEach((c, i) => { const v = st[key(i)] && st[key(i)].scheduled; if (v && +v.split("|")[0] === day) boothParts(c.b).forEach(b => out.add(b)); });
+  CO.forEach((c, i) => { if (boothSlots(st[key(i)]).some(v => +v.split("|")[0] === day)) boothParts(c.b).forEach(b => out.add(b)); });
   return out;
 }
 function fpSvg(h) {
@@ -10415,8 +10480,8 @@ function fpFootHtml() {
   const st = load();
   const cos = CO.map((c, i) => ({ ...c, i })).filter(c => !c.x && boothParts(c.b).includes(b));
   const lines = cos.map(c => {
-    const v = st[key(c.i)] && st[key(c.i)].scheduled;
-    return `<div class="fp-co"><strong>${esc(c.n)}</strong>${v ? `<span class="fp-when">On your schedule: Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}</span>` : ""}</div>`;
+    const vs = boothSlots(st[key(c.i)]);
+    return `<div class="fp-co"><strong>${esc(c.n)}</strong>${vs.length ? `<span class="fp-when">On your schedule: ${vs.map(v => `Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}`).join(", ")}</span>` : ""}</div>`;
   }).join("");
   return `<div class="fp-booth">${esc(boothLbl(b))}</div>${lines || `<div class="fp-co">No exhibitor listed</div>`}`;
 }
@@ -10807,8 +10872,9 @@ function confirmRemove(title, text, action) {
 let _mv = null;   // { kind, ref } while the sheet is open
 function moveTarget(kind, ref) {
   if (kind === "booth") {
-    const s = load()[key(ref)] || {}, c = CO[ref] || {};
-    const [d, t] = (s.scheduled || "").split("|");
+    const [ri, rs] = String(ref).split("@");
+    const s = load()[key(+ri)] || {}, c = CO[+ri] || {};
+    const [d, t] = (rs || s.scheduled || "").split("|");
     return d ? { day: +d, time: t, label: (c.n || "Booth") + (c.b ? " (Booth " + c.b + ")" : "") } : null;
   }
   const arr = kind === "meal" ? loadMeals() : loadOffsite();
@@ -10841,9 +10907,14 @@ document.getElementById("mvSave").addEventListener("click", () => {
   closeMove();
   if (!d || !t) return;
   if (kind === "booth") {
-    const st = load(), k = key(ref);
+    const [ri, rs] = String(ref).split("@");
+    const st = load(), k = key(+ri);
     st[k] = st[k] || {};
-    st[k].scheduled = d + "|" + t;
+    const from = rs || st[k].scheduled;
+    moveBoothVisit(st[k], from, d + "|" + t);
+    // A published extra visit follows the move, so a republish still finds it.
+    const pids = st._pre && st._pre.ids;
+    if (pids) Object.keys(pids).forEach(x => { if (pids[x] === k + "@" + from) pids[x] = k + "@" + d + "|" + t; });
     save(st);
   } else {
     const arr = kind === "meal" ? loadMeals() : loadOffsite();
@@ -11351,6 +11422,7 @@ function pnParts(doc) {
   (doc.booths || []).forEach(x => {
     const s = { ...x };
     if (s.scheduled && sh) { const [d, t] = s.scheduled.split("|"); s.scheduled = day(d) + "|" + t; }
+    if (Array.isArray(s.more) && sh) s.more = s.more.map(v => { const [d, t] = v.split("|"); return day(d) + "|" + t; });
     mine[x.b + "||" + x.n] = s;
   });
   const list = (resolveEvent(doc.eventCode) || {}).booths || [];
