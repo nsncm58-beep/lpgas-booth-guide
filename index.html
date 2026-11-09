@@ -2660,7 +2660,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v232</div>
+      <div class="pf-ver">NCM Events Guide · v233</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5991,13 +5991,21 @@ function fmtExact(ts) {
 // Admin. Empty URL = notifications dormant, no redeploy needed to silence.
 let notifyCfg = { url: "", emails: {} };
 let _notifyCfgUnsub = null;
+// The last config this device saw is kept (v233), so an alert from a launch
+// on dead show-floor wifi still knows where to go once a signal comes back.
+const NOTIFY_CFG_KEY = "ncm_notify_cfg";
 function subscribeNotifyConfig() {
   if (_notifyCfgUnsub) { _notifyCfgUnsub(); _notifyCfgUnsub = null; }
   notifyCfg = { url: "", emails: {} };
   if (!fbReady || !currentUser) return;
+  try { const c = JSON.parse(localStorage.getItem(NOTIFY_CFG_KEY) || "null"); if (c && c.url) notifyCfg = c; } catch (e) {}
+  if (notifyCfg.url) flushNotifyQ();
   _notifyCfgUnsub = fbDb.collection("config").doc("notifications").onSnapshot(d => {
+    if (!d.exists && d.metadata.fromCache) return;   // offline, nothing cached: keep this device's copy
     const x = (d.exists && d.data()) || {};
     notifyCfg = { url: x.webhookUrl || "", emails: x.emails || {}, testMode: !!x.testMode };
+    try { notifyCfg.url ? localStorage.setItem(NOTIFY_CFG_KEY, JSON.stringify(notifyCfg)) : localStorage.removeItem(NOTIFY_CFG_KEY); } catch (e) {}
+    flushNotifyQ();
   }, () => {});
 }
 // Admin cleanups of booth data (v177, Nate approved Oct. 14, 2026). A
@@ -6064,30 +6072,67 @@ function notifyOnce(key) {
 // call on Sept. 30, 2026: "me and Syd"). Photo-only alerts stay Nate-only.
 // Going live (testMode false) sends everything to the whole roster anyway.
 const TEST_VIDEO_TO = ["Sydney"];
-function notifyHome(text, skipMember, isVideo) {
-  if (!notifyCfg.url) return;
-  // testMode: the full roster stays saved in the map, but every alert routes
-  // to the "Test" entry (Nate), plus TEST_VIDEO_TO for video alerts, so
-  // deliveries can be verified before the desk goes live. Flip the config
-  // doc's testMode to false to go live: takes effect instantly, no deploy.
-  // In test mode Test sees every event fire, including their own; the
-  // TEST_VIDEO_TO people still skip alerts about their own actions.
+// Teams alerts wait in a queue on the phone until Teams accepts each one
+// (v233, Nate, Nov. 9, 2026: some Elevate alerts never arrived). Before, each
+// alert was sent once, right after the upload, and lost if the show wifi
+// dropped or the app went to the background at that moment. Now it retries
+// when the signal comes back, when the app is reopened and every 30 seconds
+// while it's open, for up to a day. Recipients are worked out at send time,
+// so an alert from a launch with no config yet still goes out later. Each
+// recipient is crossed off once Teams answers, so nobody gets it twice
+// (unless the answer itself is lost on the way back).
+const NOTIFY_Q_KEY = "ncm_notify_q";
+let _notifyBusy = false, _notifyTimer = null;
+function notifyQ() { try { return JSON.parse(localStorage.getItem(NOTIFY_Q_KEY) || "[]") || []; } catch (e) { return []; } }
+function setNotifyQ(q) { try { q.length ? localStorage.setItem(NOTIFY_Q_KEY, JSON.stringify(q)) : localStorage.removeItem(NOTIFY_Q_KEY); } catch (e) {} }
+function notifyTargets(skipMember, isVideo) {
   const skip = name => !!skipMember && sameMember(name, skipMember);
-  const targets = notifyCfg.testMode
+  return notifyCfg.testMode
     ? Object.entries(notifyCfg.emails).filter(([name, email]) => email && (name === "Test"
         || (isVideo && TEST_VIDEO_TO.some(m => sameMember(name, m)) && !skip(name))))
-    : Object.entries(notifyCfg.emails)
-        .filter(([name, email]) => email && !(skipMember && sameMember(name, skipMember)));
-  targets.forEach(([name, email]) => {
-    try {
-      fetch(notifyCfg.url, {
-        method: "POST", mode: "cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, text })
-      }).catch(() => {});
-    } catch (e) {}
-  });
-  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, targets: targets.map(t => t[0]) });
+    : Object.entries(notifyCfg.emails).filter(([name, email]) => email && !skip(name));
+}
+async function flushNotifyQ() {
+  clearTimeout(_notifyTimer); _notifyTimer = null;
+  if (_notifyBusy || !notifyCfg.url) return;
+  const day = 24 * 3600e3;
+  if (!notifyQ().some(a => Date.now() - a.at < day)) { setNotifyQ([]); return; }
+  _notifyBusy = true;
+  try {
+    for (const a of notifyQ()) {
+      if (Date.now() - a.at >= day) continue;
+      for (const [, email] of notifyTargets(a.skip, a.video)) {
+        if ((a.sent || []).includes(email)) continue;
+        let done = false;
+        try {
+          const ctl = typeof AbortController === "function" ? new AbortController() : null;
+          const t = ctl && setTimeout(() => ctl.abort(), 20000);
+          const r = await fetch(notifyCfg.url, { method: "POST", mode: "cors", signal: ctl ? ctl.signal : undefined,
+            headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, text: a.text }) });
+          clearTimeout(t);
+          // Accepted, or refused for good (a bad request won't get better):
+          // either way stop. Busy or broken on Teams' side: try again later.
+          done = r.ok || (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429);
+        } catch (e) {}
+        if (!done) continue;
+        const q = notifyQ(), it = q.find(x => x.id === a.id);   // re-read: another alert may have been queued meanwhile
+        if (it) { it.sent = (it.sent || []).concat([email]); setNotifyQ(q); }
+      }
+    }
+    // Done = every current recipient crossed off (or a day old).
+    setNotifyQ(notifyQ().filter(a => Date.now() - a.at < day
+      && notifyTargets(a.skip, a.video).some(([, email]) => !(a.sent || []).includes(email))));
+  } finally { _notifyBusy = false; }
+  if (notifyQ().length) _notifyTimer = setTimeout(flushNotifyQ, 30000);
+}
+window.addEventListener("online", () => flushNotifyQ());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushNotifyQ(); });
+function notifyHome(text, skipMember, isVideo) {
+  const q = notifyQ();
+  q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, skip: skipMember || "", video: !!isVideo, at: Date.now(), sent: [] });
+  setNotifyQ(q.slice(-50));
+  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, targets: notifyTargets(skipMember, isVideo).map(t => t[0]) });
+  flushNotifyQ();
 }
 const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
 // Teams alerts go out ONLY when something is uploaded (booth footage,
