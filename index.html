@@ -2452,6 +2452,200 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
   --shadow-sm:   0 1px 2px rgba(70,52,24,0.06);
 }
 .home-ov-badge { background: var(--border-soft); }
+
+/* ══ HOMEBASE REDESIGN (built locally Nov. 2026, from the approved mockups) ══
+   New look for the Bullpen only: brand tabs in the top bar, one toolbar
+   (show, view tabs, search, shared folder), a live-show card on All brands,
+   videos grouped by what happens next with the steps as one track, and
+   schedules side by side. Every data-* hook the click handlers read is
+   unchanged. Colors come from the same variables as the rest of the app. */
+body.home-mode { --hb-ok: #2D7140; --hb-ok-l: #E4F2E9; --hb-warn: #8A5A00; --hb-warn-l: #FCEFD6; }
+/* Top bar */
+.hb-nav { display: none; }
+body.home-mode .hb-nav { display: flex; align-items: center; gap: 2px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; margin: 0 12px 0 4px; }
+body.home-mode .hb-nav::-webkit-scrollbar { display: none; }
+.hb-label { font-family: var(--ft); font-size: 0.68rem; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: rgba(255,255,255,0.75); padding: 0 14px; margin: 0 6px 0 8px; border-left: 1px solid rgba(255,255,255,0.28); line-height: 22px; white-space: nowrap; }
+.hb-nav-btn { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; border: 0; background: none; cursor: pointer; font-family: var(--ft); font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.82); padding: 8px 12px; border-radius: 999px; }
+.hb-nav-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.hb-nav-btn.on { background: rgba(255,255,255,0.2); color: #fff; font-weight: 700; }
+.hb-dot { width: 7px; height: 7px; border-radius: 50%; background: #7CE0A0; flex-shrink: 0; }
+body.home-mode .header-top { padding: 10px 28px; }
+body.home-mode .logo-block { min-width: 0; flex-shrink: 0; }
+body.home-mode .progress-strip { display: none; }
+body.home-mode .user-chip-name { display: none; }
+body.home-mode .user-chip-member { display: inline-flex; align-items: center; gap: 8px; border: 0; background: rgba(255,255,255,0.16); border-radius: 999px; padding: 5px 13px 5px 5px; font-family: var(--ft); font-size: 0.8rem; font-weight: 500; letter-spacing: 0; }
+body.home-mode .user-chip-member i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; background: #fff; color: var(--blue); display: grid; place-items: center; font-size: 0.68rem; font-weight: 700; }
+body.home-mode .user-chip-out { border: 0; font-family: var(--ft); font-size: 0.8rem; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 0.85; }
+body.home-mode .user-chip-out:hover { opacity: 1; }
+/* Toolbar */
+.hb-tool { background: var(--surface); border-bottom: 1px solid var(--border); }
+.hb-tool-in { max-width: 1380px; margin: 0 auto; padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+@media (min-width: 1040px) { .hb-tool-in { padding: 12px 30px; } }
+.hb-pop { position: relative; }
+.hb-pop > summary { list-style: none; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.hb-pop > summary::-webkit-details-marker { display: none; }
+.hb-showsel > summary { display: inline-flex; align-items: center; gap: 10px; height: 42px; padding: 0 12px 0 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); font-family: var(--fd); font-size: 0.92rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+.hb-showsel > summary > svg { width: 13px; height: 13px; color: var(--muted); }
+.hb-menu { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; min-width: 290px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 6px; box-shadow: 0 12px 32px rgba(22,25,31,0.16); }
+.hb-menu.right { left: auto; right: 0; min-width: 230px; }
+.hb-menu-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; border: 0; background: none; cursor: pointer; font-family: var(--ft); font-size: 0.84rem; font-weight: 600; color: var(--text); padding: 9px 11px; border-radius: 9px; }
+.hb-menu-item:hover { background: var(--bg); }
+.hb-menu-item.on { background: var(--blue-light); }
+.hb-menu-item.danger { color: #B3261E; }
+.hb-menu-item .het-status { font-size: 0.72rem; font-weight: 600; }
+.hb-menu .home-ev-more { padding: 8px 11px; }
+.hb-tabs { display: flex; background: var(--bg); border-radius: 12px; padding: 4px; }
+.hb-tab { display: inline-flex; align-items: center; gap: 7px; border: 0; background: none; cursor: pointer; padding: 8px 16px; border-radius: 9px; font-family: var(--ft); font-size: 0.84rem; font-weight: 500; color: var(--text-2); }
+.hb-tab b { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
+.hb-tab.on { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: 0 1px 3px rgba(22,25,31,0.12); }
+.home-search-input.hb-search { margin-left: auto; width: 290px; flex: 0 1 290px; height: 42px; padding-top: 0; padding-bottom: 0; border: 1.5px solid transparent; border-radius: 12px; background-color: var(--bg); font-size: 0.84rem; }
+.home-search-input.hb-search:focus { border-color: var(--blue); }
+.hb-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 42px; padding: 0 14px; border-radius: 12px; border: 0; cursor: pointer; font-family: var(--ft); font-size: 0.84rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.hb-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.hb-btn svg.sm { width: 13px; height: 13px; }
+.hb-btn.pri { background: var(--blue); color: #fff; }
+.hb-btn.out { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.hb-btn.out.danger { color: #B3261E; }
+.hb-btn.sm { height: 34px; font-size: 0.78rem; border-radius: 10px; }
+.hb-btn:active { opacity: 0.85; }
+.hb-chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--ft); font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 7px; background: var(--bg); color: var(--text-2); white-space: nowrap; }
+.hb-chip svg { width: 11px; height: 11px; }
+.hb-chip.ok { background: var(--hb-ok-l); color: var(--hb-ok); }
+.hb-chip.vid { background: var(--blue-light); color: var(--blue-dark); }
+.hb-chip.warn { background: var(--hb-warn-l); color: var(--hb-warn); }
+.hb-bn { font-size: 0.8rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.hb-none { font-size: 0.82rem; color: var(--muted); padding: 14px 2px; }
+body.home-mode .home-wrap.hb { padding-top: 22px; }
+/* All brands */
+.hb-k { font-size: 0.75rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.hb-k.next { margin-top: 30px; }
+.hb-live { display: grid; grid-template-columns: 270px minmax(0, 1fr) 360px; background: var(--surface); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); cursor: pointer; margin-bottom: 16px; }
+.hb-live-brand { background: var(--blue); color: #fff; padding: 26px; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; }
+.hb-live-brand img { height: 40px; width: auto; max-width: 100%; object-fit: contain; object-position: left center; align-self: flex-start; }
+.hb-live-badge { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font-size: 0.82rem; font-weight: 700; background: rgba(255,255,255,0.16); padding: 7px 12px; border-radius: 999px; }
+.hb-live-badge .hl-live-dot { background: #7CE0A0; }
+.hb-live-mid { padding: 26px 28px; min-width: 0; }
+.hb-live-mid h3 { font-family: var(--fd); font-size: 1.75rem; font-weight: 800; letter-spacing: -0.4px; line-height: 1.15; color: var(--text); }
+.hb-live-mid > p { font-size: 0.88rem; color: var(--text-2); margin-top: 4px; }
+.hb-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 22px; }
+.hb-stat { background: var(--bg); border-radius: 14px; padding: 14px 16px; }
+.hb-stat b { font-family: var(--fd); font-size: 1.9rem; font-weight: 800; display: block; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text); }
+.hb-stat span { font-size: 0.78rem; color: var(--text-2); display: block; margin-top: 6px; }
+.hb-stat.hot { background: var(--blue-light); }
+.hb-stat.hot b, .hb-stat.hot span { color: var(--blue-dark); }
+.hb-latest { margin-top: 18px; font-size: 0.82rem; color: var(--text-2); display: flex; gap: 8px; align-items: flex-start; }
+.hb-latest svg { width: 14px; height: 14px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+.hb-latest > span { flex: 1; min-width: 0; }
+.hb-latest a { margin-left: 12px; white-space: nowrap; }
+.hb-live-q { border-left: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; min-width: 0; }
+.hb-live-q h5 { font-family: var(--ft); font-size: 0.82rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+.hb-qi { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border-soft); font-size: 0.85rem; color: var(--text); }
+.hb-qi b { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-q-none { font-size: 0.82rem; color: var(--muted); padding: 10px 0; border-top: 1px solid var(--border-soft); }
+.hb-live-q .hb-btn { margin-top: auto; }
+.hb-live-q .hb-qi:last-of-type, .hb-live-q .hb-q-none { margin-bottom: 16px; }
+.hb-up-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.hb-up { background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; display: flex; flex-direction: column; }
+.hb-up:hover, .hb-live:hover { box-shadow: 0 0 0 1.5px var(--blue-mid), var(--shadow); }
+.hb-up-top { height: 62px; display: flex; align-items: center; padding: 0 18px; }
+.hb-up-top img { height: 26px; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
+.hb-up-b { padding: 16px 18px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; flex: 1; }
+.hb-up-b > b { font-family: var(--fd); font-size: 0.98rem; line-height: 1.25; color: var(--text); }
+.hb-up-b p { font-size: 0.78rem; color: var(--text-2); }
+.hb-up-foot { margin-top: auto; width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--muted); padding-top: 4px; }
+@media (max-width: 1100px) {
+  .hb-live { grid-template-columns: 200px minmax(0, 1fr); }
+  .hb-live-q { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--border); }
+}
+@media (max-width: 720px) {
+  .hb-live { grid-template-columns: 1fr; }
+  .hb-stats { grid-template-columns: repeat(2, 1fr); }
+}
+/* Videos */
+.hb-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.hb-tile { text-align: left; background: var(--surface); border-radius: 14px; padding: 14px 16px; border: 1.5px solid transparent; box-shadow: var(--shadow-sm); cursor: pointer; font-family: var(--ft); }
+.hb-tile:hover { border-color: var(--border); }
+.hb-tile.on { border-color: var(--text); }
+.hb-tile b { font-family: var(--fd); font-size: 1.6rem; font-weight: 800; line-height: 1; display: block; color: var(--text); font-variant-numeric: tabular-nums; }
+.hb-tile span { font-size: 0.78rem; color: var(--text-2); display: block; margin-top: 6px; }
+.hb-gh { display: flex; align-items: center; gap: 9px; font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 24px 0 10px; }
+.hb-gh i { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
+.hb-gh i.a { background: #D08A1A; }
+.hb-gh i.g { background: #B9BEC7; }
+.hb-gh i.d { background: var(--hb-ok); }
+.hb-gh span { font-weight: 500; color: var(--muted); }
+.hb-gh.tog { cursor: pointer; -webkit-user-select: none; user-select: none; }
+.hb-gh svg { width: 13px; height: 13px; color: var(--muted); }
+.hb-vq { display: grid; grid-template-columns: minmax(0, 1fr) minmax(400px, 520px) 30px; gap: 4px 20px; align-items: center; background: var(--surface); border-radius: 16px; padding: 16px 12px 16px 20px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+.hb-vq.vid-hidden { opacity: 0.8; }
+.hb-vq-h { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; }
+.hb-vq-h b { font-family: var(--fd); font-size: 1.03rem; font-weight: 700; color: var(--text); }
+.hb-vq-m { font-size: 0.78rem; color: var(--text-2); margin-top: 4px; line-height: 1.45; }
+.hb-vq-c { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+.hb-clip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 8px; background: var(--blue-light); color: var(--blue-dark); font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.hb-clip svg { width: 9px; height: 9px; }
+.hb-clip:hover { background: var(--blue-mid); }
+.hb-lnk { border: 0; background: none; cursor: pointer; font-family: var(--ft); font-size: 0.78rem; font-weight: 700; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--border); padding: 4px 6px; }
+.hb-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.hb-steps.n4 { grid-template-columns: repeat(4, 1fr); }
+.hb-st { min-height: 48px; border-radius: 10px; border: 0; cursor: pointer; background: var(--bg); box-shadow: inset 0 0 0 1px var(--border); font-family: var(--ft); font-size: 0.72rem; font-weight: 500; color: var(--text-2); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; text-align: center; padding: 4px 6px; }
+.hb-st small { font-size: 0.66rem; font-weight: 500; opacity: 0.85; }
+.hb-st:hover { box-shadow: inset 0 0 0 1.5px var(--blue-mid); }
+.hb-st.claim { box-shadow: none; background: var(--blue-light); color: var(--blue-dark); font-weight: 700; }
+.hb-st.claim.other { background: var(--hb-warn-l); color: var(--hb-warn); }
+.hb-st.done { box-shadow: none; background: var(--hb-ok-l); color: var(--hb-ok); font-weight: 700; }
+.hb-st.final.done { background: var(--hb-ok); color: #fff; }
+.hb-more > summary { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); }
+.hb-more > summary:hover { background: var(--bg); }
+.hb-more > summary svg { width: 16px; height: 16px; }
+.hb-vq-acts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.hb-vq .home-vid-notes { grid-column: 1 / -1; }
+.hb-vrow { display: flex; align-items: center; gap: 12px; background: var(--surface); border-radius: 12px; min-height: 48px; padding: 6px 14px 6px 20px; margin-bottom: 6px; font-size: 0.88rem; cursor: pointer; box-shadow: var(--shadow-sm); }
+.hb-vrow b { font-weight: 700; color: var(--text); }
+.hb-vrow em { margin-left: auto; font-style: normal; font-size: 0.78rem; color: var(--muted); font-weight: 500; text-align: right; }
+.hb-vrow > svg { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+.hb-vrow:hover { box-shadow: 0 0 0 1.5px var(--blue-mid); }
+.hb-clips { background: var(--surface); border-radius: 14px; padding: 4px 16px; box-shadow: var(--shadow-sm); }
+@media (max-width: 1100px) { .hb-label { display: none; } }
+@media (max-width: 820px) { .hb-tiles { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 940px) {
+  .hb-vq { grid-template-columns: minmax(0, 1fr) 30px; }
+  .hb-vq > .hb-vq-l { grid-column: 1; grid-row: 1; }
+  .hb-vq > .hb-more, .hb-vq > .hb-nomenu { grid-column: 2; grid-row: 1; align-self: start; }
+  .hb-vq > .hb-steps, .hb-vq > .hb-vq-acts { grid-column: 1 / -1; grid-row: 2; margin-top: 10px; }
+  .hb-vq > .hb-vq-acts { justify-content: flex-start; }
+  .hb-vq .home-vid-notes { grid-row: 3; }
+}
+/* Schedules */
+.hb-sch-bar { display: flex; align-items: center; gap: 12px 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.hb-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; background: var(--surface); border-radius: 12px; padding: 4px; box-shadow: var(--shadow-sm); }
+.hb-seg button { border: 0; background: none; cursor: pointer; padding: 7px 14px; border-radius: 9px; font-family: var(--ft); font-size: 0.84rem; font-weight: 500; color: var(--text-2); display: inline-flex; gap: 6px; align-items: baseline; white-space: nowrap; }
+.hb-seg button b { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+.hb-seg button.on { background: var(--blue); color: #fff; font-weight: 700; }
+.hb-seg button.on b { color: rgba(255,255,255,0.8); }
+.hb-seg.reps button.on { background: var(--text); }
+.hb-tog { margin-left: auto; display: inline-flex; align-items: center; gap: 9px; border: 0; background: none; cursor: pointer; font-family: var(--ft); font-size: 0.84rem; font-weight: 500; color: var(--text); }
+.hb-tog i { width: 36px; height: 21px; border-radius: 99px; background: #C9CED6; position: relative; transition: background 0.15s; flex-shrink: 0; }
+.hb-tog i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.hb-tog.on i { background: var(--blue); }
+.hb-tog.on i::after { transform: translateX(15px); }
+.hb-cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.hb-pc { background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.hb-pc-h { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; padding: 14px 16px; border: 0; border-bottom: 1px solid var(--border); background: none; cursor: pointer; font-family: var(--ft); }
+.hb-pc-h:hover { background: var(--bg); }
+.hb-pc-h i { font-style: normal; width: 34px; height: 34px; border-radius: 50%; background: var(--blue-light); color: var(--blue-dark); display: grid; place-items: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
+.hb-pc-h > span { flex: 1; min-width: 0; }
+.hb-pc-h b { display: block; font-family: var(--fd); font-size: 0.94rem; line-height: 1.2; color: var(--text); }
+.hb-pc-h small { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+.hb-pc-h svg { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+.hb-si { display: grid; grid-template-columns: 68px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 11px 16px; border-top: 1px solid var(--border-soft); font-size: 0.85rem; }
+.hb-pc-h + .hb-si { border-top: 0; }
+.hb-si time { font-size: 0.78rem; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.hb-si b { font-weight: 700; display: block; line-height: 1.25; color: var(--text); }
+.hb-si small { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+.hb-si.shared { background: var(--bg); }
+.hb-si-chips { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.hb-pc-none { padding: 18px 16px; font-size: 0.82rem; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -2549,6 +2743,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
       <img id="brandLogo" class="brand-logo" src="./logo-lpgas.png" alt="LP Gas">
       <button class="hdr-photos" id="mediaBtn" style="display:none" type="button"><svg width="15" height="12" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>Videos</button>
     </div>
+    <nav class="hb-nav" id="homeNav" aria-label="Brands"></nav>
     <div class="user-chip" id="userChip" style="display:none">
       <button class="show-pick" id="showPickBtn" type="button" style="display:none" aria-haspopup="dialog"><span class="show-pick-lbl" id="showPickLbl"></span><span class="show-pick-chev">▾</span></button>
       <span class="user-chip-name" id="userChipName"></span>
@@ -5217,7 +5412,7 @@ function updateHomeMemberChip() {
   if (!btn) return;
   const show = typeof isHome === "function" && isHome();
   btn.style.display = show ? "" : "none";
-  if (show) btn.textContent = "👤 " + (homeMember() || "Pick name");
+  if (show) { const m = homeMember(); btn.innerHTML = m ? `<i>${esc(m.charAt(0).toUpperCase())}</i>${esc(m)}` : "Pick name"; }
 }
 function applyEvent(code) {
   const ev = resolveEvent(code);
@@ -6959,24 +7154,81 @@ function homeEventCode() {
   return (sel && showsForBrand(homeBrandFilter).includes(sel)) ? sel : bullpenDefaultShow(homeBrandFilter);
 }
 // Event tabs under the brand row, calendar order; past events fold away.
-function buildHomeEventTabs() {
+// Small inline icons for the redesigned Bullpen (stroke follows text color).
+const HB_SVG = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const HB_CHEV   = HB_SVG('<path d="M6 9l6 6 6-6"/>');
+const HB_CHEVR  = HB_SVG('<path d="M9 6l6 6-6 6"/>');
+const HB_CHECK  = HB_SVG('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
+const HB_CLOCK  = HB_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
+const HB_FOLDER = HB_SVG('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>');
+const HB_EXT    = '<svg class="sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+const HB_VIDEO  = HB_SVG('<rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M15 10.5l7-4v11l-7-4z"/>');
+const HB_PLAY   = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3l15 9-15 9z"/></svg>';
+const HB_MORE   = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+// The show switcher in the toolbar: the current show on the button, every
+// show for the brand in its menu (calendar order; past shows fold away).
+let _hbShowMenuOpen = false;       // keep the menu open across the "Past shows" redraw
+function buildHomeShowSel() {
   const codes = sortShowsByDate(showsForBrand(homeBrandFilter));
   const cur = homeEventCode();
   const active = codes.filter(c => showStatus(c).k !== "past");
   const past = codes.filter(c => showStatus(c).k === "past");
-  const tab = c => {
+  const nameOf = c => isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c);
+  const row = c => {
     const s = showStatus(c);
-    return `<button class="home-ev-tab${c === cur ? " active" : ""}" type="button" data-home-event="${esc(c)}">
-      <span class="het-name">${esc(isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c))}</span>
+    return `<button class="hb-menu-item${c === cur ? " on" : ""}" type="button" data-home-event="${esc(c)}">
+      <span class="het-name">${esc(nameOf(c))}</span>
       <span class="het-status ${s.k}">${esc(showStatusText(c))}</span></button>`;
   };
-  let h = `<div class="home-ev-tabs">` + active.map(tab).join("");
+  let menu = active.map(row).join("");
   if (past.length) {
     const open = homeShowPast || past.includes(cur);
-    h += open ? past.map(tab).join("") + (past.includes(cur) ? "" : `<button class="home-ev-more" type="button" data-home-past-toggle>Hide past</button>`)
-              : `<button class="home-ev-more" type="button" data-home-past-toggle>Past shows (${past.length})</button>`;
+    menu += open ? past.map(row).join("") + (past.includes(cur) ? "" : `<button class="home-ev-more" type="button" data-home-past-toggle>Hide past</button>`)
+                 : `<button class="home-ev-more" type="button" data-home-past-toggle>Past shows (${past.length})</button>`;
   }
-  return h + `</div>`;
+  const cs = showStatus(cur);
+  const keep = _hbShowMenuOpen; _hbShowMenuOpen = false;
+  return `<details class="hb-pop hb-showsel"${keep ? " open" : ""}>
+    <summary title="Switch show"><span>${esc(nameOf(cur))}</span><span class="hb-chip${cs.k === "live" ? " ok" : ""}">${cs.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(showStatusText(cur))}</span>${HB_CHEV}</summary>
+    <div class="hb-menu">${menu}</div>
+  </details>`;
+}
+// Brand tabs in the top bar (the header sits outside #content, so it has
+// its own click listener further down).
+function renderHomeNav() {
+  const nav = document.getElementById("homeNav");
+  if (!nav) return;
+  if (!isHome()) { nav.innerHTML = ""; return; }
+  const live = bk => showsForBrand(bk).some(c => showStatus(c).k === "live");
+  nav.innerHTML = `<span class="hb-label">Bullpen</span>
+    <button class="hb-nav-btn${!homeBrandFilter ? " on" : ""}" type="button" data-home-brand="">All brands</button>` +
+    HOME_FILTER_BRANDS.map(bk => `<button class="hb-nav-btn${homeBrandFilter === bk ? " on" : ""}" type="button" data-home-brand="${bk}">${live(bk) ? '<span class="hb-dot" title="Live now"></span>' : ""}${esc(BRANDS[bk].name)}</button>`).join("");
+}
+function homePickBrand(bk, view) {
+  homeBrandFilter = bk || null;
+  homeSearchQ = ""; homeSchedQ = "";
+  if (view) { homeView = view; try { localStorage.setItem("home_view", homeView); } catch (err) {} }
+  try { localStorage.setItem("home_brand", homeBrandFilter || ""); } catch (err) {}   // survives reloads
+  applyBrand(homeBrandFilter || "ncm");
+  updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen");
+  renderHomeDashboard();
+}
+// One toolbar for a brand view: show, view tabs, search and the shared folder.
+function buildHomeToolbar() {
+  const code = homeEventCode();
+  const nVid = homeVidGroups(code).filter(v => !v.hidden).length;
+  const nPh = Object.values(homePhotos).filter(p => effectiveDept(p.uid, p.dept) === "edit" && p.eventCode === code).length;
+  const tab = (k, label, n) => `<button class="hb-tab${homeView === k ? " on" : ""}" type="button" data-home-view="${k}">${label}${n ? `<b>${n}</b>` : ""}</button>`;
+  const sc = homeView === "sched" ? { cls: " hs-search-input", ph: "Search agendas: company, meal guest, location…", v: homeSchedQ }
+    : homeView === "photos" ? { cls: " hp-search-input", ph: "Search " + (homePhotoFolder ? "this folder" : "photos") + ": caption or rep…", v: homePhotoQ }
+    : { cls: "", ph: "Search videos: company, booth or rep…", v: homeSearchQ };
+  const folder = (eventMedia(code) || {}).folder;
+  return `<div class="hb-tool"><div class="hb-tool-in">
+    ${buildHomeShowSel()}
+    <div class="hb-tabs">${tab("videos", "Videos", nVid)}${tab("photos", "Photos", nPh)}${tab("sched", "Schedules", 0)}</div>
+    <input class="home-search-input hb-search${sc.cls}" type="text" placeholder="${esc(sc.ph)}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(sc.v)}">
+    ${folder ? `<a class="hb-btn out" href="${esc(folder)}" target="_blank" rel="noopener" title="Every photo and video for this show, on Microsoft 365">${HB_FOLDER}Shared folder${HB_EXT}</a>` : ""}
+  </div></div>`;
 }
 // Same check for a single rep's item (overview counts).
 function itemHiddenFromBullpen(code, it) {
@@ -7034,7 +7286,7 @@ const VID_STEPS = [
 ];
 function vidSteps(code, boothNum) { return homeFlags[fsId("steps__" + code + "__" + boothNum)] || {}; }
 function firstNameOf(n) { return String(n || "").trim().split(/\s+/)[0] || ""; }
-function vidStepButtons(code, boothNum, done) {
+function vidStepButtons(code, boothNum, done, track) {
   const steps = vidSteps(code, boothNum);
   return VID_STEPS.map(s => {
     // Sales follows the done state itself (older "done" marks have no name).
@@ -7044,6 +7296,9 @@ function vidStepButtons(code, boothNum, done) {
     const tip = on
       ? [who ? s.label + " by " + memberName(rec.member) : s.label, rec.ts ? fmtExact(rec.ts) : ""].filter(Boolean).join(" · ") + ". Tap to undo"
       : (s.k === "sales" ? "Marks the video done" : "Tap when this is done");
+    // The Videos view draws the steps as one track of cells (redesign);
+    // Schedules keeps the pill buttons under each booth meeting.
+    if (track) return `<button class="hb-st${on ? " done" : ""}${s.k === "sales" ? " final" : ""}" type="button" data-vstep="${s.k}" data-vs-code="${esc(code)}" data-vs-b="${esc(boothNum)}" title="${esc(tip)}">${esc(s.label)}${who ? `<small>${esc(who)}</small>` : ""}</button>`;
     return `<button class="home-rem-btn step${on ? " on" : ""}${s.k === "sales" ? " final" : ""}" type="button" data-vstep="${s.k}" data-vs-code="${esc(code)}" data-vs-b="${esc(boothNum)}" title="${esc(tip)}">${on ? "✓ " : ""}${esc(s.label)}${who ? " · " + esc(who) : ""}</button>`;
   }).join("");
 }
@@ -7107,9 +7362,18 @@ function toggleVideoDoneGroup(code, boothNum) {
 
 // All-Brands landing: one live status card per brand (mission control).
 // Picking a brand (card or chip) opens its notes/schedules/search.
+// AP-style date range for a show: "Nov. 8-11", "Sept. 30 to Oct. 2".
+function fmtShowDates(a, b) {
+  if (!a || !b) return "";
+  if (a.getTime() === b.getTime()) return fmtMonthDay(a);
+  return a.getMonth() === b.getMonth() ? fmtMonthDay(a) + "-" + b.getDate() : fmtMonthDay(a) + " to " + fmtMonthDay(b);
+}
+// All brands: a live show leads with a full-width card (its numbers plus
+// what the desk can pick up now); every other brand gets a compact card,
+// soonest show first, with counts only once there is something to count.
 function buildHomeOverview() {
-  let h = `<div class="home-ov-grid">`;
-  HOME_FILTER_BRANDS.forEach(bk => {
+  const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+  const cards = HOME_FILTER_BRANDS.map(bk => {
     const brand = BRANDS[bk];
     const featured = bullpenDefaultShow(bk);
     const codes = featured ? [featured] : [];
@@ -7117,13 +7381,17 @@ function buildHomeOverview() {
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
     const schedDocs = Object.values(homeSchedules).filter(d =>
       codes.includes(d.eventCode) && effectiveDept(d.uid, d.dept) === "edit");
-    let visited = 0, vidTotal = 0, vidDone = 0, clips = 0, last = 0;
+    let visited = 0, vidTotal = 0, vidDone = 0, clips = 0, last = 0, latest = null;
     notesDocs.forEach(d => {
       last = Math.max(last, homeDocTs(d));
       (d.items || []).forEach(it => {
         // Cards the desk removed or deleted sit out of every count.
         const offBullpen = it.video && itemHiddenFromBullpen(d.eventCode, it);
-        if (it.video && !offBullpen) clips += (Array.isArray(it.vclips) && it.vclips.length) || (it.vlink ? 1 : 0);
+        if (it.video && !offBullpen) {
+          const list = (Array.isArray(it.vclips) && it.vclips.length) ? it.vclips : (it.vlink ? [{ t: it.vupAt || 0 }] : []);
+          clips += list.length;
+          list.forEach(cl => { if ((cl.t || 0) > ((latest && latest.t) || 0)) latest = { t: cl.t, rep: d.name || "Rep", booth: it.boothName || "" }; });
+        }
         if (!it.visited) return;
         visited++;
         if (!it.video || offBullpen) return;   // only rep-flagged, still-live videos count
@@ -7132,39 +7400,79 @@ function buildHomeOverview() {
       });
     });
     schedDocs.forEach(d => { last = Math.max(last, homeDocTs(d)); });
-    const vidPending = vidTotal - vidDone;
-    const media = featured ? eventMedia(featured) : null;
     const code = featured || "";
     const fk = showStatus(code).k;
-    const title = isPlaceholderShow(code) ? "No show loaded yet" : fk === "past" ? "No upcoming show" : showLabelOf(code);
-    const st = showOvStatus(code);
     // A second line for what's next (or, with nothing coming, what was last).
     const nextUp = sortShows(showsForBrand(bk).filter(c => c !== code && EVENTS[c] && ["live", "upcoming"].includes(showStatus(c).k)))[0];
-    const subline = nextUp ? "Next: " + showLabelOf(nextUp) + " · " + showStatusText(nextUp)
-      : (fk === "past" ? "Last: " + showLabelOf(code) + " · " + showStatusText(code) : "");
-    h += `<div class="home-ov-card" data-home-brand="${esc(bk)}" role="button" tabindex="0">
-      <div class="home-ov-bar" style="background:${brand.p.blue}">
-        <img src="./${esc(brand.logo)}" alt="${esc(brand.name)}" onerror="this.style.display='none'">
+    return { bk, brand, code, st: showStatus(code), badge: showOvStatus(code),
+      visited, vidPending: vidTotal - vidDone, vidDone, clips, last, latest,
+      media: featured ? eventMedia(featured) : null,
+      title: isPlaceholderShow(code) ? "No show loaded yet" : fk === "past" ? "No upcoming show" : showLabelOf(code),
+      subline: nextUp ? "Next: " + showLabelOf(nextUp) + " · " + showStatusText(nextUp)
+        : (fk === "past" ? "Last: " + showLabelOf(code) + " · " + showStatusText(code) : "") };
+  });
+  cards.sort((a, b) => showRank(a.code) - showRank(b.code));
+  const mediaLink = c => c.media ? `<a class="home-ov-media" href="${esc(c.media.folder)}" target="_blank" rel="noopener">Photos &amp; videos</a>` : "";
+  const hero = c => {
+    const p = c.brand.p, s = c.st;
+    const venue = ((EVENTS[c.code] || {}).venue || {}).name || "";
+    const queue = homeVidGroups(c.code).filter(v => !v.hidden && !v.done)
+      .map(v => ({ v, stage: vidStage(v) })).filter(x => x.stage !== "wait")
+      .sort((a, b) => (a.stage === b.stage ? 0 : a.stage === "ready" ? -1 : 1) || (b.v.vts - a.v.vts)).slice(0, 4);
+    const qrow = ({ v, stage }) => {
+      const wk = homeFlags[fsId("work__" + v.code + "__" + v.boothNum)];
+      const chip = stage === "prog"
+        ? `<span class="hb-chip vid">${wk ? esc(firstNameOf(memberName(wk.member))) + " is on it" : "In progress"}</span>`
+        : vidFootage(v).allIn ? `<span class="hb-chip ok">All footage in</span>` : `<span class="hb-chip warn">More may be coming</span>`;
+      return `<div class="hb-qi"><b>${esc(v.boothName)}</b>${chip}</div>`;
+    };
+    const latest = c.latest && c.latest.t
+      ? "Latest footage: " + c.latest.booth + " from " + c.latest.rep + ", " + fmtExact(c.latest.t)
+      : (c.last ? "Active " + fmtAgo(c.last) : "No activity yet");
+    return `<div class="hb-live" data-home-brand="${esc(c.bk)}" role="button" tabindex="0" style="--blue:${p.blue};--blue-dark:${p.dark};--blue-light:${p.light};--blue-mid:${p.mid}">
+      <div class="hb-live-brand">
+        <img src="./${esc(c.brand.logo)}" alt="${esc(c.brand.name)}" onerror="this.style.display='none'">
+        <span class="hb-live-badge"><span class="hl-live-dot"></span>Day ${s.day} of ${showDayCount(c.code)}</span>
       </div>
-      <div class="home-ov-body">
-        <div class="home-ov-showrow">
-          <span class="home-ov-show">${esc(title)}</span>
-          ${st.label ? `<span class="home-ov-badge ${st.k}">${st.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(st.label)}</span>` : ""}
+      <div class="hb-live-mid">
+        <h3>${esc(c.title)}</h3>
+        <p>${esc([fmtShowDates(s.start, s.end), venue, c.subline].filter(Boolean).join(" · "))}</p>
+        <div class="hb-stats">
+          <div class="hb-stat"><b>${c.visited}</b><span>booth${c.visited === 1 ? "" : "s"} visited</span></div>
+          <div class="hb-stat${c.vidPending ? " hot" : ""}"><b>${c.vidPending}</b><span>video${c.vidPending === 1 ? "" : "s"} waiting</span></div>
+          <div class="hb-stat"><b>${c.clips}</b><span>clip${c.clips === 1 ? "" : "s"} uploaded</span></div>
+          <div class="hb-stat"><b>${c.vidDone}</b><span>video${c.vidDone === 1 ? "" : "s"} done</span></div>
         </div>
-        ${subline ? `<div class="home-ov-next">${esc(subline)}</div>` : ""}
-        <div class="home-ov-stats">
-          <div class="home-ov-stat"><strong>${visited}</strong><span>booths visited</span></div>
-          <div class="home-ov-stat"><strong>${vidPending}</strong><span>videos waiting${vidDone ? " · " + vidDone + " done" : ""}</span></div>
-          <div class="home-ov-stat"><strong>${clips}</strong><span>clip${clips === 1 ? "" : "s"} uploaded</span></div>
-        </div>
-        <div class="home-ov-foot">
-          <span>${last ? "active " + esc(fmtAgo(last)) : "no activity yet"}</span>
-          ${media ? `<a class="home-ov-media" href="${esc(media.folder)}" target="_blank" rel="noopener">Photos &amp; videos</a>` : ""}
-        </div>
+        <div class="hb-latest">${HB_CLOCK}<span>${esc(latest)}</span>${mediaLink(c)}</div>
+      </div>
+      <div class="hb-live-q">
+        <h5>Waiting on the desk</h5>
+        ${queue.length ? queue.map(qrow).join("") : `<div class="hb-q-none">Nothing waiting right now. New footage shows up here.</div>`}
+        <button class="hb-btn pri" type="button" data-home-go="videos">Open ${esc(showShortLabelOf(c.code) || "the")} videos</button>
       </div>
     </div>`;
-  });
-  h += `</div><div class="home-ov-hint">Pick a brand for its videos, schedules and search.</div>`;
+  };
+  const small = c => {
+    const any = c.visited || c.vidPending || c.vidDone || c.clips;
+    const soon = c.st.k === "upcoming" && c.st.daysUntil <= WRAP_WINDOW_DAYS;
+    return `<div class="hb-up" data-home-brand="${esc(c.bk)}" role="button" tabindex="0">
+      <div class="hb-up-top" style="background:${c.brand.p.blue}"><img src="./${esc(c.brand.logo)}" alt="${esc(c.brand.name)}" onerror="this.style.display='none'"></div>
+      <div class="hb-up-b">
+        <b>${esc(c.title)}</b>
+        ${c.badge.label ? `<span class="hb-chip${soon ? " warn" : ""}">${esc(c.badge.label)}</span>` : ""}
+        ${c.subline ? `<p>${esc(c.subline)}</p>` : ""}
+        ${any ? `<p>${plural(c.visited, "booth")} visited · ${plural(c.vidPending, "video")} waiting${c.vidDone ? " · " + c.vidDone + " done" : ""} · ${plural(c.clips, "clip")} uploaded</p>` : ""}
+        <div class="hb-up-foot"><span>${c.last ? "active " + esc(fmtAgo(c.last)) : ""}</span>${mediaLink(c)}</div>
+      </div>
+    </div>`;
+  };
+  const live = cards.filter(c => c.st.k === "live"), rest = cards.filter(c => c.st.k !== "live");
+  let h = "";
+  if (live.length) h += `<div class="hb-k"><span class="hl-live-dot"></span>Live now</div>` + live.map(hero).join("");
+  if (rest.length) {
+    const label = !live.length ? "All brands" : rest.every(c => c.st.k === "upcoming") ? "Coming up" : "Other brands";
+    h += `<div class="hb-k${live.length ? " next" : ""}">${label}</div><div class="hb-up-grid">${rest.map(small).join("")}</div>`;
+  }
   return h;
 }
 // A show's at-a-glance badge for the overview cards.
@@ -7181,7 +7489,7 @@ function showOvStatus(code) {
 // (mirrors the field team view; needs isHome() on schedules read in rules).
 let homeView = "videos";          // "videos" | "sched" (videos is the default view)
 let homeVideosOnly = false;       // Schedules-view toggle: only video-flagged booths
-let homeShowDoneVids = false;     // Videos view: completed section expanded?
+let homeShowDoneVids = true;      // Videos view: Done group expanded? (one line per video since the redesign)
 let homeShowFootage = false;      // Videos view: uploaded-footage list expanded?
 let homeShowHiddenVids = false;   // Videos view: "Removed from the bullpen" list expanded?
 const homeShowSel = {};           // brand -> event picked this session (default: the one with work in it)
@@ -7204,7 +7512,7 @@ function homeMember() {
 function sameMember(a, b) { return memberName(a) === memberName(b); }
 let homeSchedules = {};           // docId -> schedule doc (home view only)
 let _homeSchedUnsub = null;
-let homeSchedRep = null;          // selected schedules docId
+let homeSchedRep = "*";           // selected schedules docId ("*" = everyone side by side)
 let homeSchedDay = 1;
 let homeSchedQ = "";              // Schedules-view search (across ALL reps + days)
 function schedItemMatch(it, q) {
@@ -7226,14 +7534,6 @@ function subscribeHomeSchedules() {
   }, () => {});
 }
 
-function buildHomeFilter() {
-  let h = `<div class="team-bar home-filter">
-    <button class="team-chip${!homeBrandFilter?" active":""}" data-home-brand="">All Brands</button>`;
-  HOME_FILTER_BRANDS.forEach(bk => {
-    h += `<button class="team-chip${homeBrandFilter===bk?" active":""}" data-home-brand="${bk}">${esc(BRANDS[bk].name)}</button>`;
-  });
-  return h + `</div>`;
-}
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   updateHomeMemberChip();
@@ -7249,37 +7549,19 @@ function renderHomeDashboard() {
         <div class="home-member-grid">${HOME_MEMBERS.map(m => `<button class="home-member-btn" type="button" data-home-member="${esc(m)}">${esc(m)}</button>`).join("")}</div>
       </div>
     </div></div>`;
+    renderHomeNav();
     return;
   }
-  const filterName = homeBrandFilter ? (isPlaceholderShow(homeEventCode()) ? BRANDS[homeBrandFilter].name : showLabelOf(homeEventCode())) : "all brands";
-  const subtitle = !homeBrandFilter ? "Live overview of every brand."
-    : (homeView === "sched" ? "Rep schedules (view only): " + esc(filterName) + "." + (homeVideosOnly ? " Showing video booths only." : "")
-      : homeView === "photos" ? "Photos from the field team, with their captions: " + esc(filterName) + "."
-                            : "Every video flagged by the field team: " + esc(filterName) + ".");
-  let html = `<div class="home-wrap"><div class="home-main">
-    <div class="home-head"><h2>Bullpen</h2><p>${subtitle}</p></div>
-    ${buildHomeFilter()}`;
+  // Redesign: brand tabs sit in the top bar and one toolbar carries the show,
+  // the view tabs, search and the shared folder.
+  renderHomeNav();
+  let html = "";
   if (homeBrandFilter) {
-    html += buildHomeEventTabs();
-    html += `<div class="home-view-tabs">
-      <button class="home-view-tab${homeView==="videos"?" active":""}" type="button" data-home-view="videos">Videos</button>
-      <button class="home-view-tab${homeView==="photos"?" active":""}" type="button" data-home-view="photos">Photos</button>
-      <button class="home-view-tab${homeView==="sched"?" active":""}" type="button" data-home-view="sched">Schedules</button>
-      ${homeView==="sched" ? `<button class="home-vid-toggle${homeVideosOnly?" on":""}" type="button" data-vid-only title="Show only booths the reps flagged for video">🎥 Videos only</button>` : ""}
-    </div>`;
-    // The show's shared folder, full width under the tabs (the old right
-    // rail is gone; this button was the only thing left living in it).
-    const mc = (eventMedia(homeEventCode()) || {}).folder ? homeEventCode() : null;
-    if (mc) {
-      const b = BRANDS[homeBrandFilter];
-      html += `<a class="home-aside-media home-folder-wide" style="background:${b.p.blue}" href="${esc(eventMedia(mc).folder)}" target="_blank" rel="noopener">
-        <span class="home-aside-media-play"><svg width="15" height="17" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z"/></svg></span>
-        <span class="home-aside-media-main">View shared folder<span class="home-aside-media-sub">every photo and video for this show, on Microsoft 365</span></span>
-      </a>`;
-    }
+    html += buildHomeToolbar();
+    html += `<div class="home-wrap hb"><div class="home-main">`;
     html += homeView === "sched" ? buildHomeSchedView() : homeView === "photos" ? buildHomePhotosView() : buildHomeVideosView();
   } else {
-    html += buildHomeOverview();
+    html += `<div class="home-wrap hb"><div class="home-main">` + buildHomeOverview();
   }
   html += `</div></div>`;
   const folderFocus = !!(document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("hp-folder-inp"));
@@ -7510,9 +7792,6 @@ function buildHomePhotosView() {
     html += `<div class="hp-fhead"><span class="hp-fhead-name">${esc(f.name)}</span><span class="hp-fhead-n">${inSel.length} photo${inSel.length === 1 ? "" : "s"}</span>
       ${f.url ? `<a class="home-rem-btn watch" href="${esc(f.url)}" target="_blank" rel="noopener">Open in SharePoint</a>` : ""}</div>`;
   }
-  html += `<div class="home-search-box">
-      <input class="home-search-input hp-search-input" type="text" placeholder="Search ${sel ? "this folder" : "photos"}: caption or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homePhotoQ)}">
-    </div>`;
   if (!all.length) return html + `<div class="empty-wrap"><h3>No photos yet</h3>
       <p>When Editorial/Digital reps upload from the app's Photos tab, their photos show up here with the captions they wrote.</p></div>`;
   if (!sel) {
@@ -7542,13 +7821,17 @@ function buildHomePhotosView() {
 // video only needs making once); its done button covers all of them. Ready-
 // to-produce first (visited, newest visit on top), then planned-but-
 // unvisited, with completed collapsed at the bottom.
-function buildHomeVideosView() {
-  const q = homeSearchQ.trim().toLowerCase();
-  const groups = {};   // "<code>__<booth#>" -> one card, however many reps flagged it
+let homeVidFilter = "all";         // Videos view: which count tile is filtering the list
+const homeVidOpen = new Set();     // "<code>__<booth#>" one-line rows opened into full cards
+// One entry per video-flagged booth for a show, however many reps flagged it
+// (a video only needs making once). Shared by the Videos view, the toolbar
+// count and the live card on All brands.
+function homeVidGroups(code) {
+  const groups = {};   // "<code>__<booth#>" -> one card
   Object.values(homeNotes)
     .filter(d => effectiveDept(d.uid, d.dept) === "edit")
     .forEach(d => {
-      if (homeBrandFilter && d.eventCode !== homeEventCode()) return;
+      if (code && d.eventCode !== code) return;
       (d.items || []).forEach(it => {
         if (!it.video) return;
         const gk = d.eventCode + "__" + it.boothNum;
@@ -7561,7 +7844,7 @@ function buildHomeVideosView() {
           done: !!homeVideoStatus[fsId(d.eventCode + "__" + d.uid + "__" + it.boothNum)] });
       });
     });
-  const vids = Object.values(groups).map(g => {
+  return Object.values(groups).map(g => {
     const latest = g.reps.filter(r => r.visited).sort((a,b) => b.vts - a.vts)[0] || null;
     return { ...g,
       visited: !!latest,
@@ -7572,6 +7855,31 @@ function buildHomeVideosView() {
       gone: !!(vidHideDoc(g.code, g.boothNum) || {}).gone,
       names: g.reps.map(r => r.name).join(", ") };
   });
+}
+// Footage from the floor: one clip per upload (multiple reps shoot the same
+// booth, and one rep shoots multiple angles), who hasn't sent anything yet,
+// and whether every shooter has said "all footage in" (v192).
+function vidFootage(v) {
+  const repsIn = v.reps.filter(r => r.clips.length);
+  const allClips = repsIn.flatMap(r => r.clips.map((c, ci) => ({ ...c, rep: r.name || "Rep", ci, of: r.clips.length })));
+  const lastUp = allClips.length ? Math.max(...allClips.map(c => c.t || 0)) : 0;
+  const waiting = v.done ? [] : v.reps.filter(r => !r.clips.length).map(r => (r.name || "Rep").split(/\s+/)[0]);
+  const allIn = repsIn.length > 0 && !waiting.length && repsIn.every(r => r.vall);
+  const moreFrom = repsIn.filter(r => !r.vall).map(r => (r.name || "Rep").split(/\s+/)[0]);
+  return { repsIn, allClips, lastUp, waiting, allIn, moreFrom };
+}
+// Where a video stands for the desk: done, in progress (someone holds
+// Working on, or a step is checked), ready to edit (footage in, nobody on
+// it), or still waiting on footage.
+function vidStage(v) {
+  if (v.done) return "done";
+  const st = vidSteps(v.code, v.boothNum);
+  if (homeFlags[fsId("work__" + v.code + "__" + v.boothNum)] || st.edited || st.site || st.socials) return "prog";
+  return v.reps.some(r => r.clips.length) ? "ready" : "wait";
+}
+function buildHomeVideosView() {
+  const q = homeSearchQ.trim().toLowerCase();
+  const vids = homeVidGroups(homeEventCode());
   // "Removed from the bullpen": a desk-side hide flag. The rep's data is
   // untouched; the card just leaves this view until restored (or until new
   // footage lands, which resurfaces it automatically). "Deleted" cards
@@ -7583,47 +7891,38 @@ function buildHomeVideosView() {
     || (v.boothNum||"").toLowerCase().includes(q) || v.names.toLowerCase().includes(q));
   const rank = v => v.visited ? 0 : 1;
   shown.sort((a,b) => rank(a) - rank(b) || (b.vts - a.vts) || (a.boothName||"").localeCompare(b.boothName||""));
-  const pending = shown.filter(v => !v.done);
-  const done    = shown.filter(v => v.done);
-  const itemHtml = v => {
-    // "Working on" claim: whoever at the home desk grabbed this video.
+  const stageOf = new Map(shown.map(v => [v, vidStage(v)]));
+  const by = k => shown.filter(v => stageOf.get(v) === k);
+  const ready = by("ready"), prog = by("prog"), wait = by("wait"), done = by("done");
+  // The full card: who and what on the left, the steps as one track on the
+  // right, Remove behind the three-dot button.
+  const cardHtml = v => {
+    const gk = v.code + "__" + v.boothNum;
+    const f = vidFootage(v);
+    // "Working on" claim: one person holds it (tap someone else's to take it
+    // over). Every other step stays open to anyone and names who tapped it.
     const wk = homeFlags[fsId("work__" + v.code + "__" + v.boothNum)];
     const wkMine = wk && sameMember(wk.member, homeMember());
-    // One person holds "Working on" (tap someone else's to take it over).
-    // Every other step stays open to anyone and names who tapped it.
-    const workBtn = v.done ? "" :
-      `<button class="home-rem-btn work${wkMine ? " on" : wk ? " other" : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk ? esc((wkMine ? "Tap to let it go" : "Tap to take this over") + (wk.ts ? " · since " + fmtExact(wk.ts) : "")) : "Let the team know you're on this one"}">${wk ? "✓ Working on · " + esc(wkMine ? "you" : firstNameOf(memberName(wk.member))) : "Working on"}</button>`;
-    const stepBtns = vidStepButtons(v.code, v.boothNum, v.done);
-    // Footage from the floor: one Watch chip per CLIP (multiple reps shoot
-    // the same booth, and one rep shoots multiple angles). The ledger line
-    // below the names says how much is in and who hasn't sent anything yet.
-    const repsIn = v.reps.filter(r => r.clips.length);
-    const allClips = repsIn.flatMap(r => r.clips.map((c, ci) => ({ ...c, rep: r.name || "Rep", ci, of: r.clips.length })));
-    const lastUp = allClips.length ? Math.max(...allClips.map(c => c.t || 0)) : 0;
-    const waiting = v.done ? [] : v.reps.filter(r => !r.clips.length).map(r => (r.name || "Rep").split(/\s+/)[0]);
-    // Has every shooter said "all footage in"? (v192) Green when nothing more
-    // is coming; amber while any clip's shooter hasn't confirmed.
-    const allIn = repsIn.length > 0 && !waiting.length && repsIn.every(r => r.vall);
-    const moreFrom = repsIn.filter(r => !r.vall).map(r => (r.name || "Rep").split(/\s+/)[0]);
-    const allInChip = v.done || !repsIn.length ? ""
-      : allIn ? '<span class="home-chip allin">All footage in</span>'
-      : `<span class="home-chip more" title="${esc(moreFrom.length ? "Not confirmed by " + moreFrom.join(", ") : "")}">More may be coming</span>`;
-    const ledger = allClips.length
+    const workCell = v.done ? "" :
+      `<button class="hb-st${wk ? (wkMine ? " claim" : " claim other") : ""}" type="button" data-work-code="${esc(v.code)}" data-work-b="${esc(v.boothNum)}" title="${wk ? esc((wkMine ? "Tap to let it go" : "Tap to take this over") + (wk.ts ? " · since " + fmtExact(wk.ts) : "")) : "Let the team know you're on this one"}">Working on${wk ? `<small>${esc(wkMine ? "you" : firstNameOf(memberName(wk.member)))}</small>` : ""}</button>`;
+    const stateChip = !v.visited ? '<span class="hb-chip">Not visited yet</span>'
+      : (!f.allClips.length && !v.done) ? '<span class="hb-chip warn">Visited, no footage yet</span>' : "";
+    const allInChip = v.done || !f.repsIn.length ? ""
+      : f.allIn ? `<span class="hb-chip ok">${HB_CHECK}All footage in</span>`
+      : `<span class="hb-chip warn" title="${esc(f.moreFrom.length ? "Not confirmed by " + f.moreFrom.join(", ") : "")}">More may be coming</span>`;
+    const ledger = f.allClips.length
       ? " · " + (v.reps.length > 1
-          ? allClips.length + " clip" + (allClips.length === 1 ? "" : "s") + " in from " + repsIn.length + " of " + v.reps.length + " reps"
-          : (allClips.length > 1 ? allClips.length + " clips in, latest " : "footage uploaded ") + fmtExact(lastUp))
-        + (waiting.length ? " · may still be waiting on " + waiting.join(", ") : "")
+          ? f.allClips.length + " clip" + (f.allClips.length === 1 ? "" : "s") + " in from " + f.repsIn.length + " of " + v.reps.length + " reps"
+          : (f.allClips.length > 1 ? f.allClips.length + " clips in, latest " : "footage uploaded ") + fmtExact(f.lastUp))
+        + (f.waiting.length ? " · may still be waiting on " + f.waiting.join(", ") : "")
       : "";
-    const linksHtml = allClips.length
-      ? `<div class="home-vid-links">${allClips.map(c =>
-          `<a class="home-rem-btn watch" href="${esc(c.u)}" target="_blank" rel="noopener" title="${esc(c.f || "Open the uploaded file")}">▶ ${allClips.length === 1 ? "Watch footage" : esc((c.rep).split(/\s+/)[0]) + (c.of > 1 ? " · " + (c.ci + 1) : "")}</a>`).join("")}</div>`
-      : "";
+    const links = f.allClips.map(c =>
+      `<a class="hb-clip" href="${esc(c.u)}" target="_blank" rel="noopener" title="${esc(c.f || "Open the uploaded file")}">${HB_PLAY}${f.allClips.length === 1 ? "Watch footage" : esc((c.rep).split(/\s+/)[0]) + (c.of > 1 ? " · " + (c.ci + 1) : "")}</a>`).join("");
     // Editors' booth notes, tucked behind a toggle per video.
-    const gk = v.code + "__" + v.boothNum;
     const noted = v.reps.filter(r => r.pre || r.post);
     const notesOpen = homeVidNotesOpen.has(gk);
     const notesBtn = noted.length
-      ? `<button class="home-rem-btn" type="button" data-vid-notes="${esc(gk)}">${notesOpen ? "Hide notes" : "View notes"}${noted.length > 1 ? " (" + noted.length + ")" : ""}</button>`
+      ? `<button class="hb-lnk" type="button" data-vid-notes="${esc(gk)}">${notesOpen ? "Hide notes" : "View notes"}${noted.length > 1 ? " (" + noted.length + ")" : ""}</button>`
       : "";
     const notesHtml = (noted.length && notesOpen)
       ? `<div class="home-vid-notes">${noted.map(r => `
@@ -7633,30 +7932,70 @@ function buildHomeVideosView() {
             ${r.post ? `<div class="home-note-label post">Post-visit</div><div class="home-note-text">${esc(r.post)}</div>` : ""}
           </div>`).join("")}</div>`
       : "";
-    const actions = v.hidden
-      ? `<button class="home-rem-btn" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>
-      <button class="home-rem-btn hide" type="button" data-vid-purge="${esc(gk)}" data-vid-purge-name="${esc(v.boothName)} (${esc(boothLbl(v.boothNum))})" title="Delete this card from the bullpen for good">Delete permanently</button>`
-      : `${workBtn}
-      ${stepBtns}
-      ${notesBtn}
-      <button class="home-rem-btn hide" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${esc(v.boothName)} (${esc(boothLbl(v.boothNum))})" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove</button>`;
-    return `<div class="home-note${v.done ? " vid-done" : ""}${v.hidden ? " vid-hidden" : ""}">
-    <div class="home-note-co">${esc(v.boothName)} <span class="home-note-booth">${esc(boothLbl(v.boothNum))}</span>${v.reps.length > 1 ? `<span class="home-chip multi">${v.reps.length} reps</span>` : ""}${v.visited ? '<span class="home-visited">Visited</span>' : '<span class="home-chip planned">Not visited yet</span>'}${allInChip}</div>
-    <div class="home-rem-meta">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${esc(ledger)}</div>
-    ${linksHtml}
-    <div class="home-note-flags">
-      ${actions}
-    </div>
-    ${notesHtml}
-  </div>`;
-  };
-  let html = `
-    <div class="home-search-box">
-      <input class="home-search-input" type="text" placeholder="Search videos: company, booth or rep…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSearchQ)}">
+    const fullName = `${esc(v.boothName)} (${esc(boothLbl(v.boothNum))})`;
+    const right = v.hidden
+      ? `<div class="hb-vq-acts">
+          <button class="hb-btn out sm" type="button" data-vid-unhide="${esc(gk)}">Restore to bullpen</button>
+          <button class="hb-btn out sm danger" type="button" data-vid-purge="${esc(gk)}" data-vid-purge-name="${fullName}" title="Delete this card from the bullpen for good">Delete permanently</button>
+        </div>`
+      : `<div class="hb-steps${v.done ? " n4" : ""}">${workCell}${vidStepButtons(v.code, v.boothNum, v.done, true)}</div>`;
+    const menu = v.hidden ? `<span class="hb-nomenu"></span>`
+      : `<details class="hb-pop hb-more"><summary title="More" aria-label="More">${HB_MORE}</summary><div class="hb-menu right">
+          ${homeVidOpen.has(gk) ? `<button class="hb-menu-item" type="button" data-vid-open="${esc(gk)}">Collapse to one line</button>` : ""}
+          <button class="hb-menu-item danger" type="button" data-vid-hide="${esc(gk)}" data-vid-hide-name="${fullName}" title="Remove this card from the bullpen. The rep's flag and clips are untouched.">Remove from the bullpen</button>
+        </div></details>`;
+    return `<div class="hb-vq${v.done ? " vid-done" : ""}${v.hidden ? " vid-hidden" : ""}">
+      <div class="hb-vq-l">
+        <div class="hb-vq-h"><b>${esc(v.boothName)}</b><span class="hb-bn">${esc(boothLbl(v.boothNum))}</span>${v.reps.length > 1 ? `<span class="hb-chip">${v.reps.length} reps</span>` : ""}${stateChip}${allInChip}${v.hidden ? '<span class="hb-chip">Removed</span>' : ""}</div>
+        <div class="hb-vq-m">flagged by ${esc(v.names)}${v.vts ? " · visited by " + esc(v.visitor) + " " + esc(fmtExact(v.vts)) : ""}${esc(ledger)}</div>
+        ${links || notesBtn ? `<div class="hb-vq-c">${links}${notesBtn}</div>` : ""}
+      </div>
+      ${right}
+      ${menu}
+      ${notesHtml}
     </div>`;
-  if (visible.length && !q) {
-    const nDone = visible.filter(v => v.done).length;
-    html += `<div class="home-vids-summary">${visible.length} video${visible.length===1?"":"s"} flagged · ${nDone} done · ${visible.length - nDone} to go</div>`;
+  };
+  // Cards with nothing for the desk to do yet (not visited) or anymore
+  // (done) sit as one line; a click opens the full card.
+  const rowHtml = v => {
+    const n = vidFootage(v).allClips.length;
+    return `<div class="hb-vrow" data-vid-open="${esc(v.code + "__" + v.boothNum)}" role="button" tabindex="0" title="Open this card">
+      <b>${esc(v.boothName)}</b><span class="hb-bn">${esc(boothLbl(v.boothNum))}</span>
+      ${v.done ? `<span class="hb-chip ok">${HB_CHECK}Done</span>` : '<span class="hb-chip">Not visited yet</span>'}
+      <em>${v.done ? esc(v.names) + (n ? " · " + n + " clip" + (n === 1 ? "" : "s") : "") : "flagged by " + esc(v.names)}</em>${HB_CHEVR}
+    </div>`;
+  };
+  const draw = v => (!homeVidOpen.has(v.code + "__" + v.boothNum) && (v.done || (!v.visited && !v.reps.some(r => r.clips.length)))) ? rowHtml(v) : cardHtml(v);
+  const flt = homeVidFilter;
+  let html = "";
+  if (!visible.length && !hiddenVids.length) {
+    // Nothing flagged, or everything the reps flagged has been deleted here.
+    html += `<div class="empty-wrap"><h3>No videos flagged yet</h3><p>Every booth a rep flags with the Video button lands here, whether or not they've visited it yet.</p></div>`;
+  } else if (!shown.length && q) {
+    html += `<div class="empty-wrap"><h3>No matches</h3><p>No videos matching "${esc(homeSearchQ)}".</p></div>`;
+  } else {
+    // The counts double as filters.
+    const tile = (k, n, label) => `<button class="hb-tile${flt === k ? " on" : ""}" type="button" data-vid-filter="${k}"><b>${n}</b><span>${label}</span></button>`;
+    html += `<div class="hb-tiles">${tile("all", shown.length, "video" + (shown.length === 1 ? "" : "s") + " flagged")}${tile("ready", ready.length, "ready to edit")}${tile("prog", prog.length, "in progress")}${tile("wait", wait.length, "waiting on footage")}${tile("done", done.length, "done")}</div>`;
+    const group = (k, dot, label, list) => (flt === "all" || flt === k) && list.length
+      ? `<div class="hb-gh"><i class="${dot}"></i>${label} <span>${list.length}</span></div>` + list.map(draw).join("") : "";
+    html += group("ready", "", "Ready to edit", ready) + group("prog", "a", "In progress", prog) + group("wait", "g", "Waiting on footage", wait);
+    if (flt === "all" && !ready.length && !prog.length && !wait.length && done.length) {
+      html += `<div class="hb-none">All caught up. Every flagged video is marked done.</div>`;
+    }
+    if ((flt === "all" || flt === "done") && done.length) {
+      const open = homeShowDoneVids || flt === "done";
+      html += `<div class="hb-gh tog" data-vids-done-toggle><i class="d"></i>Done <span>${done.length}</span>${open ? HB_CHEV : HB_CHEVR}</div>`;
+      if (open) html += done.map(draw).join("");
+    }
+    if (flt !== "all" && !by(flt).length) html += `<div class="hb-none">Nothing here right now.</div>`;
+    if (flt === "all" && !shown.length && hiddenVids.length) {
+      html += `<div class="hb-none">Nothing active. Removed cards are below.</div>`;
+    }
+  }
+  if (hiddenVids.length && flt === "all") {
+    html += `<div class="hb-gh tog" data-hidden-vids-toggle><i class="g"></i>Removed from the bullpen <span>${hiddenVids.length}</span>${homeShowHiddenVids ? HB_CHEV : HB_CHEVR}</div>`;
+    if (homeShowHiddenVids) html += hiddenVids.map(cardHtml).join("");
   }
   // Every clip uploaded from the app, one flat list — the whole point is that
   // nobody digs through SharePoint folders. (Files sent through the old
@@ -7680,43 +8019,19 @@ function buildHomeVideosView() {
     });
   const shownClips = clips.filter(c => !q || (c.boothName + " " + c.boothNum + " " + c.rep + " " + c.vfile).toLowerCase().includes(q))
     .sort((a, b) => b.vupAt - a.vupAt);
-  if (clips.length) {
+  if (clips.length && (flt === "all" || q)) {
     const open = homeShowFootage || (q && shownClips.length > 0);
-    html += `<div class="home-rem-donehead" data-footage-toggle>${open ? "▾" : "▸"} Uploaded footage (${q ? shownClips.length + " of " + clips.length : clips.length})</div>`;
+    html += `<div class="hb-gh tog" data-footage-toggle><i class="g"></i>All uploaded footage <span>${q ? shownClips.length + " of " + clips.length : clips.length}</span>${open ? HB_CHEV : HB_CHEVR}</div>`;
     if (open) {
-      html += `<div class="home-clips">` + (shownClips.length ? shownClips.map(c => `
+      html += `<div class="home-clips hb-clips">` + (shownClips.length ? shownClips.map(c => `
         <div class="home-clip">
-          <a class="home-rem-btn watch" href="${esc(c.vlink)}" target="_blank" rel="noopener">▶ Watch</a>
+          <a class="hb-clip" href="${esc(c.vlink)}" target="_blank" rel="noopener">${HB_PLAY}Watch</a>
           <div class="home-clip-body">
             <div class="home-clip-file">${esc(c.vfile)}</div>
             <div class="home-clip-meta">${esc(c.boothName)} (${esc(boothLbl(c.boothNum))}) · ${esc(c.rep)}${c.vupAt ? " · " + esc(fmtExact(c.vupAt)) : ""}</div>
           </div>
-        </div>`).join("") : `<div class="home-rem-empty">No uploads match "${esc(homeSearchQ)}".</div>`) + `</div>`;
+        </div>`).join("") : `<div class="hb-none">No uploads match "${esc(homeSearchQ)}".</div>`) + `</div>`;
     }
-  }
-  if (!visible.length && !hiddenVids.length) {
-    // Nothing flagged, or everything the reps flagged has been deleted here.
-    html += `<div class="empty-wrap"><h3>No videos flagged yet</h3><p>Every booth a rep flags with the Video button lands here, whether or not they've visited it yet.</p></div>`;
-  } else if (!shown.length && q) {
-    html += `<div class="empty-wrap"><h3>No matches</h3><p>No videos matching "${esc(homeSearchQ)}".</p></div>`;
-  } else {
-    html += `<div class="home-vids">`;
-    html += pending.map(itemHtml).join("");
-    if (!pending.length && done.length) {
-      html += `<div class="home-rem-empty">All caught up. Every flagged video is marked done.</div>`;
-    }
-    if (done.length) {
-      html += `<div class="home-rem-donehead" data-vids-done-toggle>${homeShowDoneVids ? "▾" : "▸"} Completed (${done.length})</div>`;
-      if (homeShowDoneVids) html += done.map(itemHtml).join("");
-    }
-    if (!pending.length && !done.length && hiddenVids.length) {
-      html += `<div class="home-rem-empty">Nothing active. Removed cards are below.</div>`;
-    }
-    if (hiddenVids.length) {
-      html += `<div class="home-rem-donehead" data-hidden-vids-toggle>${homeShowHiddenVids ? "▾" : "▸"} Removed from the bullpen (${hiddenVids.length})</div>`;
-      if (homeShowHiddenVids) html += hiddenVids.map(itemHtml).join("");
-    }
-    html += `</div>`;
   }
   return html;
 }
@@ -7736,6 +8051,20 @@ function schedNoteHtml(n, sel) {
 }
 // The Schedules view: pick a rep, see their Day 1/2/3 agenda read-only
 // (same cards as the field team view; data = the schedules collection).
+// One-line title and detail for any agenda item (the side-by-side columns).
+function schedItemTitle(it) {
+  if (it.kind === "booth") return it.boothName || "Booth visit";
+  if (it.kind === "meal") return (MEAL_LABEL[it.mealType] || "Meal") + (it.company ? " with " + it.company : "");
+  if (it.kind === "session") return it.title || "Education session";
+  return it.title || "Off-Site Meeting";
+}
+function schedItemSub(it) {
+  if (it.kind === "booth") return boothLbl(it.boothNum || "");
+  if (it.kind === "session") return [it.room, it.speakers].filter(Boolean).join(" · ");
+  if (it.kind === "meal") return it.notes || "";
+  return [it.company ? "With " + it.company : "", it.location].filter(Boolean).join(" · ");
+}
+let _hsDayFor = null;             // the show the day picker was last defaulted for
 function buildHomeSchedView() {
   let entries = Object.entries(homeSchedules)
     .filter(([id, s]) => effectiveDept(s.uid, s.dept) === "edit");   // edit/digital only
@@ -7744,15 +8073,13 @@ function buildHomeSchedView() {
   if (!entries.length) {
     return `<div class="empty-wrap"><h3>No schedules to show</h3><p>This view only shows Editorial/Digital schedules (set under Profile &gt; Team in the field app). Sales schedules never appear here.</p></div>`;
   }
-  let h = `<div class="home-search-box">
-    <input class="home-search-input hs-search-input" type="text" placeholder="Search this brand&#39;s agendas: company, meal guest, location…" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(homeSchedQ)}">
-  </div>`;
+  let h = "";
   const q = homeSchedQ.trim().toLowerCase();
   // Videos-only trims agendas to video-flagged booth meetings (meals and
   // off-site items are never videos, so they drop out too).
   const vOnly = it => !homeVideosOnly || (it.kind === "booth" && it.video);
   // Searching scans EVERY rep's agenda across all three days and returns a
-  // flat hit list ("who is meeting X, and when"). Empty search = rep picker.
+  // flat hit list ("who is meeting X, and when"). Empty search = the day view.
   if (q) {
     let anyHit = false;
     entries.forEach(([id, s]) => {
@@ -7773,20 +8100,61 @@ function buildHomeSchedView() {
     }
     return h;
   }
-  if (!homeSchedRep || !entries.some(([id]) => id === homeSchedRep)) homeSchedRep = entries[0][0];
-  const sel = homeSchedules[homeSchedRep];
-  h += `<div class="team-bar home-filter">` + entries.map(([id, s]) =>
-    `<button class="team-chip${homeSchedRep===id?" active":""}" type="button" data-hs-rep="${esc(id)}" title="${esc(showLabelOf(s.eventCode))}">${esc(s.name||"Rep")}${s.notSignedUp ? " (not signed up)" : ""}</button>`).join("") + `</div>`;
-  const items = withPublished(sel).filter(vOnly);
-  const nDays = showDayCount(sel.eventCode);
-  const dc = Array(nDays + 1).fill(0);
-  items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
+  // Everyone side by side is the default; a name narrows to that person's
+  // full agenda (the same view as before the redesign).
+  if (homeSchedRep !== "*" && !entries.some(([id]) => id === homeSchedRep)) homeSchedRep = "*";
+  const everyone = homeSchedRep === "*";
+  const code = entries[0][1].eventCode;
+  const nDays = showDayCount(code);
+  if (_hsDayFor !== code) { _hsDayFor = code; homeSchedDay = showDayToday(code) || 1; }   // open on today while the show is live
   if (homeSchedDay > nDays) homeSchedDay = 1;
-  h += `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">` + showDays(sel.eventCode).map(d => `
-    <button class="sched-day-tab${homeSchedDay===d?" active":""}" data-hs-day="${d}">
-      <span class="stdt-day">Day ${d}</span>${dayWeekdayHtml(sel.eventCode, d)}
-      <span class="stdt-count">${dc[d]} booked</span>
-    </button>`).join("") + `</div>`;
+  const per = entries.map(([id, s]) => ({ id, s, items: withPublished(s).filter(vOnly),
+    nd: Object.values(homeNotes).find(d => d.uid === s.uid && d.eventCode === s.eventCode) }));
+  const dc = Array(nDays + 1).fill(0);
+  per.filter(p => everyone || p.id === homeSchedRep)
+    .forEach(p => p.items.forEach(it => { if (it.day >= 1 && it.day <= nDays) dc[it.day]++; }));
+  const dayLbl = d => {
+    const iso = ((resolveEvent(code) || {}).dates || [])[d - 1];
+    if (!iso) return "Day " + d;
+    const [y, m, dd] = iso.split("-").map(Number);
+    return ["Sun.","Mon.","Tues.","Wed.","Thurs.","Fri.","Sat."][new Date(y, m - 1, dd).getDay()] + " " + dd;
+  };
+  h += `<div class="hb-sch-bar">
+    <div class="hb-seg">${showDays(code).map(d => `<button class="${homeSchedDay === d ? "on" : ""}" type="button" data-hs-day="${d}" title="Day ${d}">${esc(dayLbl(d))}<b>${dc[d]}</b></button>`).join("")}</div>
+    <div class="hb-seg reps"><button class="${everyone ? "on" : ""}" type="button" data-hs-rep="*">Everyone</button>${entries.map(([id, s]) =>
+      `<button class="${homeSchedRep === id ? "on" : ""}" type="button" data-hs-rep="${esc(id)}" title="${esc(showLabelOf(s.eventCode))}">${esc(s.name || "Rep")}${s.notSignedUp ? " (not signed up)" : ""}</button>`).join("")}</div>
+    <button class="hb-tog${homeVideosOnly ? " on" : ""}" type="button" data-vid-only title="Show only booths the reps flagged for video"><i></i>Videos only</button>
+  </div>`;
+  if (everyone) {
+    // Who else has the same stop (same day, time and booth or title).
+    const keyOf = it => it.day + "|" + (it.time || "") + "|" + (it.kind === "booth" ? "b:" + it.boothNum : it.kind + ":" + String(it.title || it.company || it.mealType || "").toLowerCase());
+    const going = {};
+    per.forEach(p => p.items.forEach(it => { const k = keyOf(it); (going[k] = going[k] || []).push(p); }));
+    const col = p => {
+      const todays = p.items.filter(it => it.day === homeSchedDay)
+        .sort((a, b) => timeToMin(a.time || "") - timeToMin(b.time || ""));
+      const nVid = todays.filter(it => it.kind === "booth" && it.video).length;
+      const name = p.s.name || "Rep";
+      const initials = name.trim().split(/\s+/).map(w => w[0] || "").slice(0, 2).join("").toUpperCase();
+      const rows = todays.map(it => {
+        const others = (going[keyOf(it)] || []).filter(o => o.id !== p.id).map(o => firstNameOf(o.s.name || "Rep"));
+        const note = it.kind === "booth" && p.nd ? (p.nd.items || []).find(x => x.boothNum === it.boothNum) : null;
+        const sub = [schedItemSub(it), others.length ? "with " + others.join(", ") : ""].filter(Boolean).join(" · ");
+        const chips = (it.kind === "booth" && it.video ? `<span class="hb-chip vid">${HB_VIDEO}Video</span>` : "")
+          + (note && note.visited ? `<span class="hb-chip ok">${HB_CHECK}Visited</span>` : "");
+        return `<div class="hb-si${others.length ? " shared" : ""}"><time>${esc(it.time || "")}</time><div><b>${esc(schedItemTitle(it))}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div><div class="hb-si-chips">${chips}</div></div>`;
+      }).join("");
+      return `<div class="hb-pc">
+        <button class="hb-pc-h" type="button" data-hs-rep="${esc(p.id)}" title="Open ${esc(name)}'s full agenda">
+          <i>${esc(initials)}</i><span><b>${esc(name)}${p.s.notSignedUp ? " (not signed up)" : ""}</b><small>${todays.length} stop${todays.length === 1 ? "" : "s"}${nVid ? " · " + nVid + " video" + (nVid === 1 ? "" : "s") : ""}</small></span>${HB_CHEVR}
+        </button>
+        ${rows || `<div class="hb-pc-none">${homeVideosOnly ? "No video-flagged booths this day." : "Nothing booked this day."}</div>`}
+      </div>`;
+    };
+    return h + `<div class="hb-cols">${per.map(col).join("")}</div>`;
+  }
+  const sel = homeSchedules[homeSchedRep];
+  const items = withPublished(sel).filter(vOnly);
   const ago = fmtAgo(homeDocTs(sel));
   h += `<div class="ro-banner">Viewing <strong>${esc(sel.name||"rep")}</strong> (${esc(showLabelOf(sel.eventCode))})${ago ? " · updated " + esc(ago) : ""} · view only</div>`;
   const byTime = {};
@@ -8988,11 +9356,15 @@ document.getElementById("content").addEventListener("click", e => {
   if (e.target.closest("[data-vids-done-toggle]")) { homeShowDoneVids = !homeShowDoneVids; renderHomeDashboard(); return; }
   if (e.target.closest("[data-footage-toggle]")) { homeShowFootage = !homeShowFootage; renderHomeDashboard(); return; }
   if (e.target.closest("[data-hidden-vids-toggle]")) { homeShowHiddenVids = !homeShowHiddenVids; renderHomeDashboard(); return; }
-  if (e.target.closest("[data-home-past-toggle]")) { homeShowPast = !homeShowPast; renderHomeDashboard(); return; }
+  if (e.target.closest("[data-home-past-toggle]")) { homeShowPast = !homeShowPast; _hbShowMenuOpen = true; renderHomeDashboard(); return; }
+  const vflt = e.target.closest("[data-vid-filter]");
+  if (vflt) { homeVidFilter = vflt.dataset.vidFilter; renderHomeDashboard(); return; }
+  const vopen = e.target.closest("[data-vid-open]");
+  if (vopen) { const k = vopen.dataset.vidOpen; homeVidOpen.has(k) ? homeVidOpen.delete(k) : homeVidOpen.add(k); renderHomeDashboard(); return; }
   const hev = e.target.closest("[data-home-event]");
   if (hev) {
     homeShowSel[homeBrandFilter] = hev.dataset.homeEvent;
-    homeSearchQ = ""; homeSchedQ = ""; homeSchedRep = null;
+    homeSearchQ = ""; homeSchedQ = ""; homeSchedRep = "*";
     renderHomeDashboard();
     return;
   }
@@ -9021,12 +9393,8 @@ document.getElementById("content").addEventListener("click", e => {
   const homeBrand = e.target.closest("[data-home-brand]");
   if (homeBrand) {
     if (e.target.closest("a")) return;   // the card's Photos & videos link is just a link
-    homeBrandFilter = homeBrand.dataset.homeBrand || null;
-    homeSearchQ = ""; homeSchedQ = "";
-    try { localStorage.setItem("home_brand", homeBrandFilter || ""); } catch (err) {}   // survives reloads
-    applyBrand(homeBrandFilter || "ncm");
-    updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen");
-    renderHomeDashboard();
+    const go = e.target.closest("[data-home-go]");
+    homePickBrand(homeBrand.dataset.homeBrand, go ? go.dataset.homeGo : "");
     return;
   }
 
@@ -10315,6 +10683,15 @@ authEls.form.addEventListener("submit", async (e) => {
     authErr(mapAuthError(err));
     authEls.submit.disabled = false;
   }
+});
+// Brand tabs in the top bar (outside #content, so they need their own listener).
+document.getElementById("homeNav").addEventListener("click", e => {
+  const b = e.target.closest("[data-home-brand]");
+  if (b && isHome()) homePickBrand(b.dataset.homeBrand, "");
+});
+// Bullpen menus (show switcher, a card's three-dot menu) close on an outside click.
+document.addEventListener("click", e => {
+  document.querySelectorAll("details.hb-pop[open]").forEach(d => { if (!d.contains(e.target)) d.removeAttribute("open"); });
 });
 document.getElementById("homeMemberBtn").addEventListener("click", () => {
   try { localStorage.removeItem("home_member"); } catch (e) {}
