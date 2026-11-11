@@ -2660,7 +2660,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v237</div>
+      <div class="pf-ver">NCM Events Guide · v238</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6003,7 +6003,8 @@ function subscribeNotifyConfig() {
   _notifyCfgUnsub = fbDb.collection("config").doc("notifications").onSnapshot(d => {
     if (!d.exists && d.metadata.fromCache) return;   // offline, nothing cached: keep this device's copy
     const x = (d.exists && d.data()) || {};
-    notifyCfg = { url: x.webhookUrl || "", emails: x.emails || {}, testMode: !!x.testMode };
+    notifyCfg = { url: x.webhookUrl || "", emails: x.emails || {}, testMode: !!x.testMode,
+      problemsTo: Array.isArray(x.problemsTo) ? x.problemsTo : null };
     try { notifyCfg.url ? localStorage.setItem(NOTIFY_CFG_KEY, JSON.stringify(notifyCfg)) : localStorage.removeItem(NOTIFY_CFG_KEY); } catch (e) {}
     flushNotifyQ();
   }, () => {});
@@ -6085,7 +6086,16 @@ const NOTIFY_Q_KEY = "ncm_notify_q";
 let _notifyBusy = false, _notifyTimer = null;
 function notifyQ() { try { return JSON.parse(localStorage.getItem(NOTIFY_Q_KEY) || "[]") || []; } catch (e) { return []; } }
 function setNotifyQ(q) { try { q.length ? localStorage.setItem(NOTIFY_Q_KEY, JSON.stringify(q)) : localStorage.removeItem(NOTIFY_Q_KEY); } catch (e) {} }
-function notifyTargets(skipMember, isVideo) {
+// Upload-problem alerts (v238) go to Nate alone: the roster entry named
+// "Test" is his. config/notifications.problemsTo (a list of roster names)
+// changes who gets them; an empty list turns them off. They never go to the
+// rest of the roster, in test mode or out of it.
+const PROBLEMS_TO = ["Test"];
+function notifyTargets(skipMember, isVideo, admin) {
+  if (admin) {
+    const to = Array.isArray(notifyCfg.problemsTo) ? notifyCfg.problemsTo : PROBLEMS_TO;
+    return Object.entries(notifyCfg.emails || {}).filter(([name, email]) => email && to.some(m => name === m));
+  }
   const skip = name => !!skipMember && sameMember(name, skipMember);
   return notifyCfg.testMode
     ? Object.entries(notifyCfg.emails).filter(([name, email]) => email && (name === "Test"
@@ -6101,7 +6111,7 @@ async function flushNotifyQ() {
   try {
     for (const a of notifyQ()) {
       if (Date.now() - a.at >= day) continue;
-      for (const [, email] of notifyTargets(a.skip, a.video)) {
+      for (const [, email] of notifyTargets(a.skip, a.video, a.admin)) {
         if ((a.sent || []).includes(email)) continue;
         let done = false;
         try {
@@ -6121,17 +6131,17 @@ async function flushNotifyQ() {
     }
     // Done = every current recipient crossed off (or a day old).
     setNotifyQ(notifyQ().filter(a => Date.now() - a.at < day
-      && notifyTargets(a.skip, a.video).some(([, email]) => !(a.sent || []).includes(email))));
+      && notifyTargets(a.skip, a.video, a.admin).some(([, email]) => !(a.sent || []).includes(email))));
   } finally { _notifyBusy = false; }
   if (notifyQ().length) _notifyTimer = setTimeout(flushNotifyQ, 30000);
 }
 window.addEventListener("online", () => flushNotifyQ());
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushNotifyQ(); });
-function notifyHome(text, skipMember, isVideo) {
+function notifyHome(text, skipMember, isVideo, admin) {
   const q = notifyQ();
-  q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, skip: skipMember || "", video: !!isVideo, at: Date.now(), sent: [] });
+  q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, skip: skipMember || "", video: !!isVideo, admin: !!admin, at: Date.now(), sent: [] });
   setNotifyQ(q.slice(-50));
-  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, targets: notifyTargets(skipMember, isVideo).map(t => t[0]) });
+  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, admin: !!admin, targets: notifyTargets(skipMember, isVideo, admin).map(t => t[0]) });
   flushNotifyQ();
 }
 const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
@@ -6281,7 +6291,7 @@ async function msBootstrap() {
   recordMsStatus();
   if (!isHome() && currentUser) render();
   maybeShowMsPrompt();
-  msWarmToken();
+  msWarmToken().then(() => setTimeout(msPreflight, 4000));
 }
 // After a Microsoft round trip started from a booth's Upload, bring that
 // booth back on screen with its button as "Pick video" (v177).
@@ -6396,12 +6406,23 @@ async function msToken(interactiveOk) {
     throw e;
   }
 }
+// v238: "busy, try again" from Microsoft (429, 502 to 504) gets two more tries
+// after a short wait before it counts as a failure. A 401 means the saved
+// sign-in token is no good, so it is dropped and the next ask gets a new one.
 async function msGraph(path, opts, token) {
-  const r = await fetch("https://graph.microsoft.com/v1.0" + path, {
-    ...(opts || {}),
-    headers: { Authorization: "Bearer " + token, ...((opts || {}).headers || {}) },
-  });
-  if (!r.ok) {
+  for (let n = 0; ; n++) {
+    const r = await fetch("https://graph.microsoft.com/v1.0" + path, {
+      ...(opts || {}),
+      headers: { Authorization: "Bearer " + token, ...((opts || {}).headers || {}) },
+    });
+    if (r.ok) return r.json();
+    if (n < 2 && MS_BUSY(r.status)) {
+      let wait = 0;
+      try { wait = parseInt(r.headers.get("Retry-After"), 10) * 1000; } catch (e) {}
+      await new Promise(res => setTimeout(res, Math.min(8000, wait > 0 ? wait : 1500 * (n + 1))));
+      continue;
+    }
+    if (r.status === 401) _msTok = null;
     const err = new Error("graph-" + r.status);
     err.status = r.status;
     try {
@@ -6411,7 +6432,6 @@ async function msGraph(path, opts, token) {
     } catch (e) {}
     throw err;
   }
-  return r.json();
 }
 // The current show's folder link (a SharePoint sharing URL) resolves to a
 // concrete drive + folder id through Graph's shares API. "redeemSharingLink"
@@ -6441,25 +6461,22 @@ async function msResolveFolder(token, fresh) {
   try { localStorage.setItem("ncm_ms_drive", JSON.stringify(out)); } catch (e) {}
   return out;
 }
-// Start a resumable upload in the show folder. A 403/404 on the folder id
-// means Microsoft hasn't given this account the folder: accept the link
-// again and retry, then try creating the upload through the link itself.
-// When all three are refused, the rep hears it's an access problem (not
-// their connection) and the details land on their profile for admins.
 const MS_DENIED = st => st === 403 || st === 404;
-// v235/v236 (Elevate, Nov. 11, 2026): an upload that is cut off (app closed,
-// phone locked) stays OPEN on Microsoft's side and keeps its file name
-// reserved until it expires. A new upload under that name is refused with
-// 409 nameAlreadyExists ("a file with the same name is currently being
-// uploaded"), and conflictBehavior:rename does not get around it. Payton hit
-// this for two days and the app blamed her connection. Three defenses now:
-//   1. msUploadNamed asks Microsoft whether the saved upload is still open and
-//      carries on with it, or cancels it so the name is free (v236).
-//   2. A refused name is retried as the name plus the time, e.g.
-//      "Kress_B407_Payton_162233.mov" (v235).
-//   3. If even that is refused, one more try that doesn't use "rename" (v236).
+const MS_BUSY = st => st === 429 || st === 502 || st === 503 || st === 504;
+// What can stop an upload before its first byte, and what the app does about
+// each (Elevate, Nov. 11, 2026: Payton couldn't upload for two days and the
+// app blamed her connection):
+//   - The show's FOLDER can't be found or made. That was the cause at
+//     Elevate: Microsoft's folder list left the show folder out for her
+//     account, and making it was refused because it exists (409 "Name
+//     already exists"). msUploadSessionAs now works down a list of ways to
+//     place the file (v238), so folder trouble can't stop an upload.
+//   - The FILE's name is taken, usually by an upload that was cut off and is
+//     still open on Microsoft's side. msUploadNamed carries on with or
+//     cancels its own unfinished upload (v236), and a refused name is retried
+//     as the name plus the time, e.g. "Kress_B407_Payton_162233.mov" (v235).
 // Every refusal is saved on the rep's profile with the app version, the file
-// name and Microsoft's own wording.
+// name and Microsoft's own wording, and goes to Nate in Teams (v238).
 function msStampName(name) {
   const d = new Date(), two = n => String(n).padStart(2, "0");
   const stamp = two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds());
@@ -6467,13 +6484,13 @@ function msStampName(name) {
   return m[1] + "_" + stamp + (m[2] || "");
 }
 async function msUploadSession(name, token, segs) {
-  const tried = [];
+  const tried = [], ctx = { from: 0, first: null };
   const go = async (nm, behavior) => {
-    try { return await msUploadSessionAs(nm, token, segs, behavior); }
+    try { return await msUploadSessionAs(nm, token, segs, behavior, ctx); }
     catch (e) {
       tried.push((e && e.status) || (e && e.message) || "err");
-      if (!e || e.status !== 409) { if (e) e.tried = tried.join(","); throw e; }
-      return e;                                      // 409: the caller tries another way
+      if (!e || e.status !== 409 || e.final) { if (e) e.tried = tried.join(","); throw e; }
+      return e;                                      // 409 on the file's name: try another name
     }
   };
   let r = await go(name, "rename");
@@ -6487,46 +6504,86 @@ async function msUploadSession(name, token, segs) {
   recordMsError("session", r, null, { file: alt, tried: r.tried });
   throw r;
 }
-async function msUploadSessionAs(name, token, segs, behavior) {
-  const seg = ":/" + encodeURIComponent(name) + ":/createUploadSession";
+// Start a resumable upload for `name` in the folder at `segs` under the
+// show's link. v238: it works down a list of ways to place the file and takes
+// the first one Microsoft accepts:
+//   id     the folder, looked up the normal way
+//   fresh  the same after accepting the show's link again (after "no access")
+//   path   the folder named by its path from the link's folder (no lookups)
+//   near   the nearest folder above it that this account can reach
+//   top    the link's own folder (top2: after accepting the link again)
+//   link   through the link itself
+// near, top and link put the file OUTSIDE its show folder. That is saved on
+// the profile and sent to Nate so the file can be moved; the booth still gets
+// its link either way. Three answers end the search at once, because another
+// folder wouldn't help: none at all (the signal), 401 (the sign-in lapsed)
+// and 409 on the file's own name, which msUploadSession retries under another
+// name starting from the way that got that far (ctx.from). "Busy" answers
+// (429, 502 to 504) that outlast msGraph's own retries also end it.
+async function msUploadSessionAs(name, token, segs, behavior, ctx) {
+  ctx = ctx || { from: 0, first: null };
+  const sub = segs && segs.length ? segs : [];
   const post = () => ({ method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": behavior || "rename", name: name } }) });
-  const byId = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + seg, post(), token);
-  const note = { file: name };
-  // v237: a show subfolder that exists but that Microsoft hides from this
-  // account. The file goes into the last folder the account could reach (the
-  // show link's own folder, or the show folder when only "Videos" is hidden),
-  // and the profile notes it so Nate can fix the sharing and move the file.
-  const hiddenFallback = async e => {
-    const tag = "hidden:" + e.hidden;
-    recordMsError("folder", e, null, { file: name, tried: tag });
-    try { return await byId(e.parent); }
-    catch (e2) {
-      if (e2 && e2.status === 409) throw e2;         // the file name itself: msUploadSession retries
-      recordMsError("folder", e2, e, { file: name, tried: tag + ",parent-refused" });
-      if (MS_DENIED(e2.status)) throw new Error("no-access");
-      throw e2;
+  const at = (f, parts) => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + ":/" +
+    parts.map(encodeURIComponent).join("/") + ":/createUploadSession", post(), token);
+  const viaLink = () => msGraph("/shares/" + msShareToken(msUploadFolderUrl()) + "/driveItem:/" +
+    encodeURIComponent(name) + ":/createUploadSession", post(), token);
+  let last = null, hid = null, landed = "", allDenied = true;
+  const denied = () => !!last && MS_DENIED(last.status);
+  const near = async () => {
+    if (hid && hid.parent && hid.parent.itemId) return hid.parent;
+    for (let k = sub.length - 1; k >= 1; k--) {
+      try { const f = await msTarget(token, sub.slice(0, k), false, true); if (f) return f; }
+      catch (e) { if (!e || !e.status) throw e; }
     }
+    return null;
   };
-  if (segs && segs.length) {                        // a subfolder: by id only
-    try { return await byId(await msTarget(token, segs)); }
-    catch (e) {
-      if (e && e.hidden) return await hiddenFallback(e);
-      if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; }
-    }
-    try { return await byId(await msTarget(token, segs, true)); }
-    catch (e) {
-      if (e && e.hidden) return await hiddenFallback(e);
-      recordMsError("session", e, null, note); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e;
+  const TOP = "the top of the shared folder";
+  const ways = sub.length ? [
+    { tag: "id",    run: async () => at(await msTarget(token, sub), [name]) },
+    { tag: "fresh", when: denied, run: async () => at(await msTarget(token, sub, true), [name]) },
+    { tag: "path",  folders: true, run: async () => at(await msResolveFolder(token), sub.concat([name])) },
+    { tag: "near",  out: true, run: async () => {
+        const f = await near();
+        if (!f) { const e = new Error("no-near"); e.status = 404; throw e; }
+        landed = f.name ? '"' + f.name + '"' : TOP;
+        return at(f, [name]); } },
+    { tag: "top",   out: true, run: async () => { landed = TOP; return at(await msResolveFolder(token), [name]); } },
+    { tag: "top2",  out: true, when: denied, run: async () => { landed = TOP; return at(await msResolveFolder(token, true), [name]); } },
+    { tag: "link",  out: true, run: () => { landed = TOP; return viaLink(); } },
+  ] : [
+    { tag: "id",    run: async () => at(await msResolveFolder(token), [name]) },
+    { tag: "fresh", when: denied, run: async () => at(await msResolveFolder(token, true), [name]) },
+    { tag: "link",  run: () => viaLink() },
+  ];
+  const tried = [];
+  for (let i = Math.min(ctx.from || 0, ways.length - 1); i < ways.length; i++) {
+    const w = ways[i];
+    if (w.when && !w.when()) continue;
+    try {
+      const s = await w.run();
+      if (w.out) recordMsError("folder", ctx.first, null, { file: name, tried: tried.join(","), landed: landed, want: sub.join(" > ") });
+      return s;
+    } catch (e) {
+      if (!e || !e.status) throw e;
+      if (e.status === 401) throw new Error("token");
+      if (e.status === 409 && !e.hidden && !w.folders) { ctx.from = i; throw e; }
+      if (MS_BUSY(e.status)) {                       // Microsoft itself is struggling: no folder would help
+        recordMsError("session", e, null, { file: name, tried: tried.concat([w.tag + ":" + e.status]).join(",") });
+        e.final = true; throw e;
+      }
+      if (e.hidden) hid = e;
+      if (!MS_DENIED(e.status)) allDenied = false;
+      tried.push(w.tag + ":" + e.status + (e.hidden ? "h" : ""));
+      ctx.first = ctx.first || e; last = e;
     }
   }
-  let first;
-  try { return await byId(await msResolveFolder(token)); }
-  catch (e) { first = e; if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; } }
-  try { return await byId(await msResolveFolder(token, true)); }
-  catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; } }
-  try { return await msGraph("/shares/" + msShareToken(msUploadFolderUrl()) + "/driveItem" + seg, post(), token); }
-  catch (e) { recordMsError("session", first, e, note); throw new Error("no-access"); }
+  recordMsError("session", ctx.first, last, { file: name, tried: tried.join(",") });
+  if (allDenied) throw new Error("no-access");
+  const err = new Error("no-way");                   // every way refused, and not for lack of access
+  err.status = ctx.first.status; err.code = ctx.first.code || ""; err.msg = ctx.first.msg || ""; err.final = true;
+  throw err;
 }
 // Tell Microsoft to drop an unfinished upload, which frees its file name.
 async function msCancelSession(url) {
@@ -6609,12 +6666,15 @@ function putSmall(url, file, token, onPct) {
 // bullpen made in the app (photoFolders), and a bullpen-named folder is
 // created in SharePoint the first time someone uploads into it.
 const _msSub = {};   // "<folder url>|<lower name>" -> { driveId, itemId }
-async function msListSubfolders(token, base) {
+async function msListSubfolders(token, base, all) {   // all: optional array that gets every row (the launch check)
   const out = [];
   let path = "/drives/" + base.driveId + "/items/" + base.itemId + "/children?$select=id,name,folder,webUrl&$top=200";
   for (let n = 0; path && n < 5; n++) {
     const j = await msGraph(path, null, token);
-    (j.value || []).forEach(x => { if (x.folder) out.push({ name: x.name, driveId: base.driveId, itemId: x.id, webUrl: x.webUrl || "" }); });
+    (j.value || []).forEach(x => {
+      if (all) all.push({ id: x.id, f: !!x.folder });
+      if (x.folder) out.push({ name: x.name, driveId: base.driveId, itemId: x.id, webUrl: x.webUrl || "" });
+    });
     path = j["@odata.nextLink"] ? j["@odata.nextLink"].replace("https://graph.microsoft.com/v1.0", "") : null;
   }
   return out;
@@ -6627,6 +6687,8 @@ async function msListSubfolders(token, base) {
 // asked for directly by name, and if Microsoft still won't hand it over the
 // error says which folder is hidden (e.hidden) and where the search stopped
 // (e.parent), so the upload can land one level up instead of failing.
+// v238: the direct ask by name now goes FIRST and the list is the backup, so
+// a folder the list skips (or a list too long to read) no longer matters.
 async function msChild(token, parent, name, noCreate) {
   const find = async () => (await msListSubfolders(token, parent)).find(x => x.name.toLowerCase() === name.toLowerCase());
   const byName = async () => {
@@ -6635,7 +6697,7 @@ async function msChild(token, parent, name, noCreate) {
       return j && j.id && !j.file ? { name: j.name || name, driveId: parent.driveId, itemId: j.id, webUrl: j.webUrl || "" } : null;
     } catch (e) { return null; }
   };
-  let hit = await find() || await byName();
+  let hit = await byName() || await find();
   if (hit || noCreate) return hit || null;
   try {
     const j = await msGraph("/drives/" + parent.driveId + "/items/" + parent.itemId + "/children", { method: "POST",
@@ -6644,7 +6706,7 @@ async function msChild(token, parent, name, noCreate) {
     return { name: j.name, driveId: parent.driveId, itemId: j.id, webUrl: j.webUrl || "" };
   } catch (e) {
     if (e.status !== 409) throw e;
-    hit = await find() || await byName();   // someone made it a moment ago
+    hit = await byName() || await find();   // someone made it a moment ago
     if (!hit) { e.hidden = name; e.parent = parent; throw e; }
     return hit;
   }
@@ -6713,7 +6775,14 @@ async function msUploadNamed(name, file, onPct, segs, resumeKey) {
   }
   if (!sess) {
     pos = 0;
-    sess = await msUploadSession(name, token, segs);
+    try { sess = await msUploadSession(name, token, segs); }
+    catch (e) {
+      // v238: Microsoft said the sign-in token is no good (401). Get a new
+      // one quietly and try once more before sending the rep off to sign in.
+      if (String(e && e.message) !== "token") throw e;
+      try { token = await msSilentToken(); } catch (e2) { throw e; }
+      sess = await msUploadSession(name, token, segs);
+    }
     if (resumeKey) setUpPending(resumeKey, { uploadUrl: sess.uploadUrl, exp: sess.expirationDateTime || "", size: file.size, at: Date.now() });
   }
   // Show-floor Wi-Fi (v202, after Equip 2026): the upload no longer gives up
@@ -6893,6 +6962,7 @@ function upFailText(e) {
   if (msg === "upload-stalled") return "No progress for 30 minutes, so the upload stopped. Tap Resume upload when the signal is better" + tail;
   if (/^upload-failed-/.test(msg)) return "Microsoft closed this upload partway through. Tap Upload and pick the video again" + tail;
   if (/^upload-refused-/.test(msg)) return "Microsoft stopped this upload partway through (error " + st + "). It isn't your connection. Tap Upload and pick the video again" + tail;
+  if (MS_BUSY(st)) return "Microsoft is having trouble right now (error " + st + "). It isn't your connection. Give it a minute, then tap Upload again" + tail;
   if (st === 409) return "Microsoft refused this upload (name conflict). It isn't your connection. Nate has the details" + tail;
   if (st) return "Microsoft refused this upload (error " + st + (e.code ? ", " + e.code : "") + "). It isn't your connection. Nate has the details" + tail;
   return "Couldn't reach Microsoft. Check your signal, then tap Upload again" + tail;
@@ -6969,8 +7039,123 @@ function recordMsError(step, e, alt, extra) {
     step: step, show: currentEventCode() || "", what: info(e), alt: info(alt),
     denied: !!(e && MS_DENIED(e.status)), at: firebase.firestore.FieldValue.serverTimestamp(),
     ver: appVer(), file: String(x.file || "").slice(0, 120), tried: String(x.tried || "").slice(0, 60),
-    msg: String((e && e.msg) || "").slice(0, 160) } }, { merge: true }).catch(() => {});
+    msg: String((e && e.msg) || "").slice(0, 160), landed: String(x.landed || "").slice(0, 80) } }, { merge: true }).catch(() => {});
+  alertUploadProblem(step, e, x);
 }
+// v238: upload trouble reaches Nate in Teams when it happens. At Elevate 2026
+// Payton's uploads failed for two days before anyone who could fix it knew.
+// The same trouble from the same phone goes out once every three hours.
+const UP_ALERT_KEY = "ncm_up_alerts";
+function alertUploadProblem(step, e, x) {
+  if (!currentUser || isHome()) return;
+  x = x || {};
+  const code = currentEventCode() || "";
+  const what = e ? String((e.status || "") + (e.code ? " " + e.code : e.status ? "" : " " + (e.message || ""))).trim() : "";
+  const sig = [code, step, what, x.landed ? "landed" : ""].join("|");
+  let seen = {};
+  try { seen = JSON.parse(localStorage.getItem(UP_ALERT_KEY) || "{}") || {}; } catch (er) {}
+  const now = Date.now();
+  if (seen[sig] && now - seen[sig] < 3 * 3600e3) return;
+  Object.keys(seen).forEach(k => { if (now - seen[k] > 24 * 3600e3) delete seen[k]; });
+  seen[sig] = now;
+  try { localStorage.setItem(UP_ALERT_KEY, JSON.stringify(seen)); } catch (er) {}
+  const who = esc(currentUser.name || currentUser.email || "A rep");
+  const show = esc(showLabelOf(code));
+  const heard = [what, e && e.msg].filter(Boolean).join(", ");
+  const said = heard ? " Microsoft said: " + esc(heard) + "." : "";
+  const file = x.file ? " File: " + esc(x.file) + "." : "";
+  const ver = appVer() ? " App " + appVer() + "." : "";
+  let text;
+  if (x.landed) text = "<strong>Upload landed in the wrong folder</strong>. " + show + ": a file from " + who + " went into " + esc(x.landed) +
+    (x.want ? " instead of " + esc(x.want) : "") + ", because Microsoft wouldn't hand that folder over. Nothing was lost and the booth has its link." + file + said + ver;
+  else if (step === "preflight") text = "<strong>Upload check failed</strong>. " + show + ": the app on " + who + "'s phone couldn't reach the upload folder" +
+    (x.where ? " (" + esc(x.where) + ")" : "") + ". Uploads from that phone may fail or land one folder up until this is fixed." + said + ver;
+  else text = "<strong>Upload problem</strong>. " + show + ": an upload from " + who + " didn't go through" +
+    (/stalled/.test(what) ? " (no progress for 30 minutes, most likely the signal)" : "") + "." + file + said + ver;
+  notifyHome(text, null, false, true);
+}
+// v238: the upload folder is checked quietly when the app opens or comes back
+// to the front, so folder trouble shows up at the hotel and not at the first
+// Upload tap on the show floor. It asks Microsoft for the show's link folder
+// and the show's Photos and Videos folders the way an upload would. From two
+// days before a show to two days after, it also makes those folders when they
+// are missing and compares Microsoft's folder LIST with what the direct ask
+// found (at Elevate the list left a folder out for one account and the cause
+// is still unknown; the result is saved so the next case explains itself).
+// The result lands on the profile as msPre (Admin > Accounts > Upload check)
+// and a failure goes to Nate in Teams. Nothing here can block an upload.
+const MS_PRE_KEY = "ncm_ms_pre";
+let _upChkPass = "", _upChkTries = 0, _upChkBusy = false;
+function showWindowOpen(code) {
+  const ds = ((EVENTS[code] || {}).dates || []).filter(Boolean);
+  if (!ds.length) return false;
+  const day = 86400e3, t0 = Date.parse(ds[0] + "T00:00:00"), t1 = Date.parse(ds[ds.length - 1] + "T23:59:59");
+  return Date.now() >= t0 - 2 * day && Date.now() <= t1 + 2 * day;
+}
+async function msPreflight() {
+  const code = currentEventCode();
+  if (_upChkBusy || !code || _upChkPass === code || _upChkTries >= 3 || !navigator.onLine) return;
+  if (!msPhotosActive() || !msalApp || !msAccount() || uploadsRunning()) return;
+  _upChkBusy = true;
+  const make = showWindowOpen(code);
+  let where = "the show's link", list = "";
+  try {
+    let token;
+    try { token = await msSilentToken(true); } catch (e) { return; }   // sign-in lapsed: the Upload tap renews it
+    let base = await msResolveFolder(token);
+    const ping = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + "?$select=id", null, token);
+    try { await ping(base); }
+    catch (e) {
+      if (!MS_DENIED(e.status)) throw e;
+      base = await msResolveFolder(token, true);     // accept the show's link again, as an upload would
+      await ping(base);
+    }
+    const paths = (msUploadsActive() ? ["photo", "video"] : ["photo"]).map(k => uploadSegs(k, "")).filter(x => x.length);
+    for (const segs of paths) {
+      where = segs.join(" > ");
+      await msTarget(token, segs, false, !make);
+    }
+    if (make) {
+      try {
+        const lists = {};
+        for (const segs of paths) {
+          let cur = base;
+          for (let i = 0; i < segs.length; i++) {
+            const next = msCachedTarget(segs.slice(0, i + 1));
+            if (!next) break;
+            if (!lists[cur.itemId]) { lists[cur.itemId] = { rows: [], said: {} }; await msListSubfolders(token, cur, lists[cur.itemId].rows); }
+            const L = lists[cur.itemId], row = L.rows.find(r => r.id === next.itemId);
+            if ((!row || !row.f) && !L.said[next.itemId]) {
+              L.said[next.itemId] = 1;
+              list += (list ? "; " : "") + segs[i] + (row ? " listed without its folder mark" : " missing from a list of " + L.rows.length);
+            }
+            cur = next;
+          }
+        }
+        list = list || "ok";
+      } catch (e) { list = ""; }
+    }
+    _upChkPass = code;
+    recordMsPre(true, code, null, "", list);
+  } catch (e) {
+    if (e && e.status) { _upChkTries++; recordMsPre(false, code, e, where, ""); }   // Microsoft answered and said no (three tries a launch)
+  } finally { _upChkBusy = false; }
+}
+function recordMsPre(ok, code, e, where, list) {
+  if (!fbReady || !currentUser || isHome()) return;
+  const what = e ? String((e.status || "") + (e.code ? " " + e.code : "")).trim().slice(0, 80) : "";
+  const sig = [ok ? 1 : 0, code, what, where, list, appVer()].join("|");
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(MS_PRE_KEY) || "null"); } catch (er) {}
+  if (prev && prev.sig === sig && Date.now() - prev.at < 20 * 3600e3) return;   // same result as earlier today
+  try { localStorage.setItem(MS_PRE_KEY, JSON.stringify({ sig: sig, at: Date.now() })); } catch (er) {}
+  fbDb.collection("users").doc(currentUser.uid).set({ msPre: {
+    ok: !!ok, show: code || "", at: firebase.firestore.FieldValue.serverTimestamp(), ver: appVer(),
+    what: what, where: String(where || "").slice(0, 120), msg: String((e && e.msg) || "").slice(0, 160),
+    hidden: String((e && e.hidden) || "").slice(0, 80), list: String(list || "").slice(0, 200) } }, { merge: true }).catch(() => {});
+  if (!ok) alertUploadProblem("preflight", e, { where: where });
+}
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(msPreflight, 3000); });
 function recordMsOk() {
   if (_msOkSaved || !fbReady || !currentUser || isHome()) return;
   _msOkSaved = true;
@@ -11821,6 +12006,13 @@ function acctUploadProblem(a) {
     + (e.denied ? "Microsoft blocked access to the show folder" : "upload didn't finish")
     + (e.what ? " (" + e.what + (e.ver ? ", " + e.ver : "") + ")" : ""), "warn");
 }
+function acctUploadCheck(a) {
+  const p = a.msPre;
+  if (!p || !p.at || typeof p.at.toDate !== "function") return "";
+  const when = acctDate(p.at) + (p.show ? ", " + showLabelOf(p.show) : "") + (p.ver ? ", " + p.ver : "");
+  return p.ok ? acctKv("Upload check", "Passed " + when, "ok")
+    : acctKv("Upload check", "Failed " + when + (p.where ? ": couldn't reach " + p.where : "") + (p.what ? " (" + p.what + ")" : ""), "warn");
+}
 function acctPersonHtml(a) {
   const d = acctDept(a), t = acctTeam(a);
   const ms = a.msConnected ? "Connected" : d === "edit" ? "Not connected yet" : "Only needed for photo uploads";
@@ -11839,6 +12031,7 @@ function acctPersonHtml(a) {
       ${acctKv("Microsoft", ms, a.msConnected ? "ok" : d === "edit" ? "warn" : "")}
       ${a.msConnected && a.msEmail && a.msEmail !== a.email ? acctKv("Microsoft login", a.msEmail) : ""}
       ${acctUploadProblem(a)}
+      ${acctUploadCheck(a)}
       ${joined ? acctKv("Joined", joined) : ""}
       ${acctIsAdmin(a) ? acctKv("Access", "Admin") : ""}
       ${a.editedBy ? acctKv("Last changed", (edited ? edited + " by " : "By ") + a.editedBy) : ""}
