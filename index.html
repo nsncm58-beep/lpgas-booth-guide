@@ -2660,7 +2660,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v236</div>
+      <div class="pf-ver">NCM Events Guide · v237</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6493,11 +6493,32 @@ async function msUploadSessionAs(name, token, segs, behavior) {
     body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": behavior || "rename", name: name } }) });
   const byId = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + seg, post(), token);
   const note = { file: name };
+  // v237: a show subfolder that exists but that Microsoft hides from this
+  // account. The file goes into the last folder the account could reach (the
+  // show link's own folder, or the show folder when only "Videos" is hidden),
+  // and the profile notes it so Nate can fix the sharing and move the file.
+  const hiddenFallback = async e => {
+    const tag = "hidden:" + e.hidden;
+    recordMsError("folder", e, null, { file: name, tried: tag });
+    try { return await byId(e.parent); }
+    catch (e2) {
+      if (e2 && e2.status === 409) throw e2;         // the file name itself: msUploadSession retries
+      recordMsError("folder", e2, e, { file: name, tried: tag + ",parent-refused" });
+      if (MS_DENIED(e2.status)) throw new Error("no-access");
+      throw e2;
+    }
+  };
   if (segs && segs.length) {                        // a subfolder: by id only
     try { return await byId(await msTarget(token, segs)); }
-    catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; } }
+    catch (e) {
+      if (e && e.hidden) return await hiddenFallback(e);
+      if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; }
+    }
     try { return await byId(await msTarget(token, segs, true)); }
-    catch (e) { recordMsError("session", e, null, note); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e; }
+    catch (e) {
+      if (e && e.hidden) return await hiddenFallback(e);
+      recordMsError("session", e, null, note); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e;
+    }
   }
   let first;
   try { return await byId(await msResolveFolder(token)); }
@@ -6599,9 +6620,22 @@ async function msListSubfolders(token, base) {
   return out;
 }
 // One child folder of `parent`, found by name (any capitalization) or made.
+// v237 (Elevate, Nov. 11, 2026): Payton's account stopped seeing the show's
+// folder in the list of subfolders, while Microsoft refused to create it
+// because it exists (409 "Name already exists"), so every upload died here
+// before a file was even named. Now a folder the list doesn't show is also
+// asked for directly by name, and if Microsoft still won't hand it over the
+// error says which folder is hidden (e.hidden) and where the search stopped
+// (e.parent), so the upload can land one level up instead of failing.
 async function msChild(token, parent, name, noCreate) {
   const find = async () => (await msListSubfolders(token, parent)).find(x => x.name.toLowerCase() === name.toLowerCase());
-  let hit = await find();
+  const byName = async () => {
+    try {
+      const j = await msGraph("/drives/" + parent.driveId + "/items/" + parent.itemId + ":/" + encodeURIComponent(name), null, token);
+      return j && j.id && !j.file ? { name: j.name || name, driveId: parent.driveId, itemId: j.id, webUrl: j.webUrl || "" } : null;
+    } catch (e) { return null; }
+  };
+  let hit = await find() || await byName();
   if (hit || noCreate) return hit || null;
   try {
     const j = await msGraph("/drives/" + parent.driveId + "/items/" + parent.itemId + "/children", { method: "POST",
@@ -6610,8 +6644,8 @@ async function msChild(token, parent, name, noCreate) {
     return { name: j.name, driveId: parent.driveId, itemId: j.id, webUrl: j.webUrl || "" };
   } catch (e) {
     if (e.status !== 409) throw e;
-    hit = await find();            // someone made it a moment ago
-    if (!hit) throw e;
+    hit = await find() || await byName();   // someone made it a moment ago
+    if (!hit) { e.hidden = name; e.parent = parent; throw e; }
     return hit;
   }
 }
@@ -6859,7 +6893,7 @@ function upFailText(e) {
   if (msg === "upload-stalled") return "No progress for 30 minutes, so the upload stopped. Tap Resume upload when the signal is better" + tail;
   if (/^upload-failed-/.test(msg)) return "Microsoft closed this upload partway through. Tap Upload and pick the video again" + tail;
   if (/^upload-refused-/.test(msg)) return "Microsoft stopped this upload partway through (error " + st + "). It isn't your connection. Tap Upload and pick the video again" + tail;
-  if (st === 409) return "Microsoft refused this upload: an earlier try at this file is stuck on its side. It isn't your connection. Nate has the details" + tail;
+  if (st === 409) return "Microsoft refused this upload (name conflict). It isn't your connection. Nate has the details" + tail;
   if (st) return "Microsoft refused this upload (error " + st + (e.code ? ", " + e.code : "") + "). It isn't your connection. Nate has the details" + tail;
   return "Couldn't reach Microsoft. Check your signal, then tap Upload again" + tail;
 }
