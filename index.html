@@ -2660,7 +2660,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v235</div>
+      <div class="pf-ver">NCM Events Guide · v236</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6404,7 +6404,11 @@ async function msGraph(path, opts, token) {
   if (!r.ok) {
     const err = new Error("graph-" + r.status);
     err.status = r.status;
-    try { const j = await r.json(); err.code = (j && j.error && j.error.code) || ""; } catch (e) {}
+    try {
+      const j = await r.json();
+      err.code = (j && j.error && j.error.code) || "";
+      err.msg = String((j && j.error && j.error.message) || "").slice(0, 160);
+    } catch (e) {}
     throw err;
   }
   return r.json();
@@ -6443,43 +6447,69 @@ async function msResolveFolder(token, fresh) {
 // When all three are refused, the rep hears it's an access problem (not
 // their connection) and the details land on their profile for admins.
 const MS_DENIED = st => st === 403 || st === 404;
-// v235 (Elevate, Nov. 11, 2026): Microsoft refuses a new upload under a file
-// name that an UNFINISHED upload is still holding (409 nameAlreadyExists, "a
-// file with the same name is currently being uploaded"), and
-// conflictBehavior:rename does not get around it. That is what a rep hits
-// after an upload is cut off (app closed, phone locked) and the re-picked
-// clip can't carry on from the saved session: every retry failed with a
-// "check your connection" toast until the stuck session expired days later.
-// Now the upload starts under the same name plus the time, e.g.
-// "Kress_B407_Payton_162233.mov".
-async function msUploadSession(name, token, segs) {
-  try { return await msUploadSessionAs(name, token, segs); }
-  catch (e) {
-    if (!e || e.status !== 409) throw e;
-    const d = new Date(), two = n => String(n).padStart(2, "0");
-    const stamp = two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds());
-    const m = name.match(/^(.*?)(\.[A-Za-z0-9]{2,5})?$/);
-    return await msUploadSessionAs(m[1] + "_" + stamp + (m[2] || ""), token, segs);
-  }
+// v235/v236 (Elevate, Nov. 11, 2026): an upload that is cut off (app closed,
+// phone locked) stays OPEN on Microsoft's side and keeps its file name
+// reserved until it expires. A new upload under that name is refused with
+// 409 nameAlreadyExists ("a file with the same name is currently being
+// uploaded"), and conflictBehavior:rename does not get around it. Payton hit
+// this for two days and the app blamed her connection. Three defenses now:
+//   1. msUploadNamed asks Microsoft whether the saved upload is still open and
+//      carries on with it, or cancels it so the name is free (v236).
+//   2. A refused name is retried as the name plus the time, e.g.
+//      "Kress_B407_Payton_162233.mov" (v235).
+//   3. If even that is refused, one more try that doesn't use "rename" (v236).
+// Every refusal is saved on the rep's profile with the app version, the file
+// name and Microsoft's own wording.
+function msStampName(name) {
+  const d = new Date(), two = n => String(n).padStart(2, "0");
+  const stamp = two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds());
+  const m = name.match(/^(.*?)(\.[A-Za-z0-9]{2,5})?$/);
+  return m[1] + "_" + stamp + (m[2] || "");
 }
-async function msUploadSessionAs(name, token, segs) {
+async function msUploadSession(name, token, segs) {
+  const tried = [];
+  const go = async (nm, behavior) => {
+    try { return await msUploadSessionAs(nm, token, segs, behavior); }
+    catch (e) {
+      tried.push((e && e.status) || (e && e.message) || "err");
+      if (!e || e.status !== 409) { if (e) e.tried = tried.join(","); throw e; }
+      return e;                                      // 409: the caller tries another way
+    }
+  };
+  let r = await go(name, "rename");
+  if (!(r instanceof Error)) return r;
+  const alt = msStampName(name);
+  r = await go(alt, "rename");
+  if (!(r instanceof Error)) return r;
+  r = await go(alt, "replace");                      // a brand-new name, so nothing to replace
+  if (!(r instanceof Error)) return r;
+  r.tried = tried.join(",");
+  recordMsError("session", r, null, { file: alt, tried: r.tried });
+  throw r;
+}
+async function msUploadSessionAs(name, token, segs, behavior) {
   const seg = ":/" + encodeURIComponent(name) + ":/createUploadSession";
   const post = () => ({ method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) });
+    body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": behavior || "rename", name: name } }) });
   const byId = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + seg, post(), token);
+  const note = { file: name };
   if (segs && segs.length) {                        // a subfolder: by id only
     try { return await byId(await msTarget(token, segs)); }
-    catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
+    catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; } }
     try { return await byId(await msTarget(token, segs, true)); }
-    catch (e) { recordMsError("session", e); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e; }
+    catch (e) { recordMsError("session", e, null, note); if (MS_DENIED(e.status)) throw new Error("no-access"); throw e; }
   }
   let first;
   try { return await byId(await msResolveFolder(token)); }
-  catch (e) { first = e; if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
+  catch (e) { first = e; if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; } }
   try { return await byId(await msResolveFolder(token, true)); }
-  catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e); throw e; } }
+  catch (e) { if (!MS_DENIED(e.status)) { recordMsError("session", e, null, note); throw e; } }
   try { return await msGraph("/shares/" + msShareToken(msUploadFolderUrl()) + "/driveItem" + seg, post(), token); }
-  catch (e) { recordMsError("session", first, e); throw new Error("no-access"); }
+  catch (e) { recordMsError("session", first, e, note); throw new Error("no-access"); }
+}
+// Tell Microsoft to drop an unfinished upload, which frees its file name.
+async function msCancelSession(url) {
+  try { await fetch(url, { method: "DELETE" }); } catch (e) {}
 }
 // Company_Booth_Rep.ext — the folder sorts itself alphabetically by company
 // and the bullpen can tell every file's booth at a glance. SharePoint's
@@ -6629,15 +6659,23 @@ async function msUploadNamed(name, file, onPct, segs, resumeKey) {
   }
   let sess = null, pos = 0;
   const old = resumeKey && upPending()[resumeKey];
-  if (old && old.size === file.size && old.uploadUrl && (!old.exp || Date.parse(old.exp) > Date.now() + 60e3)) {
-    try {
-      const st = await fetch(old.uploadUrl);
-      if (st.ok) {
-        const j = await st.json();
-        pos = parseInt(String((j.nextExpectedRanges || [])[0] || "0-").split("-")[0], 10) || 0;
-        sess = { uploadUrl: old.uploadUrl };
-      }
-    } catch (e) {}
+  // v236: ask Microsoft whether the saved upload is still open. Through v235
+  // the app went by the expiry time saved when the upload STARTED, but every
+  // piece sent pushes that time back, so the app wrote off uploads Microsoft
+  // still had open, and the open one kept the file name locked (409 on every
+  // retry). Still open and the same video: carry on from where it stopped.
+  // Anything else: cancel it so the name is free, then start over.
+  if (old && old.uploadUrl) {
+    let st = null;
+    try { st = await fetch(old.uploadUrl); } catch (e) {}
+    if (st && st.ok && old.size === file.size) {
+      const j = await st.json().catch(() => ({}));
+      pos = parseInt(String((j.nextExpectedRanges || [])[0] || "0-").split("-")[0], 10) || 0;
+      sess = { uploadUrl: old.uploadUrl };
+    } else if (st) {
+      if (st.status !== 404 && st.status !== 410) await msCancelSession(old.uploadUrl);
+      setUpPending(resumeKey, null);
+    }
   }
   if (!sess) {
     pos = 0;
@@ -6650,8 +6688,9 @@ async function msUploadNamed(name, file, onPct, segs, resumeKey) {
   // back; with signal it backs off and retries, asking Microsoft where to
   // resume each time. It only stops if the session itself is gone (404/410)
   // or 30 minutes pass with no progress at all.
-  let fails = 0, chunk = UP_CHUNK, lastProgress = Date.now();
+  let fails = 0, hard = 0, chunk = UP_CHUNK, lastProgress = Date.now();
   const pct = () => Math.min(99, Math.round(pos / file.size * 100));
+  const note = { file: name };
   while (true) {
     const end = Math.min(pos + chunk, file.size);
     const base = pos;
@@ -6663,16 +6702,30 @@ async function msUploadNamed(name, file, onPct, segs, resumeKey) {
       const j = await r.json().catch(() => ({}));
       const next = parseInt(String((j.nextExpectedRanges || [])[0] || end + "-").split("-")[0], 10);
       if (next > pos) lastProgress = Date.now();
-      pos = next; fails = 0;
+      pos = next; fails = 0; hard = 0;
     } else {
       if (r && (r.status === 404 || r.status === 410)) {
         if (resumeKey) setUpPending(resumeKey, null);
         const err = new Error("upload-failed-" + r.status); err.status = r.status;
-        recordMsError("upload", err); throw err;
+        recordMsError("upload", err, null, note); throw err;
       }
+      // v236: Microsoft answering "no" (not a dropped connection) three times
+      // running means this upload is dead. Cancel it and say so, instead of
+      // showing "Weak signal, retrying" for 30 minutes.
+      if (r && [400, 401, 403, 409].includes(r.status)) {
+        if (++hard >= 3) {
+          const j = await r.json().catch(() => ({}));
+          await msCancelSession(sess.uploadUrl);
+          if (resumeKey) setUpPending(resumeKey, null);
+          const err = new Error("upload-refused-" + r.status); err.status = r.status;
+          err.code = (j && j.error && j.error.code) || "";
+          err.msg = String((j && j.error && j.error.message) || "").slice(0, 160);
+          recordMsError("upload", err, null, note); throw err;
+        }
+      } else hard = 0;
       if (Date.now() - Math.max(lastProgress, _upBackAt) > 30 * 60e3) {
         const err = new Error("upload-stalled"); err.status = r ? r.status : 0;
-        recordMsError("upload", err); throw err;
+        recordMsError("upload", err, null, note); throw err;
       }
       fails++;
       chunk = UP_CHUNK_SMALL;                        // resend less on a flaky link
@@ -6693,7 +6746,7 @@ async function msUploadNamed(name, file, onPct, segs, resumeKey) {
         } else if (st.status === 404 || st.status === 410) {
           if (resumeKey) setUpPending(resumeKey, null);
           const err = new Error("upload-failed-" + st.status); err.status = st.status;
-          recordMsError("upload", err); throw err;
+          recordMsError("upload", err, null, note); throw err;
         }
       } catch (e) { if (e && (e.status === 404 || e.status === 410)) throw e; }
     }
@@ -6790,9 +6843,30 @@ async function startVideoUpload(i, file) {
     } else if (msg === "no-access") {
       toast(MS_NO_ACCESS());
     } else if (msg !== "no-account") {
-      toast("Upload didn't finish. Check your connection and try again");
+      toast(upFailText(e), 7000);
     }
   }
+}
+// What to tell the rep when an upload fails (v236). Through v235 every
+// failure said "check your connection", including the ones where Microsoft
+// answered and said no. Only a failure to REACH Microsoft blames the signal
+// now; the rest say what happened, with the app version so a screenshot or a
+// read-back tells Nate which build the phone is on.
+function upFailText(e) {
+  const msg = String(e && e.message), st = (e && e.status) || 0, v = appVer();
+  const tail = v ? " (" + v + ")" : "";
+  if (msg === "no-folder") return "This show has no upload folder yet. Let Nate know" + tail;
+  if (msg === "upload-stalled") return "No progress for 30 minutes, so the upload stopped. Tap Resume upload when the signal is better" + tail;
+  if (/^upload-failed-/.test(msg)) return "Microsoft closed this upload partway through. Tap Upload and pick the video again" + tail;
+  if (/^upload-refused-/.test(msg)) return "Microsoft stopped this upload partway through (error " + st + "). It isn't your connection. Tap Upload and pick the video again" + tail;
+  if (st === 409) return "Microsoft refused this upload: an earlier try at this file is stuck on its side. It isn't your connection. Nate has the details" + tail;
+  if (st) return "Microsoft refused this upload (error " + st + (e.code ? ", " + e.code : "") + "). It isn't your connection. Nate has the details" + tail;
+  return "Couldn't reach Microsoft. Check your signal, then tap Upload again" + tail;
+}
+function appVer() {
+  const el = document.querySelector(".pf-ver");
+  const m = el && String(el.textContent).match(/v\d+/);
+  return m ? m[0] : "";
 }
 // Upload controls on a video-flagged booth card. States: plain Upload,
 // mid-upload progress (pointer-events off), and Uploaded (opens the file)
@@ -6850,13 +6924,18 @@ function updateMsSection() {
 // A later successful upload stamps msOkAt, which clears it from view.
 const MS_NO_ACCESS = () => "Microsoft won't let your account add files to the " + currentShowLabel() + " folder yet. Let Nate know";
 let _msOkSaved = false;
-function recordMsError(step, e, alt) {
+function recordMsError(step, e, alt, extra) {
   if (!fbReady || !currentUser || isHome()) return;
   _msOkSaved = false;
   const info = x => x ? String((x.status || "") + (x.code ? " " + x.code : x.status ? "" : " " + (x.message || ""))).trim().slice(0, 80) : "";
+  // v236: also the app version, the file name, Microsoft's own wording and
+  // which tries were made, so the cause is readable without the phone.
+  const x = extra || {};
   fbDb.collection("users").doc(currentUser.uid).set({ msErr: {
     step: step, show: currentEventCode() || "", what: info(e), alt: info(alt),
-    denied: !!(e && MS_DENIED(e.status)), at: firebase.firestore.FieldValue.serverTimestamp() } }, { merge: true }).catch(() => {});
+    denied: !!(e && MS_DENIED(e.status)), at: firebase.firestore.FieldValue.serverTimestamp(),
+    ver: appVer(), file: String(x.file || "").slice(0, 120), tried: String(x.tried || "").slice(0, 60),
+    msg: String((e && e.msg) || "").slice(0, 160) } }, { merge: true }).catch(() => {});
 }
 function recordMsOk() {
   if (_msOkSaved || !fbReady || !currentUser || isHome()) return;
@@ -10191,12 +10270,12 @@ document.getElementById("content").addEventListener("input", e => {
   fitCaption(cap);                                             // grow with the caption
 });
 
-function toast(msg) {
+function toast(msg, ms) {
   const t = document.getElementById("toast");
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove("show"), 2400);
+  t._timer = setTimeout(() => t.classList.remove("show"), ms || 2400);
 }
 
 // ── AUTH CONTROLLER (Phase 1: accounts + identity) ──────────────────────
@@ -11706,7 +11785,7 @@ function acctUploadProblem(a) {
   if (!e || !ms(e.at) || ms(a.msOkAt) > ms(e.at)) return "";
   return acctKv("Last upload problem", acctDate(e.at) + ": "
     + (e.denied ? "Microsoft blocked access to the show folder" : "upload didn't finish")
-    + (e.what ? " (" + e.what + ")" : ""), "warn");
+    + (e.what ? " (" + e.what + (e.ver ? ", " + e.ver : "") + ")" : ""), "warn");
 }
 function acctPersonHtml(a) {
   const d = acctDept(a), t = acctTeam(a);
