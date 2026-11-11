@@ -2660,7 +2660,7 @@ body:not(.has-nav) #bottomBleed, body.kb-open #bottomBleed, body.home-mode #bott
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v234</div>
+      <div class="pf-ver">NCM Events Guide · v235</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6443,7 +6443,26 @@ async function msResolveFolder(token, fresh) {
 // When all three are refused, the rep hears it's an access problem (not
 // their connection) and the details land on their profile for admins.
 const MS_DENIED = st => st === 403 || st === 404;
+// v235 (Elevate, Nov. 11, 2026): Microsoft refuses a new upload under a file
+// name that an UNFINISHED upload is still holding (409 nameAlreadyExists, "a
+// file with the same name is currently being uploaded"), and
+// conflictBehavior:rename does not get around it. That is what a rep hits
+// after an upload is cut off (app closed, phone locked) and the re-picked
+// clip can't carry on from the saved session: every retry failed with a
+// "check your connection" toast until the stuck session expired days later.
+// Now the upload starts under the same name plus the time, e.g.
+// "Kress_B407_Payton_162233.mov".
 async function msUploadSession(name, token, segs) {
+  try { return await msUploadSessionAs(name, token, segs); }
+  catch (e) {
+    if (!e || e.status !== 409) throw e;
+    const d = new Date(), two = n => String(n).padStart(2, "0");
+    const stamp = two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds());
+    const m = name.match(/^(.*?)(\.[A-Za-z0-9]{2,5})?$/);
+    return await msUploadSessionAs(m[1] + "_" + stamp + (m[2] || ""), token, segs);
+  }
+}
+async function msUploadSessionAs(name, token, segs) {
   const seg = ":/" + encodeURIComponent(name) + ":/createUploadSession";
   const post = () => ({ method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item: { "@microsoft.graph.conflictBehavior": "rename", name: name } }) });
