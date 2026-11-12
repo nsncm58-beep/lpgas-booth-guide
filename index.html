@@ -2470,10 +2470,19 @@ body.home-mode .hb-nav::-webkit-scrollbar { display: none; }
 .hb-nav-btn.on { background: rgba(255,255,255,0.2); color: #fff; font-weight: 700; }
 .hb-dot { width: 7px; height: 7px; border-radius: 50%; background: #7CE0A0; flex-shrink: 0; }
 body.home-mode .header-top { padding: 10px 28px; }
-/* The logo sits in a slot of one fixed size, as wide and as tall as the
-   largest brand logo, so the tabs never move when the brand (and its logo)
-   changes (v241). Narrow windows give the room back to the tabs. */
-body.home-mode .logo-block { min-width: 0; flex: 0 0 160px; width: 160px; height: 36px; }
+/* The logo and the "Bullpen" label share a slot of one fixed size (the
+   largest brand logo plus the label), so the tabs never move when the brand
+   and its logo change (v241). The label sits right after the logo, whatever
+   the logo's width, and any spare room falls between the label and the tabs
+   (v242). Narrow windows give the room back to the tabs. */
+body.home-mode .logo-block { min-width: 0; flex: 0 0 276px; width: 276px; height: 36px; }
+.logo-block .hb-label { display: none; }
+body.home-mode .logo-block .hb-label { display: block; margin: 0 0 0 12px; flex-shrink: 0; }
+/* Under 1,100 px the label drops out (as before), so the slot is the logo alone. */
+@media (max-width: 1100px) {
+  body.home-mode .logo-block { flex-basis: 160px; width: 160px; }
+  body.home-mode .logo-block .hb-label { display: none; }
+}
 @media (max-width: 900px) { body.home-mode .logo-block { flex: 0 0 auto; width: auto; } }
 /* A tab's label always reserves its bold width, so picking a brand does not
    nudge the tabs after it. */
@@ -2767,6 +2776,7 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
     <div class="logo-block">
       <img id="brandLogo" class="brand-logo" src="./logo-lpgas.png" alt="LP Gas">
       <button class="hdr-photos" id="mediaBtn" style="display:none" type="button"><svg width="15" height="12" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="2" width="14" height="14" rx="2.5"/><path d="M23 4l-8 5 8 5z" fill="currentColor" stroke="none"/></svg>Videos</button>
+      <span class="hb-label">Bullpen</span>
     </div>
     <nav class="hb-nav" id="homeNav" aria-label="Brands"></nav>
     <div class="user-chip" id="userChip" style="display:none">
@@ -2880,7 +2890,7 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v241</div>
+      <div class="pf-ver">NCM Events Guide · v242</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -7622,8 +7632,8 @@ function renderHomeNav() {
   const dot = bk => live(bk) ? '<span class="hb-dot" title="Live now"></span>'
     : wrapped(bk) ? '<span class="hb-dot wrap" title="Recently wrapped"></span>' : "";
   const label = t => `<span class="hb-nav-t" data-t="${esc(t)}">${esc(t)}</span>`;
-  nav.innerHTML = `<span class="hb-label">Bullpen</span>
-    <button class="hb-nav-btn${!homeBrandFilter ? " on" : ""}" type="button" data-home-brand="">${label("All brands")}</button>` +
+  // The "Bullpen" label lives next to the logo, in the header markup.
+  nav.innerHTML = `<button class="hb-nav-btn${!homeBrandFilter ? " on" : ""}" type="button" data-home-brand="">${label("All brands")}</button>` +
     HOME_FILTER_BRANDS.map(bk => `<button class="hb-nav-btn${homeBrandFilter === bk ? " on" : ""}" type="button" data-home-brand="${bk}">${dot(bk)}${label(BRANDS[bk].name)}</button>`).join("");
 }
 function homePickBrand(bk, view) {
