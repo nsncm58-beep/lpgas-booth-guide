@@ -1991,16 +1991,6 @@ body.in-settings .app-footer, body.in-photos .app-footer { display: none; }   /*
 .acct-chg i { font-style: normal; color: var(--muted); padding: 0 3px; }
 .acct-effects { margin: 12px 0 0; padding-left: 18px; font-size: 0.8rem; line-height: 1.5; color: var(--text-2); }
 .acct-effects li { margin-top: 4px; }
-/* ── Bullpen photo folders as tabs (v199) ── */
-.hp-folderbar { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-.hp-fchips { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.hp-fchip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-2); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
-.hp-fchip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
-.hp-fchip-n { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--blue-light); color: var(--blue); font-size: 0.7rem; text-align: center; }
-.hp-fchip.on .hp-fchip-n { background: rgba(255,255,255,0.25); color: #fff; }
-.hp-fhead { display: flex; align-items: center; gap: 10px; margin: 2px 2px 10px; }
-.hp-fhead-name { font-family: var(--fd); font-weight: 800; font-size: 1.05rem; color: var(--text); }
-.hp-fhead-n { font-size: 0.78rem; color: var(--muted); font-weight: 600; flex: 1; }
 
 /* ── Admin home (v207); its own space, apart from any show (v208) ── */
 body.no-booths #bottomNav [data-v="booths"], body.no-booths [data-fab-booth] { display: none !important; }
@@ -2041,22 +2031,6 @@ body.ah-mode #bottomNav [data-v="photos"], body:not(.ah-mode) #bottomNav .bn-hom
 .up-banner { position: fixed; left: 10px; right: 10px; top: calc(8px + env(safe-area-inset-top)); z-index: 3000; padding: 10px 14px; border-radius: 12px;
   background: var(--blue); color: #fff; font-size: 0.8rem; font-weight: 700; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.25); pointer-events: none; }
 .up-banner.off { background: #8A5A00; }
-
-/* ── Photo folders (v196) ── */
-.ph-folder { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; font-size: 0.78rem; font-weight: 700; color: var(--text-2); }
-.ph-folder-sel { flex: 1; min-width: 0; padding: 9px 10px; border: 1.5px solid var(--border); border-radius: 8px; font: inherit; font-weight: 600; color: var(--text); background: var(--surface); }
-.hp-folders { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-.hp-folders-head { font-weight: 800; font-size: 0.82rem; margin-bottom: 8px; }
-.hp-folders-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-.hp-folder { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border-radius: 999px; background: var(--blue-light); color: var(--blue); font-size: 0.76rem; font-weight: 700; }
-.hp-folder-x { border: none; background: none; color: inherit; cursor: pointer; font-size: 0.7rem; padding: 2px 4px; }
-.hp-folders-none, .hp-folders-note { font-size: 0.74rem; color: var(--muted); }
-.hp-folders-new { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-/* Its own class (v197): sharing .home-search-input made every keystroke run
-   the bullpen search and redraw the page, wiping the box. */
-.hp-folder-inp { flex: 1; min-width: 0; margin: 0; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
-  font-family: var(--ft); font-size: 0.9rem; color: var(--text); background: var(--surface); }
-.hp-folder-inp:focus { outline: none; border-color: var(--blue); }
 
 /* ── Admin > People's notes (v193) ── */
 .pn-row { border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--surface); }
@@ -2871,6 +2845,17 @@ body.has-nav .sched-day-tab.active { background: var(--blue); color: #fff; }
 .nx-row .upload-btn.busy { background: var(--bg); color: var(--text-2); pointer-events: none; }
 .nx-row .upload-btn.done, .nx-row .upload-btn.allin { display: none; }
 .nx-stop .iq-box { margin: 12px 0 0; }
+.nx-upblk { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.nx-upblk .nx-btn { flex: none; width: 100%; }
+.nx-upblk .nx-btn.wide { height: 44px; }
+.nx-clips { display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 14px; padding: 12px 14px; box-shadow: inset 0 0 0 1px var(--border-soft); }
+.nx-clips > div { flex: 1; min-width: 0; }
+.nx-clips b { display: block; font-size: 14px; }
+.nx-clips small { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-top: 1px; }
+.nx-clips > .nx-i { width: 20px; height: 20px; stroke-width: 2.6; color: var(--nx-ok); }
+.nx-clips.ok { background: var(--nx-ok-l); box-shadow: none; }
+.nx-clips.ok b, .nx-clips.ok small { color: var(--nx-ok); }
+.nx-btn[disabled] { opacity: 0.7; }
 
 /* booths */
 .nx-filt { display: flex; gap: 8px; padding: 12px 16px 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; max-width: 640px; margin: 0 auto; }
@@ -5643,38 +5628,28 @@ const MEDIA = {
   },
 };
 // A show with no folder of its own uploads into its brand's folder for that
-// year (LM-2026 for every 2026 LM show, and so on), inside a show folder
-// the app names and creates, split into Photos and Videos (v201, Nate,
-// Oct. 26, 2026). Shows that already had their own entry keep uploading
-// loose into it, as they always have.
+// year (LM-2026 for every 2026 LM show, and so on). Nothing is created
+// inside it: files go in loose, with the show's name at the front of each
+// file name (see msShowTag). From v201 to v242 the app made a show folder
+// there, split into Photos and Videos; that came out so an upload never
+// depends on finding or making a folder.
 function eventMedia(code) {
   if (MEDIA[code]) return MEDIA[code];
   const ev = EVENTS[code];
   const y = ev && Array.isArray(ev.dates) && ev.dates[0] ? ev.dates[0].slice(0, 4) : "";
   const brandYear = String(code || "").split("-")[0] + "-" + y;
   if (y && MEDIA[brandYear]) return { ...MEDIA[brandYear], sub: true };
-  // No folder for that year yet (v214): the brand's newest one stands in, and
-  // the show still gets its own "<Show> <year>" folder inside it, so uploads
-  // work the day a show is added instead of waiting on a folder link.
+  // No folder for that year yet (v214): the brand's newest one stands in, so
+  // uploads work the day a show is added instead of waiting on a folder link.
   const pre = String(code || "").split("-")[0] + "-";
   const latest = Object.keys(MEDIA).filter(k => k.indexOf(pre) === 0 && /^[A-Z]+-\d{4}$/.test(k)).sort().pop();
   return latest ? { ...MEDIA[latest], sub: true } : null;
 }
-// "NALP Elevate 2026": the show's folder inside its brand-year folder.
-function showFolderName(code) {
-  const ev = EVENTS[code] || {};
-  const y = (ev.dates || [])[0] ? ev.dates[0].slice(0, 4) : "";
-  return (String(ev.show || code).replace(/[\\/:*?"<>|#%]+/g, " ").replace(/\s+/g, " ").trim() + (y ? " " + y : "")).trim();
-}
-// Where an upload goes, as folders under the show's link: [] for a show with
-// its own folder; [show, "Photos" or "Videos", photo folder?] otherwise. A
-// show with its own folder still puts bullpen photo folders right inside it.
-function uploadSegs(kind, photoFolder) {
-  const code = currentEventCode(), m = eventMedia(code) || {};
-  const segs = m.sub ? [showFolderName(code), kind === "video" ? "Videos" : "Photos"] : [];
-  if (kind !== "video" && photoFolder) segs.push(photoFolder);
-  return segs;
-}
+// Where an upload goes, as folders under the show's link. Always the link's
+// own folder now: no show folder, no Photos or Videos folder, no photo
+// folders. The folder-finding code below still takes a path, so one can come
+// back without touching the upload engine, but nothing asks for one.
+function uploadSegs(kind) { return []; }
 function inferBrand(code) {
   const c = (code || "").toUpperCase();
   if (c.startsWith("LPG"))  return "lpgas";
@@ -7094,9 +7069,16 @@ async function msUploadSessionAs(name, token, segs, behavior, ctx) {
 async function msCancelSession(url) {
   try { await fetch(url, { method: "DELETE" }); } catch (e) {}
 }
-// Company_Booth_Rep.ext — the folder sorts itself alphabetically by company
-// and the bullpen can tell every file's booth at a glance. SharePoint's
-// conflictBehavior:rename suffixes repeat takes (" 1", " 2") automatically.
+// The show's short name, ready to lead a file name ("Elevate_"). With no show
+// folders, this is what keeps one show's files together in the brand's folder.
+function msShowTag() {
+  const ev = EVENTS[currentEventCode()] || {};
+  const tag = String(ev.short || ev.show || "").replace(/[^\w &-]+/g, " ").replace(/\s+/g, " ").trim().replace(/ /g, "-").slice(0, 28);
+  return tag ? tag + "_" : "";
+}
+// Show_Company_Booth_Rep.ext: the folder sorts itself by show, then by
+// company, and the bullpen can tell every file's booth at a glance.
+// SharePoint's conflictBehavior:rename suffixes repeat takes (" 1", " 2").
 function msFileName(c, file) {
   const clean = s => String(s || "").replace(/[^\w &-]+/g, " ").replace(/\s+/g, " ").trim().replace(/ /g, "-").slice(0, 48);
   const co = clean(c.n) || "Company";
@@ -7104,7 +7086,7 @@ function msFileName(c, file) {
   const rep = clean(((currentUser && currentUser.name) || "Rep").split(/\s+/)[0]) || "Rep";
   let ext = (file.name && (file.name.match(/\.[A-Za-z0-9]{2,5}$/) || [])[0] || "").toLowerCase();
   if (!ext) ext = file.type === "video/mp4" ? ".mp4" : ".mov";
-  return co + "_B" + booth + "_" + rep + ext;
+  return msShowTag() + co + "_B" + booth + "_" + rep + ext;
 }
 // Photos: the caption becomes the file name (the bullpen sees what it is at
 // a glance), then the rep's first name. SharePoint's rename handles repeats.
@@ -7113,7 +7095,7 @@ function msPhotoName(caption, file) {
   const rep = clean(((currentUser && currentUser.name) || "Rep").split(/\s+/)[0]) || "Rep";
   let ext = (file.name && (file.name.match(/\.[A-Za-z0-9]{2,5}$/) || [])[0] || "").toLowerCase();
   if (!ext) ext = /png/.test(file.type) ? ".png" : /heic|heif/.test(file.type) ? ".heic" : /^video\//.test(file.type) ? ".mov" : ".jpg";
-  return (clean(caption) || "Photo") + "_" + rep + ext;
+  return msShowTag() + (clean(caption) || "Photo") + "_" + rep + ext;
 }
 const UP_CHUNK = 10 * 1024 * 1024;   // multiple of 320 KiB per Graph's rules
 const UP_CHUNK_SMALL = 10 * 320 * 1024;   // 3.2 MB, after a piece fails (v202)
@@ -7166,10 +7148,8 @@ function putSmall(url, file, token, onPct) {
     xhr.send(file);
   });
 }
-// Photo folders (v196): subfolders of the show folder. Reps pick one per
-// batch; the list is every subfolder in SharePoint plus the names the
-// bullpen made in the app (photoFolders), and a bullpen-named folder is
-// created in SharePoint the first time someone uploads into it.
+// Folders under the show's link (the show's own folder, then Photos or
+// Videos): found by name, and made the first time someone uploads into one.
 const _msSub = {};   // "<folder url>|<lower name>" -> { driveId, itemId }
 async function msListSubfolders(token, base, all) {   // all: optional array that gets every row (the launch check)
   const out = [];
@@ -7615,7 +7595,7 @@ async function msPreflight() {
       base = await msResolveFolder(token, true);     // accept the show's link again, as an upload would
       await ping(base);
     }
-    const paths = (msUploadsActive() ? ["photo", "video"] : ["photo"]).map(k => uploadSegs(k, "")).filter(x => x.length);
+    const paths = (msUploadsActive() ? ["photo", "video"] : ["photo"]).map(k => uploadSegs(k)).filter(x => x.length);
     for (const segs of paths) {
       where = segs.join(" > ");
       await msTarget(token, segs, false, !make);
@@ -7911,7 +7891,7 @@ function buildHomeToolbar() {
   const nPh = Object.values(homePhotos).filter(p => effectiveDept(p.uid, p.dept) === "edit" && p.eventCode === code).length;
   const tab = (k, label, n) => `<button class="hb-tab${homeView === k ? " on" : ""}" type="button" data-home-view="${k}">${label}${n ? `<b>${n}</b>` : ""}</button>`;
   const sc = homeView === "sched" ? { cls: " hs-search-input", ph: "Search agendas: company, meal guest, location…", v: homeSchedQ }
-    : homeView === "photos" ? { cls: " hp-search-input", ph: "Search " + (homePhotoFolder ? "this folder" : "photos") + ": caption or rep…", v: homePhotoQ }
+    : homeView === "photos" ? { cls: " hp-search-input", ph: "Search photos: caption or rep…", v: homePhotoQ }
     : { cls: "", ph: "Search videos: company, booth or rep…", v: homeSearchQ };
   const folder = (eventMedia(code) || {}).folder;
   return `<div class="hb-tool"><div class="hb-tool-in">
@@ -8262,13 +8242,9 @@ function renderHomeDashboard() {
     html += `<div class="home-wrap hb"><div class="home-main">` + buildHomeOverview();
   }
   html += `</div></div>`;
-  const folderFocus = !!(document.activeElement && document.activeElement.classList && document.activeElement.classList.contains("hp-folder-inp"));
   el.innerHTML = html;
   const activeQ = homeView === "sched" ? homeSchedQ : homeView === "photos" ? homePhotoQ : homeSearchQ;
-  if (folderFocus) {
-    const fi = document.querySelector(".hp-folder-inp");
-    if (fi) { fi.focus(); fi.setSelectionRange(fi.value.length, fi.value.length); }
-  } else if (activeQ.trim()) {
+  if (activeQ.trim()) {
     const si = document.querySelector(homeView === "sched" ? ".hs-search-input" : homeView === "photos" ? ".hp-search-input" : ".home-search-input");
     if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
   }
@@ -8298,17 +8274,6 @@ function copyText(t) {
     ? navigator.clipboard.writeText(t).then(() => true, fallback)
     : Promise.resolve(fallback());
 }
-// The bullpen's half-typed folder name survives live redraws (new notes or
-// photos arriving), and Enter adds it.
-let hpFolderDraft = "";
-document.addEventListener("input", e => {
-  if (e.target && e.target.classList && e.target.classList.contains("hp-folder-inp")) hpFolderDraft = e.target.value;
-}, true);
-document.addEventListener("keydown", e => {
-  if (e.key === "Enter" && e.target && e.target.classList && e.target.classList.contains("hp-folder-inp")) {
-    e.preventDefault(); document.querySelector("[data-pf-add]")?.click();
-  }
-}, true);
 // ── Shared accounts (v203, Nate, Oct. 27, 2026) ──────────────────────────
 // Who owns each booth at a show, for Sales and admins only: accounts/{id}
 // = { eventCode, b, n, rep, repEmail, repUid?, status: "advertiser" |
@@ -8376,58 +8341,6 @@ async function unclaimBooth(i) {
   try { await fbDb.collection("accounts").doc(a.id).delete(); toast(c.n + " is open again"); }
   catch (e) { toast("Couldn't let it go. Check your connection"); }
 }
-// Bullpen-named photo folders, per show (photoFolders/{id}: eventCode, name).
-let photoFolderDocs = {}, _photoFoldersUnsub = null;
-function subscribePhotoFolders() {
-  if (_photoFoldersUnsub) { _photoFoldersUnsub(); _photoFoldersUnsub = null; }
-  photoFolderDocs = {};
-  if (!fbReady || !currentUser) return;
-  _photoFoldersUnsub = fbDb.collection("photoFolders").onSnapshot(snap => {
-    photoFolderDocs = {};
-    snap.forEach(d => { const x = d.data(); if (x && x.name) photoFolderDocs[d.id] = x; });
-    if (isHome()) { if (homeView === "photos") renderHomeDashboard(); }
-    else if (activeView === "photos") refreshPhotoFolderSel();
-  }, () => {});
-}
-function bullpenFolderNames(code) {
-  return Object.values(photoFolderDocs).filter(x => x.eventCode === code).map(x => x.name);
-}
-// The rep's menu: SharePoint subfolders (fetched when the Photos tab opens)
-// plus the bullpen's names, no duplicates, A to Z.
-let spFolders = { code: null, names: [], at: 0 };
-let photoFolderPick = "";
-function photoFolderOptions() {
-  const code = currentEventCode();
-  const seen = new Map();
-  (spFolders.code === code ? spFolders.names : []).concat(bullpenFolderNames(code))
-    .forEach(n => { const k = n.trim().toLowerCase(); if (k && !seen.has(k)) seen.set(k, n.trim()); });
-  return [...seen.values()].sort((a, b) => a.localeCompare(b));
-}
-async function loadSpFolders() {
-  const code = currentEventCode();
-  if (!msUploadsActive() || !msAccount() || (spFolders.code === code && Date.now() - spFolders.at < 60e3)) return;
-  try {
-    const token = await msSilentToken(true);
-    const root = await msTarget(token, uploadSegs("photo", ""), false, true);   // never creates just to look
-    const names = root ? (await msListSubfolders(token, root)).map(x => x.name) : [];
-    spFolders = { code, names, at: Date.now() };
-    refreshPhotoFolderSel();
-  } catch (e) {}
-}
-function photoFolderSelHtml() {
-  const opts = photoFolderOptions();
-  if (!opts.length) return "";
-  if (photoFolderPick && !opts.includes(photoFolderPick)) photoFolderPick = "";
-  return `<label class="ph-folder"><span>Upload to</span>
-      <select class="ph-folder-sel" data-ph-folder-sel${photoUploading ? " disabled" : ""}>
-        <option value="">Main show folder</option>
-        ${opts.map(n => `<option value="${esc(n)}"${n === photoFolderPick ? " selected" : ""}>${esc(n)}</option>`).join("")}
-      </select></label>`;
-}
-function refreshPhotoFolderSel() {
-  const slot = document.querySelector(".ph-folder-slot");
-  if (slot) slot.innerHTML = photoFolderSelHtml();
-}
 function subscribeHomePhotos() {
   if (_homePhotosUnsub) { _homePhotosUnsub(); _homePhotosUnsub = null; }
   homePhotos = {};
@@ -8438,66 +8351,22 @@ function subscribeHomePhotos() {
     if (isHome()) renderHomeDashboard();
   }, () => {});
 }
-// Bullpen Photos, organized by folder (v199, Nate, Oct. 26, 2026): a row of
-// folder tabs with counts (All, Main show folder, then every folder the
-// bullpen made or a photo landed in), each opening just that folder's
-// photos with a link to it in SharePoint. Adding and removing folder names
-// sits behind Manage folders.
-let homePhotoFolder = "";          // "" = all, "__main" = main show folder, else lowercased folder name
-let homePfManage = false;
+// Bullpen Photos: one list for the show, newest first, with the search box.
+// (v199 to v242 split it into folder tabs with a Manage folders panel; that
+// came out so uploads have one place to go. A photo that was filed in a
+// folder back then still says which one.)
 function buildHomePhotosView() {
   const code = homeEventCode();
   const q = homePhotoQ.trim().toLowerCase();
   const all = Object.entries(homePhotos).map(([id, p]) => ({ id, ...p }))
     .filter(p => effectiveDept(p.uid, p.dept) === "edit" && p.eventCode === code)
     .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  const fk = p => p.folder ? String(p.folder).trim().toLowerCase() : "__main";
-  const fnames = Object.entries(photoFolderDocs).filter(([, x]) => x.eventCode === code)
-    .sort((a, b) => String(a[1].name).localeCompare(String(b[1].name)));
-  // Every folder: the bullpen's names plus any folder a photo landed in.
-  const folders = new Map();   // key -> { name, n, url, docId }
-  fnames.forEach(([id, x]) => folders.set(String(x.name).toLowerCase(), { name: x.name, n: 0, url: "", docId: id }));
-  all.forEach(p => {
-    if (!p.folder) return;
-    const k = fk(p), f = folders.get(k) || { name: p.folder, n: 0, url: "", docId: null };
-    f.n++; if (!f.url && p.folderUrl) f.url = p.folderUrl;
-    folders.set(k, f);
-  });
-  const nMain = all.filter(p => !p.folder).length;
-  if (homePhotoFolder && homePhotoFolder !== "__main" && !folders.has(homePhotoFolder)) homePhotoFolder = "";
-  const sel = homePhotoFolder;
-  const inSel = all.filter(p => !sel || fk(p) === sel);
-  const shown = inSel.filter(p => !q || String(p.caption || "").toLowerCase().includes(q)
+  if (!all.length) return `<div class="empty-wrap"><h3>No photos yet</h3>
+      <p>When Editorial/Digital reps upload from the app's Uploads tab, their photos show up here with the captions they wrote.</p></div>`;
+  const shown = all.filter(p => !q || String(p.caption || "").toLowerCase().includes(q)
     || String(p.name || "").toLowerCase().includes(q));
-  const chip = (key, label, n) => `<button type="button" class="hp-fchip${sel === key ? " on" : ""}" data-hp-folder="${esc(key)}">${esc(label)}<span class="hp-fchip-n">${n}</span></button>`;
-  const sorted = [...folders.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name));
-  let html = `<div class="hp-folderbar">
-      <div class="hp-fchips">${chip("", "All photos", all.length)}${chip("__main", "Main show folder", nMain)}${sorted.map(([k, f]) => chip(k, f.name, f.n)).join("")}</div>
-      <button class="home-rem-btn" type="button" data-pf-manage>${homePfManage ? "Done" : "Manage folders"}</button>
-    </div>`;
-  if (homePfManage) html += `<div class="hp-folders">
-      <div class="hp-folders-head">Folders reps can upload to: ${esc(showShortLabelOf(code) || "this show")}</div>
-      <div class="hp-folders-list">${fnames.length ? fnames.map(([id, x]) =>
-        `<span class="hp-folder">${esc(x.name)}<button type="button" class="hp-folder-x" data-pf-del="${esc(id)}" title="Take this folder out of the reps' menu. Files already in it stay in SharePoint.">&#10005;</button></span>`).join("")
-        : `<span class="hp-folders-none">None added here yet.</span>`}</div>
-      <div class="hp-folders-new"><input class="hp-folder-inp" type="text" maxlength="60" placeholder="New folder, e.g. Hall of Fame" autocomplete="off" value="${esc(hpFolderDraft)}">
-        <button class="home-rem-btn watch" type="button" data-pf-add>Add folder</button></div>
-      <div class="hp-folders-note">Reps pick a folder when they upload. Subfolders made in SharePoint show up for them too. Removing a name here never deletes anything in SharePoint.</div>
-    </div>`;
-  // The open folder's header, with its SharePoint link when known.
-  if (sel) {
-    const showUrl = (all.find(p => p.showUrl) || {}).showUrl || "";
-    const f = sel === "__main" ? { name: "Main show folder", url: showUrl || (eventMedia(code) || {}).folder || "" } : folders.get(sel);
-    html += `<div class="hp-fhead"><span class="hp-fhead-name">${esc(f.name)}</span><span class="hp-fhead-n">${inSel.length} photo${inSel.length === 1 ? "" : "s"}</span>
-      ${f.url ? `<a class="home-rem-btn watch" href="${esc(f.url)}" target="_blank" rel="noopener">Open in SharePoint</a>` : ""}</div>`;
-  }
-  if (!all.length) return html + `<div class="empty-wrap"><h3>No photos yet</h3>
-      <p>When Editorial/Digital reps upload from the app's Photos tab, their photos show up here with the captions they wrote.</p></div>`;
-  if (!sel) {
-    const reps = new Set(all.map(p => p.uid)).size;
-    html += `<div class="home-vids-summary">${all.length} photo${all.length === 1 ? "" : "s"} from ${reps} rep${reps === 1 ? "" : "s"}</div>`;
-  }
-  if (!inSel.length) return html + `<div class="home-rem-empty">Nothing in this folder yet.</div>`;
+  const reps = new Set(all.map(p => p.uid)).size;
+  const html = `<div class="home-vids-summary">${all.length} photo${all.length === 1 ? "" : "s"} from ${reps} rep${reps === 1 ? "" : "s"}</div>`;
   if (!shown.length) return html + `<div class="home-rem-empty">No photos match that search.</div>`;
   return html + `<div class="hp-grid">${shown.map(p => {
     const open = p.webUrl ? `href="${esc(p.webUrl)}" target="_blank" rel="noopener"` : "";
@@ -8508,7 +8377,7 @@ function buildHomePhotosView() {
           <div class="hp-cap${p.caption ? "" : " none"}${homePhotoOpen.has(p.id) ? " open" : ""}"${String(p.caption || "").length > 140 ? ` data-hp-more="${esc(p.id)}" title="Click to show all"` : ""}>${esc(p.caption || "No caption")}</div>
           ${p.caption ? `<button class="hp-copy" type="button" data-photo-copy="${esc(p.id)}" title="Copy the caption">Copy</button>` : ""}
         </div>
-        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}${!sel ? " · " + esc(p.folder || "Main folder") : ""}</div>
+        <div class="hp-meta">${esc(p.name || "Rep")}${p.ts ? " · " + esc(fmtExact(p.ts)) : ""}${p.folder ? " · in " + esc(p.folder) : ""}</div>
         <div class="hp-actions">${p.webUrl ? `<a class="home-rem-btn watch" ${open}>Open</a>` : ""}
           <button class="home-rem-btn hide" type="button" data-photo-del="${esc(p.id)}" title="Remove from the bullpen. The file stays in SharePoint.">Remove</button></div>
       </div>
@@ -9226,7 +9095,29 @@ function nxUpBtn(c, s) {
   if (msChecking === i) return `<span class="nx-chip">Checking Microsoft…</span>`;
   if (msReadyFor === i) return `<button class="nx-btn pri sm" type="button" data-upv="${i}">${nxi("up")}Pick video</button>`;
   const resume = !!upPending()[upResumeKey(c)];
-  return `<button class="nx-btn pri sm" type="button" data-upv="${i}">${nxi("up")}${resume ? "Resume" : nxClips(s) ? "More" : "Upload"}</button>`;
+  return `<button class="nx-btn pri sm" type="button" data-upv="${i}">${nxi("up")}${resume ? "Resume" : nxClips(s) ? "Add clip" : "Upload"}</button>`;
+}
+// The stop page's upload block. Most booths get more than one clip, so after
+// the first one the main button stays "Upload another video" until the rep
+// says all the footage is in. Same hooks as before: data-upv, data-vall.
+function nxUpBlock(c, s) {
+  const i = c.i, n = nxClips(s);
+  if (!s.video) return "";
+  if (!msUploadsActive())
+    return (!_upCfgKnown && currentUser && myNotesAutoShare()) ? `<div class="nx-upblk"><button class="nx-btn sec lg" type="button" data-up-wait><span class="up-spin"></span>Upload connecting…</button></div>` : "";
+  const have = n ? `<div class="nx-clips${s.vall ? " ok" : ""}">${nxi("check")}<div><b>${n} clip${n === 1 ? "" : "s"} uploaded</b>
+      <small>${s.vall ? "All footage in. The Bullpen knows nothing more is coming." : "Add more, or mark it complete when nothing else is coming."}</small></div>
+      ${s.vlink ? `<a class="nx-lnk" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the latest clip")}">View</a>` : ""}</div>` : "";
+  let main;
+  if (upProg[i] != null) main = `<div class="nx-clips"><span class="up-spin"></span><div><b data-upprog="${i}">Uploading ${upProg[i]}%</b><small>Keep the app open and the screen on</small></div></div>`;
+  else if (msChecking === i) main = `<button class="nx-btn sec lg" type="button" disabled><span class="up-spin"></span>Checking Microsoft…</button>`;
+  else {
+    const resume = !!upPending()[upResumeKey(c)], ready = msReadyFor === i;
+    const label = ready ? "Pick video" : resume ? "Resume upload" : n ? "Upload another video" : "Upload video";
+    main = `<button class="nx-btn ${n && s.vall && !resume && !ready ? "out" : "pri"} lg" type="button" data-upv="${i}">${nxi("up")}${label}</button>`;
+  }
+  const all = n && upProg[i] == null ? `<button class="nx-btn ${s.vall ? "sec" : "out"} wide" type="button" data-vall="${i}">${s.vall ? "More footage is coming" : nxi("check") + "Mark all footage in"}</button>` : "";
+  return `<div class="nx-upblk">${have}${main}${all}</div>`;
 }
 function nxFloorBtn(c, cls, label) {
   const code = currentEventCode();
@@ -9632,7 +9523,7 @@ function nxRenderStop(state) {
     const video = sales ? "" : `<div class="nx-grp"><div class="nx-row plain"><span class="nx-ic">${nxi("vid")}</span>
         <div class="nx-mn"><b>Video for this booth</b><span>Tells the Bullpen to expect footage</span></div>
         <button class="nx-tog${s.video ? " on" : ""}" type="button" role="switch" aria-checked="${s.video ? "true" : "false"}" aria-label="Video for this booth" data-nx-video="${i}"></button></div></div>
-      ${s.video ? (uploadCtlHtml(c, s) ? `<div class="nx-upctl">${uploadCtlHtml(c, s)}</div>` : "") : ""}`;
+      ${nxUpBlock(c, s)}`;
     const status = s.status || "unknown";
     const salesRows = sales ? `<div class="nx-grp">
         <div class="nx-row nx-sel"><div class="nx-mn"><b>Customer or prospect</b></div><span class="nx-em">${status === "customer" ? "Customer" : status === "noncustomer" ? "Prospect" : "Unsure"}</span>${nxi("chevr", "nx-go")}
@@ -9731,13 +9622,14 @@ function nxFlushNotes() {
 // ── Uploads: what is owed, sending and sent, above the photo picker ──
 function nxUploadsHead() {
   const state = load(), edit = !nxSales();
-  const band = `<div class="nx">${nxBand("Uploads", "<small>Straight to the show folder</small>")}`;
+  const band = `<div class="nx">${nxBand("Uploads", "<small>Straight to the shared folder</small>")}`;
   if (!edit) return band + `</div>`;
   const all = CO.map((c, i) => ({ c, i, s: state[key(i)] || {} })).filter(x => x.s.video || nxClips(x.s));
   const sending = all.filter(x => upProg[x.i] != null);
   const toUp = all.filter(x => x.s.video && !nxClips(x.s) && upProg[x.i] == null);
-  const sent = all.filter(x => nxClips(x.s)).sort((a, b) => (b.s.vupAt || 0) - (a.s.vupAt || 0));
-  const nSent = sent.reduce((n, x) => n + nxClips(x.s), 0) + photoQueue.filter(p => p.state === "done").length;
+  const sent = all.filter(x => nxClips(x.s) && upProg[x.i] == null).sort((a, b) => (b.s.vupAt || 0) - (a.s.vupAt || 0));
+  const open = sent.filter(x => !x.s.vall), closed = sent.filter(x => x.s.vall);
+  const nSent = all.reduce((n, x) => n + nxClips(x.s), 0) + photoQueue.filter(p => p.state === "done").length;
   const nSend = sending.length + photoQueue.filter(p => p.state === "up").length;
   const sec = (title, rows) => rows.length ? `<div class="nx-sech"><b>${title}</b></div><div class="nx-card list">${rows.join("")}</div>` : "";
   return band + `<div class="nx-body">
@@ -9746,8 +9638,10 @@ function nxUploadsHead() {
       <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${esc(boothLbl(x.c.b))}${x.s.scheduled ? " · " + esc(nxWhenShort(currentEventCode(), x.s.scheduled)) : ""}</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`))}
     ${sec("Sending", sending.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("up")}</span>
       <div class="nx-mn"><b>${esc(x.c.n)}</b><div class="nx-st" data-upprog="${x.i}">Uploading ${upProg[x.i]}%</div><div class="nx-st">Keep the app open</div></div></div>`))}
-    ${sec("Sent", sent.map(x => `<button class="nx-row" type="button" data-nx-stop="b:${x.i}"><span class="nx-ic ok">${nxi("check")}</span>
-      <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${nxClips(x.s)} clip${nxClips(x.s) === 1 ? "" : "s"}${x.s.vupAt ? " · " + esc(nxClock(x.s.vupAt)) : ""}${x.s.vall ? " · all footage in" : ""}</span></div>${nxi("chevr", "nx-go")}</button>`))}
+    ${sec("Clips in, more to come?", open.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic ok">${nxi("check")}</span>
+      <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${nxClips(x.s)} clip${nxClips(x.s) === 1 ? "" : "s"}${x.s.vupAt ? " · last at " + esc(nxClock(x.s.vupAt)) : ""}</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`))}
+    ${sec("All footage in", closed.map(x => `<button class="nx-row" type="button" data-nx-stop="b:${x.i}"><span class="nx-ic ok">${nxi("check")}</span>
+      <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${nxClips(x.s)} clip${nxClips(x.s) === 1 ? "" : "s"}${x.s.vupAt ? " · " + esc(nxClock(x.s.vupAt)) : ""}</span></div>${nxi("chevr", "nx-go")}</button>`))}
     ${!all.length ? `<div class="nx-note" style="background:var(--surface)">Booths you switch Video on for show up here until their clip is in.</div>` : ""}
     <div class="nx-sech"><b>Other photos and video</b></div>
   </div></div>`;
@@ -10575,27 +10469,6 @@ document.getElementById("content").addEventListener("click", e => {
     const id = pmore.dataset.hpMore;
     homePhotoOpen.has(id) ? homePhotoOpen.delete(id) : homePhotoOpen.add(id);
     pmore.classList.toggle("open", homePhotoOpen.has(id));
-    return;
-  }
-  const hpf = e.target.closest("[data-hp-folder]");
-  if (hpf) { homePhotoFolder = hpf.dataset.hpFolder; renderHomeDashboard(); return; }
-  if (e.target.closest("[data-pf-manage]")) { homePfManage = !homePfManage; renderHomeDashboard(); return; }
-  if (e.target.closest("[data-pf-add]")) {
-    const inp = document.querySelector(".hp-folder-inp");
-    const name = String((inp && inp.value) || "").replace(/[\\/:*?"<>|#%]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
-    if (!name) { toast("Type a folder name first"); return; }
-    const code = homeEventCode();
-    if (bullpenFolderNames(code).some(n => n.toLowerCase() === name.toLowerCase())) { toast("That folder is already there"); return; }
-    fbDb.collection("photoFolders").doc(fsId(code + "__" + name.toLowerCase())).set({ eventCode: code, name, by: homeMember() || "", ts: Date.now() })
-      .then(() => { hpFolderDraft = ""; const i2 = document.querySelector(".hp-folder-inp"); if (i2) i2.value = ""; toast("Folder added: reps can upload to " + name); })
-      .catch(() => toast("Couldn't add it (are the latest Firestore rules published?)"));
-    return;
-  }
-  const pfDel = e.target.closest("[data-pf-del]");
-  if (pfDel) {
-    const x = photoFolderDocs[pfDel.dataset.pfDel] || {};
-    if (confirm("Take \"" + (x.name || "this folder") + "\" out of the reps' folder menu? Files already in it stay in SharePoint."))
-      fbDb.collection("photoFolders").doc(pfDel.dataset.pfDel).delete().catch(() => toast("Couldn't remove it"));
     return;
   }
   const pdel = e.target.closest("[data-photo-del]");
@@ -11521,7 +11394,6 @@ function refreshPhotos() {
   if (head) head.textContent = photoQueueHeadText();
   const slot = document.querySelector(".ph-send-slot");
   if (slot) slot.innerHTML = photoSendHtml();
-  refreshPhotoFolderSel();
 }
 // Caption boxes grow with the text up to about eight lines, then scroll.
 function fitCaption(t) {
@@ -11582,7 +11454,6 @@ function renderPhotosView() {
   const queue = photoQueue.length ? `<div class="ph-card ph-queue">
       <div class="ph-queue-head">${photoQueueHeadText()}</div>
       ${rows}
-      <div class="ph-folder-slot">${photoFolderSelHtml()}</div>
       <div class="ph-send-slot">${photoSendHtml()}</div>
       <p class="ph-sub">${edit ? "Captions show up in the bullpen with each photo and become the file names." : "Captions become the file names, so the bullpen knows what each one shows."} Keep the app open until they finish.</p>
     </div>` : "";
@@ -11597,7 +11468,6 @@ function renderPhotosView() {
   </div>`;
   // Long captions keep their full height after a redraw.
   el.querySelectorAll(".ph-cap").forEach(t => { if (t.value) fitCaption(t); });
-  loadSpFolders();
 }
 // Same token rules as booth videos: the picker opens only with a fresh token
 // in hand (synchronously, or iOS drops it), so picked photos can never be
@@ -11625,23 +11495,20 @@ async function sendPhotos() {
   let denied = false;
   // Three at a time (v195): one-at-a-time made a 30-photo dump crawl.
   const todo = photoQueue.filter(p => p.state === "ready" || p.state === "err");
-  const folder = photoFolderPick || "";
   let next = 0;
   const one = async p => {
     p.state = "up"; p.pct = 0;
     refreshPhotos();
     try {
       const isVid = /^video\//.test(p.file.type);
-      const segs = uploadSegs(isVid ? "video" : "photo", isVid ? "" : folder);
+      const segs = uploadSegs(isVid ? "video" : "photo");
       const item = await msUploadNamed(msPhotoName(p.caption, p.file), p.file, (pct, wait) => {
         p.pct = pct;
         const s = document.querySelector('[data-ph-pct="' + p.id + '"]');
         if (s) s.textContent = wait === "offline" ? "No signal · " + pct + "%, will resume"
           : wait === "retry" ? "Weak signal · retrying " + pct + "%" : "Uploading " + pct + "%";
       }, segs, isVid ? currentEventCode() + "|file|" + p.file.name + "|" + p.file.size : "");   // videos resume like booth clips (v216)
-      p.state = "done"; p.folder = isVid ? "" : folder;
-      p.folderUrl = (p.folder && (msCachedTarget(segs) || {}).webUrl) || "";
-      p.showUrl = (msCachedTarget(uploadSegs("photo", "")) || {}).webUrl || "";
+      p.state = "done";
       p.webUrl = (item && item.webUrl) || ""; p.upName = (item && item.name) || "";
       batch.push(p);
       recordPhoto(p);                // bullpen Photos view (Editorial/Digital + Events)
@@ -11684,7 +11551,7 @@ function recordPhoto(p) {
     uid: currentUser.uid, name: currentUser.name || "", dept: "edit",
     eventCode: code, brand: brandOfCode(code),
     caption: String(p.caption || "").trim().slice(0, 2200),
-    fileName: p.upName || "", webUrl: p.webUrl || "", folder: p.folder || "", folderUrl: p.folderUrl || "", showUrl: p.showUrl || "",
+    fileName: p.upName || "", webUrl: p.webUrl || "",
     thumb: thumb || "", ts: Date.now()
   })).catch(() => {});
 }
@@ -11727,15 +11594,11 @@ function notifyPhotosUploaded(batch) {
     return p.webUrl ? '<a href="' + esc(p.webUrl) + '">' + label + '</a>' : label;
   });
   const list = labels.length <= 6 ? joinAnd(labels) : labels.slice(0, 5).join(", ") + " and " + (labels.length - 5) + " more";
-  const folder = (batch[0] && (batch[0].folderUrl || batch[0].showUrl)) || msUploadFolderUrl();
-  const sub = (batch[0] && batch[0].folder) || "";
-  notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + (sub ? " to the <strong>" + esc(sub) + "</strong> folder" : "") + ": " + list +
+  const folder = msUploadFolderUrl();
+  notifyHome(esc(showLabelOf(code)) + ": " + what + " uploaded by " + esc(who) + ": " + list +
     (folder ? '. <a href="' + esc(folder) + '">Open the show folder</a>' : ".") +
     (myNotesAutoShare() ? ' · <a href="' + APP_LINK + '">See them in the bullpen</a>' : ""), null, nVid > 0);
 }
-document.getElementById("content").addEventListener("change", e => {
-  if (e.target && e.target.matches && e.target.matches("[data-ph-folder-sel]")) photoFolderPick = e.target.value;
-});
 // Queue previews are small JPEGs made one photo at a time (v198). Showing
 // each picked photo itself (a full 12-megapixel decode per 56-px square)
 // ran an iPhone out of memory around 20 photos and the app glitched or
@@ -13883,7 +13746,6 @@ if (fbReady) {
         subscribePublished();
         subscribeHomeVideoStatus();
         subscribeHomePhotos();
-        subscribePhotoFolders();
         subscribeNotifyConfig();
         renderHomeDashboard();
         return;
@@ -13940,7 +13802,6 @@ if (fbReady) {
       subscribeMyVideoStatus();
       subscribeNotifyConfig();
       subscribeResets();
-      subscribePhotoFolders();
       subscribeAccounts();
       subscribeMyProfile();
       if (isMaster()) { prefetchBullpenPasscode().catch(() => {}); loadQrLib().catch(() => {}); }
