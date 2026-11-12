@@ -2513,6 +2513,12 @@ body.home-mode .user-chip-out:hover { opacity: 1; }
 .hb-chip.ok { background: var(--hb-ok-l); color: var(--hb-ok); }
 .hb-chip.vid { background: var(--blue-light); color: var(--blue-dark); }
 .hb-chip.warn { background: var(--hb-warn-l); color: var(--hb-warn); }
+/* Recently wrapped (the week after a show's last day): orange chip with a dot,
+   and an orange dot on the brand's tab in the top bar. */
+.hb-chip.wrap { background: #FFE8D4; color: #A64800; }
+.hb-chip.wrap.long { white-space: normal; line-height: 1.3; }
+.hb-wdot { width: 7px; height: 7px; border-radius: 50%; background: #F08019; flex-shrink: 0; }
+.hb-dot.wrap { background: #FFA53D; }
 .hb-bn { font-size: 0.8rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
 .hb-none { font-size: 0.82rem; color: var(--muted); padding: 14px 2px; }
 body.home-mode .home-wrap.hb { padding-top: 22px; }
@@ -2866,7 +2872,7 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v239</div>
+      <div class="pf-ver">NCM Events Guide · v240</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -5011,6 +5017,10 @@ const SHOW_TIER = { live: 0, upcoming: 1, wrapped: 2, tbd: 3, past: 4 };
 // next show (v194, Nate, Oct. 26, 2026).
 const LAND_GRACE_DAYS = 7;
 function inLandGrace(code) { const s = showStatus(code); return s.k === "wrapped" && s.daysSince <= LAND_GRACE_DAYS; }
+// "Recently wrapped" is that same week after a show's last day. The Bullpen
+// marks it with an orange dot on the brand's tab in the top bar and an orange
+// chip on the show (v240, Nate, Nov. 12, 2026).
+function recentlyWrapped(code) { return inLandGrace(code); }
 function showRank(code) {
   const s = showStatus(code);
   if (inLandGrace(code)) return 0.5e6 + s.daysSince;   // between live and upcoming
@@ -7585,9 +7595,10 @@ function buildHomeShowSel() {
                  : `<button class="home-ev-more" type="button" data-home-past-toggle>Past shows (${past.length})</button>`;
   }
   const cs = showStatus(cur);
+  const cr = recentlyWrapped(cur);
   const keep = _hbShowMenuOpen; _hbShowMenuOpen = false;
   return `<details class="hb-pop hb-showsel"${keep ? " open" : ""}>
-    <summary title="Switch show"><span>${esc(nameOf(cur))}</span><span class="hb-chip${cs.k === "live" ? " ok" : ""}">${cs.k === "live" ? '<span class="hl-live-dot"></span>' : ""}${esc(showStatusText(cur))}</span>${HB_CHEV}</summary>
+    <summary title="Switch show"><span>${esc(nameOf(cur))}</span><span class="hb-chip${cs.k === "live" ? " ok" : cr ? " wrap" : ""}">${cs.k === "live" ? '<span class="hl-live-dot"></span>' : cr ? '<span class="hb-wdot"></span>' : ""}${esc(showStatusText(cur))}</span>${HB_CHEV}</summary>
     <div class="hb-menu">${menu}</div>
   </details>`;
 }
@@ -7598,9 +7609,13 @@ function renderHomeNav() {
   if (!nav) return;
   if (!isHome()) { nav.innerHTML = ""; return; }
   const live = bk => showsForBrand(bk).some(c => showStatus(c).k === "live");
+  const wrapped = bk => showsForBrand(bk).some(recentlyWrapped);
+  // Green dot: a show is live. Orange dot: one wrapped within the last week.
+  const dot = bk => live(bk) ? '<span class="hb-dot" title="Live now"></span>'
+    : wrapped(bk) ? '<span class="hb-dot wrap" title="Recently wrapped"></span>' : "";
   nav.innerHTML = `<span class="hb-label">Bullpen</span>
     <button class="hb-nav-btn${!homeBrandFilter ? " on" : ""}" type="button" data-home-brand="">All brands</button>` +
-    HOME_FILTER_BRANDS.map(bk => `<button class="hb-nav-btn${homeBrandFilter === bk ? " on" : ""}" type="button" data-home-brand="${bk}">${live(bk) ? '<span class="hb-dot" title="Live now"></span>' : ""}${esc(BRANDS[bk].name)}</button>`).join("");
+    HOME_FILTER_BRANDS.map(bk => `<button class="hb-nav-btn${homeBrandFilter === bk ? " on" : ""}" type="button" data-home-brand="${bk}">${dot(bk)}${esc(BRANDS[bk].name)}</button>`).join("");
 }
 function homePickBrand(bk, view) {
   homeBrandFilter = bk || null;
@@ -7802,7 +7817,10 @@ function buildHomeOverview() {
     const fk = showStatus(code).k;
     // A second line for what's next (or, with nothing coming, what was last).
     const nextUp = sortShows(showsForBrand(bk).filter(c => c !== code && EVENTS[c] && ["live", "upcoming"].includes(showStatus(c).k)))[0];
-    return { bk, brand, code, st: showStatus(code), badge: showOvStatus(code),
+    // The brand's show that wrapped within the last week, if any (it may not
+    // be the show this card leads with).
+    const recent = sortShows(showsForBrand(bk).filter(recentlyWrapped))[0] || "";
+    return { bk, brand, code, st: showStatus(code), badge: showOvStatus(code), recent,
       visited, vidPending: vidTotal - vidDone, vidDone, clips, last, latest,
       media: featured ? eventMedia(featured) : null,
       title: isPlaceholderShow(code) ? "No show loaded yet" : fk === "past" ? "No upcoming show" : showLabelOf(code),
@@ -7853,11 +7871,14 @@ function buildHomeOverview() {
   const small = c => {
     const any = c.visited || c.vidPending || c.vidDone || c.clips;
     const soon = c.st.k === "upcoming" && c.st.daysUntil <= WRAP_WINDOW_DAYS;
+    const isRecent = !!c.recent && c.recent === c.code;   // this card's show wrapped within the week
+    const alsoRecent = !!c.recent && c.recent !== c.code;  // another show of the brand did
     return `<div class="hb-up" data-home-brand="${esc(c.bk)}" role="button" tabindex="0">
       <div class="hb-up-top" style="background:${c.brand.p.blue}"><img src="./${esc(c.brand.logo)}" alt="${esc(c.brand.name)}" onerror="this.style.display='none'"></div>
       <div class="hb-up-b">
         <b>${esc(c.title)}</b>
-        ${c.badge.label ? `<span class="hb-chip${soon ? " warn" : ""}">${esc(c.badge.label)}</span>` : ""}
+        ${c.badge.label ? `<span class="hb-chip${soon ? " warn" : isRecent ? " wrap" : ""}">${isRecent ? '<span class="hb-wdot"></span>' : ""}${esc(c.badge.label)}</span>` : ""}
+        ${alsoRecent ? `<span class="hb-chip wrap long"><span class="hb-wdot"></span>Recently wrapped: ${esc(showShortLabelOf(c.recent) || showLabelOf(c.recent))}</span>` : ""}
         ${c.subline ? `<p>${esc(c.subline)}</p>` : ""}
         ${any ? `<p>${plural(c.visited, "booth")} visited · ${plural(c.vidPending, "video")} waiting${c.vidDone ? " · " + c.vidDone + " done" : ""} · ${plural(c.clips, "clip")} uploaded</p>` : ""}
         <div class="hb-up-foot"><span>${c.last ? "active " + esc(fmtAgo(c.last)) : ""}</span>${mediaLink(c)}</div>
@@ -7878,7 +7899,7 @@ function showOvStatus(code) {
   const s = showStatus(code);
   if (s.k === "live") return { k: "live", label: "Live · Day " + s.day };
   if (s.k === "upcoming") return { k: "soon", label: showStatusText(code) };
-  if (s.k === "wrapped") return { k: "quiet", label: "Wrapped" };
+  if (s.k === "wrapped") return { k: "quiet", label: recentlyWrapped(code) ? "Recently wrapped" : "Wrapped" };
   if (s.k === "tbd" && !isPlaceholderShow(code)) return { k: "quiet", label: "Dates TBD" };
   return { k: "quiet", label: "" };
 }
