@@ -2680,6 +2680,248 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
 .hb-note-row b { font-family: var(--ft); font-size: 0.78rem; font-weight: 700; color: var(--blue); padding-top: 2px; }
 .hb-note-foot { display: flex; justify-content: flex-end; padding: 16px 24px 20px; }
 .hb-note-foot .hb-btn { min-width: 108px; }
+/*NX-CSS-BEGIN*/
+/* ══ PHONE APP OVERHAUL (built locally Nov. 2026, from the approved sample) ══
+   New look and layout for the field app only (body.has-nav): a Today home,
+   a five-slot bottom bar with the add button in the middle, plain agenda and
+   booth rows, and ONE stop page that every list opens. Classes are nx-*.
+   Colors come from the same variables as the rest of the app, so every brand
+   re-skins itself. The Bullpen (body.home-mode) is untouched. */
+body.has-nav { --nx-ok: #2D7140; --nx-ok-l: #E4F2E9; --nx-warn: #8A5A00; --nx-warn-l: #FCEFD6; --nx-bad: #B3261E;
+  --nx-sh: 0 1px 2px rgba(70,52,24,0.06), 0 6px 16px rgba(70,52,24,0.07);
+  padding-bottom: calc(68px + env(safe-area-inset-bottom, 0)); }
+body.has-nav .app-header { box-shadow: none; }
+body.has-nav .progress-strip, body.has-nav .filter-bar, body.has-nav .app-footer { display: none !important; }
+body.has-nav:not(.ah-mode) #content { padding: 0 0 28px; }
+body.has-nav .header-top { padding: 11px 16px 9px; }
+body.has-nav .booths-search { padding: 2px 16px 14px; }
+body.has-nav #searchInput { background-color: var(--surface); color: var(--text); border-color: transparent; height: 44px; border-radius: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A98A8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E"); }
+body.has-nav #searchInput:focus { background-color: var(--surface); border-color: transparent; }
+body.has-nav .ph-card .ph-icon, body.has-nav .ph-card .ph-title, body.has-nav .ph-card .ph-show, body.has-nav .ph-note { display: none; }
+body.has-nav #searchInput::placeholder { color: var(--muted); }
+body.has-nav .show-pick { height: 30px; border: 0; background: rgba(255,255,255,0.16); border-radius: 999px; padding: 0 10px 0 12px; font-weight: 500; font-size: 0.78rem; }
+.nx-ava { display: none; }
+body.has-nav .nx-ava { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 0; background: #fff; color: var(--blue);
+  font-family: var(--ft); font-size: 0.72rem; font-weight: 700; flex-shrink: 0; cursor: pointer; }
+body.has-nav .nx-ava.on { box-shadow: 0 0 0 3px rgba(255,255,255,0.4); }
+body.has-nav .user-chip-name:not(.chip-admin), body.has-nav #signOutBtn { display: none; }
+
+/* bottom bar: four places and one add button */
+body.has-nav .bottom-nav { padding: 6px 6px calc(4px + env(safe-area-inset-bottom, 0)); align-items: center; border-top-color: var(--border-soft); box-shadow: none; }
+body.has-nav .bn-btn { font-family: var(--ft); font-size: 0.66rem; font-weight: 500; letter-spacing: 0; text-transform: none; gap: 2px; padding: 4px 2px 5px; position: relative; }
+body.has-nav .bn-btn svg { box-sizing: content-box; width: 21px; height: 21px; padding: 4px 13px; border-radius: 999px; stroke-width: 1.9; }
+body.has-nav .bn-btn.active { font-weight: 700; }
+body.has-nav .bn-btn.active svg { background: var(--blue-light); }
+body.has-nav .bn-add { flex: 0 0 60px; padding: 0; }
+body.has-nav .bn-add .bn-add-i { width: 48px; height: 48px; border-radius: 16px; background: var(--blue); color: #fff; display: grid; place-items: center; box-shadow: 0 6px 14px rgba(70,52,24,0.22); }
+body.has-nav .bn-add svg { padding: 0; width: 22px; height: 22px; stroke-width: 2.4; background: none; }
+.bn-bdg { position: absolute; top: 0; left: 50%; margin-left: 9px; min-width: 16px; height: 16px; border-radius: 99px; background: var(--blue); color: #fff;
+  font-size: 0.62rem; font-weight: 700; font-style: normal; display: grid; place-items: center; padding: 0 4px; box-shadow: 0 0 0 2px var(--surface); }
+.bn-bdg[hidden] { display: none; }
+body.ah-mode #bottomNav [data-v="today"], body.ah-mode #bnAdd, body:not(.ah-mode) #bnSettings, body.nx-ro #bnAdd { display: none !important; }
+
+/* shared pieces */
+.nx { font-family: var(--ft); color: var(--text); font-size: 14px; line-height: 1.35; }
+.nx-i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.nx-band { background: var(--blue); color: #fff; padding: 0 16px 14px; }
+.nx-band.tall { padding-bottom: 60px; }
+.nx-hello small { display: block; font-size: 12.5px; font-weight: 500; opacity: 0.85; }
+.nx-hello b { display: block; font-family: var(--fd); font-size: 23px; font-weight: 700; letter-spacing: -0.2px; line-height: 1.2; margin-top: 2px; }
+.nx-ttl { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; }
+.nx-ttl b { font-family: var(--fd); font-size: 23px; font-weight: 700; letter-spacing: -0.2px; }
+.nx-ttl small { font-size: 12.5px; font-weight: 500; opacity: 0.85; text-align: right; }
+.nx-seg { display: inline-flex; background: rgba(255,255,255,0.16); border-radius: 999px; padding: 3px; flex-shrink: 0; }
+.nx-seg button { border: 0; background: none; font-family: var(--ft); font-size: 12.5px; font-weight: 500; padding: 5px 12px; border-radius: 999px; color: rgba(255,255,255,0.88); cursor: pointer; }
+.nx-seg button.on { background: #fff; color: var(--blue); font-weight: 700; }
+.nx-body { padding: 0 16px; max-width: 640px; margin: 0 auto; }
+.nx-card { background: var(--surface); border-radius: 18px; box-shadow: var(--nx-sh); padding: 16px; }
+.nx-card.hero { margin-top: -46px; position: relative; }
+.nx-card.list { padding: 2px 14px; }
+.nx-kline { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 10px; }
+.nx-k { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.nx-k.b { color: var(--blue); }
+.nx-pill { font-size: 11.5px; font-weight: 700; background: var(--blue-light); color: var(--blue-dark); padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+.nx-hname { font-family: var(--fd); font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -0.2px; }
+.nx-hsub { font-size: 13.5px; color: var(--text-2); margin-top: 3px; }
+.nx-acts { display: flex; gap: 8px; margin-top: 14px; }
+.nx-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 44px; padding: 0 14px; border-radius: 12px; border: 0;
+  font-family: var(--ft); font-size: 14px; font-weight: 700; flex: 1; white-space: nowrap; cursor: pointer; text-decoration: none; -webkit-user-select: none; user-select: none; }
+.nx-btn:active { opacity: 0.75; }
+.nx-btn.pri { background: var(--blue); color: #fff; }
+.nx-btn.sec { background: var(--bg); color: var(--text); }
+.nx-btn.out { background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--border); }
+.nx-btn.sm { height: 34px; font-size: 12.5px; border-radius: 10px; flex: 0 0 auto; padding: 0 12px; }
+.nx-btn.sm .nx-i { width: 13px; height: 13px; }
+.nx-btn.lg { height: 52px; font-size: 15.5px; border-radius: 14px; width: 100%; }
+.nx-btn.lg .nx-i { width: 18px; height: 18px; }
+.nx-btn.wide { width: 100%; flex: none; }
+.nx-sech { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 4px 8px; }
+.nx-sech b { font-size: 13px; font-weight: 700; }
+.nx-sech b i { font-style: normal; color: var(--muted); font-weight: 500; margin-left: 5px; }
+.nx-sech button { border: 0; background: none; font-family: var(--ft); font-size: 12.5px; font-weight: 700; color: var(--blue); cursor: pointer; padding: 0; }
+.nx-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-top: 1px solid var(--border-soft); min-height: 54px; width: 100%;
+  background: none; border-left: 0; border-right: 0; border-bottom: 0; font-family: var(--ft); color: inherit; text-align: left; cursor: pointer; text-decoration: none; }
+.nx-row:first-child { border-top: 0; }
+.nx-row.plain { cursor: default; }
+.nx-ic { width: 32px; height: 32px; border-radius: 10px; background: var(--blue-light); color: var(--blue-dark); display: grid; place-items: center; flex-shrink: 0; }
+.nx-ic.g { background: var(--bg); color: var(--text-2); }
+.nx-ic.ok { background: var(--nx-ok-l); color: var(--nx-ok); }
+.nx-ic .nx-i { width: 15px; height: 15px; }
+.nx-tm { width: 44px; font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.nx-mn { flex: 1; min-width: 0; }
+.nx-mn > b { display: block; font-size: 14.5px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nx-mn > span { display: block; font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nx-mn.wrap > b { white-space: normal; }
+.nx-go { width: 13px; height: 13px; color: var(--muted); }
+.nx-em { font-size: 12.5px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.nx-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; padding: 4px 8px; border-radius: 7px; background: var(--bg); color: var(--text-2); white-space: nowrap; flex-shrink: 0; border: 0; font-family: var(--ft); text-decoration: none; }
+.nx-chip .nx-i { width: 11px; height: 11px; stroke-width: 2.6; }
+.nx-chip.line { background: var(--surface); box-shadow: inset 0 0 0 1px var(--border-soft); }
+.nx-chip.ok { background: var(--nx-ok-l); color: var(--nx-ok); }
+.nx-chip.vid { background: var(--blue-light); color: var(--blue-dark); }
+.nx-chip.warn { background: var(--nx-warn-l); color: var(--nx-warn); }
+button.nx-chip, a.nx-chip { cursor: pointer; }
+.nx-info { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.nx-info span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--text-2); background: var(--surface); box-shadow: inset 0 0 0 1px var(--border-soft); border-radius: 999px; padding: 7px 11px; }
+.nx-info .nx-i { width: 13px; height: 13px; color: var(--blue); }
+.nx-prog { height: 5px; border-radius: 99px; background: var(--border-soft); margin-top: 6px; overflow: hidden; }
+.nx-prog i { display: block; height: 100%; background: var(--nx-ok); border-radius: 99px; }
+.nx-quote { font-size: 13px; color: var(--text-2); border-left: 2px solid var(--border); padding-left: 9px; margin-top: 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nx-empty { text-align: center; color: var(--text-2); font-size: 13.5px; padding: 26px 18px; }
+.nx-empty b { display: block; font-family: var(--fd); font-size: 17px; color: var(--text); margin-bottom: 4px; }
+.nx-note { font-size: 12.5px; color: var(--text-2); background: var(--nx-warn-l); border-radius: 12px; padding: 10px 12px; margin-top: 12px; }
+.nx-body > .show-banner { margin: 12px 0 0; }
+.nx-prep { background: var(--bg); border-radius: 12px; padding: 10px 12px; margin-top: 12px; }
+.nx-prep label, .nx-nb label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+.nx-prep p { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 5.4em; overflow: hidden; }
+
+/* schedule */
+.nx-days { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; background: var(--surface); border-radius: 16px; padding: 4px; margin-top: 12px; box-shadow: var(--nx-sh); overflow-x: auto; scrollbar-width: none; }
+.nx-days::-webkit-scrollbar { display: none; }
+.nx-day { border: 0; background: none; border-radius: 12px; padding: 7px 4px 6px; text-align: center; font-family: var(--ft); color: var(--text); cursor: pointer; min-width: 58px; }
+.nx-day small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+.nx-day b { display: block; font-size: 17px; font-weight: 700; line-height: 1.15; }
+.nx-day i { display: block; font-style: normal; font-size: 10.5px; color: var(--muted); margin-top: 1px; white-space: nowrap; }
+.nx-day.on { background: var(--blue); color: #fff; }
+.nx-day.on small, .nx-day.on i { color: rgba(255,255,255,0.85); }
+.nx-ag { margin-top: 14px; }
+.nx-agi { display: grid; grid-template-columns: 46px 24px 1fr; margin-bottom: 8px; }
+.nx-agt { text-align: right; padding-top: 11px; font-variant-numeric: tabular-nums; }
+.nx-agt b { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.1; }
+.nx-agt span { font-size: 10.5px; color: var(--muted); }
+.nx-agr { position: relative; }
+.nx-agr::before { content: ""; position: absolute; left: 50%; top: 0; bottom: -8px; width: 2px; margin-left: -1px; background: var(--border); }
+.nx-agd { position: absolute; left: 50%; top: 14px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--bg); border: 2px solid #B9AE9C; }
+.nx-agi.done .nx-agd { background: var(--nx-ok); border-color: var(--nx-ok); }
+.nx-agi.next .nx-agd { border-color: var(--blue); background: var(--surface); box-shadow: 0 0 0 4px var(--blue-light); }
+.nx-agcs { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nx-agc { background: var(--surface); border-radius: 14px; padding: 9px 10px 9px 13px; box-shadow: 0 1px 2px rgba(70,52,24,0.06); display: flex; align-items: center; gap: 8px; min-height: 52px; min-width: 0;
+  border: 0; width: 100%; font-family: var(--ft); color: inherit; text-align: left; cursor: pointer; }
+.nx-agi.next .nx-agc:first-child { box-shadow: 0 0 0 2px var(--blue), 0 6px 16px rgba(70,52,24,0.10); }
+.nx-agc.ro { cursor: default; }
+.nx-nowln { display: grid; grid-template-columns: 46px 24px 1fr; align-items: center; margin: 0 0 8px; }
+.nx-nowln b { text-align: right; font-size: 10px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.6px; }
+.nx-nowln i { justify-self: center; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+.nx-nowln span { height: 2px; background: var(--blue-mid); border-radius: 2px; }
+.nx .sched-search-box, .nx .meal-form, .nx .sess-pick { margin-left: 0; margin-right: 0; }
+
+/* Team view (everyone side by side): its day tabs take the new strip's look */
+body.has-nav .sched-day-tabs { gap: 4px; background: var(--surface); border-radius: 16px; padding: 4px; margin: 12px 16px 8px; box-shadow: var(--nx-sh); }
+body.has-nav .sched-day-tab { border: 0; background: none; box-shadow: none; border-radius: 12px; }
+body.has-nav .sched-day-tab.active { background: var(--blue); color: #fff; }
+
+/* the stop page */
+.nx-stop { padding-top: 10px; }
+.nx-back { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; font-family: var(--ft); font-size: 13.5px; font-weight: 700; color: var(--blue); padding: 8px 6px 8px 0; cursor: pointer; }
+.nx-shtop { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.nx-shname { font-family: var(--fd); font-size: 23px; font-weight: 700; letter-spacing: -0.3px; line-height: 1.18; margin-top: 4px; }
+.nx-shmeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 9px 0 14px; }
+.nx-lnk { font-size: 13px; font-weight: 700; color: var(--blue); display: inline-flex; align-items: center; gap: 3px; border: 0; background: none; font-family: var(--ft); cursor: pointer; padding: 0; text-decoration: none; }
+.nx-lnk .nx-i { width: 12px; height: 12px; }
+.nx-grp { background: var(--surface); border-radius: 16px; box-shadow: var(--nx-sh); margin-top: 12px; padding: 2px 14px; }
+.nx-grp .nx-row { min-height: 50px; }
+.nx-tog { width: 44px; height: 26px; border-radius: 99px; background: #CFC6B8; position: relative; flex-shrink: 0; border: 0; cursor: pointer; padding: 0; }
+.nx-tog::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: left 0.15s; }
+.nx-tog.on { background: var(--blue); }
+.nx-tog.on::after { left: 21px; }
+.nx-nb { background: var(--surface); border-radius: 16px; box-shadow: var(--nx-sh); padding: 14px; margin-top: 12px; }
+.nx-nb hr { border: 0; border-top: 1px solid var(--border-soft); margin: 10px 0 12px; }
+.nx-nb textarea.nf { display: block; width: 100%; border: 0; background: none; resize: none; font-family: var(--ft); font-size: 16px; line-height: 1.4; color: var(--text);
+  padding: 2px 0; min-height: 26px; outline: none; border-radius: 0; box-shadow: none; overflow: hidden; }
+.nx-nb textarea.nf::placeholder { color: var(--muted); }
+.nx-nb.focus-post { box-shadow: 0 0 0 2px var(--blue), var(--nx-sh); }
+.nx-nb .nx-btn { margin-top: 10px; }
+.nx-foot { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--muted); margin-top: 10px; }
+.nx-foot .nx-i { width: 11px; height: 11px; }
+.nx-sel { position: relative; }
+.nx-sel select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.nx-bad { color: var(--nx-bad); }
+.nx-upctl { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.nx-upctl .upload-btn { flex: 1 1 100%; height: 52px; border-radius: 14px; border: 0; background: var(--blue); color: #fff; font-family: var(--ft); font-size: 15.5px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 0 14px; cursor: pointer; white-space: nowrap; }
+.nx-upctl .upload-btn.busy { background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-soft); pointer-events: none; }
+.nx-upctl .upload-btn.done { background: var(--nx-ok-l); color: var(--nx-ok); flex: 1 1 40%; height: 44px; font-size: 14px; }
+.nx-upctl .upload-btn.done ~ .upload-btn { flex: 1 1 40%; height: 44px; font-size: 14px; background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--border); }
+.nx-upctl .upload-btn.done ~ .upload-btn.ready { background: var(--blue); color: #fff; box-shadow: none; }
+.nx-upctl .upload-btn.allin { flex: 1 1 100%; }
+.nx-upctl .upload-btn.allin.on { background: var(--nx-ok-l); color: var(--nx-ok); box-shadow: none; }
+.nx-row .upload-btn { height: 34px; border-radius: 10px; border: 0; background: var(--blue); color: #fff; font-family: var(--ft); font-size: 12.5px; font-weight: 700; padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.nx-row .upload-btn.busy { background: var(--bg); color: var(--text-2); pointer-events: none; }
+.nx-row .upload-btn.done, .nx-row .upload-btn.allin { display: none; }
+.nx-stop .iq-box { margin: 12px 0 0; }
+
+/* booths */
+.nx-filt { display: flex; gap: 8px; padding: 12px 16px 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; max-width: 640px; margin: 0 auto; }
+.nx-filt::-webkit-scrollbar { display: none; }
+.nx-fc { display: inline-flex; gap: 6px; align-items: center; height: 34px; padding: 0 13px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border);
+  font-family: var(--ft); font-size: 13px; font-weight: 500; color: var(--text-2); flex-shrink: 0; border: 0; cursor: pointer; position: relative; }
+.nx-fc b { font-weight: 700; color: var(--muted); font-size: 12px; }
+.nx-fc.on { background: var(--text); box-shadow: none; color: #fff; }
+.nx-fc.on b { color: rgba(255,255,255,0.7); }
+.nx-seg3 { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; box-shadow: var(--nx-sh); margin: 12px 16px 0; max-width: 608px; }
+.nx-seg3 button { border: 0; background: none; font-family: var(--ft); font-size: 13px; font-weight: 500; color: var(--text-2); text-align: center; padding: 8px 0; border-radius: 9px; white-space: nowrap; cursor: pointer; }
+.nx-seg3 button b { font-size: 11.5px; font-weight: 700; color: var(--muted); margin-left: 2px; }
+.nx-seg3 button.on { background: var(--text); color: #fff; font-weight: 700; }
+.nx-seg3 button.on b { color: rgba(255,255,255,0.7); }
+.nx-bl { background: var(--surface); border-radius: 16px; margin: 0 16px; overflow: hidden; box-shadow: var(--nx-sh); }
+.nx-rw { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border: 0; border-top: 1px solid var(--border-soft); width: 100%; background: none; font-family: var(--ft); color: var(--text); text-align: left; cursor: pointer; }
+.nx-rw:first-child { border-top: 0; }
+.nx-rw b { font-size: 14.5px; flex: 1; }
+.nx-rw .nx-ct { font-size: 12px; font-weight: 500; color: var(--muted); }
+.nx-rw .nx-i { color: var(--muted); width: 13px; height: 13px; transition: transform 0.15s; }
+.nx-rw.open { background: var(--blue-light); color: var(--blue-dark); }
+.nx-rw.open .nx-ct, .nx-rw.open .nx-i { color: var(--blue-dark); }
+.nx-rw.open .nx-i { transform: rotate(90deg); }
+.nx-bt { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; border-top: 1px solid var(--border-soft); min-height: 56px; cursor: pointer; }
+.nx-bl > .nx-bt:first-child { border-top: 0; }
+.nx-bt .nx-open { font-style: normal; font-weight: 700; color: var(--nx-ok); }
+.nx-plus { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; box-shadow: inset 0 0 0 1.5px var(--border); color: var(--text-2); position: relative; }
+.nx-plus .nx-i { width: 16px; height: 16px; stroke-width: 2.4; }
+.nx-mineh { margin: 12px 16px 0; }
+
+/* uploads */
+.nx-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.nx-tile { background: var(--surface); border-radius: 14px; padding: 11px 12px; box-shadow: var(--nx-sh); }
+.nx-tile b { display: block; font-size: 22px; line-height: 1; letter-spacing: -0.4px; }
+.nx-tile span { display: block; font-size: 11.5px; color: var(--text-2); margin-top: 5px; font-weight: 500; }
+.nx-tile.hot { background: var(--blue-light); }
+.nx-tile.hot b, .nx-tile.hot span { color: var(--blue-dark); }
+.nx-st { font-size: 11.5px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+body.has-nav .ph-wrap { padding-top: 18px; }
+
+/* the add sheet */
+.nx-addsheet { position: fixed; inset: 0; z-index: 1500; background: rgba(14,27,44,0.52); display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.18s ease-out; }
+.nx-addcard { width: 100%; max-width: 520px; background: var(--bg); border-radius: 24px 24px 0 0; padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0)); animation: sheetUp 0.26s cubic-bezier(0.26, 1.04, 0.44, 1); }
+.nx-grab { width: 38px; height: 5px; border-radius: 99px; background: var(--border); margin: 0 auto 12px; }
+.nx-shb { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; color: var(--text-2); box-shadow: inset 0 0 0 1px var(--border-soft); flex-shrink: 0; border: 0; cursor: pointer; }
+.nx-addg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.nx-addo { background: var(--surface); border-radius: 14px; padding: 14px 12px; box-shadow: var(--nx-sh); font-family: var(--ft); font-size: 13.5px; font-weight: 700; color: var(--text); display: flex; flex-direction: column; gap: 9px; border: 0; text-align: left; cursor: pointer; }
+.nx-addo .nx-ic { width: 34px; height: 34px; }
+.nx-addo .nx-ic .nx-i { width: 17px; height: 17px; }
+#content.view-in .nx-card, #content.view-in .nx-agi, #content.view-in .nx-bl, #content.view-in .nx-grp, #content.view-in .nx-nb { animation: fadeUp 0.2s ease both; }
+/*NX-CSS-END*/
 </style>
 </head>
 <body>
@@ -2784,6 +3026,7 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
       <span class="user-chip-name" id="userChipName"></span>
       <span class="admin-tag" id="adminTag" style="display:none">Admin</span>
       <button class="user-chip-member" id="homeMemberBtn" style="display:none" type="button" title="Switch who's at the desk"></button>
+      <button class="nx-ava" id="nxAva" type="button" title="Profile" aria-label="Profile"></button>
       <button class="user-chip-gear" id="settingsBtn" type="button" title="Profile" aria-label="Profile">⚙</button>
       <button class="user-chip-out" id="signOutBtn" type="button">Sign out</button>
     </div>
@@ -2818,17 +3061,24 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
 <input type="file" id="vidFileInput" accept="video/*" style="display:none">
 <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
-  <button class="bn-btn active" type="button" data-v="schedule">
+  <button class="bn-btn active" type="button" data-v="today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 10v10h13V10"/></svg>
+    <span>Today</span>
+  </button>
+  <button class="bn-btn" type="button" data-v="schedule">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
     <span>Schedule</span>
+  </button>
+  <button class="bn-btn bn-add" type="button" id="bnAdd" aria-label="Add to your schedule">
+    <span class="bn-add-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>
   </button>
   <button class="bn-btn" type="button" data-v="booths">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/></svg>
     <span>Booths</span>
   </button>
   <button class="bn-btn" type="button" id="bnVideos" data-v="photos">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.6"/></svg>
-    <span>Videos</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    <span>Uploads</span><i class="bn-bdg" id="bnUpBadge" hidden></i>
   </button>
   <button class="bn-btn bn-home" type="button" data-v="admin">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg>
@@ -2844,6 +3094,15 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
   </button>
 </nav>
 <div id="toast"></div>
+
+<!-- ── The plus in the bottom bar: what to add to a day ── -->
+<div id="nxAddSheet" class="nx-addsheet nx" style="display:none" role="dialog" aria-modal="true" aria-labelledby="nxAddTitle">
+  <div class="nx-addcard">
+    <div class="nx-grab"></div>
+    <div class="nx-shtop"><span class="nx-k" id="nxAddTitle">Add to your schedule</span><button class="nx-shb" type="button" data-nx-add-close aria-label="Close"><svg class="nx-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="nx-addg" id="nxAddGrid"></div>
+  </div>
+</div>
 
 <!-- ── Profile (its own bottom-nav tab; the card parks in this sheet otherwise) ── -->
 <div id="settingsSheet" class="settings-sheet" style="display:none">
@@ -6550,9 +6809,9 @@ function msResumeBooth() {
   msReadyFor = i;
   rowOpen.add(rowKey(CO[i].b));   // its row is open when Booths draws
   setTimeout(() => {
+    nxStop = { k: "b", i, slot: "" };   // straight to that booth's page, ready to pick the video
     render();
-    const card = document.getElementById("cc" + i);
-    if (card) card.scrollIntoView({ block: "center" });
+    scrollAppTo(0);
   }, 0);
 }
 // Token cache + freshness. Microsoft's browser sign-ins renew silently for
@@ -8076,7 +8335,7 @@ function subscribeAccounts() {
     accounts = {};
     snap.forEach(d => { const x = d.data(); if (x && x.b != null) accounts[x.b + "||" + x.n] = { id: d.id, ...x }; });
     fillMyAccountTags();
-    if (activeView === "booths" || activeView === "schedule") render();
+    if (activeView === "booths" || activeView === "schedule" || activeView === "today") render();
   }, () => {});
 }
 // My accounts set my own tags (only where I haven't chosen one).
@@ -8642,7 +8901,7 @@ function esc(s){
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 
-let activeView   = "schedule";   // "schedule" | "booths" (schedule is the landing view)
+let activeView   = "today";      // "today" | "schedule" | "booths" | "photos" | "settings" (Today is the landing view)
 // Booth rows render lazily: headers always, cards only when a row is opened.
 // (226 cards x ~200 <option>s each was tens of thousands of hidden elements.)
 const rowOpen = new Set();       // row keys the user has expanded (survives re-renders)
@@ -8807,6 +9066,854 @@ function fitNf(el) {
 }
 function fitOpenNotes() { document.querySelectorAll(".notes-content.open textarea.nf").forEach(fitNf); }
 document.addEventListener("input", e => { if (e.target && e.target.matches && e.target.matches("textarea.nf")) fitNf(e.target); }, true);
+//NX-JS-BEGIN
+// ══ PHONE APP OVERHAUL (built locally Nov. 2026, from the approved sample) ══
+// New field-app screens: Today, a plain agenda, one-line booth rows, an
+// uploads to-do list and ONE stop page that every list opens. They draw into
+// #content like the old views did and reuse the old data-* hooks wherever a
+// control does the same job (data-upv, data-rm, data-mv-*, data-claim,
+// data-visit, data-day, .sched-sel, textarea.nf), so saving, syncing, uploads
+// and alerts are untouched. New hooks are data-nx-*.
+// `var`, not let: render() can run before this block does.
+var nxStop = null;        // the stop page on screen: {k:"b",i,slot} | {k:"meal"|"off"|"sess",id}
+var nxStopY = 0;          // where the list was scrolled when the stop opened
+var nxMineDef = {};       // show code -> true once Booths has defaulted to My accounts
+var NX_P = {
+  chevr: '<path d="M9 6l6 6-6 6"/>', back: '<path d="M15 6l-6 6 6 6"/>',
+  pin: '<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.800 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  vid: '<rect x="2" y="6" width="13" height="12" rx="2.5"/><path d="M15 10.5l7-4v11l-7-4z"/>',
+  up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  note: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  shirt: '<path d="M8 3l4 2 4-2 5 4-3 3-2-1v12H8V9l-2 1-3-3z"/>',
+  booth: '<path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.600 2.900-6 6.500-6s6.500 2.400 6.500 6M16 4.800a3.500 3.500 0 0 1 0 6.400M18 14.300c2.100.8 3.500 2.800 3.500 5.700"/>',
+  dl: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  meal: '<path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 3c-2 1.5-3 4-3 7h3v11"/>',
+  brief: '<rect x="3" y="7.5" width="18" height="12.5" rx="2.5"/><path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2M3 13h18"/>',
+  cap: '<path d="M2 9.5L12 5l10 4.500L12 14z"/><path d="M6 11.5V16c1.600 1.400 3.700 2 6 2s4.400-.6 6-2v-4.500"/>',
+  share: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.500 2.700 2.500 15.300 0 18M12 3c-2.500 2.700-2.500 15.300 0 18"/>'
+};
+function nxi(n, cls) { return `<svg class="nx-i${cls ? " " + cls : ""}" viewBox="0 0 24 24" aria-hidden="true">${NX_P[n] || ""}</svg>`; }
+function nxSales() { return !myNotesAutoShare(); }
+// "2:15 PM" -> rail parts and AP text ("2:15 p.m.", "10 a.m.").
+function nxT(t) {
+  const m = String(t || "").match(/^(\d{1,2}):(\d{2})\s*([AP])M$/i);
+  if (!m) return { hm: String(t || ""), ap: "", txt: String(t || "") };
+  const ap = m[3].toUpperCase() === "A" ? "a.m." : "p.m.";
+  return { hm: m[1] + ":" + m[2], ap, txt: (m[2] === "00" ? m[1] : m[1] + ":" + m[2]) + " " + ap };
+}
+var NX_WD = ["Sun.", "Mon.", "Tues.", "Wed.", "Thurs.", "Fri.", "Sat."];
+function nxDate(code, d) {
+  const iso = ((resolveEvent(code) || {}).dates || [])[d - 1];
+  if (!iso) return null;
+  const [y, m, dd] = iso.split("-").map(Number);
+  return new Date(y, m - 1, dd);
+}
+function nxDayName(code, d) {
+  const dt = nxDate(code, d);
+  return dt ? dt.toLocaleDateString("en-US", { weekday: "long" }) : "Day " + d;
+}
+function nxWhen(code, d, t) {
+  const dt = nxDate(code, d);
+  return (dt ? NX_WD[dt.getDay()] + ", " + fmtMonthDay(dt) : "Day " + d) + (t ? " · " + nxT(t).txt : "");
+}
+function nxWhenShort(code, slot) {
+  const [d, t] = String(slot || "").split("|");
+  const dt = nxDate(code, +d);
+  return (dt ? NX_WD[dt.getDay()] : "Day " + d) + " " + nxT(t).txt;
+}
+function nxNowMin() { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
+function nxClips(s) { return (s && ((s.vclips && s.vclips.length) || (s.vlink ? 1 : 0))) || 0; }
+function nxPost(s) { return !!(s && String(s.post || "").trim()); }
+
+// Everything on one day of my schedule, in time order.
+function nxDayEntries(state, day) {
+  const out = [];
+  CO.forEach((c, i) => {
+    const s = state[key(i)];
+    boothSlots(s).forEach(sv => {
+      const [d, t] = sv.split("|");
+      if (+d === +day) out.push({ k: "b", i, c, s: s || {}, slot: sv, time: t, extra: sv !== s.scheduled, ref: "b:" + i + "@" + sv });
+    });
+  });
+  loadMeals().filter(m => +m.day === +day).forEach(m => out.push({ k: "meal", m, time: m.time, ref: "meal:" + m.id }));
+  loadOffsite().filter(o => +o.day === +day).forEach(o => out.push({ k: "off", o, time: o.time, ref: "off:" + o.id }));
+  mySessions().filter(x => +x.day === +day).forEach(x => out.push({ k: "sess", x, time: x.time, ref: "sess:" + x.id }));
+  out.forEach(e => {
+    const it = e.k === "b" ? { kind: "booth", time: e.time }
+      : e.k === "meal" ? { kind: "meal", time: e.time, notes: e.m.notes || "" }
+      : e.k === "off" ? { kind: "offsite", time: e.time, notes: e.o.notes || "" }
+      : { kind: "session", time: e.time, end: e.x.end || "", notes: e.x.notes || "" };
+    e.s0 = e.time ? timeToMin(e.time) : 0;
+    e.e0 = itemEnd(it) || e.s0 + 30;
+  });
+  return out.sort((a, b) => a.s0 - b.s0);
+}
+function nxTitle(e) {
+  if (e.k === "b") return e.c.n;
+  if (e.k === "meal") return (MEAL_LABEL[e.m.type] || "Meal") + (e.m.company ? " with " + e.m.company : "");
+  if (e.k === "off") return e.o.title || (e.o.company ? "Meeting with " + e.o.company : "Off-site meeting");
+  return e.x.title || "Education session";
+}
+function nxAcctWords(c, own) {
+  if (!canSeeAccounts() || c.x) return "";
+  const a = accounts[acctKey(c)];
+  if (!a) return own ? "open" : "Open";
+  const kind = a.status === "advertiser" ? "Advertiser" : "Prospect";
+  if (isMyAcct(a)) return own ? "your " + kind.toLowerCase() : "Yours · " + kind;
+  return own ? "" : firstNameOf(a.rep || a.repEmail || "Rep") + " · " + kind;
+}
+function nxSub(e) {
+  if (e.k === "b") {
+    const w = nxSales() ? nxAcctWords(e.c, true) : "";
+    return boothLbl(e.c.b) + (w && w !== "open" ? " · " + w : "") + (e.extra ? " · another visit" : "");
+  }
+  if (e.k === "meal") return e.m.notes || (e.m.company ? "" : "No guest set");
+  if (e.k === "off") return [e.o.company && e.o.title ? "With " + e.o.company : "", e.o.location].filter(Boolean).join(" · ");
+  return [e.x.room, e.x.end ? "until " + nxT(e.x.end).txt : ""].filter(Boolean).join(" · ");
+}
+function nxOverlapText(ovo) {
+  if (!ovo) return "";
+  if (!ovo.others.size) return "Double-booked";
+  return "Overlaps " + [...ovo.others][0].replace(/^(Booth visit|Video): /, "") + (ovo.others.size > 1 ? " and more" : "");
+}
+// The one status a stop shows on a list row.
+function nxStatusChip(e, ovo) {
+  if (e.k === "b") {
+    const s = e.s, n = nxClips(s);
+    if (nxSales()) {
+      if (nxPost(s)) return `<span class="nx-chip ok">${nxi("check")}Notes</span>`;
+      if (s.visited) return `<span class="nx-chip warn">Needs notes</span>`;
+    } else {
+      if (upProg[e.i] != null) return `<span class="nx-chip vid">Sending ${upProg[e.i]}%</span>`;
+      if (n) return `<span class="nx-chip ok">${nxi("check")}${n > 1 ? n + " clips in" : "Clip in"}</span>`;
+      if (s.video) return `<span class="nx-chip vid">${nxi("vid")}${nxOwed(e.i, s) ? "Video owed" : "Video"}</span>`;
+      if (s.visited) return `<span class="nx-chip ok">${nxi("check")}Visited</span>`;
+    }
+  }
+  if (ovo) return `<span class="nx-chip warn" title="${esc(nxOverlapText(ovo))}">${ovo.others.size ? "Overlaps" : "Double-booked"}</span>`;
+  return nxi("chevr", "nx-go");
+}
+// A flagged video is owed once its stop has started (or the booth was
+// visited, or it isn't on the schedule at all) and no clip is in.
+function nxOwed(i, s) {
+  if (!s || !s.video || nxClips(s) || upProg[i] != null) return false;
+  if (s.visited) return true;
+  const slots = boothSlots(s);
+  if (!slots.length) return true;
+  const code = currentEventCode(), today = showDayToday(code), k = showStatus(code).k;
+  if (!today) return k === "wrapped" || k === "past";
+  const now = nxNowMin();
+  return slots.some(sv => { const [d, t] = sv.split("|"); return +d < today || (+d === today && timeToMin(t) <= now); });
+}
+function nxOwedList(state) {
+  return CO.map((c, i) => ({ c, i, s: state[key(i)] || {} })).filter(x => !x.c.x && nxOwed(x.i, x.s));
+}
+function nxNeedNotes(state) {
+  return CO.map((c, i) => ({ c, i, s: state[key(i)] || {} })).filter(x => x.s.visited && !nxPost(x.s) && boothShown(x.c, x.i, state));
+}
+// The upload control for a list row: same states and hooks as the booth
+// page's big button, in a row-sized button or chip.
+function nxUpBtn(c, s) {
+  const i = c.i;
+  if (!s.video) return "";
+  if (!msUploadsActive()) return (!_upCfgKnown && currentUser && myNotesAutoShare()) ? `<span class="nx-chip" data-up-wait>Connecting…</span>` : "";
+  if (upProg[i] != null) return `<span class="nx-chip vid" data-upprog="${i}">Uploading ${upProg[i]}%</span>`;
+  if (msChecking === i) return `<span class="nx-chip">Checking Microsoft…</span>`;
+  if (msReadyFor === i) return `<button class="nx-btn pri sm" type="button" data-upv="${i}">${nxi("up")}Pick video</button>`;
+  const resume = !!upPending()[upResumeKey(c)];
+  return `<button class="nx-btn pri sm" type="button" data-upv="${i}">${nxi("up")}${resume ? "Resume" : nxClips(s) ? "More" : "Upload"}</button>`;
+}
+function nxFloorBtn(c, cls, label) {
+  const code = currentEventCode();
+  if (!c || c.x) return "";
+  if (floorOf(code)) return `<button class="${cls}" type="button" data-floor="${esc(c.b)}">${label}</button>`;
+  const u = boothMapUrl(c.b);
+  return u ? `<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener">${label}</a>` : "";
+}
+function nxInfo(code, day) {
+  const ev = EVENTS[code];
+  if (!ev) return "";
+  const iso = (ev.dates || [])[day - 1];
+  const wear = (iso && ev.attire && ev.attire[iso]) || "", hrs = (iso && ev.hours && ev.hours[iso]) || "";
+  const v = day === 1 ? ev.venue : null, ho = day === 1 ? ev.hotel : null;
+  const place = (x, lbl) => x ? `<a class="nx-row" href="${esc(mapsUrl(x.name + ", " + x.address))}" target="_blank" rel="noopener">
+      <span class="nx-ic g">${nxi("pin")}</span><div class="nx-mn"><b>${esc(x.name)}</b><span>${lbl ? lbl + " · " : ""}${esc(x.address)}</span></div><span class="nx-em">Map</span></a>` : "";
+  return ((hrs || wear) ? `<div class="nx-info">${hrs ? `<span>${nxi("clock")}${esc(hrs)}</span>` : ""}${wear ? `<span>${nxi("shirt")}${esc(wear)}</span>` : ""}</div>` : "")
+    + ((v || ho) ? `<div class="nx-card list" style="margin-top:12px">${place(v, "")}${place(ho, "Hotel")}</div>` : "");
+}
+function nxFirstName() { return (((currentUser && currentUser.name) || "").trim().split(/\s+/)[0]) || ""; }
+function nxBand(title, right, tall) {
+  return `<div class="nx-band${tall ? " tall" : ""}"><div class="nx-ttl"><b>${title}</b>${right || ""}</div></div>`;
+}
+
+// ── Today ──
+function nxRenderToday(state) {
+  const el = document.getElementById("content");
+  const code = currentEventCode(), day = showDayToday(code), nDays = showDayCount(code), sales = nxSales();
+  const n = new Date(), now = nxNowMin(), hr = n.getHours();
+  const greet = (hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening") + (nxFirstName() ? ", " + esc(nxFirstName()) : "");
+  const dateLine = n.toLocaleDateString("en-US", { weekday: "long" }) + ", " + fmtMonthDay(n) + (day ? " · Day " + day + " of " + nDays : "");
+  const st = showStatus(code);
+  let hero = "", later = "";
+  const todays = day ? nxDayEntries(state, day) : [];
+  const ahead = todays.filter(e => e.e0 - e.s0 < LONG_BLOCK && e.e0 > now);
+  const overlaps = day ? dayOverlaps(buildMyScheduleItems(), day) : new Map();
+  if (day && ahead.length) {
+    const x = ahead[0], mins = x.s0 - now;
+    const pill = mins <= 0 ? "until " + nxT(fmtTime(x.e0)).txt : mins < 60 ? "in " + mins + " min" : nxT(x.time).txt;
+    const sub = [nxT(x.time).txt, nxSub(x)].filter(Boolean).join(" · ");
+    let acts;
+    if (x.k === "b") {
+      const fl = nxFloorBtn(x.c, "nx-btn " + (sales ? "sec" : "pri"), nxi("pin") + "Floor plan");
+      acts = sales
+        ? `<button class="nx-btn pri" type="button" data-nx-stop="${esc(x.ref)}" data-nx-focus="1">${nxi("note")}Take notes</button>${fl}`
+        : `${fl}<button class="nx-btn ${fl ? "sec" : "pri"}" type="button" data-nx-stop="${esc(x.ref)}">Open stop</button>`;
+    } else acts = `<button class="nx-btn pri" type="button" data-nx-stop="${esc(x.ref)}">Open stop</button>`;
+    const pre = x.k === "b" && sales && String(x.s.pre || "").trim();
+    hero = `<div class="nx-card hero">
+      <div class="nx-kline"><span class="nx-k b">${mins <= 0 ? "Now" : "Up next"}</span><span class="nx-pill">${esc(pill)}</span></div>
+      <div class="nx-hname">${esc(nxTitle(x))}</div>
+      <div class="nx-hsub">${esc(sub)}</div>
+      ${pre ? `<div class="nx-prep"><label>Before the visit</label><p>${esc(pre)}</p></div>` : ""}
+      <div class="nx-acts">${acts}</div>
+    </div>`;
+    const rest = ahead.slice(1, 5);
+    if (rest.length) later = `<div class="nx-sech"><b>Later today</b><button type="button" data-nx-go="schedule">Full schedule</button></div>
+      <div class="nx-card list">${rest.map(e => `<button class="nx-row" type="button" data-nx-stop="${esc(e.ref)}">
+        <span class="nx-tm">${esc(nxT(e.time).hm)}</span><div class="nx-mn"><b>${esc(nxTitle(e))}</b><span>${esc(nxSub(e))}</span></div>
+        ${overlaps.get(e.time) ? `<span class="nx-chip warn">${overlaps.get(e.time).others.size ? "Overlaps" : "Double-booked"}</span>` : ""}</button>`).join("")}</div>`;
+  } else if (day) {
+    hero = `<div class="nx-card hero">
+      <div class="nx-kline"><span class="nx-k b">Today</span></div>
+      <div class="nx-hname">${todays.length ? "You're done for the day" : "Nothing on your schedule today"}</div>
+      <div class="nx-hsub">${todays.length ? todays.length + " stop" + (todays.length === 1 ? "" : "s") + " today" : "Tap + to add a booth, a meal or a meeting."}</div>
+      <div class="nx-acts"><button class="nx-btn sec" type="button" data-nx-go="schedule">Full schedule</button></div>
+    </div>`;
+  } else {
+    const dates = st.start && st.end ? fmtShowDates(st.start, st.end) : "";
+    hero = `<div class="nx-card hero">
+      <div class="nx-kline"><span class="nx-k b">${st.k === "upcoming" ? "Next show" : st.k === "wrapped" ? "Just wrapped" : st.k === "past" ? "Past show" : "Show"}</span>${EVENTS[code] ? `<span class="nx-pill">${esc(showStatusText(code))}</span>` : ""}</div>
+      <div class="nx-hname">${esc(showLabelOf(code) || "Your show")}</div>
+      ${dates ? `<div class="nx-hsub">${esc(dates)}</div>` : ""}
+      <div class="nx-acts"><button class="nx-btn pri" type="button" data-nx-go="schedule">Open schedule</button></div>
+    </div>`;
+    const first = st.k === "upcoming" ? nxDayEntries(state, 1).slice(0, 4) : [];
+    if (first.length) later = `<div class="nx-sech"><b>${esc(nxDayName(code, 1))}, the first day</b><button type="button" data-nx-go="schedule">Full schedule</button></div>
+      <div class="nx-card list">${first.map(e => `<button class="nx-row" type="button" data-nx-stop="${esc(e.ref)}">
+        <span class="nx-tm">${esc(nxT(e.time).hm)}</span><div class="nx-mn"><b>${esc(nxTitle(e))}</b><span>${esc(nxSub(e))}</span></div></button>`).join("")}</div>`;
+  }
+  // What is still owed: clips for flagged videos (Editorial) and notes.
+  const owed = sales ? [] : nxOwedList(state);
+  const sending = sales ? [] : Object.keys(upProg).map(k => +k).filter(i => CO[i]);
+  const need = nxNeedNotes(state);
+  const rows = owed.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("vid")}</span>
+        <div class="nx-mn"><b>${esc(x.c.n)}</b><span>Video flagged, no clip yet</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`)
+    .concat(sending.map(i => `<div class="nx-row" data-nx-stop="b:${i}"><span class="nx-ic">${nxi("up")}</span>
+        <div class="nx-mn"><b>${esc(CO[i].n)}</b><span data-upprog="${i}">Uploading ${upProg[i]}%</span></div></div>`))
+    .concat(need.map(x => sales
+      ? `<div class="nx-row" data-nx-stop="b:${x.i}" data-nx-focus="1"><span class="nx-ic g">${nxi("note")}</span>
+        <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${x.s.vts ? "Visited " + esc(nxT(fmtTime(new Date(x.s.vts).getHours() * 60 + new Date(x.s.vts).getMinutes())).txt) : "Visited"}</span></div><button class="nx-btn sec sm" type="button" data-nx-stop="b:${x.i}" data-nx-focus="1">Take notes</button></div>`
+      : `<button class="nx-row" type="button" data-nx-stop="b:${x.i}" data-nx-focus="1"><span class="nx-ic g">${nxi("note")}</span>
+        <div class="nx-mn"><b>${esc(x.c.n)}</b><span>Visited, no notes yet</span></div>${nxi("chevr", "nx-go")}</button>`));
+  const catchUp = rows.length
+    ? `<div class="nx-sech"><b>${sales ? "Needs notes" : "Catch up"}<i>${rows.length}</i></b></div><div class="nx-card list">${rows.join("")}</div>`
+    : (day || st.k === "wrapped") ? `<div class="nx-sech"><b>${sales ? "Needs notes" : "Catch up"}</b></div><div class="nx-card list"><div class="nx-row plain"><span class="nx-ic ok">${nxi("check")}</span><div class="nx-mn"><b>You're caught up</b><span>${sales ? "Every visit has notes." : "Nothing is owed right now."}</span></div></div></div>` : "";
+  let mine = "";
+  if (sales && canSeeAccounts()) {
+    const my = CO.map((c, i) => ({ c, i })).filter(x => !x.c.x && isMyAcct(accounts[acctKey(x.c)]));
+    if (my.length) {
+      const done = my.filter(x => nxPost(state[key(x.i)])).length;
+      mine = `<div class="nx-card list" style="margin-top:10px"><button class="nx-row" type="button" data-nx-go="mine"><span class="nx-ic">${nxi("users")}</span>
+        <div class="nx-mn"><b>My accounts</b><div class="nx-prog"><i style="width:${Math.round(done / my.length * 100)}%"></i></div><span style="margin-top:4px">Notes on ${done} of ${my.length}</span></div>${nxi("chevr", "nx-go")}</button></div>`;
+    }
+  }
+  el.innerHTML = `<div class="nx"><div class="nx-band tall"><div class="nx-hello"><small>${esc(dateLine)}</small><b>${greet}</b></div></div>
+    <div class="nx-body">${hero}${catchUp}${mine}${later}${nxInfo(code, day || 1)}</div></div>`;
+  updateStats(state);
+}
+
+// ── Schedule (mine) ──
+function nxSchedBand() {
+  const mine = currentUser ? currentUser.uid : null;
+  const others = Object.values(teamSchedules).filter(s => s.uid !== mine).length;
+  const team = schedAllView || !!viewedScheduleUid;
+  const seg = others ? `<span class="nx-seg"><button type="button" data-nx-sv="mine"${team ? "" : ' class="on"'}>Mine</button><button type="button" data-nx-sv="team"${team ? ' class="on"' : ""}>Team</button></span>` : "";
+  return `<div class="nx">${nxBand("Schedule", seg)}</div>`;
+}
+function nxDayStrip(counts) {
+  const code = currentEventCode();
+  return `<div class="nx-days">${showDays(code).map(d => {
+    const dt = nxDate(code, d), c = counts[d] || 0;
+    return `<button class="nx-day${schedDay === d ? " on" : ""}" type="button" data-day="${d}"><small>${dt ? NX_WD[dt.getDay()] : "Day"}</small><b>${dt ? dt.getDate() : d}</b><i>${c} stop${c === 1 ? "" : "s"}</i></button>`;
+  }).join("")}</div>`;
+}
+function nxRenderMySchedule(state, hadSearchFocus) {
+  const el = document.getElementById("content");
+  const code = currentEventCode(), nDays = showDayCount(code);
+  if (schedDay > nDays) schedDay = 1;
+  const counts = {};
+  showDays(code).forEach(d => { counts[d] = nxDayEntries(state, d).length; });
+  const entries = nxDayEntries(state, schedDay);
+  const today = showDayToday(code), now = nxNowMin(), isToday = today === schedDay;
+  const overlaps = dayOverlaps(buildMyScheduleItems(), schedDay);
+  const next = isToday ? entries.find(e => e.e0 - e.s0 < LONG_BLOCK && e.e0 > now) : null;
+  const dayDone = today ? schedDay < today : (showStatus(code).k === "wrapped" || showStatus(code).k === "past");
+  // The add-a-booth search, same list and "+ Time" menu as before.
+  const searchHtml = (() => {
+    if (!schedSearchQ) return "";
+    const matches = CO.map((c, i) => ({ ...c, i })).filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))).slice(0, 8);
+    if (!matches.length) return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
+    return matches.map(c => {
+      const cur = boothSlots(state[key(c.i)]);
+      const meta = cur.length ? "On your schedule: " + cur.map(v => esc(nxWhenShort(code, v))).join(", ") + ". Pick a time to add another visit." : "";
+      return `<div class="sched-result-row"><span class="sched-result-name">${esc(c.n)}${meta ? `<span class="sched-result-meta">${meta}</span>` : ""}</span>
+          <span class="sched-result-booth">${esc(c.b)}</span>
+          <select class="sched-add-sel" data-add-i="${c.i}"><option value="">+ Time</option>${TIME_SLOTS.map(t => `<option value="${esc(t)}">${t}</option>`).join("")}</select></div>`;
+    }).join("");
+  })();
+  let ag = "";
+  if (!entries.length) {
+    ag = `<div class="nx-empty"><b>Nothing booked on ${esc(nxDayName(code, schedDay))}</b>Tap + to add a booth, a meal or a meeting.</div>`;
+  } else {
+    const times = [...new Set(entries.map(e => e.time))];
+    let nowDrawn = false;
+    ag = `<div class="nx-ag">` + times.map(t => {
+      const es = entries.filter(e => e.time === t), tt = nxT(t), ovo = overlaps.get(t);
+      const isNext = next && es.includes(next);
+      const done = es.every(e => e.k === "b" ? (e.s.visited || nxClips(e.s)) : (dayDone || (isToday && e.e0 <= now)));
+      let line = "";
+      if (isToday && !nowDrawn && es[0].s0 > now) { nowDrawn = true; line = `<div class="nx-nowln"><b>Now</b><i></i><span></span></div>`; }
+      return line + `<div class="nx-agi${done ? " done" : ""}${isNext ? " next" : ""}" data-slot="${esc(t)}">
+        <div class="nx-agt"><b>${esc(tt.hm)}</b><span>${esc(tt.ap)}</span></div><div class="nx-agr"><span class="nx-agd"></span></div>
+        <div class="nx-agcs">${es.map(e => `<button class="nx-agc" type="button" data-nx-stop="${esc(e.ref)}"><div class="nx-mn wrap"><b>${esc(nxTitle(e))}</b><span>${esc(nxSub(e))}</span></div>${nxStatusChip(e, ovo)}</button>`).join("")}</div>
+      </div>`;
+    }).join("") + `</div>`;
+  }
+  el.innerHTML = nxSchedBand() + `<div class="nx"><div class="nx-body">${showStatusBannerHtml()}${nxDayStrip(counts)}${nxInfo(code, schedDay)}
+    ${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
+      <input class="sched-search-input" type="text" placeholder="Search to add to ${esc(nxDayName(code, schedDay))}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
+      <div class="sched-results" id="sched-results">${searchHtml}</div></div>` : ""}
+    ${mealFormOpen ? buildMealForm() : ""}${offFormOpen ? buildOffsiteForm() : ""}${sessPickOpen ? buildSessionPicker() : ""}
+    ${ag}</div></div>`;
+  const dl = document.getElementById("co-datalist");
+  if (dl && !dl.childElementCount) dl.innerHTML = CO.filter(c => !c.x).map(c => `<option value="${esc(c.n)}">`).join("");
+  if (hadSearchFocus) document.querySelector(".sched-search-input")?.focus();
+  updateStats(state);
+}
+
+// A teammate's schedule: the same agenda, view only.
+function nxRenderTeammate(state, tm) {
+  const el = document.getElementById("content"), code = currentEventCode();
+  const items = withPublished(tm);
+  const first = (tm.name || "Teammate").trim().split(/\s+/)[0];
+  const nDays = showDayCount(code);
+  if (schedDay > nDays) schedDay = 1;
+  const counts = {};
+  items.forEach(it => { if (it.day >= 1 && it.day <= nDays) counts[it.day] = (counts[it.day] || 0) + 1; });
+  const note = tm.notSignedUp ? first + " hasn't signed up yet. This is the schedule published for them; it loads on their phone when they sign up."
+    : pubPending(tm) ? "Includes published updates that haven't reached " + first + "'s phone yet." : "";
+  const day = items.filter(it => +it.day === schedDay && it.time).sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
+  const title = it => it.kind === "booth" ? (it.boothName || "Booth visit")
+    : it.kind === "meal" ? (MEAL_LABEL[it.mealType] || "Meal") + (it.company ? " with " + it.company : "")
+    : it.kind === "session" ? (it.title || "Education session")
+    : (it.title || (it.company ? "Meeting with " + it.company : "Off-site meeting"));
+  const sub = it => it.kind === "booth" ? boothLbl(it.boothNum || "")
+    : it.kind === "session" ? (it.room || "")
+    : it.kind === "offsite" ? [it.company && it.title ? "With " + it.company : "", it.location].filter(Boolean).join(" · ") : (it.notes || "");
+  const times = [...new Set(day.map(it => it.time))];
+  const ag = !day.length
+    ? `<div class="nx-empty"><b>Nothing booked on ${esc(nxDayName(code, schedDay))}</b>${esc(first)} hasn't scheduled anything for this day.</div>`
+    : `<div class="nx-ag">` + times.map(t => {
+        const tt = nxT(t);
+        return `<div class="nx-agi" data-slot="${esc(t)}"><div class="nx-agt"><b>${esc(tt.hm)}</b><span>${esc(tt.ap)}</span></div><div class="nx-agr"><span class="nx-agd"></span></div>
+          <div class="nx-agcs">${day.filter(it => it.time === t).map(it => `<div class="nx-agc ro"><div class="nx-mn wrap"><b>${esc(title(it))}</b><span>${esc(sub(it))}</span></div>
+            ${it.kind === "booth" && it.video ? `<span class="nx-chip vid">${nxi("vid")}Video</span>` : ""}
+            ${it.kind === "booth" && it.boothNum && floorOf(code) ? `<button class="nx-chip line" type="button" data-floor="${esc(it.boothNum)}">${nxi("pin")}Map</button>` : ""}</div>`).join("")}</div></div>`;
+      }).join("") + `</div>`;
+  el.innerHTML = nxSchedBand() + `<div class="nx"><div class="nx-body">
+    <div class="nx-note" style="background:var(--blue-light);color:var(--blue-dark);font-weight:700">Viewing ${esc(tm.name || "a teammate")} · view only</div>
+    ${note ? `<div class="nx-note">${esc(note)}</div>` : ""}${nxDayStrip(counts)}${nxInfo(code, schedDay)}${ag}</div></div>`;
+  updateStats(state);
+}
+
+// ── Booths ──
+function nxBoothRow(c, state, opts) {
+  const s = state[key(c.i)] || {}, sales = nxSales(), code = currentEventCode();
+  const words = canSeeAccounts() ? nxAcctWords(c, false) : "";
+  const sub = [esc(boothLbl(c.b)),
+    words ? (words === "Open" ? `<i class="nx-open">Open</i>` : esc(words)) : "",
+    s.scheduled ? esc(nxWhenShort(code, s.scheduled)) : "",
+    c.x ? "No longer listed" : ""].filter(Boolean).join(" · ");
+  const n = nxClips(s);
+  let right;
+  if (opts && opts.right != null) right = opts.right;
+  else if (sales && nxPost(s)) right = `<span class="nx-chip ok">Notes</span>`;
+  else if (sales && s.visited) right = `<span class="nx-chip warn">Needs notes</span>`;
+  else if (!sales && upProg[c.i] != null) right = `<span class="nx-chip vid">Sending ${upProg[c.i]}%</span>`;
+  else if (!sales && n) right = `<span class="nx-chip ok">${nxi("check")}${n > 1 ? n + " clips" : "Clip in"}</span>`;
+  else if (!sales && s.video) right = `<span class="nx-chip vid">${nxi("vid")}Video</span>`;
+  else if (s.visited) right = `<span class="nx-chip ok">${nxi("check")}Visited</span>`;
+  else if (s.scheduled || c.x) right = nxi("chevr", "nx-go");
+  else right = `<span class="nx-plus nx-sel" title="Add to my schedule">${nxi("plus")}<select class="sched-sel" data-sched="${c.i}" data-lazy="1" aria-label="Add ${esc(c.n)} to my schedule"><option value="">Schedule…</option></select></span>`;
+  return `<div class="nx-bt" data-nx-stop="b:${c.i}"><div class="nx-mn"><b>${esc(c.n)}</b><span>${sub}</span></div>${right}</div>`;
+}
+function nxBoothFilters(state) {
+  const all = CO.map((c, i) => ({ ...c, i })).filter(c => boothShown(c, c.i, state));
+  const cnt = f => all.filter(f).length;
+  const sales = nxSales(), acc = canSeeAccounts();
+  const nMine = acc ? cnt(c => !c.x && isMyAcct(accounts[acctKey(c)])) : 0, nOpen = acc ? cnt(c => !c.x && !accounts[acctKey(c)]) : 0;
+  const more = [["novisit", "Not visited"], ["visited", "Visited"], ["neednotes", "Needs notes"], ["notes", "Has notes"], ["sched", "On my schedule"],
+    ["customer", "Customers"], ["noncustomer", "Prospects"], ["unknown", "Unclassified"]];
+  if (sales) {
+    const cur = more.find(m => m[0] === activeFilter);
+    return `<div class="nx-seg3">
+        <button type="button" data-nx-f="mine"${activeFilter === "mine" ? ' class="on"' : ""}>My accounts <b>${nMine}</b></button>
+        <button type="button" data-nx-f="all"${activeFilter === "all" ? ' class="on"' : ""}>All <b>${all.length}</b></button>
+        <button type="button" data-nx-f="open"${activeFilter === "open" ? ' class="on"' : ""}>Open <b>${nOpen}</b></button></div>
+      <div class="nx-filt"><span class="nx-fc nx-sel${cur ? " on" : ""}">${cur ? "Filter: " + cur[1] : "Filter"}
+        <select data-nx-filter aria-label="Filter booths"><option value="">No filter</option>${more.map(m => `<option value="${m[0]}"${m[0] === activeFilter ? " selected" : ""}>${m[1]}</option>`).join("")}</select></span>
+        ${cur ? `<button class="nx-fc" type="button" data-nx-f="all">Clear</button>` : ""}</div>`;
+  }
+  const chips = [["all", "All", all.length], ["sched", "On my schedule", cnt(c => boothSlots(state[key(c.i)]).length)], ["visited", "Visited", cnt(c => state[key(c.i)]?.visited)],
+    ["video", "Video", cnt(c => state[key(c.i)]?.video)]];
+  if (acc) chips.push(["open", "Open", nOpen]);
+  return `<div class="nx-filt">${chips.map(x => `<button class="nx-fc${activeFilter === x[0] ? " on" : ""}" type="button" data-nx-f="${x[0]}">${x[1]} <b>${x[2]}</b></button>`).join("")}</div>`;
+}
+function nxRenderBooths(state, list, q) {
+  const el = document.getElementById("content");
+  const sales = nxSales(), code = currentEventCode();
+  const walk = (x, y) => rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b)) || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n);
+  const head = `<div class="nx">${nxBoothFilters(state)}`;
+  const banner = showStatusBannerHtml();
+  const wrapB = h => banner ? `<div class="nx-body" style="margin-bottom:10px">${banner}</div>` + h : h;
+  if (!CO.length) {
+    el.innerHTML = head + `<div class="nx-empty"><b>No booth list yet</b>This event doesn't have an exhibitor list loaded yet. Your schedule, meals and notes still work, and booths will appear once the list is added.</div></div>`;
+    updateStats(state); return;
+  }
+  if (!list.length) {
+    const msgs = {
+      visited: ["No visits yet", sales ? "A booth counts as visited once you take notes on it or switch Visited on." : "A booth counts as visited once you write a post-visit note or upload its footage."],
+      novisit: ["All caught up", "Every company in this view has been visited."],
+      customer: ["No customers tagged", "Open a booth and set Customer to flag accounts you own."],
+      noncustomer: ["No prospects tagged", "Open a booth and set Prospect to flag companies you'd like to sign."],
+      unknown: ["Every company classified", "All booths have a customer status set."],
+      mine: ["No accounts yet", "Your advertisers and prospects for this show land here once they're assigned, or when you claim an open booth."],
+      open: ["Nothing open", "Every booth at this show has a rep."],
+      sched: ["Nothing on your schedule", "Tap the plus on a booth to add it."],
+      notes: ["No notes yet", "Booths you take notes on show up here."],
+      neednotes: ["You're caught up", "Every booth you visited has notes."],
+      video: ["No videos flagged", "Open a booth and switch Video on to tell the Bullpen to expect footage."],
+    };
+    const [title, sub] = q ? ["No results", "Try a different search term."] : (msgs[activeFilter] || ["No results", "Try a different search term."]);
+    el.innerHTML = head + `<div class="nx-empty"><b>${title}</b>${sub}</div></div>`;
+    updateStats(state); return;
+  }
+  // My accounts: the list a sales rep works from, with the notes in it.
+  if (activeFilter === "mine" && !q) {
+    const S = c => state[key(c.i)] || {};
+    const adv = c => (accounts[acctKey(c)] || {}).status === "advertiser" ? 0 : 1;
+    const ord = (x, y) => rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b)) || adv(x) - adv(y) || walk(x, y);
+    const need = list.filter(c => S(c).visited && !nxPost(S(c))).sort(ord);
+    const done = list.filter(c => nxPost(S(c))).sort(ord);
+    const todo = list.filter(c => !S(c).visited && !nxPost(S(c))).sort(ord);
+    const kind = c => (accounts[acctKey(c)] || {}).status === "advertiser" ? "Advertiser" : "Prospect";
+    const next = (() => { const d = showDayToday(code); if (!d) return null; const e = nxDayEntries(state, d).find(x => x.k === "b" && x.e0 > nxNowMin()); return e ? e.i : null; })();
+    const row = (c, mode) => {
+      const s = S(c), note = String(mode === "done" ? s.post : s.pre || "").trim();
+      const sub = [boothLbl(c.b), kind(c), s.scheduled && mode !== "need" ? nxWhenShort(code, s.scheduled) : ""].filter(Boolean).join(" · ");
+      const right = mode === "need" ? `<button class="nx-btn pri sm" type="button" data-nx-stop="b:${c.i}" data-nx-focus="1">${nxi("note")}Take notes</button>`
+        : c.i === next ? `<span class="nx-chip vid">Next</span>` : nxi("chevr", "nx-go");
+      return `<div class="nx-row" style="display:block" data-nx-stop="b:${c.i}"><div style="display:flex;align-items:center;gap:11px"><div class="nx-mn"><b>${esc(c.n)}</b><span>${esc(sub)}</span></div>${right}</div>
+        ${note ? `<div class="nx-quote">${esc(note.length > 180 ? note.slice(0, 180) + "…" : note)}</div>` : ""}</div>`;
+    };
+    const grp = (title, arr, mode) => arr.length ? `<div class="nx-sech"><b>${title}<i>${arr.length}</i></b></div><div class="nx-card list">${arr.map(c => row(c, mode)).join("")}</div>` : "";
+    el.innerHTML = wrapB(head + `<div class="nx-body">
+      <div class="nx-card" style="padding:12px 16px;margin-top:12px"><div class="nx-kline" style="margin-bottom:8px"><b style="font-size:15px">Notes on ${done.length} of ${list.length}</b><span class="nx-k">In walking order</span></div>
+        <div class="nx-prog" style="margin-top:0"><i style="width:${Math.round(done.length / list.length * 100)}%"></i></div></div>
+      ${grp("Needs notes", need, "need")}${grp("Still to visit", todo, "todo")}${grp("Notes taken", done, "done")}
+      <button class="nx-btn out wide" type="button" data-nx-dl style="margin-top:14px">${nxi("dl")}Download my notes</button>
+    </div></div>`);
+    updateStats(state); return;
+  }
+  // Short lists and searches: one flat run in walking order.
+  if (q || activeFilter !== "all" && activeFilter !== "novisit") {
+    const flat = list.slice().sort(walk);
+    el.innerHTML = wrapB(head + `<div class="nx-bl">${flat.map(c => nxBoothRow(c, state, activeFilter === "open" && sales && !c.x && !accounts[acctKey(c)]
+      ? { right: `<button class="nx-btn out sm" type="button" data-claim="${c.i}">Claim</button>` } : null)).join("")}</div></div>`);
+    updateStats(state); return;
+  }
+  const groups = {};
+  list.forEach(c => { const rk = rowKey(c.b); (groups[rk] = groups[rk] || []).push(c); });
+  const vis = c => state[key(c.i)]?.visited ? 1 : 0;
+  Object.values(groups).forEach(a => a.sort((x, y) => vis(x) - vis(y) || x.n.localeCompare(y.n)));
+  _rowGroups = groups;
+  const rowKeys = Object.keys(groups).sort((a, b) => rowOrder(a) - rowOrder(b));
+  el.innerHTML = wrapB(head + `<div class="nx-bl">${rowKeys.map(rk => {
+    const cs = groups[rk], open = allOpen || rowOpen.has(rk);
+    const nv = cs.filter(vis).length, nn = cs.filter(c => nxPost(state[key(c.i)])).length;
+    const ct = sales ? cs.length + " booth" + (cs.length === 1 ? "" : "s") + (nn ? " · " + nn + " with notes" : "")
+      : nv ? nv + " of " + cs.length + " visited" : cs.length + " booth" + (cs.length === 1 ? "" : "s");
+    return `<button class="nx-rw${open ? " open" : ""}" type="button" data-nx-row="${esc(rk)}"><b>${esc(rowLabel(rk))}</b><span class="nx-ct">${ct}</span>${nxi("chevr")}</button>`
+      + (open ? cs.map(c => nxBoothRow(c, state)).join("") : "");
+  }).join("")}</div></div>`);
+  updateStats(state);
+}
+
+// ── The stop page ──
+function nxParseStop(ref) {
+  const r = String(ref || ""), at = r.indexOf(":"), kind = r.slice(0, at), rest = r.slice(at + 1);
+  if (kind === "b") { const [i, slot] = rest.split("@"); return { k: "b", i: parseInt(i), slot: slot || "" }; }
+  return { k: kind, id: rest };
+}
+function nxStopValid() {
+  if (!nxStop) return false;
+  if (nxStop.k === "b") return !!CO[nxStop.i];
+  if (nxStop.k === "meal") return loadMeals().some(m => m.id === nxStop.id);
+  if (nxStop.k === "off") return loadOffsite().some(o => o.id === nxStop.id);
+  if (nxStop.k === "sess") return mySessions().some(x => x.id === nxStop.id);
+  return false;
+}
+function nxOpenStop(ref, focus) {
+  if (!nxStop) nxStopY = window.scrollY;
+  nxStop = nxParseStop(ref);
+  render(); scrollAppTo(0);
+  if (focus) nxFocusNotes();
+}
+function nxCloseStop() {
+  nxStop = null;
+  render(); scrollAppTo(nxStopY || 0);
+}
+function nxFocusNotes() {
+  const ta = document.querySelector(".nx-stop textarea.nf.post, .nx-stop textarea.item-nf, .nx-stop textarea.sess-nf");
+  if (!ta) return;
+  ta.focus();
+  try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+  ta.scrollIntoView({ block: "center" });
+}
+function nxClock(ts) { const d = new Date(ts); return nxT(fmtTime(d.getHours() * 60 + d.getMinutes())).txt; }
+function nxRenderStop(state) {
+  const el = document.getElementById("content");
+  const code = currentEventCode(), sales = nxSales();
+  const back = `<button class="nx-back" type="button" data-nx-back>${nxi("back")}Back</button>`;
+  let body = "";
+  if (nxStop.k === "b") {
+    const i = nxStop.i, c = { ...CO[i], i }, s = state[key(i)] || {};
+    const slots = boothSlots(s);
+    const slot = nxStop.slot && slots.includes(nxStop.slot) ? nxStop.slot : (s.scheduled || slots[0] || "");
+    nxStop.slot = slot;
+    const [d, t] = slot ? slot.split("|") : ["", ""];
+    const ovo = slot ? dayOverlaps(buildMyScheduleItems(), +d).get(t) : null;
+    const a = canSeeAccounts() && !c.x ? accounts[acctKey(c)] : null;
+    const mineA = isMyAcct(a);
+    const acct = canSeeAccounts() && !c.x
+      ? (a ? `<span class="nx-chip ${mineA ? "vid" : "line"}">${esc(nxAcctWords(c, false))}</span>` : `<span class="nx-chip ok">Open</span>`) : "";
+    const meta = `<div class="nx-shmeta">${nxFloorBtn(c, "nx-chip line", nxi("pin") + esc(boothLbl(c.b))) || `<span class="nx-chip line">${nxi("pin")}${esc(boothLbl(c.b))}</span>`}
+      ${acct}${ovo ? `<span class="nx-chip warn">${esc(nxOverlapText(ovo))}</span>` : ""}
+      ${!sales && s.visited ? `<span class="nx-chip ok">${nxi("check")}Visited${s.vts ? " " + esc(nxClock(s.vts)) : ""}</span>` : ""}
+      ${myVideoDone[c.b] ? `<span class="nx-chip ok">Video done</span>` : ""}${c.x ? `<span class="nx-chip warn">No longer listed</span>` : ""}
+      ${floorOf(code) && !c.x ? `<button class="nx-lnk" type="button" data-floor="${esc(c.b)}">Floor plan${nxi("chevr")}</button>` : ""}</div>`;
+    const claim = canSeeAccounts() && !c.x && sales
+      ? (!a ? `<button class="nx-btn out wide" type="button" data-claim="${i}" style="margin-bottom:12px">Claim as my prospect</button>`
+        : mineA && a.src === "claim" ? `<div style="margin:-6px 0 10px"><button class="nx-lnk" type="button" data-unclaim="${i}">Let go of this prospect</button></div>` : "") : "";
+    const notes = `<div class="nx-nb">${interviewQsHtml(s.pre)}
+        <label for="nxPre">Before the visit</label>
+        <textarea class="nf pre" id="nxPre" data-i="${i}" data-f="pre" rows="1" placeholder="Background, talking points, what to ask">${esc(s.pre || "")}</textarea>
+        <hr>
+        <label for="nxPost">After the visit</label>
+        <textarea class="nf post" id="nxPost" data-i="${i}" data-f="post" rows="1" placeholder="What was discussed, follow-ups, impressions">${esc(s.post || "")}</textarea>
+        ${sales && !nxPost(s) ? `<button class="nx-btn pri lg" type="button" data-nx-take>${nxi("note")}Take notes</button>` : ""}
+        <div class="nx-foot">${sales ? nxi("lock") + "The Bullpen never sees sales notes" : nxi("share") + "Your notes go to the Bullpen"}</div>
+      </div>`;
+    const video = sales ? "" : `<div class="nx-grp"><div class="nx-row plain"><span class="nx-ic">${nxi("vid")}</span>
+        <div class="nx-mn"><b>Video for this booth</b><span>Tells the Bullpen to expect footage</span></div>
+        <button class="nx-tog${s.video ? " on" : ""}" type="button" role="switch" aria-checked="${s.video ? "true" : "false"}" aria-label="Video for this booth" data-nx-video="${i}"></button></div></div>
+      ${s.video ? (uploadCtlHtml(c, s) ? `<div class="nx-upctl">${uploadCtlHtml(c, s)}</div>` : "") : ""}`;
+    const status = s.status || "unknown";
+    const salesRows = sales ? `<div class="nx-grp">
+        <div class="nx-row nx-sel"><div class="nx-mn"><b>Customer or prospect</b></div><span class="nx-em">${status === "customer" ? "Customer" : status === "noncustomer" ? "Prospect" : "Unsure"}</span>${nxi("chevr", "nx-go")}
+          <select data-nx-status="${i}" aria-label="Customer or prospect"><option value="customer"${status === "customer" ? " selected" : ""}>Customer</option><option value="noncustomer"${status === "noncustomer" ? " selected" : ""}>Prospect</option><option value="unknown"${status === "unknown" ? " selected" : ""}>Unsure</option></select></div>
+        <div class="nx-row plain"><div class="nx-mn"><b>Visited</b><span>${s.visited && s.vts ? "Since " + esc(nxClock(s.vts)) : "Turns on when you take notes"}</span></div>
+          <button class="nx-tog${s.visited ? " on" : ""}" type="button" role="switch" aria-checked="${s.visited ? "true" : "false"}" aria-label="Visited" data-visit="${i}"></button></div>
+      </div>` : "";
+    const others = slots.filter(v => v !== slot);
+    const sched = `<div class="nx-grp">${slot
+      ? `<button class="nx-row" type="button" data-mv-booth="${i}" data-mv-slot="${esc(slot)}"><div class="nx-mn"><b>Move to another time</b></div><span class="nx-em">${esc(nxWhenShort(code, slot))}</span>${nxi("chevr", "nx-go")}</button>`
+      : (c.x ? "" : `<div class="nx-row nx-sel"><div class="nx-mn"><b>Add to my schedule</b></div>${nxi("plus", "nx-go")}<select class="sched-sel" data-sched="${i}" data-lazy="1" aria-label="Add to my schedule"><option value="">Schedule…</option></select></div>`)}
+      ${others.map(v => `<button class="nx-row" type="button" data-nx-slot="${esc(v)}"><div class="nx-mn"><b>Another visit</b></div><span class="nx-em">${esc(nxWhenShort(code, v))}</span>${nxi("chevr", "nx-go")}</button>`).join("")}
+      ${slot ? `<button class="nx-row" type="button" data-rm="${i}" data-rm-slot="${esc(slot)}"><div class="nx-mn"><b class="nx-bad">Remove from ${esc(nxDayName(code, +d))}</b></div></button>` : ""}</div>`;
+    body = `<div class="nx-shtop"><span class="nx-k">${slot ? esc(nxWhen(code, +d, t)) : "Not on your schedule"}</span></div>
+      <div class="nx-shname">${esc(c.n)}</div>${meta}${claim}
+      ${sales ? notes + salesRows : video + notes}${slot || !c.x ? sched : ""}`;
+  } else if (nxStop.k === "meal" || nxStop.k === "off") {
+    const meal = nxStop.k === "meal";
+    const x = (meal ? loadMeals() : loadOffsite()).find(y => y.id === nxStop.id) || {};
+    const title = meal ? (MEAL_LABEL[x.type] || "Meal") + (x.company ? " with " + x.company : "") : (x.title || (x.company ? "Meeting with " + x.company : "Off-site meeting"));
+    const bits = meal ? [x.notes] : [x.company && x.title ? "With " + x.company : "", x.location, x.notes];
+    const ik = (meal ? "meal:" : "offsite:") + x.id;
+    body = `<div class="nx-shtop"><span class="nx-k">${esc(nxWhen(code, +x.day, x.time))}</span></div>
+      <div class="nx-shname">${esc(title)}</div>
+      <div class="nx-shmeta">${bits.filter(Boolean).map(b => `<span class="nx-chip line" style="white-space:normal">${esc(b)}</span>`).join("") || `<span class="nx-chip line">${meal ? "Meal" : "Off-site meeting"}</span>`}</div>
+      <div class="nx-nb"><label for="nxItemNotes">My notes</label>
+        <textarea class="nf item-nf" id="nxItemNotes" data-ik="${esc(ik)}" rows="1" placeholder="What was discussed, follow-ups, impressions">${esc(x.mynotes || "")}</textarea>
+        ${sales && !String(x.mynotes || "").trim() ? `<button class="nx-btn pri lg" type="button" data-nx-take>${nxi("note")}Take notes</button>` : ""}</div>
+      <div class="nx-grp">
+        <button class="nx-row" type="button" ${meal ? "data-meal-edit" : "data-off-edit"}="${esc(x.id)}"><div class="nx-mn"><b>Edit details</b></div>${nxi("chevr", "nx-go")}</button>
+        <button class="nx-row" type="button" ${meal ? "data-mv-meal" : "data-mv-off"}="${esc(x.id)}"><div class="nx-mn"><b>Move to another time</b></div><span class="nx-em">${esc(nxWhenShort(code, x.day + "|" + x.time))}</span>${nxi("chevr", "nx-go")}</button>
+        <button class="nx-row" type="button" ${meal ? "data-meal-del" : "data-off-del"}="${esc(x.id)}"><div class="nx-mn"><b class="nx-bad">Remove from ${esc(nxDayName(code, +x.day))}</b></div></button>
+      </div>`;
+  } else {
+    const x = mySessions().find(y => y.id === nxStop.id) || {};
+    body = `<div class="nx-shtop"><span class="nx-k">${esc(nxWhen(code, +x.day, x.time))}${x.end ? " to " + esc(nxT(x.end).txt) : ""}</span></div>
+      <div class="nx-shname">${esc(x.title || "Education session")}</div>
+      <div class="nx-shmeta"><span class="nx-chip line">${nxi("cap")}Education session</span>${x.room ? `<span class="nx-chip line">${esc(x.room)}</span>` : ""}</div>
+      ${x.speakers ? `<div class="nx-hsub" style="margin:-4px 0 12px">${esc(x.speakers)}</div>` : ""}
+      <div class="nx-nb"><label for="nxSessNotes">My notes</label>
+        <textarea class="nf sess-nf" id="nxSessNotes" data-sid="${esc(x.id)}" rows="1" placeholder="Takeaways, quotes, follow-ups">${esc(x.notes || "")}</textarea></div>
+      <div class="nx-grp"><button class="nx-row" type="button" data-sess-del="${esc(x.id)}"><div class="nx-mn"><b class="nx-bad">Remove from ${esc(nxDayName(code, +x.day))}</b></div></button></div>`;
+  }
+  const ref = nxStop.k + ":" + (nxStop.k === "b" ? nxStop.i : nxStop.id);
+  const html = `<div class="nx"><div class="nx-body nx-stop" data-ref="${esc(ref)}">${back}${body}</div></div>`;
+  // Typing in a notes box on this same stop: redraw around the box, never
+  // through it, so the keyboard stays up and nothing typed is lost.
+  const wrap = el.querySelector(".nx-stop"), act = document.activeElement;
+  const keep = wrap && wrap.dataset.ref === ref && act && act.matches && act.matches(".nx-stop textarea.nf") ? act.closest(".nx-nb") : null;
+  if (keep && keep.parentElement === wrap) {
+    const tmp = document.createElement("div"); tmp.innerHTML = html;
+    const fresh = tmp.querySelector(".nx-stop"), newNb = fresh.querySelector(":scope > .nx-nb");
+    if (newNb) {
+      const before = [], after = []; let seen = false;
+      [...fresh.childNodes].forEach(n => { if (n === newNb) { seen = true; return; } (seen ? after : before).push(n); });
+      [...wrap.childNodes].forEach(n => { if (n !== keep) n.remove(); });
+      before.forEach(n => wrap.insertBefore(n, keep));
+      after.forEach(n => wrap.appendChild(n));
+      updateStats(state);
+      return;
+    }
+  }
+  el.innerHTML = html;
+  el.querySelectorAll(".nx-stop textarea.nf").forEach(fitNf);
+  updateStats(state);
+}
+// Anything typed on the stop page since the last autosave goes into storage
+// before a redraw, so a redraw can never show (or keep) older text.
+function nxFlushNotes() {
+  const tas = [...document.querySelectorAll(".nx-stop textarea.nf[data-nx-dirty]")];
+  if (!tas.length) return;
+  const booth = tas.filter(ta => ta.dataset.i != null && ta.dataset.f);
+  if (booth.length) {
+    const st = load(); let ch = false;
+    booth.forEach(ta => {
+      const k = key(parseInt(ta.dataset.i)), f = ta.dataset.f, v = ta.value;
+      const s = st[k] = st[k] || {};
+      if ((s[f] || "") === v) return;
+      s[f] = v; ch = true;
+      if (f === "post" && v.trim() && !s.visited) { s.visited = true; s.vts = Date.now(); }
+    });
+    if (ch) save(st);
+  }
+  tas.filter(ta => ta.classList.contains("item-nf")).forEach(ta => {
+    const k = ta.dataset.ik || "", kind = k.slice(0, k.indexOf(":")), id = k.slice(k.indexOf(":") + 1);
+    const arr = kind === "meal" ? loadMeals() : loadOffsite(), x = arr.find(y => y.id === id);
+    if (x && (x.mynotes || "") !== ta.value) { x.mynotes = ta.value; (kind === "meal" ? saveMeals : saveOffsite)(arr); }
+  });
+  tas.filter(ta => ta.classList.contains("sess-nf")).forEach(ta => {
+    const arr = loadSessions(), x = arr.find(y => y.sid === ta.dataset.sid);
+    if (x && (x.notes || "") !== ta.value) { x.notes = ta.value; saveSessions(arr); }
+  });
+  tas.forEach(ta => ta.removeAttribute("data-nx-dirty"));
+}
+
+// ── Uploads: what is owed, sending and sent, above the photo picker ──
+function nxUploadsHead() {
+  const state = load(), edit = !nxSales();
+  const band = `<div class="nx">${nxBand("Uploads", "<small>Straight to the show folder</small>")}`;
+  if (!edit) return band + `</div>`;
+  const all = CO.map((c, i) => ({ c, i, s: state[key(i)] || {} })).filter(x => x.s.video || nxClips(x.s));
+  const sending = all.filter(x => upProg[x.i] != null);
+  const toUp = all.filter(x => x.s.video && !nxClips(x.s) && upProg[x.i] == null);
+  const sent = all.filter(x => nxClips(x.s)).sort((a, b) => (b.s.vupAt || 0) - (a.s.vupAt || 0));
+  const nSent = sent.reduce((n, x) => n + nxClips(x.s), 0) + photoQueue.filter(p => p.state === "done").length;
+  const nSend = sending.length + photoQueue.filter(p => p.state === "up").length;
+  const sec = (title, rows) => rows.length ? `<div class="nx-sech"><b>${title}</b></div><div class="nx-card list">${rows.join("")}</div>` : "";
+  return band + `<div class="nx-body">
+    <div class="nx-tiles"><div class="nx-tile${toUp.length ? " hot" : ""}"><b>${toUp.length}</b><span>to upload</span></div><div class="nx-tile"><b>${nSend}</b><span>sending</span></div><div class="nx-tile"><b>${nSent}</b><span>sent</span></div></div>
+    ${sec("To upload", toUp.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("vid")}</span>
+      <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${esc(boothLbl(x.c.b))}${x.s.scheduled ? " · " + esc(nxWhenShort(currentEventCode(), x.s.scheduled)) : ""}</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`))}
+    ${sec("Sending", sending.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("up")}</span>
+      <div class="nx-mn"><b>${esc(x.c.n)}</b><div class="nx-st" data-upprog="${x.i}">Uploading ${upProg[x.i]}%</div><div class="nx-st">Keep the app open</div></div></div>`))}
+    ${sec("Sent", sent.map(x => `<button class="nx-row" type="button" data-nx-stop="b:${x.i}"><span class="nx-ic ok">${nxi("check")}</span>
+      <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${nxClips(x.s)} clip${nxClips(x.s) === 1 ? "" : "s"}${x.s.vupAt ? " · " + esc(nxClock(x.s.vupAt)) : ""}${x.s.vall ? " · all footage in" : ""}</span></div>${nxi("chevr", "nx-go")}</button>`))}
+    ${!all.length ? `<div class="nx-note" style="background:var(--surface)">Booths you switch Video on for show up here until their clip is in.</div>` : ""}
+    <div class="nx-sech"><b>Other photos and video</b></div>
+  </div></div>`;
+}
+
+// ── The add sheet (the plus in the bottom bar) ──
+function nxOpenAdd() {
+  if (!currentUser || isHome() || document.body.classList.contains("ah-mode")) return;
+  const code = currentEventCode();
+  const d = activeView === "schedule" && !viewedScheduleUid && !schedAllView ? schedDay : (showDayToday(code) || schedDay);
+  const sh = document.getElementById("nxAddSheet");
+  sh.dataset.day = d;
+  const noBooths = (resolveEvent(code) || {}).noBooths;
+  document.getElementById("nxAddTitle").textContent = "Add to " + nxWhen(code, d, "");
+  document.getElementById("nxAddGrid").innerHTML =
+    (noBooths ? "" : `<button class="nx-addo" type="button" data-nx-add="booth"><span class="nx-ic">${nxi("booth")}</span>Booth</button>`)
+    + `<button class="nx-addo" type="button" data-nx-add="meal"><span class="nx-ic">${nxi("meal")}</span>Meal</button>
+    <button class="nx-addo" type="button" data-nx-add="off"><span class="nx-ic">${nxi("brief")}</span>Off-site meeting</button>`
+    + (showSessions(code).length ? `<button class="nx-addo" type="button" data-nx-add="sess"><span class="nx-ic">${nxi("cap")}</span>Education session</button>` : "");
+  sh.style.display = "flex";
+}
+function nxCloseAdd() { document.getElementById("nxAddSheet").style.display = "none"; }
+function nxAdd(kind) {
+  const d = parseInt(document.getElementById("nxAddSheet").dataset.day) || schedDay;
+  nxCloseAdd();
+  nxStop = null; viewedScheduleUid = null; schedAllView = false;
+  if (activeView !== "schedule") { tabScroll[activeView] = window.scrollY; setBottomTab("schedule"); }
+  schedDay = d; schedSearchQ = "";
+  mealFormOpen = false; mealEditingId = null; offFormOpen = false; offEditingId = null; sessPickOpen = false; schedAddBooth = false;
+  if (kind === "booth") schedAddBooth = true;
+  if (kind === "meal") { mealFormOpen = true; mealFormType = "lunch"; mealFormTime = MEAL_DEFAULT_TIME.lunch; mealFormCompany = ""; mealFormNotes = ""; }
+  if (kind === "off") { offFormOpen = true; offFormTime = OFFSITE_DEFAULT_TIME; offFormTitle = ""; offFormCompany = ""; offFormLocation = ""; offFormNotes = ""; }
+  if (kind === "sess") sessPickOpen = true;
+  render(); scrollAppTo(0);
+  if (kind === "booth") document.querySelector(".sched-search-input")?.focus();
+}
+
+// ── Header and bottom-bar touches that follow the screen ──
+function nxSyncChrome() {
+  const ava = document.getElementById("nxAva");
+  if (ava && currentUser) { ava.textContent = initialsOf(currentUser.name); ava.classList.toggle("on", activeView === "settings"); }
+  const bdg = document.getElementById("bnUpBadge");
+  if (bdg) {
+    let n = 0;
+    if (currentUser && !isHome() && !nxSales()) n = nxOwedList(load()).length;
+    bdg.textContent = n; bdg.hidden = !n;
+  }
+  // Sales reps with accounts at this show land on My accounts the first time
+  // they open Booths.
+  const code = currentEventCode();
+  if (activeView === "booths" && currentUser && !nxMineDef[code] && nxSales() && canSeeAccounts() && Object.keys(accounts).length) {
+    nxMineDef[code] = true;
+    if (activeFilter === "all" && CO.some(c => !c.x && isMyAcct(accounts[acctKey(c)]))) activeFilter = "mine";
+  }
+}
+function nxGo(where) {
+  const code = currentEventCode();
+  tabScroll[activeView] = window.scrollY;
+  nxStop = null;
+  if (where === "schedule") { viewedScheduleUid = null; schedAllView = false; schedDay = showDayToday(code) || schedDay; setBottomTab("schedule"); }
+  if (where === "mine") { activeFilter = "mine"; const si = document.getElementById("searchInput"); if (si) si.value = ""; setBottomTab("booths"); }
+  render(); scrollAppTo(0);
+}
+
+document.getElementById("content").addEventListener("click", e => {
+  if (isHome()) return;
+  const t = e.target;
+  // Edit opens the old form on the Schedule tab, so the stop page steps aside first.
+  if (nxStop && t.closest(".nx-stop [data-meal-edit], .nx-stop [data-off-edit]")) { nxStop = null; if (activeView !== "schedule") setBottomTab("schedule"); }
+}, true);
+document.getElementById("content").addEventListener("click", e => {
+  if (isHome()) return;
+  const t = e.target;
+  if (t.closest("[data-nx-back]")) { nxCloseStop(); return; }
+  const sv = t.closest("[data-nx-sv]");
+  if (sv) {
+    schedAllView = sv.dataset.nxSv === "team"; viewedScheduleUid = null;
+    schedSearchQ = ""; mealFormOpen = false; offFormOpen = false; sessPickOpen = false; schedAddBooth = false;
+    render(); scrollAppTo(0);
+    return;
+  }
+  const go = t.closest("[data-nx-go]");
+  if (go) { nxGo(go.dataset.nxGo); return; }
+  if (t.closest("[data-nx-take]")) { nxFocusNotes(); return; }
+  const vid = t.closest("[data-nx-video]");
+  if (vid) {
+    const i = parseInt(vid.dataset.nxVideo), state = load(), k = key(i);
+    if (!state[k]) state[k] = {};
+    // Off pulls the booth out of the Bullpen's video list, so it asks first.
+    if (state[k].video) { openVidOffConfirm(i, state); return; }
+    state[k].video = true;
+    save(state);
+    toast("Video flagged for the Bullpen");
+    render();
+    return;
+  }
+  const row = t.closest("[data-nx-row]");
+  if (row) { const rk = row.dataset.nxRow; if (rowOpen.has(rk)) rowOpen.delete(rk); else rowOpen.add(rk); render(); return; }
+  const f = t.closest("[data-nx-f]");
+  if (f) { activeFilter = f.dataset.nxF; render(); scrollAppTo(0); return; }
+  const sl = t.closest("[data-nx-slot]");
+  if (sl && nxStop && nxStop.k === "b") { nxStop.slot = sl.dataset.nxSlot; render(); scrollAppTo(0); return; }
+  if (t.closest("[data-nx-dl]")) { downloadCsv(buildShowCsv(), csvFileName(currentEventCode())); toast("Notes downloaded"); return; }
+  const st = t.closest("[data-nx-stop]");
+  if (st) {
+    const inner = t.closest("select, textarea, a, button, .nx-plus, .upload-btn");
+    if (inner && inner !== st && st.contains(inner) && !inner.hasAttribute("data-nx-stop")) return;
+    const src = (inner && inner.hasAttribute && inner.hasAttribute("data-nx-stop")) ? inner : st;
+    nxOpenStop(src.dataset.nxStop, src.dataset.nxFocus === "1");
+  }
+});
+document.getElementById("content").addEventListener("change", e => {
+  const ss = e.target.closest && e.target.closest("[data-nx-status]");
+  if (ss) {
+    const i = parseInt(ss.dataset.nxStatus), state = load(), k = key(i);
+    if (!state[k]) state[k] = {};
+    state[k].status = ss.value;
+    save(state);
+    toast(ss.value === "customer" ? "Marked as Customer" : ss.value === "noncustomer" ? "Marked as Prospect" : "Status cleared");
+    render();
+    return;
+  }
+  const fl = e.target.closest && e.target.closest("[data-nx-filter]");
+  if (fl) { activeFilter = fl.value || "all"; render(); scrollAppTo(0); }
+});
+// Leaving a notes box on the stop page: once the autosave has run, redraw so
+// the Visited switch, the chips and the Take notes button catch up.
+document.getElementById("content").addEventListener("focusout", e => {
+  if (!e.target.matches || !e.target.matches(".nx-stop textarea.nf")) return;
+  e.target.closest(".nx-nb")?.classList.remove("focus-post");
+  if (!nxStop) return;
+  setTimeout(() => { if (nxStop && !_isTypingEl(document.activeElement)) render(); }, 700);
+});
+var nxTypeT = 0;
+document.getElementById("content").addEventListener("input", e => {
+  const ta = e.target;
+  if (!ta.matches || !ta.matches(".nx-stop textarea.nf")) return;
+  ta.setAttribute("data-nx-dirty", "1");
+  // Notes exist now, so the Take notes button has done its job.
+  if (ta.value.trim() && !ta.classList.contains("pre")) ta.closest(".nx-nb")?.querySelector("[data-nx-take]")?.remove();
+  // A pause in typing: let the rest of the page (the Visited switch, the
+  // chips) catch up. The box being typed in is left alone.
+  clearTimeout(nxTypeT);
+  nxTypeT = setTimeout(() => { if (nxStop) render(); }, 900);
+});
+document.getElementById("content").addEventListener("focusin", e => {
+  if (e.target.matches && e.target.matches(".nx-stop textarea.nf")) e.target.closest(".nx-nb")?.classList.add("focus-post");
+});
+document.getElementById("bnAdd").addEventListener("click", nxOpenAdd);
+document.getElementById("nxAddSheet").addEventListener("click", e => {
+  const a = e.target.closest("[data-nx-add]");
+  if (a) { nxAdd(a.dataset.nxAdd); return; }
+  if (e.target.id === "nxAddSheet" || e.target.closest("[data-nx-add-close]")) nxCloseAdd();
+});
+document.getElementById("nxAva").addEventListener("click", () => {
+  if (activeView === "settings") { scrollAppTo(0, true); return; }
+  tabScroll[activeView] = window.scrollY;
+  nxStop = null;
+  setBottomTab("settings"); render(); scrollAppTo(0);
+});
+// Today's countdown and "now" line keep up on their own.
+setInterval(() => {
+  if (!currentUser || isHome() || nxStop || document.visibilityState !== "visible" || _isTypingEl(document.activeElement)) return;
+  if (activeView === "today" || (activeView === "schedule" && !viewedScheduleUid && !schedAllView && !mealFormOpen && !offFormOpen && !sessPickOpen && !schedAddBooth && !schedSearchQ)) render();
+}, 60e3);
+//NX-JS-END
 function render() {
   // A redraw can remove the field that had focus without iOS firing
   // focusout, which left the bottom bar hidden; recheck once it's done.
@@ -8818,8 +9925,12 @@ function render() {
   // while its tab is open, and any other view's innerHTML would destroy it.
   parkSettingsCard();
   if (isHome()) { renderHomeDashboard(); return; }
+  nxFlushNotes();
+  if (nxStop && !nxStopValid()) nxStop = null;
+  nxSyncChrome();
   viewTransition("f:" + currentEventCode() + ":" + activeView + ":" + activeFilter
-    + (activeView === "schedule" ? ":" + schedDay + ":" + (viewedScheduleUid || "") : ""));
+    + (activeView === "schedule" ? ":" + schedDay + ":" + (viewedScheduleUid || "") + ":" + (schedAllView ? "all" : "") : "")
+    + (nxStop ? ":stop:" + nxStop.k + (nxStop.k === "b" ? nxStop.i : nxStop.id) : ""));
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
 
@@ -8850,11 +9961,27 @@ function render() {
   if (activeFilter==="unknown")     list = list.filter(c => !state[key(c.i)]?.status || state[key(c.i)]?.status==="unknown");
   if (activeFilter==="mine")        list = list.filter(c => !c.x && isMyAcct(accounts[acctKey(c)]));
   if (activeFilter==="open")        list = list.filter(c => !c.x && !accounts[acctKey(c)]);
+  if (activeFilter==="sched")       list = list.filter(c => boothSlots(state[key(c.i)]).length);
+  if (activeFilter==="video")       list = list.filter(c => state[key(c.i)]?.video);
+  if (activeFilter==="notes")       list = list.filter(c => nxPost(state[key(c.i)]));
+  if (activeFilter==="neednotes")   list = list.filter(c => state[key(c.i)]?.visited && !nxPost(state[key(c.i)]));
 
   const el = document.getElementById("content");
   const filterBar = document.querySelector(".filter-bar");
 
   const boothsSearch = document.querySelector(".booths-search");
+  if (nxStop && activeView !== "settings" && activeView !== "admin" && activeView !== "adminTools") {
+    filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
+    nxRenderStop(state);
+    return;
+  }
+  if (activeView === "today") {
+    filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
+    nxRenderToday(state);
+    return;
+  }
   if (activeView === "settings") {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
@@ -8871,7 +9998,7 @@ function render() {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
     if (isMaster()) { renderAdminHome(); return; }
-    setBottomTab("schedule");
+    setBottomTab("today");
   }
   if (activeView === "schedule") {
     filterBar?.classList.add("hidden");
@@ -8882,109 +10009,7 @@ function render() {
   filterBar?.classList.remove("hidden");
   boothsSearch?.classList.remove("hidden");
 
-  if (!CO.length) {
-    el.innerHTML = `<div class="empty-wrap"><h3>No booth list yet</h3>
-      <p>This event doesn't have an exhibitor list loaded yet. Your schedule, meals, and notes still work — booths will appear once the list is added.</p></div>`;
-    updateStats(state);
-    return;
-  }
-
-  if (!list.length) {
-    const msgs = {
-      visited:     ["No visits yet","A booth counts as visited once you write a post-visit note or upload its footage."],
-      novisit:     ["All caught up","Every company in this view has been visited."],
-      customer:    ["No customers tagged","Tap Customer on a card to flag accounts you own."],
-      noncustomer: ["No prospects tagged","Tap Prospect on a card to flag companies you'd like to sign."],
-      unknown:     ["Every company classified","All booths have a customer status set."],
-      mine:        ["No accounts yet","Your advertisers and prospects for this show land here once they're assigned, or when you tap Claim on an open booth."],
-      open:        ["Nothing open","Every booth at this show has a rep."],
-    };
-    const [title, sub] = msgs[activeFilter] || ["No results","Try a different search term."];
-    el.innerHTML = `<div class="empty-wrap"><h3>${title}</h3><p>${sub}</p></div>`;
-    updateStats(state);
-    return;
-  }
-
-  // My accounts and Open (v203): every row open at once, in walking order,
-  // so a rep works the floor aisle by aisle. In My accounts, advertisers
-  // come first in each row, then prospects; visited booths sink.
-  if (activeFilter === "mine" || activeFilter === "open") {
-    const vis = c => state[key(c.i)]?.visited ? 1 : 0;
-    const adv = c => (accounts[acctKey(c)] || {}).status === "advertiser" ? 0 : 1;
-    const rows = {};
-    list.forEach(c => { (rows[rowKey(c.b)] = rows[rowKey(c.b)] || []).push(c); });
-    const keys = Object.keys(rows).sort((a, b) => rowOrder(a) - rowOrder(b));
-    const nVis = list.filter(vis).length;
-    _rowGroups = {};
-    el.innerHTML = showStatusBannerHtml() + `<div class="flat-head mine-head">${activeFilter === "mine"
-        ? list.length + " of your account" + (list.length === 1 ? "" : "s") + " · " + nVis + " visited"
-        : list.length + " open booth" + (list.length === 1 ? "" : "s") + ". Tap Claim to make one yours"}</div>` +
-      keys.map(rk => {
-        const cs = rows[rk].sort((x, y) => vis(x) - vis(y) || (activeFilter === "mine" ? adv(x) - adv(y) : 0)
-          || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n));
-        const done = cs.filter(vis).length;
-        return `<div class="row-section open-row">
-  <div class="row-header static"><span class="row-title">${esc(rowLabel(rk))}</span><span class="row-right"><span class="row-pill${done === cs.length ? " done" : ""}">${done}/${cs.length}</span></span></div>
-  ${cs.map(c => buildCard(c, state)).join("")}
-</div>`;
-      }).join("");
-    updateStats(state);
-    return;
-  }
-  // Customers and Prospects are short lists you act on, so they show as
-  // one flat run of cards in booth order instead of row blocks you have to
-  // open one by one (v175, Nate, Oct. 13, 2026).
-  if (activeFilter === "customer" || activeFilter === "noncustomer") {
-    const vis1 = c => state[key(c.i)]?.visited ? 1 : 0;
-    const flat = list.slice().sort((x, y) => vis1(x) - vis1(y) || rowOrder(rowKey(x.b)) - rowOrder(rowKey(y.b))
-      || x.b.localeCompare(y.b, undefined, { numeric: true }) || x.n.localeCompare(y.n));
-    const what = activeFilter === "customer" ? "customer" : "prospect";
-    _rowGroups = {};
-    el.innerHTML = showStatusBannerHtml() + `
-<div class="row-section flat-list">
-  <div class="flat-head">${flat.length} ${what}${flat.length === 1 ? "" : "s"}, in booth order${flat.some(c => vis1(c)) ? ", visited at the bottom" : ""}</div>
-  ${flat.map(c => buildCard(c, state)).join("")}
-</div>`;
-    updateStats(state);
-    return;
-  }
-
-  const groups = {};
-  list.forEach(c => {
-    const rk = rowKey(c.b);
-    (groups[rk] = groups[rk]||[]).push(c);
-  });
-  // Visited booths sink to the bottom of their row (v184), so what's left
-  // to see stays on top.
-  const vis = c => state[key(c.i)]?.visited ? 1 : 0;
-  Object.values(groups).forEach(a => a.sort((x,y) => vis(x) - vis(y) || x.n.localeCompare(y.n)));
-  const rowKeys = Object.keys(groups).sort((a,b) => rowOrder(a) - rowOrder(b));
-
-  _rowGroups = groups;
-  let html = showStatusBannerHtml();
-  rowKeys.forEach((rk, ri) => {
-    const comps = groups[rk];
-    const outdoor = isOutdoor(rk);
-    const nVisited = comps.filter(c => state[key(c.i)]?.visited).length;
-    const pillCls  = nVisited===comps.length && comps.length>0 ? "row-pill done" : "row-pill";
-    const bodyId = "rb"+rk.replace(/\W/g,"_");
-    const isOpen = allOpen || rowOpen.has(rk);
-    html += `
-<div class="row-section" data-rk="${esc(rk)}" style="animation-delay:${Math.min(ri*0.03,0.3)}s">
-  <div class="row-header${outdoor?" outdoor":""}" data-toggle="${bodyId}">
-    <span class="row-title">${esc(rowLabel(rk))}</span>
-    <span class="row-right">
-      <span class="${pillCls}" id="badge_${esc(rk)}">${nVisited}/${comps.length}</span>
-      <span class="row-chevron${isOpen?" open":""}">▾</span>
-    </span>
-  </div>
-  <div class="row-body${isOpen?" open":""}" id="${bodyId}"><div class="row-body-inner">`;
-    if (isOpen) comps.forEach(c => { html += buildCard(c, state); });
-    html += `</div></div></div>`;
-  });
-
-  el.innerHTML = html;
-  updateStats(state);
+  nxRenderBooths(state, list, q);
 }
 
 // Booth cards' Schedule menus are filled on first touch (v158). The full list
@@ -9492,227 +10517,17 @@ function renderScheduleView(state) {
   // as typing and hid the bottom bar with no keyboard on screen.
   const hadSearchFocus = !!(document.activeElement && document.activeElement.classList
     && document.activeElement.classList.contains("sched-search-input"));
-  const teamBar = buildSchedTitle();
+  const teamBar = nxSchedBand();
   if (schedAllView) { renderEveryoneGrid(el, teamBar); updateStats(state); return; }
 
   // ── Viewing a teammate's schedule (read-only) ──
   if (viewedScheduleUid && teamSchedules[viewedScheduleUid]) {
-    const tm = teamSchedules[viewedScheduleUid];
-    const items = withPublished(tm);
-    const tmFirst = (tm.name || "Teammate").trim().split(/\s+/)[0];
-    const pubNote = tm.notSignedUp
-      ? `<div class="show-banner">${esc(tmFirst)} hasn't signed up yet. This is the schedule published for them; it loads on their phone when they sign up.</div>`
-      : pubPending(tm) ? `<div class="show-banner">Includes published updates that haven't reached ${esc(tmFirst)}'s phone yet.</div>` : "";
-    const nDays = showDayCount(currentEventCode());
-    if (schedDay > nDays) schedDay = 1;
-    const dc = Array(nDays + 1).fill(0);
-    items.forEach(it => { if (it.day>=1 && it.day<=nDays) dc[it.day]++; });
-    const dayTabs = showDays(currentEventCode()).map(d => `
-      <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
-        <span class="stdt-day">Day ${d}</span>${dayWeekdayHtml(currentEventCode(), d)}
-        <span class="stdt-count">${dc[d]} booked</span>
-      </button>`).join("");
-    const byTime = {};
-    items.filter(it => it.day === schedDay).forEach(it => {
-      (byTime[it.time] = byTime[it.time]||[]).push(it);
-    });
-    const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
-    let html = teamBar + pubNote + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>` + showInfoHtml(currentEventCode(), schedDay);
-    html += `<div class="ro-banner">Viewing <strong>${esc(tm.name||"teammate")}</strong> · view only</div>`;
-    if (!slotTimes.length) {
-      html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4>
-        <p>${esc(tm.name||"This teammate")} hasn't scheduled anything for this day.</p></div>`;
-    } else {
-      slotTimes.forEach(t => {
-        // esc(t): times here come from the TEAMMATE's cloud doc, not this
-        // device — treat them as untrusted like every other synced field.
-        html += `<div class="time-slot" data-slot="${esc(t)}"><div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span><span class="time-line"></span></div>`;
-        byTime[t].forEach(it => { html += roCardHtml(it); });
-        html += `</div>`;
-      });
-    }
-    el.innerHTML = html;
-    updateStats(state);
+    nxRenderTeammate(state, teamSchedules[viewedScheduleUid]);
     return;
   }
   if (viewedScheduleUid && !teamSchedules[viewedScheduleUid]) viewedScheduleUid = null;
 
-  // ── My own schedule (editable) ──
-  const meals = loadMeals();
-  const offsite = loadOffsite();
-  const sessions = mySessions();
-
-  const nDays = showDayCount(currentEventCode());
-  if (schedDay > nDays) schedDay = 1;
-  const dayCount = Array(nDays + 1).fill(0);
-  CO.forEach((c,i) => {
-    boothSlots(state[key(i)]).forEach(sv => {
-      const d = parseInt(sv.split("|")[0]);
-      if (d>=1 && d<=nDays) dayCount[d]++;
-    });
-  });
-  meals.forEach(m => { if (m.day>=1 && m.day<=nDays) dayCount[m.day]++; });
-  offsite.forEach(o => { if (o.day>=1 && o.day<=nDays) dayCount[o.day]++; });
-  sessions.forEach(x => { if (x.day>=1 && x.day<=nDays) dayCount[x.day]++; });
-
-  const dayTabs = showDays(currentEventCode()).map(d => `
-    <button class="sched-day-tab${schedDay===d?" active":""}" data-day="${d}">
-      <span class="stdt-day">Day ${d}</span>${dayWeekdayHtml(currentEventCode(), d)}
-      <span class="stdt-count">${dayCount[d]} booked</span>
-    </button>`).join("");
-  const manyDays = nDays >= 5 ? " many" : "";
-
-  const searchHtml = (() => {
-    if (!schedSearchQ) return "";
-    const matches = CO.map((c,i)=>({...c,i}))
-      .filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ)))
-      .slice(0,8);
-    if (!matches.length)
-      return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
-    return matches.map(c => {
-      const cur = boothSlots(state[key(c.i)]);
-      const meta = cur.length ? "On your schedule: " + cur.map(v => `Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}`).join(", ") + ". Pick a time to add another visit." : "";
-      return `
-        <div class="sched-result-row">
-          <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
-          <span class="sched-result-booth">${esc(c.b)}</span>
-          <select class="sched-add-sel" data-add-i="${c.i}">
-            <option value="">+ Time</option>
-            ${TIME_SLOTS.map(t => `<option value="${esc(t)}">${t}</option>`).join("")}
-          </select>
-        </div>`;
-    }).join("");
-  })();
-
-  // Interleave booth meetings + meals into one time-sorted agenda for the active day.
-  const byTime = {};
-  CO.forEach((c,i) => {
-    const s = state[key(i)];
-    boothSlots(s).forEach(sv => {
-      const [d,t] = sv.split("|");
-      if (parseInt(d) === schedDay)
-        (byTime[t] = byTime[t]||[]).push({ kind: "booth", c: {...c, i}, slot: sv, extra: sv !== s.scheduled });
-    });
-  });
-  meals.filter(m => m.day === schedDay).forEach(m => {
-    (byTime[m.time] = byTime[m.time]||[]).push({ kind: "meal", meal: m });
-  });
-  offsite.filter(o => o.day === schedDay).forEach(o => {
-    (byTime[o.time] = byTime[o.time]||[]).push({ kind: "offsite", off: o });
-  });
-  sessions.filter(x => x.day === schedDay).forEach(x => {
-    (byTime[x.time] = byTime[x.time]||[]).push({ kind: "session", sess: x });
-  });
-  const slotTimes = Object.keys(byTime).sort((a,b) => timeToMin(a) - timeToMin(b));
-  const hasAny = slotTimes.length > 0;
-
-  const overlaps = dayOverlaps(buildMyScheduleItems(), schedDay);
-  let html = showStatusBannerHtml() + teamBar + upNextHtml() + `
-<div class="sched-day-tabs${manyDays}">${dayTabs}</div>
-${showInfoHtml(currentEventCode(), schedDay)}
-${(schedAddBooth || schedSearchQ) ? `<div class="sched-search-box">
-  <input class="sched-search-input" type="text" placeholder="Search to add to Day ${schedDay}" autocomplete="off" autocorrect="off" spellcheck="false" value="${esc(schedSearchQ)}">
-  <div class="sched-results" id="sched-results">${searchHtml}</div>
-</div>` : ""}
-${mealFormOpen ? buildMealForm() : ""}
-${offFormOpen ? buildOffsiteForm() : ""}
-${sessPickOpen ? buildSessionPicker() : ""}`;
-
-  if (!hasAny) {
-    html += `<div class="sched-empty">
-      <h4>Nothing booked on Day ${schedDay}</h4>
-      <p>Search above to add a company, tap a booth card's Schedule dropdown, or add a meal block.</p>
-    </div>`;
-  } else {
-    slotTimes.forEach(t => {
-      const entries = byTime[t] || [];
-      if (!entries.length) return;
-      const ovo = overlaps.get(t);
-      const ov = ovo && (ovo.others.size ? "Overlaps " + [...ovo.others].join(", ") : "Double-booked");
-      html += `<div class="time-slot" data-slot="${esc(t)}">
-        <div class="time-slot-hdr"><span class="time-lbl">${esc(t)}</span>${ov ? `<span class="ovl-chip" title="${esc(ov)}">${esc(ov)}</span>` : ""}<span class="time-line"></span></div>`;
-      entries.forEach(entry => {
-        if (entry.kind === "booth" && entry.extra) {
-          // Another visit to a booth already on your schedule: a compact card
-          // (the full card, with its notes, sits at the main visit).
-          const c = entry.c, main = (state[key(c.i)] || {}).scheduled || "";
-          html += `<div class="sched-slot-card"><div class="co-card again-card">
-            <div class="card-top"><span class="co-name">${esc(c.n)}</span>${floorOf(currentEventCode()) && !c.x
-              ? `<button class="booth-badge map" type="button" data-floor="${esc(c.b)}" title="Show on the floor plan">${PIN_TINY}${esc(boothLbl(c.b))}</button>`
-              : `<span class="booth-badge">${esc(boothLbl(c.b))}</span>`}</div>
-            <div class="again-note">Another visit · notes are on the Day ${esc(main.split("|")[0])}, ${esc(main.split("|")[1] || "")} visit</div>
-          </div><div class="sched-slot-acts"><button class="sched-rm-link mv" type="button" data-mv-booth="${c.i}" data-mv-slot="${esc(entry.slot)}">Move</button><button class="sched-rm-link" data-rm="${c.i}" data-rm-slot="${esc(entry.slot)}">Remove from Day ${schedDay}</button></div></div>`;
-        } else if (entry.kind === "booth") {
-          const c = entry.c;
-          html += `<div class="sched-slot-card">${buildCard(c, state)}<div class="sched-slot-acts"><button class="sched-rm-link mv" type="button" data-mv-booth="${c.i}" data-mv-slot="${esc(entry.slot)}">Move</button><button class="sched-rm-link" data-rm="${c.i}" data-rm-slot="${esc(entry.slot)}">Remove from Day ${schedDay}</button></div></div>`;
-        } else if (entry.kind === "meal") {
-          const m = entry.meal;
-          html += `<div class="meal-card">
-            <div class="meal-card-icon">${esc(MEAL_LABEL[m.type].charAt(0))}</div>
-            <div class="meal-card-body">
-              <div class="meal-card-title">${esc(MEAL_LABEL[m.type])}</div>
-              ${m.company ? `<div class="meal-card-with">With <strong>${esc(m.company)}</strong></div>` : `<div class="meal-card-with">No guest set</div>`}
-              ${m.notes   ? `<div class="meal-card-notes">${esc(m.notes)}</div>` : ""}
-              ${itemNotesHtml("meal", m)}
-            </div>
-            <div class="meal-card-actions">
-              <button class="meal-act-btn" data-meal-edit="${esc(m.id)}">Edit</button>
-              <button class="meal-act-btn" type="button" data-mv-meal="${esc(m.id)}">Move</button>
-              <button class="meal-act-btn del" data-meal-del="${esc(m.id)}">Del</button>
-            </div>
-          </div>`;
-        } else if (entry.kind === "session") {
-          html += sessionCardHtml(entry.sess, true);
-        } else {
-          const o = entry.off;
-          html += `<div class="meal-card offsite">
-            <div class="meal-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-            </div>
-            <div class="meal-card-body">
-              <div class="meal-card-title">${esc(o.title || "Off-Site Meeting")}</div>
-              ${o.company  ? `<div class="meal-card-with">With <strong>${esc(o.company)}</strong></div>` : ""}
-              ${o.location ? `<div class="meal-card-loc">${esc(o.location)}</div>` : ""}
-              ${o.notes    ? `<div class="meal-card-notes">${esc(o.notes)}</div>` : ""}
-              ${itemNotesHtml("offsite", o)}
-            </div>
-            <div class="meal-card-actions">
-              <button class="meal-act-btn" data-off-edit="${esc(o.id)}">Edit</button>
-              <button class="meal-act-btn" type="button" data-mv-off="${esc(o.id)}">Move</button>
-              <button class="meal-act-btn del" data-off-del="${esc(o.id)}">Del</button>
-            </div>
-          </div>`;
-        }
-      });
-      html += `</div>`;
-    });
-  }
-  // Clearance so a full day's last card never ends up under the floating
-  // button, which hovers about 124px above the bottom of the viewport.
-  html += `<div class="sched-tail"></div>`;
-  // Everything you can add to a day lives behind one thumb-reachable button
-  // instead of a search box plus two dashed buttons stacked above the agenda.
-  html += `
-<div class="fab-wrap${fabOpen ? " open" : ""}">
-  <div class="fab-menu">
-    <button class="fab-item" type="button" data-fab-booth>Add booth</button>
-    <button class="fab-item" type="button" data-meal-open>Add breakfast / lunch / dinner</button>
-    <button class="fab-item" type="button" data-off-open>Add off-site meeting</button>
-    ${showSessions(currentEventCode()).length ? '<button class="fab-item" type="button" data-sess-open>Add education session</button>' : ""}
-  </div>
-  <button class="fab" type="button" data-fab-toggle aria-label="Add to this day">+</button>
-</div>`;
-  el.innerHTML = html;
-  // Refresh the company autocomplete options (cheap; only when this view renders).
-  const dl = document.getElementById("co-datalist");
-  if (dl && !dl.childElementCount) {
-    dl.innerHTML = CO.filter(c => !c.x).map(c => `<option value="${esc(c.n)}">`).join("");
-  }
-  if (hadSearchFocus) document.querySelector(".sched-search-input")?.focus();
-  updateStats(state);
+  nxRenderMySchedule(state, hadSearchFocus);
 }
 
 function updateStats(state) {
@@ -10263,7 +11078,7 @@ document.getElementById("content").addEventListener("click", e => {
     state[k].visited = !state[k].visited;
     if (state[k].visited) state[k].vts = state[k].vts || Date.now();
     save(state);
-    toast(state[k].visited ? "Marked visited, moved to the bottom" : "Visit cleared");
+    toast(state[k].visited ? "Marked visited" : "Visit cleared");
     render();
     return;
   }
@@ -10459,7 +11274,7 @@ function startFresh() {
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   schedDay = showDayToday(currentEventCode()) || schedDay;
   forgetTabScroll();
-  setBottomTab("schedule");
+  setBottomTab("today");
   render();
   scrollAppTo(0);
 }
@@ -10468,8 +11283,8 @@ document.getElementById("bottomNav").addEventListener("click", e => {
   const tab = e.target.closest("[data-v]");
   if (tab) {
     const v = tab.dataset.v;
-    if (v === activeView) { scrollAppTo(0, true); return; }
-    tabScroll[activeView] = window.scrollY;
+    if (v === activeView && !nxStop) { scrollAppTo(0, true); return; }
+    tabScroll[activeView] = nxStop ? nxStopY : window.scrollY;
     setBottomTab(v);
     render();
     scrollAppTo(tabScroll[v] || 0);
@@ -10478,6 +11293,7 @@ document.getElementById("bottomNav").addEventListener("click", e => {
 });
 function setBottomTab(v) {
   if (v === "booths" && (resolveEvent(currentEventCode()) || {}).noBooths) v = "schedule";   // v221
+  nxStop = null;
   activeView = v;
   document.querySelectorAll("#bottomNav [data-v]").forEach(t => t.classList.toggle("active", t.dataset.v === v));
   // Admin Home stands apart from every show (v208): NCM colors and logo, no
@@ -10664,7 +11480,7 @@ function updateMediaBtn() {
   if (nav) {
     nav.style.display = (currentUser && !isHome()) ? "" : "none";   // always a tab; the page says if uploads aren't set up
     const lbl = nav.querySelector("span");
-    if (lbl) lbl.textContent = label;
+    if (lbl) lbl.textContent = "Uploads";
   }
   // Header pill (desktop) carries the same word: svg icon + a text node.
   btn.childNodes.forEach(n => { if (n.nodeType === 3 && n.textContent.trim()) n.textContent = label; });
@@ -10742,7 +11558,7 @@ function renderPhotosView() {
       <div class="ph-title">Photos and videos</div>
       <div class="ph-show">${esc(currentShowLabel())}</div>`;
   if (!msPhotosActive()) {
-    el.innerHTML = `<div class="ph-wrap"><div class="ph-card">${head}
+    el.innerHTML = nxUploadsHead() + `<div class="ph-wrap"><div class="ph-card">${head}
       <p class="ph-text">Uploads aren't set up for this show yet. Once its shared folder is ready, you can upload right here.</p></div></div>`;
     return;
   }
@@ -10770,7 +11586,7 @@ function renderPhotosView() {
       <div class="ph-send-slot">${photoSendHtml()}</div>
       <p class="ph-sub">${edit ? "Captions show up in the bullpen with each photo and become the file names." : "Captions become the file names, so the bullpen knows what each one shows."} Keep the app open until they finish.</p>
     </div>` : "";
-  el.innerHTML = `<div class="ph-wrap">
+  el.innerHTML = nxUploadsHead() + `<div class="ph-wrap">
     <div class="ph-card">${head}
       <p class="ph-text">Pick ${what} from your camera roll, add a caption to each, and they upload straight to the show's shared folder, where the bullpen sees them.</p>
       ${main}
@@ -12967,7 +13783,7 @@ async function switchToShow(code, manual) {
   masterEventOverride = code;
   showPickedManually = manual !== false;
   viewedScheduleUid = null; schedAllView = false; schedSearchQ = ""; mealFormOpen = false; offFormOpen = false; sessPickOpen = false;
-  setBottomTab("schedule");
+  setBottomTab("today");
   notesOpen.clear(); fabOpen = false; schedAddBooth = false;
   applyEvent(code);
   schedDay = showDayToday(code) || 1;
