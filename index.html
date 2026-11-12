@@ -2646,6 +2646,17 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
 .hb-si.shared { background: var(--bg); }
 .hb-si-chips { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
 .hb-pc-none { padding: 18px 16px; font-size: 0.82rem; color: var(--muted); }
+/* One-time release notes, shown once per desk member */
+.hb-note { width: 100%; max-width: 500px; background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: sheetUp 0.26s cubic-bezier(0.26, 1.04, 0.44, 1); }
+.hb-note-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 24px; background: var(--bg); border-bottom: 1px solid var(--border); font-family: var(--ft); font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+.hb-note-body { padding: 20px 24px 4px; }
+.hb-note-body h2 { font-family: var(--fd); font-size: 1.2rem; font-weight: 800; line-height: 1.25; color: var(--text); margin: 0; }
+.hb-note-rows { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; }
+.hb-note-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; padding: 11px 14px; border-top: 1px solid var(--border); font-size: 0.875rem; line-height: 1.45; color: var(--text-2); }
+.hb-note-row:first-child { border-top: 0; }
+.hb-note-row b { font-family: var(--ft); font-size: 0.78rem; font-weight: 700; color: var(--blue); padding-top: 2px; }
+.hb-note-foot { display: flex; justify-content: flex-end; padding: 16px 24px 20px; }
+.hb-note-foot .hb-btn { min-width: 108px; }
 </style>
 </head>
 <body>
@@ -2855,7 +2866,7 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v238</div>
+      <div class="pf-ver">NCM Events Guide · v239</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -2930,6 +2941,18 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
     <p class="settings-dbx-note" id="vidPurgeText"></p>
     <button class="settings-done" id="vidPurgeCancel" type="button">Keep it in Removed</button>
     <button class="settings-done share-secondary" id="vidPurgeConfirm" type="button">Delete permanently</button>
+  </div>
+</div>
+
+<!-- ── Bullpen: one-time release notes, once per desk member ── -->
+<div id="hbNoteSheet" class="settings-sheet" style="display:none" role="dialog" aria-modal="true" aria-labelledby="hbNoteTitle">
+  <div class="hb-note">
+    <div class="hb-note-head"><span>Release notes</span><span id="hbNoteDate"></span></div>
+    <div class="hb-note-body">
+      <h2 id="hbNoteTitle"></h2>
+      <div class="hb-note-rows" id="hbNoteRows"></div>
+    </div>
+    <div class="hb-note-foot"><button class="hb-btn pri" id="hbNoteDismiss" type="button">Dismiss</button></div>
   </div>
 </div>
 
@@ -7377,13 +7400,71 @@ let homeFlags = {};            // docId -> { state: "star" | "covered", ... } or
 let _homeFlagsUnsub = null;
 function subscribeHomeFlags() {
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
-  homeFlags = {};
+  homeFlags = {}; _homeFlagsLoaded = false;
   if (!fbReady || !isHome()) return;
   _homeFlagsUnsub = fbDb.collection("homeFlags").onSnapshot(snap => {
     homeFlags = {};
     snap.forEach(d => { const x = d.data(); if (x) homeFlags[d.id] = x; });
+    _homeFlagsLoaded = true;
     if (isHome()) renderHomeDashboard();
-  }, () => {});
+  }, () => { _homeFlagsLoaded = true; if (isHome()) syncHbNote(); });
+}
+// One-time release notes for the Bullpen, shown once per person (the name
+// picked on the desk), remembered for every device in
+// homeFlags/note__<id>__<name> with a per-browser fallback. To announce a new
+// round of changes, give it a new id and new copy. It stops appearing after
+// `until` so nobody is greeted months late.
+const HB_NOTE = {
+  id: "2026-11-bullpen",
+  until: "2026-12-31",
+  date: "November 2026",
+  title: "UX/UI updates",
+  items: [
+    ["UX/UI", "Redesigned Bullpen layout. Brand tabs are now in the top bar. The show, views, search and shared folder are in one toolbar."],
+    ["Videos", "Grouped by status. The count tiles filter the list. Remove is now under the three-dot menu."],
+    ["Schedules", "Everyone's day now appears side by side. Select a name to open that person's full schedule."]
+  ]
+};
+let _homeFlagsLoaded = false;     // the first homeFlags answer is in, so the note never flashes
+let _hbNoteClosedFor = "";        // dismissed in this session, before the save comes back
+function hbNoteDocId(m) { return fsId("note__" + HB_NOTE.id + "__" + m); }
+function hbNoteLsKey(m) { return "ncm_hb_note_" + HB_NOTE.id + "_" + m; }
+function hbNoteDue() {
+  const m = homeMember();
+  if (!m || !isHome() || !_homeFlagsLoaded || _hbNoteClosedFor === m) return false;
+  if (homeFlags[hbNoteDocId(m)]) return false;
+  try { if (localStorage.getItem(hbNoteLsKey(m))) return false; } catch (e) {}
+  const d = new Date();
+  const today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return today <= HB_NOTE.until;
+}
+function hbNoteUp() { const sh = document.getElementById("hbNoteSheet"); return !!sh && sh.style.display !== "none"; }
+// Called after every Bullpen draw: puts the note up when it is due and takes
+// it down when it no longer is (someone else's device recorded it, sign-out).
+function syncHbNote() {
+  const sh = document.getElementById("hbNoteSheet");
+  if (!sh) return;
+  if (!hbNoteDue()) { if (hbNoteUp()) sh.style.display = "none"; return; }
+  if (hbNoteUp()) return;
+  document.getElementById("hbNoteDate").textContent = HB_NOTE.date;
+  document.getElementById("hbNoteTitle").textContent = HB_NOTE.title;
+  document.getElementById("hbNoteRows").innerHTML = HB_NOTE.items.map(([tag, text]) =>
+    `<div class="hb-note-row"><b>${esc(tag)}</b><span>${esc(text)}</span></div>`).join("");
+  sh.style.display = "";
+  const b = document.getElementById("hbNoteDismiss");
+  if (b) try { b.focus({ preventScroll: true }); } catch (e) {}
+}
+// Dismiss or Esc records it. A click on the backdrop does not: a stray click
+// must not mark the message as read.
+function dismissHbNote() {
+  const m = homeMember();
+  _hbNoteClosedFor = m;
+  document.getElementById("hbNoteSheet").style.display = "none";
+  if (!m) return;
+  try { localStorage.setItem(hbNoteLsKey(m), "1"); } catch (e) {}
+  if (fbReady && isHome()) {
+    try { fbDb.collection("homeFlags").doc(hbNoteDocId(m)).set({ kind: "note", note: HB_NOTE.id, by: m, ts: Date.now() }).catch(() => {}); } catch (e) {}
+  }
 }
 // ── VIDEO PIPELINE ───────────────────────────────────────────────────────
 // Edit/digital booth visits become home-team "Reminders"; the bullpen
@@ -7867,6 +7948,7 @@ function renderHomeDashboard() {
       </div>
     </div></div>`;
     renderHomeNav();
+    syncHbNote();
     return;
   }
   // Redesign: brand tabs sit in the top bar and one toolbar carries the show,
@@ -7891,6 +7973,7 @@ function renderHomeDashboard() {
     const si = document.querySelector(homeView === "sched" ? ".hs-search-input" : homeView === "photos" ? ".hp-search-input" : ".home-search-input");
     if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
   }
+  syncHbNote();
 }
 
 // ── BULLPEN PHOTOS ───────────────────────────────────────────────────────
@@ -11010,6 +11093,9 @@ document.getElementById("homeNav").addEventListener("click", e => {
 document.addEventListener("click", e => {
   document.querySelectorAll("details.hb-pop[open]").forEach(d => { if (!d.contains(e.target)) d.removeAttribute("open"); });
 });
+// Bullpen release notes: Dismiss or Esc records it for this person.
+document.getElementById("hbNoteDismiss").addEventListener("click", dismissHbNote);
+document.addEventListener("keydown", e => { if (e.key === "Escape" && hbNoteUp()) dismissHbNote(); });
 document.getElementById("homeMemberBtn").addEventListener("click", () => {
   try { localStorage.removeItem("home_member"); } catch (e) {}
   if (isHome()) renderHomeDashboard();   // re-opens the "Who's working the desk?" picker
@@ -12663,6 +12749,8 @@ function showSignedOut() {
   if (_homeUnsub) { _homeUnsub(); _homeUnsub = null; }
   if (_homeFlagsUnsub) { _homeFlagsUnsub(); _homeFlagsUnsub = null; }
   if (_homeSchedUnsub) { _homeSchedUnsub(); _homeSchedUnsub = null; }
+  _homeFlagsLoaded = false; _hbNoteClosedFor = "";
+  { const ns = document.getElementById("hbNoteSheet"); if (ns) ns.style.display = "none"; }
   if (_homeVdUnsub) { _homeVdUnsub(); _homeVdUnsub = null; }
   if (_homePhotosUnsub) { _homePhotosUnsub(); _homePhotosUnsub = null; }
   if (_myVdUnsub) { _myVdUnsub(); _myVdUnsub = null; }
