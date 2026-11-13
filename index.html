@@ -2727,6 +2727,10 @@ body.has-nav .bn-add svg { padding: 0; width: 22px; height: 22px; stroke-width: 
   font-size: 0.62rem; font-weight: 700; font-style: normal; display: grid; place-items: center; padding: 0 4px; box-shadow: 0 0 0 2px var(--surface); }
 .bn-bdg[hidden] { display: none; }
 body.ah-mode #bottomNav [data-v="today"], body.ah-mode #bnAdd, body:not(.ah-mode) #bnSettings, body.nx-ro #bnAdd { display: none !important; }
+/* A show with no booth list (CSI Tech Summit) has no Booths tab, which left
+   two tabs on one side of the add button and one on the other, so the button
+   sat off center. The lone tab takes both slots on its side instead. */
+body.has-nav.no-booths:not(.ah-mode) #bottomNav [data-v="photos"] { flex: 2 1 0%; padding-left: 4px; padding-right: 4px; }   /* twice a tab's side padding, so the two sides come out exactly equal */
 
 /* shared pieces */
 .nx { font-family: var(--ft); color: var(--text); font-size: 14px; line-height: 1.35; }
@@ -3189,7 +3193,7 @@ body.has-nav .ph-link { width: 100%; height: 46px; margin: 14px 0 0; border-radi
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v247</div>
+      <div class="pf-ver">NCM Events Guide · v248</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
