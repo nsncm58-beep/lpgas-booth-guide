@@ -2952,6 +2952,70 @@ body.has-nav .ph-wrap { padding-top: 18px; }
 .nx-chip.wrapd { background: #FFE8D4; color: #A64800; }
 .nx-hint { font-size: 12px; color: var(--muted); text-align: center; margin: 16px 12px 0; }
 /*NX-CSS-END*/
+/* ══ FORMS, TEAM VIEW AND PHOTO PICKER IN THE NEW LOOK (Nov. 2026) ══
+   The pieces the overhaul left in their old look: the add-a-meal, off-site
+   and education-session forms, the add-a-booth search, the Team grid and
+   the photo picker. Same markup and hooks; these rules restyle them for
+   the field app only. */
+body.has-nav .meal-form { background: var(--surface); border: 0; border-radius: 18px; box-shadow: var(--nx-sh); padding: 16px; margin: 12px 0 0; }
+body.has-nav .meal-form-title { font-family: var(--fd); font-size: 20px; font-weight: 700; letter-spacing: -0.2px; text-transform: none; color: var(--text); margin-bottom: 12px; line-height: 1.2; }
+body.has-nav .meal-form.offsite .meal-form-title, body.has-nav .meal-form.session .meal-form-title { color: var(--text); }
+body.has-nav .meal-form-title .nx-k { display: block; margin-bottom: 4px; font-family: var(--ft); }
+body.has-nav .meal-type-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--bg); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+body.has-nav .mt-btn { border: 0; background: none; border-radius: 9px; padding: 9px 0; font-family: var(--ft); font-size: 13px; font-weight: 500; color: var(--text-2); text-transform: none; letter-spacing: 0; }
+body.has-nav .mt-btn.active { background: var(--text); color: #fff; font-weight: 700; }
+body.has-nav .meal-field { margin-bottom: 10px; }
+body.has-nav .meal-field-label { font-family: var(--ft); font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+body.has-nav .meal-form input.meal-input, body.has-nav .meal-form select.meal-input { height: 46px; border: 0; border-radius: 12px; background-color: var(--bg); font-family: var(--ft); font-size: 16px; font-weight: 500; color: var(--text); padding: 0 12px; }
+body.has-nav .meal-form input.meal-input:focus, body.has-nav .meal-form select.meal-input:focus { border: 0; box-shadow: 0 0 0 2px var(--blue); outline: none; }
+body.has-nav .meal-form-actions { display: flex; gap: 8px; margin-top: 14px; }
+body.has-nav .meal-btn-primary, body.has-nav .meal-btn-secondary { flex: 1; height: 46px; padding: 0 12px; border: 0; border-radius: 12px; font-family: var(--ft); font-size: 14px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+body.has-nav .meal-btn-primary, body.has-nav .meal-btn-primary.offsite, body.has-nav .meal-btn-primary.session { background: var(--blue); color: #fff; }
+body.has-nav .meal-btn-secondary { background: var(--bg); color: var(--text); }
+body.has-nav .sess-pick-sub { font-size: 13px; color: var(--text-2); margin: -6px 0 6px; }
+body.has-nav .sess-pick-day { font-family: var(--ft); font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin: 14px 0 0; padding: 0; border: 0; background: none; }
+body.has-nav .sess-pick-row { border: 0; border-top: 1px solid var(--border-soft); border-radius: 0; background: none; padding: 11px 0; margin: 0; gap: 10px; align-items: flex-start; }
+body.has-nav .sess-pick-day + .sess-pick-row { border-top: 0; }
+body.has-nav .sess-pick-row.on { background: none; }
+body.has-nav .spr-time { width: 76px; font-size: 13px; font-weight: 700; color: var(--text-2); white-space: nowrap; }
+body.has-nav .spr-title { font-size: 14px; }
+body.has-nav .spr-spk { font-size: 12px; color: var(--muted); }
+body.has-nav .spr-state { border: 0; border-radius: 10px; height: 32px; padding: 0 12px; display: inline-flex; align-items: center; background: var(--blue-light); color: var(--blue-dark); font-family: var(--ft); font-size: 12.5px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+body.has-nav .sess-pick-row.on .spr-state { background: var(--nx-ok-l); color: var(--nx-ok); }
+body.has-nav .sched-search-box { background: var(--surface); border: 0; border-radius: 18px; box-shadow: var(--nx-sh); padding: 12px 14px 6px; margin: 12px 0 0; }
+body.has-nav .sched-search-input { height: 46px; border: 0; border-radius: 12px; background-color: var(--bg); font-family: var(--ft); font-size: 16px; }
+body.has-nav .sched-search-input:focus { background-color: var(--bg); box-shadow: 0 0 0 2px var(--blue); }
+body.has-nav .sched-result-row { padding: 10px 0; gap: 10px; border-bottom: 1px solid var(--border-soft); }
+body.has-nav .sched-result-name { font-family: var(--ft); font-size: 14.5px; font-weight: 700; }
+body.has-nav .sched-result-meta { display: block; font-size: 12px; color: var(--muted); font-weight: 500; }
+body.has-nav .sched-add-sel { height: 34px; border: 0; border-radius: 10px; background-color: var(--bg); color: var(--text); font-family: var(--ft); font-size: 12.5px; font-weight: 700; padding: 0 26px 0 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234A5A6E' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px; }
+body.has-nav .eg { margin: 12px 16px 8px; border: 0; border-radius: 16px; box-shadow: var(--nx-sh); }
+body.has-nav .eg-head { border-bottom: 1px solid var(--border-soft); }
+body.has-nav .eg-name { font-family: var(--ft); font-weight: 700; font-size: 13px; }
+body.has-nav .eg-t { font-family: var(--ft); font-size: 10.5px; font-weight: 500; color: var(--muted); text-transform: none; letter-spacing: 0; }
+body.has-nav .eg-it, body.has-nav .eg-long { border-radius: 10px; border-left-color: var(--blue) !important; background-color: var(--blue-light) !important; }
+body.has-nav .eg-it-t { font-family: var(--ft); }
+body.has-nav .k-video { border-left-color: var(--blue-dark) !important; background-color: var(--blue-mid) !important; }
+body.has-nav .k-meal { border-left-color: var(--nx-ok) !important; background-color: var(--nx-ok-l) !important; }
+body.has-nav .k-offsite { border-left-color: var(--nx-warn) !important; background-color: var(--nx-warn-l) !important; }
+body.has-nav .k-session { border-left-color: var(--text-2) !important; background-color: var(--bg) !important; }
+body.has-nav .eg-now { border-top-color: var(--blue); }
+body.has-nav .eg-now::before { background: var(--blue); }
+body.has-nav .eg-key { margin: 0 20px 24px; font-family: var(--ft); font-weight: 500; }
+body.has-nav .ph-wrap { padding: 0 16px 8px; max-width: 640px; }
+body.has-nav .ph-card { border: 0; border-radius: 18px; box-shadow: var(--nx-sh); padding: 16px; text-align: left; }
+body.has-nav .ph-text { font-size: 13.5px; margin: 0; color: var(--text-2); }
+body.has-nav .ph-btn { height: 52px; margin-top: 14px; padding: 0 14px; border-radius: 14px; font-family: var(--ft); font-size: 15.5px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+body.has-nav .ph-sub { font-size: 12px; margin: 10px 0 0; }
+body.has-nav .ph-queue { margin-top: 12px; padding: 16px; }
+body.has-nav .ph-queue-head { font-family: var(--ft); font-size: 13px; font-weight: 700; }
+body.has-nav .ph-thumb { border-radius: 12px; background: var(--bg); }
+body.has-nav .ph-cap { border: 0; border-radius: 12px; background: var(--bg); }
+body.has-nav .ph-cap:focus { box-shadow: 0 0 0 2px var(--blue); }
+body.has-nav .ph-del { border: 0; background: var(--bg); color: var(--text-2); }
+body.has-nav .ph-link { width: 100%; height: 46px; margin: 14px 0 0; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border); color: var(--text); font-size: 14px; text-decoration: none; }
+
 </style>
 </head>
 <body>
@@ -9288,6 +9352,20 @@ function nxDayStrip(counts) {
     return `<button class="nx-day${schedDay === d ? " on" : ""}" type="button" data-day="${d}"><small>${dt ? NX_WD[dt.getDay()] : "Day"}</small><b>${dt ? dt.getDate() : d}</b><i>${c} stop${c === 1 ? "" : "s"}</i></button>`;
   }).join("")}</div>`;
 }
+// The add-a-booth results: name, booth and where it already sits on the
+// schedule, with the same "+ Time" menu as before.
+function nxSearchRows(state) {
+  if (!schedSearchQ) return "";
+  const code = currentEventCode();
+  const matches = CO.map((c, i) => ({ ...c, i })).filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))).slice(0, 8);
+  if (!matches.length) return `<div style="padding:10px 0;color:var(--muted);font-size:13px;">No matches.</div>`;
+  return matches.map(c => {
+    const cur = boothSlots(state[key(c.i)]);
+    const meta = esc(boothLbl(c.b)) + (cur.length ? " · on your schedule " + cur.map(v => esc(nxWhenShort(code, v))).join(", ") : "");
+    return `<div class="sched-result-row"><span class="sched-result-name">${esc(c.n)}<span class="sched-result-meta">${meta}</span></span>
+        <select class="sched-add-sel" data-add-i="${c.i}" aria-label="Pick a time for ${esc(c.n)}"><option value="">+ Time</option>${TIME_SLOTS.map(x => `<option value="${esc(x)}">${x}</option>`).join("")}</select></div>`;
+  }).join("");
+}
 function nxRenderMySchedule(state, hadSearchFocus) {
   const el = document.getElementById("content");
   const code = currentEventCode(), nDays = showDayCount(code);
@@ -9299,19 +9377,7 @@ function nxRenderMySchedule(state, hadSearchFocus) {
   const overlaps = dayOverlaps(buildMyScheduleItems(), schedDay);
   const next = isToday ? entries.find(e => e.e0 - e.s0 < LONG_BLOCK && e.e0 > now) : null;
   const dayDone = today ? schedDay < today : (showStatus(code).k === "wrapped" || showStatus(code).k === "past");
-  // The add-a-booth search, same list and "+ Time" menu as before.
-  const searchHtml = (() => {
-    if (!schedSearchQ) return "";
-    const matches = CO.map((c, i) => ({ ...c, i })).filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))).slice(0, 8);
-    if (!matches.length) return `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`;
-    return matches.map(c => {
-      const cur = boothSlots(state[key(c.i)]);
-      const meta = cur.length ? "On your schedule: " + cur.map(v => esc(nxWhenShort(code, v))).join(", ") + ". Pick a time to add another visit." : "";
-      return `<div class="sched-result-row"><span class="sched-result-name">${esc(c.n)}${meta ? `<span class="sched-result-meta">${meta}</span>` : ""}</span>
-          <span class="sched-result-booth">${esc(c.b)}</span>
-          <select class="sched-add-sel" data-add-i="${c.i}"><option value="">+ Time</option>${TIME_SLOTS.map(t => `<option value="${esc(t)}">${t}</option>`).join("")}</select></div>`;
-    }).join("");
-  })();
+  const searchHtml = nxSearchRows(state);
   let ag = "";
   if (!entries.length) {
     ag = `<div class="nx-empty"><b>Nothing booked on ${esc(nxDayName(code, schedDay))}</b>Tap + to add a booth, a meal or a meeting.</div>`;
@@ -10065,23 +10131,23 @@ function buildMealForm() {
   ).join("");
   return `
     <div class="meal-form">
-      <div class="meal-form-title">${mealEditingId ? "Edit Meal" : "Add Meal to Day "+schedDay}</div>
+      <div class="meal-form-title"><span class="nx-k">${esc(nxWhen(currentEventCode(), schedDay, ""))}</span>${mealEditingId ? "Edit meal" : "Add a meal"}</div>
       <div class="meal-type-row">${typeBtns}</div>
       <div class="meal-field">
         <div class="meal-field-label">Time</div>
         <select class="meal-input" id="mealTimeSel">${timeOpts}</select>
       </div>
       <div class="meal-field">
-        <div class="meal-field-label">With (Company or Guest)</div>
+        <div class="meal-field-label">With</div>
         <input class="meal-input" id="mealCompanyInp" list="co-datalist" placeholder="Type a name or pick a company…" value="${esc(mealFormCompany)}">
       </div>
       <div class="meal-field">
-        <div class="meal-field-label">Location / Notes (optional)</div>
+        <div class="meal-field-label">Where or notes (optional)</div>
         <input class="meal-input" id="mealNotesInp" placeholder="Restaurant, agenda, room…" value="${esc(mealFormNotes)}">
       </div>
       <div class="meal-form-actions">
         <button class="meal-btn-secondary" data-meal-cancel>Cancel</button>
-        <button class="meal-btn-primary"   data-meal-save>${mealEditingId ? "Save" : "Add to Day "+schedDay}</button>
+        <button class="meal-btn-primary"   data-meal-save>${mealEditingId ? "Save" : "Add to " + esc(nxDayName(currentEventCode(), schedDay))}</button>
       </div>
     </div>`;
 }
@@ -10092,7 +10158,7 @@ function buildOffsiteForm() {
   ).join("");
   return `
     <div class="meal-form offsite">
-      <div class="meal-form-title">${offEditingId ? "Edit Off-Site Meeting" : "Add Off-Site Meeting to Day "+schedDay}</div>
+      <div class="meal-form-title"><span class="nx-k">${esc(nxWhen(currentEventCode(), schedDay, ""))}</span>${offEditingId ? "Edit off-site meeting" : "Add an off-site meeting"}</div>
       <div class="meal-field">
         <div class="meal-field-label">Meeting</div>
         <input class="meal-input" id="offTitleInp" placeholder="e.g. Dinner with regional reps" value="${esc(offFormTitle)}">
@@ -10102,7 +10168,7 @@ function buildOffsiteForm() {
         <select class="meal-input" id="offTimeSel">${timeOpts}</select>
       </div>
       <div class="meal-field">
-        <div class="meal-field-label">With (Company or Guest)</div>
+        <div class="meal-field-label">With</div>
         <input class="meal-input" id="offCompanyInp" list="co-datalist" placeholder="Type a name or pick a company…" value="${esc(offFormCompany)}">
       </div>
       <div class="meal-field">
@@ -10115,7 +10181,7 @@ function buildOffsiteForm() {
       </div>
       <div class="meal-form-actions">
         <button class="meal-btn-secondary" data-off-cancel>Cancel</button>
-        <button class="meal-btn-primary offsite" data-off-save>${offEditingId ? "Save" : "Add to Day "+schedDay}</button>
+        <button class="meal-btn-primary offsite" data-off-save>${offEditingId ? "Save" : "Add to " + esc(nxDayName(currentEventCode(), schedDay))}</button>
       </div>
     </div>`;
 }
@@ -10130,15 +10196,15 @@ function buildSessionPicker() {
   const days = [...new Set(list.map(x => x.day))].sort((a, b) => a - b);
   let h = `<div class="meal-form session">
     <div class="meal-form-title">Add education sessions</div>
-    <div class="sess-pick-sub">Tap each one you're attending or working. It lands on its own day and time.</div>`;
+    <div class="sess-pick-sub">Select each one you are attending or working. It lands on its own day and time.</div>`;
   days.forEach(d => {
-    h += `<div class="sess-pick-day">${esc(showDayLabel(code, d))}</div>`;
+    h += `<div class="sess-pick-day">${esc(nxDate(code, d) ? nxDayName(code, d) + ", " + fmtMonthDay(nxDate(code, d)) : "Day " + d)}</div>`;
     list.filter(x => x.day === d).sort((a, b) => timeToMin(a.time) - timeToMin(b.time)).forEach(x => {
       const on = mine.has(x.id);
       h += `<button class="sess-pick-row${on ? " on" : ""}" type="button" data-sess-add="${esc(x.id)}"${on ? ' aria-disabled="true"' : ""}>
-        <span class="spr-time">${esc(x.time)}</span>
+        <span class="spr-time">${esc(nxT(x.time).txt)}</span>
         <span class="spr-body"><span class="spr-title">${esc(x.title)}</span>${x.speakers ? `<span class="spr-spk">${esc(x.speakers)}</span>` : ""}</span>
-        <span class="spr-state">${on ? "Added ✓" : "Add"}</span>
+        <span class="spr-state">${on ? "Added" : "Add"}</span>
       </button>`;
     });
   });
@@ -10448,9 +10514,9 @@ function renderEveryoneGrid(el, teamBar) {
   });
   const today = showDayToday(code) === schedDay;
   const now = egNowMin();
-  let html = teamBar + `<div class="sched-day-tabs${nDays >= 5 ? " many" : ""}">${dayTabs}</div>`;   // v219: no venue/attire card here
+  let html = teamBar + `<div class="nx"><div class="nx-body">${nxDayStrip(dc)}</div></div>`;   // v219: no venue/attire card here
   if (!Number.isFinite(lo)) {
-    html += `<div class="sched-empty"><h4>Nothing booked on Day ${schedDay}</h4><p>No one on the team has anything scheduled for this day.</p></div>`;
+    html += `<div class="nx"><div class="nx-empty"><b>Nothing booked on ${esc(nxDayName(code, schedDay))}</b>No one on the team has anything scheduled for this day.</div></div>`;
     el.innerHTML = html;
     return;
   }
@@ -10461,7 +10527,7 @@ function renderEveryoneGrid(el, teamBar) {
   const H = (hi - lo) * EG_PX;
   const y = m => Math.round((m - lo) * EG_PX);
   let times = "";
-  for (let m = lo; m <= hi; m += 60) times += `<span class="eg-t" style="top:${y(m)}px">${esc(fmtTime(m).replace(":00 ", " "))}</span>`;
+  for (let m = lo; m <= hi; m += 60) times += `<span class="eg-t" style="top:${y(m)}px">${esc(nxT(fmtTime(m)).txt)}</span>`;
   const cols = people.map(p => {
     const longs = p.day.filter(x => x.e - x.s >= LONG_BLOCK);
     const reg = p.day.filter(x => x.e - x.s < LONG_BLOCK);
@@ -11107,27 +11173,8 @@ document.getElementById("content").addEventListener("input", e => {
   if (e.target.id === "offNotesInp")    { offFormNotes    = e.target.value; return; }
   if (e.target.classList.contains("sched-search-input")) {
     schedSearchQ = e.target.value.trim().toLowerCase();
-    const state = load();
-    const matches = schedSearchQ
-      ? CO.map((c,i)=>({...c,i})).filter(c => !c.x && (c.n.toLowerCase().includes(schedSearchQ) || c.b.toLowerCase().includes(schedSearchQ))).slice(0,8)
-      : [];
     const rEl = document.getElementById("sched-results");
-    if (!rEl) return;
-    if (!schedSearchQ) { rEl.innerHTML = ""; return; }
-    if (!matches.length) { rEl.innerHTML = `<div style="padding:8px 0 2px;color:var(--muted);font-size:0.8rem;">No matches.</div>`; return; }
-    rEl.innerHTML = matches.map(c => {
-      const cur = boothSlots(state[key(c.i)]);
-      const meta = cur.length ? "On your schedule: " + cur.map(v => `Day ${esc(v.split("|")[0])} · ${esc(v.split("|")[1])}`).join(", ") + ". Pick a time to add another visit." : "";
-      return `
-        <div class="sched-result-row">
-          <span class="sched-result-name">${esc(c.n)}${meta?`<span class="sched-result-meta">${meta}</span>`:""}</span>
-          <span class="sched-result-booth">${esc(c.b)}</span>
-          <select class="sched-add-sel" data-add-i="${c.i}">
-            <option value="">+ Time</option>
-            ${TIME_SLOTS.map(t => `<option value="${esc(t)}">${t}</option>`).join("")}
-          </select>
-        </div>`;
-    }).join("");
+    if (rEl) rEl.innerHTML = nxSearchRows(load());
     return;
   }
   // Meal / meeting notes: same autosave, into that item's mynotes.
