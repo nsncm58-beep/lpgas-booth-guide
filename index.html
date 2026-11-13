@@ -1998,20 +1998,6 @@ body.ah-mode #mediaBtn, body.ah-mode .filter-bar, body.ah-mode .booths-search, b
 body.ah-mode #bottomNav [data-v="schedule"], body.ah-mode #bottomNav [data-v="booths"],
 body.ah-mode #bottomNav [data-v="photos"], body:not(.ah-mode) #bottomNav .bn-home { display: none !important; }
 .show-row.home .show-row-dot svg { width: 15px; height: 15px; display: block; }
-.ah-for { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.8rem; color: var(--text-2); font-weight: 600; }
-.ah-for select { flex: 1; min-width: 0; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 9px; background: var(--surface); font: inherit; color: var(--text); }
-.ah-wrap { padding: 12px 10px 120px; display: flex; flex-direction: column; gap: 12px; }
-.ah-title { font-family: var(--fd); font-weight: 800; font-size: 1.4rem; color: var(--text); }
-.ah-sub { font-size: 0.8rem; color: var(--text-2); margin-top: 2px; }
-.ah-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; }
-.ah-card-head { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.ah-brand + .ah-brand { margin-top: 10px; }
-.ah-show, .ah-tool { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px; margin-top: 6px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; text-align: left; cursor: pointer; color: var(--text); }
-.ah-show.current { border-color: var(--blue); background: var(--blue-light); }
-.ah-show-name, .ah-tool-name { flex: 1; min-width: 0; font-weight: 700; font-size: 0.9rem; }
-.ah-tool { flex-wrap: wrap; }
-.ah-tool-sub { order: 3; width: 100%; font-size: 0.74rem; color: var(--muted); margin-top: -4px; }
-.ah-chev { color: var(--muted); font-size: 1.2rem; line-height: 1; }
 
 /* ── Shared accounts (v203) ── */
 /* v204: chip and Claim share one 26px height so they line up, with more room above */
@@ -2666,7 +2652,7 @@ body.has-nav { --nx-ok: #2D7140; --nx-ok-l: #E4F2E9; --nx-warn: #8A5A00; --nx-wa
   padding-bottom: calc(68px + env(safe-area-inset-bottom, 0)); }
 body.has-nav .app-header { box-shadow: none; }
 body.has-nav .progress-strip, body.has-nav .filter-bar, body.has-nav .app-footer { display: none !important; }
-body.has-nav:not(.ah-mode) #content { padding: 0 0 28px; }
+body.has-nav #content { padding: 0 0 28px; }
 body.has-nav .header-top { padding: 11px 16px 9px; }
 body.has-nav .booths-search { padding: 2px 16px 14px; }
 body.has-nav #searchInput { background-color: var(--surface); color: var(--text); border-color: transparent; height: 44px; border-radius: 12px;
@@ -2914,6 +2900,10 @@ body.has-nav .ph-wrap { padding-top: 18px; }
 #nxNoteSheet .hb-note-row { grid-template-columns: 78px minmax(0, 1fr); gap: 10px; padding: 11px 12px; }
 #nxNoteSheet .hb-note-foot { padding: 14px 18px 18px; }
 #nxNoteSheet .hb-note-foot .hb-btn { width: 100%; height: 46px; }
+/* admin home (Shows and Tools): the same band, cards and rows as the rest */
+.nx-bdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; }
+.nx-chip.wrapd { background: #FFE8D4; color: #A64800; }
+.nx-hint { font-size: 12px; color: var(--muted); text-align: center; margin: 16px 12px 0; }
 /*NX-CSS-END*/
 </style>
 </head>
@@ -3142,7 +3132,7 @@ body.has-nav .ph-wrap { padding-top: 18px; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v244</div>
+      <div class="pf-ver">NCM Events Guide · v245</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -8974,6 +8964,8 @@ var NX_P = {
   up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
   note: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  cal: '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
+  qr: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   shirt: '<path d="M8 3l4 2 4-2 5 4-3 3-2-1v12H8V9l-2 1-3-3z"/>',
   booth: '<path d="M3 21V8l9-5 9 5v13"/><path d="M3 21h18M9 21v-6h6v6"/>',
@@ -13664,56 +13656,91 @@ function ahDefaultShow() {
   if (up.length) return up.sort((a, b) => showStatus(a).start - showStatus(b).start)[0];
   return all[0] || currentEventCode();
 }
+// Admin home, in the same look as the rest of the field app (v245): a greeting
+// band, one card for the show that matters now (live, else the next one up,
+// else the last to wrap), then every show by brand as plain rows. Tools is
+// the same four tools as rows. The hooks are unchanged: data-ah-show,
+// data-ah-past, data-ah-tool, data-ah-for.
 function renderAdminHome() {
   const el = document.getElementById("content");
-  const row = c => {
-    const st = showStatus(c);
-    return `<button class="ah-show" type="button" data-ah-show="${esc(c)}">
-        <span class="ah-show-name">${esc(isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c))}</span>
-        <span class="show-row-status ${st.k}">${esc(showStatusText(c))}</span>
-        <span class="ah-chev" aria-hidden="true">›</span>
-      </button>`;
+  const S = c => showStatus(c);
+  const dates = c => { const s = S(c); return s.start && s.end ? fmtShowDates(s.start, s.end) : ""; };
+  const recent = c => S(c).k === "wrapped" && recentlyWrapped(c);
+  const chip = c => {
+    const k = S(c).k, t = esc(showStatusText(c));
+    return k === "live" ? `<span class="nx-chip ok">${t}</span>` : k === "upcoming" ? `<span class="nx-chip vid">${t}</span>`
+      : recent(c) ? `<span class="nx-chip wrapd">${t}</span>` : `<span class="nx-em">${t}</span>`;
   };
-  let shows = "", past = [];
-  pickerBrands().forEach(b => {
-    const codes = sortShowsByDate(showsForBrand(b));
-    const active = codes.filter(c => showStatus(c).k !== "past");
-    past = past.concat(codes.filter(c => showStatus(c).k === "past"));
-    if (!active.length) return;
-    const B = BRANDS[b] || BRANDS.ncm;
-    shows += `<div class="ah-brand"><div class="show-group-head"><span class="show-group-dot" style="background:${B.p.blue}"></span>${esc(B.name)}</div>${active.map(row).join("")}</div>`;
-  });
-  if (past.length) {
-    shows += `<button class="show-past-toggle" type="button" data-ah-past>${_adminPast ? "▾" : "▸"} Past shows (${past.length})</button>`;
-    if (_adminPast) shows += `<div class="ah-brand">${sortShows(past).map(row).join("")}</div>`;
-  }
-  const live = pickerShows().filter(c => showStatus(c).k === "live");
+  const row = c => `<button class="nx-row" type="button" data-ah-show="${esc(c)}">
+      <div class="nx-mn wrap"><b>${esc(isPlaceholderShow(c) ? "No show loaded yet" : showLabelOf(c))}</b>${dates(c) ? `<span>${esc(dates(c))}</span>` : ""}</div>
+      ${chip(c)}${nxi("chevr", "nx-go")}</button>`;
   if (!_ahToolShow || !pickerShows().includes(_ahToolShow)) _ahToolShow = ahDefaultShow();
-  const tShows = sortShowsByDate(pickerShows().filter(c => !isPlaceholderShow(c) && showStatus(c).k !== "past"));
-  if (!tShows.includes(_ahToolShow)) tShows.unshift(_ahToolShow);
-  const tSel = `<label class="ah-for">Show <select data-ah-for>${tShows.map(c =>
-    `<option value="${esc(c)}"${c === _ahToolShow ? " selected" : ""}>${esc(showLabelOf(c))}</option>`).join("")}</select></label>`;
-  const tool = (id, label, sub) => `<button class="ah-tool" type="button" data-ah-tool="${id}"><span class="ah-tool-name">${esc(label)}</span><span class="ah-tool-sub">${esc(sub)}</span><span class="ah-chev" aria-hidden="true">›</span></button>`;
   if (activeView !== "adminTools") {
-    el.innerHTML = `<div class="ah-wrap">
-    <div class="ah-head"><div class="ah-title">Shows</div>
-      <div class="ah-sub">${live.length ? "Live now: " + live.map(c => esc(showShortLabelOf(c))).join(", ") : "No show is live right now."} Tap a show to open it. To come back, tap the show name at the top and pick Home.</div></div>
-    <div class="ah-card">${shows}</div>
-  </div>`;
+    const all = pickerShows().filter(c => !isPlaceholderShow(c));
+    const live = all.filter(c => S(c).k === "live");
+    const up = all.filter(c => S(c).k === "upcoming").sort((x, y) => S(x).start - S(y).start);
+    const wr = all.filter(recent).sort((x, y) => S(y).end - S(x).end);
+    const lead = live[0] || up[0] || wr[0] || null;
+    const n = new Date(), hr = n.getHours();
+    const greet = (hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening") + (nxFirstName() ? ", " + esc(nxFirstName()) : "");
+    const dateLine = n.toLocaleDateString("en-US", { weekday: "long" }) + ", " + fmtMonthDay(n);
+    let hero;
+    if (lead) {
+      const s = S(lead), B = BRANDS[brandOfCode(lead)] || BRANDS.ncm;
+      const pill = s.k === "live" ? "Day " + s.day + " of " + showDayCount(lead) : showStatusText(lead);
+      hero = `<div class="nx-card hero">
+        <div class="nx-kline"><span class="nx-k b">${s.k === "live" ? "Live now" : s.k === "upcoming" ? "Next up" : "Just wrapped"}</span><span class="nx-pill">${esc(pill)}</span></div>
+        <div class="nx-hname">${esc(showLabelOf(lead))}</div>
+        <div class="nx-hsub"><span class="nx-bdot" style="background:${B.p.blue}"></span>${esc([B.name, dates(lead)].filter(Boolean).join(" · "))}</div>
+        <div class="nx-acts"><button class="nx-btn pri" type="button" data-ah-show="${esc(lead)}">Open show</button></div>
+      </div>`;
+    } else {
+      hero = `<div class="nx-card hero"><div class="nx-kline"><span class="nx-k b">Shows</span></div>
+        <div class="nx-hname">No shows loaded yet</div><div class="nx-hsub">Shows appear here once they are added.</div></div>`;
+    }
+    const also = live.filter(c => c !== lead);
+    const wrapped = wr.filter(c => c !== lead);
+    let shows = "", past = [];
+    pickerBrands().forEach(b => {
+      const codes = sortShowsByDate(showsForBrand(b));
+      const active = codes.filter(c => S(c).k !== "past");
+      past = past.concat(codes.filter(c => S(c).k === "past"));
+      if (!active.length) return;
+      const B = BRANDS[b] || BRANDS.ncm;
+      shows += `<div class="nx-sech"><b><span class="nx-bdot" style="background:${B.p.blue}"></span>${esc(B.name)}</b></div><div class="nx-card list">${active.map(row).join("")}</div>`;
+    });
+    if (past.length) {
+      shows += `<button class="nx-btn out wide" type="button" data-ah-past style="margin-top:16px">${_adminPast ? "Hide past shows" : "Past shows (" + past.length + ")"}</button>`;
+      if (_adminPast) shows += `<div class="nx-card list" style="margin-top:10px">${sortShows(past).map(row).join("")}</div>`;
+    }
+    el.innerHTML = `<div class="nx"><div class="nx-band tall"><div class="nx-hello"><small>${esc(dateLine)}</small><b>${greet}</b></div></div>
+      <div class="nx-body">${hero}
+        ${also.length ? `<div class="nx-sech"><b>Also live<i>${also.length}</i></b></div><div class="nx-card list">${also.map(row).join("")}</div>` : ""}
+        ${wrapped.length ? `<div class="nx-sech"><b>Recently wrapped<i>${wrapped.length}</i></b></div><div class="nx-card list">${wrapped.map(row).join("")}</div>` : ""}
+        ${shows}
+        <p class="nx-hint">To come back here from a show, select the show name at the top and pick Home.</p>
+      </div></div>`;
     return;
   }
-  el.innerHTML = `<div class="ah-wrap">
-    <div class="ah-head"><div class="ah-title">Tools</div></div>
-    <div class="ah-card"><div class="ah-card-head">Admin</div>
-      ${tool("accounts", "Accounts", "Everyone's team and brands")}
-      ${tool("guide", "Install QR and bullpen passcode", "Sign-up QR codes and the bullpen login")}
-    </div>
-    <div class="ah-card"><div class="ah-card-head">Show tools</div>
-      ${tSel}
-      ${tool("notes", "People's notes", "View or download anyone's notes")}
-      ${tool("videos", "Video progress", "The bullpen's steps for each video")}
-    </div>
-  </div>`;
+  const tShows = sortShowsByDate(pickerShows().filter(c => !isPlaceholderShow(c) && S(c).k !== "past"));
+  if (!tShows.includes(_ahToolShow)) tShows.unshift(_ahToolShow);
+  const tool = (id, icon, label, sub) => `<button class="nx-row" type="button" data-ah-tool="${id}"><span class="nx-ic g">${nxi(icon)}</span>
+      <div class="nx-mn"><b>${esc(label)}</b><span>${esc(sub)}</span></div>${nxi("chevr", "nx-go")}</button>`;
+  el.innerHTML = `<div class="nx">${nxBand("Tools", "<small>For admins</small>")}
+    <div class="nx-body">
+      <div class="nx-sech"><b>Admin</b></div>
+      <div class="nx-card list">
+        ${tool("accounts", "users", "Accounts", "Everyone's team and brands")}
+        ${tool("guide", "qr", "Install QR and bullpen passcode", "Sign-up QR codes and the bullpen login")}
+      </div>
+      <div class="nx-sech"><b>Show tools</b></div>
+      <div class="nx-card list">
+        <div class="nx-row nx-sel"><span class="nx-ic">${nxi("cal")}</span><div class="nx-mn"><b>Show</b><span>${esc(showLabelOf(_ahToolShow))}</span></div><span class="nx-em">Change</span>${nxi("chevr", "nx-go")}
+          <select data-ah-for aria-label="Show the tools below act on">${tShows.map(c => `<option value="${esc(c)}"${c === _ahToolShow ? " selected" : ""}>${esc(showLabelOf(c))}</option>`).join("")}</select></div>
+        ${tool("notes", "note", "People's notes", "View or download anyone's notes")}
+        ${tool("videos", "vid", "Video progress", "The bullpen's steps for each video")}
+      </div>
+    </div></div>`;
 }
 document.getElementById("content").addEventListener("click", e => {
   if (activeView !== "admin" && activeView !== "adminTools") return;
@@ -13731,7 +13758,7 @@ document.getElementById("content").addEventListener("click", e => {
 });
 document.getElementById("content").addEventListener("change", e => {
   const f = e.target.closest("[data-ah-for]");
-  if (f) _ahToolShow = f.value;
+  if (f) { _ahToolShow = f.value; renderAdminHome(); }
 });
 function wantsAdminHome() {
   return isMaster() && !isHome() && !pickerShows().some(c => showStatus(c).k === "live");
