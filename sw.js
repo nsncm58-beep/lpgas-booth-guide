@@ -3,16 +3,18 @@
 // User state lives in localStorage (legacy key: lpgas_v3, kept so existing
 // devices don't lose data) and is never touched by the cache.
 
-const CACHE_NAME = 'ncm-events-guide-v245';
+const CACHE_NAME = 'ncm-events-guide-v246';
 // Files from other sites (Firebase's sign-in and sync code on gstatic, the
 // QR library on cdnjs) live in their OWN cache that app updates never clear
 // (v202). Before, every update wiped them, so the first launch after an
 // update had to download them again over show-floor Wi-Fi before the app
 // would start: the "app won't load" reports at Equip and PestWorld.
 const RUNTIME = 'ncm-events-guide-runtime';
-const INTRO = ['./intro-v2.mp4', './intro-v2.webp', './intro-v2-poster.jpg', './intro-v2-hold.jpg'];
+// The video launch intro (v225 to v245) is gone: the launch screen is drawn in
+// CSS now. The list stays, empty, so its old files are cleared from phones.
+const INTRO = [];
 const ASSETS = [
-    './index.html', './manifest.json', './icon-192.png', './icon-512.png', './favicon.png', './ncm-logo.png',
+    './index.html', './manifest.json', './icon-192.png', './icon-512.png', './favicon.png', './ncm-logo.png', './ncm-logo-4c.png',
     './logo-lpgas.png', './logo-golfdom.png', './logo-lm.png', './logo-pmp.png', './logo-pq.png', './logo-ncm.png',
     './Forza-Medium.woff2', './Forza-Bold.woff2', './Forza-Black.woff2',
     './Gotham-Book.woff2', './Gotham-Medium.woff2', './Gotham-Bold.woff2',

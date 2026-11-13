@@ -16,6 +16,7 @@
      swap in. Preloading starts the fetches during HTML parse (instant once
      the service worker has them cached). Camber isn't here: it only appears
      after a P&Q login resolves, behind the boot veil. -->
+<link rel="preload" href="ncm-logo-4c.png" as="image">
 <link rel="preload" href="Forza-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="Forza-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="Forza-Black.woff2" as="font" type="font/woff2" crossorigin>
@@ -854,14 +855,54 @@ textarea.nf.post:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(
 .home-aside-media-main { font-family: var(--fd); font-weight: 800; font-size: 0.95rem; line-height: 1.25; min-width: 0; }
 .home-aside-media-sub { display: block; font-family: var(--ft); font-weight: 600; font-size: 0.66rem; opacity: 0.85; margin-top: 3px; }
 
-/* Launch intro (v224): Nate's floor-plan animation plays full screen once
-   per cold launch, then fades into the app. Tap skips it. See the script
-   right after <body> for the Low Power Mode and bad-connection handling. */
-#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #0f385b url(intro-v2-poster.jpg) center / cover no-repeat; transition: opacity 0.3s ease; }
-#bootIntro video, #bootIntro img { display: block; width: 100%; height: 100%; object-fit: cover; }
-#bootIntro.gone { opacity: 0; pointer-events: none; }
-#bootIntro .intro-wait { position: absolute; left: 50%; bottom: calc(15% + env(safe-area-inset-bottom)); transform: translateX(-50%) scale(0.7); opacity: 0; transition: opacity 0.6s ease; }
-#bootIntro.waiting .intro-wait { opacity: 0.55; }
+/* Launch screen (v246, "the tide"): on the app's own background the NCM logo
+   sweeps in, "Events Guide" rises under it and three lines in the logo's
+   blues draw across, about a second in all, then the screen lifts away like
+   a curtain. If the app is not ready yet the three lines keep rolling in and
+   out for as long as it takes (the script right after <body> holds the
+   screen until the app says it is ready). Drawn by the phone itself: no
+   video, so nothing for Low Power Mode or a bad connection to block. Phones
+   only. Tap skips it. */
+#bootIntro { position: fixed; inset: 0; z-index: 5000; background: #F3EEE5; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  transition: transform 0.38s cubic-bezier(0.7, 0, 0.2, 1); }
+#bootIntro::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: env(safe-area-inset-top, 0px); background: #103A5C; }   /* keeps the phone's clock and battery readable */
+#bootIntro.gone { transform: translateY(-103%); pointer-events: none; }
+.bi-mid { text-align: center; color: #103A5C; margin-top: -8vh; }
+.bi-logo { width: min(52vw, 220px); height: auto; display: block; margin: 0 auto 20px; animation: biWipe 0.5s cubic-bezier(0.3, 0, 0.2, 1) 0.04s both; }
+.bi-word { font-family: 'Forza', sans-serif; font-weight: 700; font-size: min(8.3vw, 34px); line-height: 1; letter-spacing: 0.2px; animation: biRise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) 0.36s both; }
+.bi-waves { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 20px; }
+.bi-waves i { display: block; width: min(35vw, 148px); height: 6px; border-radius: 99px;
+  animation: biDraw 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both, biRoll 1.8s cubic-bezier(0.45, 0, 0.3, 1) infinite; }
+.bi-waves i:nth-child(1) { background: #B8D7F1; animation-delay: 0.44s, 1.4s; }
+.bi-waves i:nth-child(2) { background: #5AAEE1; animation-delay: 0.52s, 1.65s; }
+.bi-waves i:nth-child(3) { background: #0397D6; animation-delay: 0.60s, 1.9s; }
+@keyframes biWipe {
+  from { -webkit-clip-path: inset(0 100% 0 0); clip-path: inset(0 100% 0 0); transform: translateY(10px); }
+  to   { -webkit-clip-path: inset(0 0 0 0); clip-path: inset(0 0 0 0); transform: none; }
+}
+@keyframes biRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+/* Each line draws in once (biDraw). A normal launch is gone before anything
+   else happens. If the app is still loading at 1.4 seconds the lines start
+   to roll (biRoll), one after another so one is always moving: out to the
+   right, back in from the left, a short rest, for as long as it takes. */
+@keyframes biDraw {
+  from { -webkit-clip-path: inset(0 100% 0 0 round 99px); clip-path: inset(0 100% 0 0 round 99px); }
+  to   { -webkit-clip-path: inset(0 0 0 0 round 99px); clip-path: inset(0 0 0 0 round 99px); }
+}
+@keyframes biRoll {
+  0%   { -webkit-clip-path: inset(0 0 0 0 round 99px); clip-path: inset(0 0 0 0 round 99px); }
+  30%  { -webkit-clip-path: inset(0 0 0 100% round 99px); clip-path: inset(0 0 0 100% round 99px); }
+  34%  { -webkit-clip-path: inset(0 100% 0 0 round 99px); clip-path: inset(0 100% 0 0 round 99px); }
+  64%  { -webkit-clip-path: inset(0 0 0 0 round 99px); clip-path: inset(0 0 0 0 round 99px); }
+  100% { -webkit-clip-path: inset(0 0 0 0 round 99px); clip-path: inset(0 0 0 0 round 99px); }
+}
+@keyframes biPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .bi-logo, .bi-word { animation: none; }
+  .bi-waves i { animation: biPulse 1.6s ease-in-out infinite; }
+  #bootIntro { transition: opacity 0.3s ease; }
+  #bootIntro.gone { transform: none; opacity: 0; }
+}
 
 /* NCM skyline loader: the three towers from the logo mark rise in rhythm
    over a still baseline. Replaces the stock ring spinner everywhere. */
@@ -1597,6 +1638,12 @@ textarea.nf.sess-nf:focus { border-color: var(--sess); box-shadow: 0 0 0 3px rgb
 .auth-overlay.hidden { display: none; }
 .auth-loading { display: none; }
 .auth-overlay.checking .auth-loading { display: flex; align-items: center; justify-content: center; }
+/* While the app is checking who is signed in (the Bullpen's loading screen,
+   v246): the same background as the app, with the skyline in NCM navy. The
+   sign-in page itself keeps its blue. */
+.auth-overlay.checking { background: var(--bg); }
+.auth-overlay.checking .ncm-loader-towers span { background: #103A5C; }
+.auth-overlay.checking .ncm-loader-base { background: rgba(16, 58, 92, 0.32); }
 .auth-overlay.checking .auth-card { display: none; }
 /* (ring spinner retired; the veil shows the .ncm-loader skyline instead) */
 .auth-card {
@@ -2908,89 +2955,35 @@ body.has-nav .ph-wrap { padding-top: 18px; }
 </style>
 </head>
 <body>
-<div id="bootIntro" aria-hidden="true"><video id="bootIntroVid" muted playsinline webkit-playsinline preload="auto"></video><div class="ncm-loader intro-wait"><div class="ncm-loader-towers"><span></span><span></span><span></span></div><div class="ncm-loader-base"></div></div></div>
+<div id="bootIntro" aria-hidden="true"><div class="bi-mid"><img class="bi-logo" src="./ncm-logo-4c.png" alt="" width="612" height="660"><div class="bi-word">Events Guide</div><div class="bi-waves"><i></i><i></i><i></i></div></div></div>
 <script>
-// Launch intro (v225, full-res files v226): always plays. The video is loaded
-// as a blob, not by URL, because iOS needs byte-range answers to play a video
-// by URL and the service worker's cached copy can't give them. If the phone
-// won't autoplay it (Low Power Mode), the same animation plays as an animated
-// image instead. The skyline loader only takes over if neither file has
-// arrived after 5s (first-ever launch on a really bad connection).
-// v227: if the app still isn't ready when the intro reaches the logo (2.95s,
-// just before its fade-out), it holds there and plays the fade once the app
-// calls window._introReady() (from liftVeil). Before, the intro finished and
-// the old skyline loader took over until the app was ready.
+// Launch screen (v246, "the tide"). The animation itself is all CSS (see
+// #bootIntro in the stylesheet); this only decides when it leaves: once the
+// app has called window._introReady() (from liftVeil) AND the animation has
+// had about a second to play. Until then the three lines keep rolling, so a
+// slow launch never looks frozen. It always leaves within 20 seconds, and a
+// tap skips it. Same contract as the video intro it replaces: _introDone
+// (a promise), _introFinished and _introReady.
 (function () {
-  var HOLD_AT = 2.95;
-  var box = document.getElementById("bootIntro"), v = document.getElementById("bootIntroVid");
-  var done, shown = false, imgTried = false, appReady = false, held = false, imgMode = false, holdCap = null;
+  var MIN = 950, CAP = 20000;
+  var box = document.getElementById("bootIntro");
+  var done, appReady = false, minDone = false;
   window._introFinished = false;
   window._introDone = new Promise(function (r) { done = r; });
-  // v232: desktop never sees the intro (Nate, Nov. 6, 2026: desktop users are
-  // all Homebase). The box goes away before anything can paint.
+  // v232: desktop never sees it (Nate, Nov. 6, 2026: desktop users are all
+  // Homebase). The box goes away before anything can paint.
   var phone = /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
   if (!phone) { window._introFinished = true; done(); box.remove(); return; }
   function finish() {
     if (window._introFinished) return;
-    window._introFinished = true; done(); clearTimeout(holdCap);
+    window._introFinished = true; done();
     box.classList.add("gone");
-    setTimeout(function () { box.remove(); }, 400);
+    setTimeout(function () { box.remove(); }, 520);
   }
-  function hold() {
-    if (held || window._introFinished) return; held = true;
-    setTimeout(function () { if (held) box.classList.add("waiting"); }, 1500);   // still waiting: a small hint
-    holdCap = setTimeout(finish, 20000);
-  }
-  window._introReady = function () {
-    if (appReady) return; appReady = true;
-    if (!held || window._introFinished) return;
-    held = false; clearTimeout(holdCap); box.classList.remove("waiting");
-    if (imgMode) { finish(); return; }
-    var p = v.play(); if (p && p.catch) p.catch(finish);
-  };
-  // Checked every frame, by a timer aimed at the hold point, and on
-  // timeupdate, so a throttled frame loop can't let it run past.
-  function atHold() {
-    if (window._introFinished || held || appReady || imgMode) return true;
-    if (v.currentTime >= HOLD_AT - 0.01) { v.pause(); hold(); return true; }
-    return false;
-  }
-  function watch() { if (!atHold()) requestAnimationFrame(watch); }
-  function watchT() { if (!atHold()) setTimeout(watchT, Math.max(8, Math.min(250, (HOLD_AT - v.currentTime) * 1000 - 12))); }
-  function started() {
-    if (shown) return; shown = true;
-    setTimeout(function () { if (!held) finish(); }, 5200);
-    if (!imgMode) { requestAnimationFrame(watch); watchT(); }
-  }
-  function useImage() {
-    if (imgTried || window._introFinished) return; imgTried = true;
-    var img = new Image();
-    img.onload = function () {
-      if (window._introFinished) return;
-      imgMode = true; v.remove(); box.insertBefore(img, box.firstChild); started();
-      setTimeout(function () {
-        if (window._introFinished) return;
-        if (appReady) setTimeout(finish, 750);
-        else { img.src = "intro-v2-hold.jpg"; hold(); }   // an animated image can't pause: swap in the same frame
-      }, HOLD_AT * 1000);
-    };
-    img.onerror = finish;
-    img.alt = ""; img.src = "intro-v2.webp";
-  }
-  v.addEventListener("playing", started);
-  v.addEventListener("ended", finish);
-  v.addEventListener("timeupdate", function () { if (shown) atHold(); });
-  v.addEventListener("error", useImage);
+  window._introReady = function () { appReady = true; if (minDone) finish(); };
+  setTimeout(function () { minDone = true; if (appReady) finish(); }, MIN);
+  setTimeout(finish, CAP);
   box.addEventListener("click", finish);
-  setTimeout(function () { if (!shown) finish(); }, 5000);
-  try {
-    fetch("intro-v2.mp4").then(function (r) { return r.ok ? r.blob() : Promise.reject(); }).then(function (b) {
-      if (window._introFinished) return;
-      v.src = URL.createObjectURL(b);
-      var p = v.play(); if (p && p.catch) p.catch(useImage);
-      setTimeout(function () { if (!shown) useImage(); }, 1200);
-    }).catch(useImage);
-  } catch (e) { useImage(); }
 })();
 </script>
 <div id="topBleed" aria-hidden="true"></div>
@@ -3132,7 +3125,7 @@ body.has-nav .ph-wrap { padding-top: 18px; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v245</div>
+      <div class="pf-ver">NCM Events Guide · v246</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
