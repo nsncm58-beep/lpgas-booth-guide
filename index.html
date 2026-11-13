@@ -3034,7 +3034,7 @@ body.has-nav .ph-wrap { padding-top: 18px; }
 </div>
 
 <!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
-<input type="file" id="vidFileInput" accept="video/*" style="display:none">
+<input type="file" id="vidFileInput" accept="video/*" multiple style="display:none">
 <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="bn-btn active" type="button" data-v="today">
@@ -3125,7 +3125,7 @@ body.has-nav .ph-wrap { padding-top: 18px; }
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v246</div>
+      <div class="pf-ver">NCM Events Guide · v247</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -7389,15 +7389,51 @@ function waitForOnline() {
     window.addEventListener("online", done);
   });
 }
-async function startVideoUpload(i, file) {
+// Several videos picked at once for one booth (v247; most booths get more
+// than one). They go up one after another, never side by side: show-floor
+// Wi-Fi does better with one upload at a time. `batch` is { n, of } for the
+// progress line; a single pick has none and behaves exactly as before.
+const upBatch = {};               // c.i -> { n, of } while a multi-video pick is uploading
+function upText(i, p, wait) {
+  const b = upBatch[i], pre = b && b.of > 1 ? "Video " + b.n + " of " + b.of + " · " : "";
+  return pre + (wait === "offline" ? "No signal · " + p + "%, will resume"
+    : wait === "retry" ? "Weak signal · retrying " + p + "%" : "Uploading " + p + "%");
+}
+async function startVideoUploads(i, files) {
   const c = CO[i]; if (!c) return;
-  if (!file || !file.size) { toast("That file looks empty. Try picking it again"); return; }
+  if (files.length === 1) { startVideoUpload(i, files[0]); return; }
+  // An unfinished upload for this booth: its video goes first, so it carries
+  // on from where it stopped instead of being started over.
+  const old = upPending()[upResumeKey(c)];
+  if (old && old.size) files.sort((a, b) => (b.size === old.size) - (a.size === old.size));
+  const code = currentEventCode();
+  let ok = 0, last = null, wasAllIn = false;
+  for (let k = 0; k < files.length; k++) {
+    const r = await startVideoUpload(i, files[k], { n: k + 1, of: files.length });
+    if (!r || !r.ok) break;       // the failed one already said why; the rest wait for another try
+    ok++; last = r.item; wasAllIn = wasAllIn || r.wasAllIn;
+  }
+  delete upBatch[i];
+  if (!ok) return;
+  if (ok === files.length) toast(ok + " videos uploaded ✓" + (wasAllIn ? " Tap Mark all footage in again when you're done" : ""));
+  else render();                  // some made it: the page shows how many
+  if (notifyOnce("upload|" + code + "|" + c.b)) {
+    const who = (currentUser && currentUser.name) || "A rep";
+    notifyHome(esc(showLabelOf(code)) + ": footage uploaded: <strong>" + esc(c.n) + "</strong> (Booth " + esc(c.b) +
+      ") by " + esc(who) + ": " + ok + " video" + (ok === 1 ? "" : "s") +
+      (last && last.webUrl ? '. <a href="' + esc(last.webUrl) + '">Watch the latest</a>' : ""), null, true);
+  }
+}
+async function startVideoUpload(i, file, batch) {
+  const c = CO[i]; if (!c) return { ok: false };
+  if (!file || !file.size) { toast("That file looks empty. Try picking it again"); return { ok: false }; }
+  if (batch && batch.of > 1) upBatch[i] = batch; else delete upBatch[i];
+  const many = !!upBatch[i];
   upProg[i] = 0; render(); uploadBanner();
   const onPct = (p, wait) => {
     upProg[i] = p;
     const btn = document.querySelector('[data-upprog="' + i + '"]');
-    if (btn) btn.textContent = wait === "offline" ? "No signal · " + p + "%, will resume"
-      : wait === "retry" ? "Weak signal · retrying " + p + "%" : "Uploading " + p + "%";
+    if (btn) btn.textContent = upText(i, p, wait);
     uploadBanner();
   };
   try {
@@ -7417,6 +7453,7 @@ async function startVideoUpload(i, file) {
     // anymore). The upload's own "footage uploaded" alert goes out below.
     if (!s.visited) { s.visited = true; s.vts = s.vts || Date.now(); }
     save(st); render();
+    if (many) return { ok: true, item, wasAllIn };   // startVideoUploads says it once, for the whole pick
     toast(wasAllIn ? "Uploaded ✓ Tap Mark all footage in again when you're done" : "Uploaded to the show folder ✓");
     if (notifyOnce("upload|" + currentEventCode() + "|" + c.b)) {
       const who = (currentUser && currentUser.name) || "A rep";
@@ -7425,8 +7462,9 @@ async function startVideoUpload(i, file) {
         ") by " + esc(who) + ": " + esc(item.name || "") +
         (item.webUrl ? '. <a href="' + esc(item.webUrl) + '">Watch it</a>' : ""), null, true);
     }
+    return { ok: true, item, wasAllIn };
   } catch (e) {
-    delete upProg[i]; render(); uploadBanner();
+    delete upProg[i]; delete upBatch[i]; render(); uploadBanner();
     const msg = String(e && e.message);
     if (msg === "token") {
       toast("Your Microsoft sign-in needs a refresh. One moment…");
@@ -7436,6 +7474,7 @@ async function startVideoUpload(i, file) {
     } else if (msg !== "no-account") {
       toast(upFailText(e), 7000);
     }
+    return { ok: false };
   }
 }
 // What to tell the rep when an upload fails (v236). Through v235 every
@@ -9114,7 +9153,7 @@ function nxUpBlock(c, s) {
       <small>${s.vall ? "All footage in. The Bullpen knows nothing more is coming." : "Add more, or mark it complete when nothing else is coming."}</small></div>
       ${s.vlink ? `<a class="nx-lnk" href="${esc(s.vlink)}" target="_blank" rel="noopener" title="${esc(s.vfile || "Open the latest clip")}">View</a>` : ""}</div>` : "";
   let main;
-  if (upProg[i] != null) main = `<div class="nx-clips"><span class="up-spin"></span><div><b data-upprog="${i}">Uploading ${upProg[i]}%</b><small>Keep the app open and the screen on</small></div></div>`;
+  if (upProg[i] != null) main = `<div class="nx-clips"><span class="up-spin"></span><div><b data-upprog="${i}">${esc(upText(i, upProg[i]))}</b><small>Keep the app open and the screen on</small></div></div>`;
   else if (msChecking === i) main = `<button class="nx-btn sec lg" type="button" disabled><span class="up-spin"></span>Checking Microsoft…</button>`;
   else {
     const resume = !!upPending()[upResumeKey(c)], ready = msReadyFor === i;
@@ -9122,7 +9161,8 @@ function nxUpBlock(c, s) {
     main = `<button class="nx-btn ${n && s.vall && !resume && !ready ? "out" : "pri"} lg" type="button" data-upv="${i}">${nxi("up")}${label}</button>`;
   }
   const all = n && upProg[i] == null ? `<button class="nx-btn ${s.vall ? "sec" : "out"} wide" type="button" data-vall="${i}">${s.vall ? "More footage is coming" : nxi("check") + "Mark all footage in"}</button>` : "";
-  return `<div class="nx-upblk">${have}${main}${all}</div>`;
+  const hint = upProg[i] == null && msChecking !== i ? `<div class="nx-st" style="text-align:center;margin-top:0">You can pick more than one video at a time.</div>` : "";
+  return `<div class="nx-upblk">${have}${main}${hint}${all}</div>`;
 }
 function nxFloorBtn(c, cls, label) {
   const code = currentEventCode();
@@ -9210,7 +9250,7 @@ function nxRenderToday(state) {
   const rows = owed.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("vid")}</span>
         <div class="nx-mn"><b>${esc(x.c.n)}</b><span>Video flagged, no clip yet</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`)
     .concat(sending.map(i => `<div class="nx-row" data-nx-stop="b:${i}"><span class="nx-ic">${nxi("up")}</span>
-        <div class="nx-mn"><b>${esc(CO[i].n)}</b><span data-upprog="${i}">Uploading ${upProg[i]}%</span></div></div>`))
+        <div class="nx-mn"><b>${esc(CO[i].n)}</b><span data-upprog="${i}">${esc(upText(i, upProg[i]))}</span></div></div>`))
     .concat(need.map(x => sales
       ? `<div class="nx-row" data-nx-stop="b:${x.i}" data-nx-focus="1"><span class="nx-ic g">${nxi("note")}</span>
         <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${x.s.vts ? "Visited " + esc(nxT(fmtTime(new Date(x.s.vts).getHours() * 60 + new Date(x.s.vts).getMinutes())).txt) : "Visited"}</span></div><button class="nx-btn sec sm" type="button" data-nx-stop="b:${x.i}" data-nx-focus="1">Take notes</button></div>`
@@ -9642,7 +9682,7 @@ function nxUploadsHead() {
     ${sec("To upload", toUp.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("vid")}</span>
       <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${esc(boothLbl(x.c.b))}${x.s.scheduled ? " · " + esc(nxWhenShort(currentEventCode(), x.s.scheduled)) : ""}</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`))}
     ${sec("Sending", sending.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic">${nxi("up")}</span>
-      <div class="nx-mn"><b>${esc(x.c.n)}</b><div class="nx-st" data-upprog="${x.i}">Uploading ${upProg[x.i]}%</div><div class="nx-st">Keep the app open</div></div></div>`))}
+      <div class="nx-mn"><b>${esc(x.c.n)}</b><div class="nx-st" data-upprog="${x.i}">${esc(upText(x.i, upProg[x.i]))}</div><div class="nx-st">Keep the app open</div></div></div>`))}
     ${sec("Clips in, more to come?", open.map(x => `<div class="nx-row" data-nx-stop="b:${x.i}"><span class="nx-ic ok">${nxi("check")}</span>
       <div class="nx-mn"><b>${esc(x.c.n)}</b><span>${nxClips(x.s)} clip${nxClips(x.s) === 1 ? "" : "s"}${x.s.vupAt ? " · last at " + esc(nxClock(x.s.vupAt)) : ""}</span></div>${nxUpBtn({ ...x.c, i: x.i }, x.s)}</div>`))}
     ${sec("All footage in", closed.map(x => `<button class="nx-row" type="button" data-nx-stop="b:${x.i}"><span class="nx-ic ok">${nxi("check")}</span>
@@ -12592,11 +12632,11 @@ document.getElementById("msPromptSheet").addEventListener("click", e => {
 });
 // The picker for booth video uploads (opened by a card's Upload button).
 document.getElementById("vidFileInput").addEventListener("change", e => {
-  const f = e.target.files && e.target.files[0];
+  const files = [].slice.call(e.target.files || []);
   e.target.value = "";
   const i = msUploadTarget; msUploadTarget = null;
-  if (!f || i == null) return;
-  startVideoUpload(i, f);
+  if (!files.length || i == null) return;
+  startVideoUploads(i, files);
 });
 // Access old show data (archived CSVs)
 let _archiveCache = {};
