@@ -2575,6 +2575,13 @@ body.home-mode .home-wrap.hb { padding-top: 22px; }
 .hb-live-q .hb-btn { margin-top: auto; }
 .hb-live-q .hb-qi:last-of-type, .hb-live-q .hb-q-none { margin-bottom: 16px; }
 .hb-up-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.hb-test { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-sm); padding: 16px 18px; cursor: pointer; }
+.hb-test-ic { width: 42px; height: 42px; border-radius: 12px; background: var(--blue-light); color: var(--blue); display: grid; place-items: center; flex-shrink: 0; }
+.hb-test-ic svg { width: 20px; height: 20px; }
+.hb-test-b { flex: 1 1 320px; min-width: 0; }
+.hb-test-b b { display: block; font-family: var(--fd); font-size: 0.98rem; line-height: 1.25; color: var(--text); }
+.hb-test-b p { font-size: 0.78rem; color: var(--text-2); margin-top: 4px; }
+.hb-test-b .hb-chip { margin-left: 6px; }
 .hb-up { background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; display: flex; flex-direction: column; }
 .hb-up:hover, .hb-live:hover { box-shadow: 0 0 0 1.5px var(--blue-mid), var(--shadow); }
 .hb-up-top { height: 62px; display: flex; align-items: center; padding: 0 18px; }
@@ -3195,7 +3202,7 @@ body.has-nav .ph-link { width: 100%; height: 46px; margin: 14px 0 0; border-radi
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v249</div>
+      <div class="pf-ver">NCM Events Guide · v250</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -7996,7 +8003,8 @@ function renderHomeNav() {
     (homeMember() === "Test" ? `<button class="hb-nav-btn${test ? " on" : ""}" type="button" data-home-test>${label("Test")}</button>` : "");
 }
 function homePickBrand(bk, view) {
-  homeTestView = false;
+  homeTestView = false; homeTestBranded = false;
+  try { localStorage.removeItem("home_test"); } catch (err) {}
   homeBrandFilter = bk || null;
   homeSearchQ = ""; homeSchedQ = "";
   if (view) { homeView = view; try { localStorage.setItem("home_view", homeView); } catch (err) {} }
@@ -8271,6 +8279,7 @@ function buildHomeOverview() {
     const label = !live.length ? "All brands" : rest.every(c => c.st.k === "upcoming") ? "Coming up" : "Other brands";
     h += `<div class="hb-k${live.length ? " next" : ""}">${label}</div><div class="hb-up-grid">${rest.map(small).join("")}</div>`;
   }
+  if (homeMember() === "Test") h += homeTestBlock();
   return h;
 }
 // A show's at-a-glance badge for the overview cards.
@@ -8354,7 +8363,17 @@ function renderHomeDashboard() {
   // Redesign: brand tabs sit in the top bar and one toolbar carries the show,
   // the view tabs, search and the shared folder.
   renderHomeNav();
-  if (homeTestView && homeMember() === "Test") { el.innerHTML = buildHomeTestView(); syncHbNote(); return; }
+  if (homeTestView && homeMember() === "Test") {
+    // After a reload the header still wears the last brand: the Test view is NCM's.
+    if (!homeTestBranded) { homeTestBranded = true; applyBrand("ncm"); updateHeaderBrand("ncm", "Bullpen"); renderHomeNav(); }
+    el.innerHTML = buildHomeTestView(); syncHbNote(); return;
+  }
+  // Another desk name took over while the Test tab was up: back to the brand view.
+  if (homeTestView && homeMember() !== "Test") {
+    homeTestView = false; homeTestBranded = false;
+    try { localStorage.removeItem("home_test"); } catch (e) {}
+    applyBrand(homeBrandFilter || "ncm"); updateHeaderBrand(homeBrandFilter || "ncm", "Bullpen"); renderHomeNav();
+  }
   let html = "";
   if (homeBrandFilter) {
     html += buildHomeToolbar();
@@ -9815,6 +9834,8 @@ function nxAdd(kind) {
 // the Bullpen shows in a Test view that only the desk name "Test" gets, and
 // one Teams alert goes to the roster name "Test" alone.
 var nxTestOpen = false, nxTestBusy = false, msTestFolder = "", nxTestRows = [], nxTestCheck = null, homeTestView = false;
+var homeTestBranded = false;   // the Test view has put the NCM look on the header
+try { homeTestView = localStorage.getItem("home_test") === "1"; } catch (e) {}   // v250: a reload comes back to the Test tab
 function nxTestFolderUrl() { return (uploadCfg && uploadCfg.testFolderUrl) || ""; }
 function nxTestCan() { return !!currentUser && !isHome() && isMaster(); }
 function nxOpenTest() {
@@ -10003,14 +10024,33 @@ function buildHomeTestView() {
     }).join("")}</div>`;
   return html + `</div></div>`;
 }
-document.getElementById("homeNav").addEventListener("click", e => {
-  if (!e.target.closest("[data-home-test]") || homeMember() !== "Test") return;
-  homeTestView = true;
-  applyBrand("ncm"); updateHeaderBrand("ncm", "Bullpen");
+function homeOpenTest() {
+  if (homeMember() !== "Test") return;
+  homeTestView = true; homeTestBranded = false;
+  try { localStorage.setItem("home_test", "1"); } catch (e) {}
   renderHomeDashboard();
-});
+  scrollAppTo(0);
+}
+document.getElementById("homeNav").addEventListener("click", e => { if (e.target.closest("[data-home-test]")) homeOpenTest(); });
+// On All brands, the desk name "Test" also gets a block about the test
+// section: how the last tests went and a way in (v250).
+function homeTestBlock() {
+  const rows = Object.values(homeFlags).filter(x => x && x.kind === "test").sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const ok = rows.filter(r => r.ok).length, bad = rows.length - ok, last = rows[0];
+  const line = !rows.length ? "No tests yet."
+    : rows.length + " test" + (rows.length === 1 ? "" : "s") + " · " + ok + " arrived" + (bad ? " · " + bad + " failed" : "") + (last && last.ts ? " · last one " + fmtAgo(last.ts) : "");
+  return `<div class="hb-k next">Upload tests</div>
+    <div class="hb-test" data-home-test role="button" tabindex="0">
+      <span class="hb-test-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+      <div class="hb-test-b"><b>Test uploads</b>
+        <p>${esc(line)}${last ? ` <span class="hb-chip${last.ok ? "" : " warn"}">${last.ok ? "Last test arrived" : "Last test failed"}</span>` : ""}</p>
+        <p>Only the desk name Test sees this. To run one, open the phone app as an admin: Tools, then Upload test.</p></div>
+      <button class="hb-btn pri" type="button" data-home-test>Open the Test tab</button>
+    </div>`;
+}
 document.getElementById("content").addEventListener("click", e => {
   if (!isHome()) return;
+  if (e.target.closest("[data-home-test]")) { homeOpenTest(); return; }
   const del = e.target.closest("[data-test-del]");
   if (del) { fbDb.collection("homeFlags").doc(del.dataset.testDel).delete().catch(() => toast("Couldn't remove it")); return; }
   if (e.target.closest("[data-test-clear]") && confirm("Remove every test result from this list? Files already in the test folder stay there."))
