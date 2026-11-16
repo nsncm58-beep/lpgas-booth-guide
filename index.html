@@ -2892,7 +2892,7 @@ body.has-nav .sched-day-tab.active { background: var(--blue); color: #fff; }
 .nx-clips > .nx-i { width: 20px; height: 20px; stroke-width: 2.6; color: var(--nx-ok); }
 .nx-clips.ok { background: var(--nx-ok-l); box-shadow: none; }
 .nx-clips.ok b, .nx-clips.ok small { color: var(--nx-ok); }
-.nx-btn[disabled] { opacity: 0.7; }
+.nx-btn[disabled] { opacity: 0.45; pointer-events: none; }
 
 /* booths */
 .nx-filt { display: flex; gap: 8px; padding: 12px 16px 10px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; max-width: 640px; margin: 0 auto; }
@@ -3104,6 +3104,7 @@ body.has-nav .ph-link { width: 100%; height: 46px; margin: 14px 0 0; border-radi
 <!-- Bottom navigation (field app only; the bullpen is a desktop view) -->
 <input type="file" id="vidFileInput" accept="video/*" multiple style="display:none">
 <input type="file" id="photoFileInput" accept="image/*" multiple style="display:none">
+<input type="file" id="testFileInput" multiple style="display:none">
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <button class="bn-btn active" type="button" data-v="today">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 10v10h13V10"/></svg>
@@ -3187,13 +3188,14 @@ body.has-nav .ph-link { width: 100%; height: 46px; margin: 14px 0 0; border-radi
         <button class="pf-row" id="accountsBtn" type="button"><span class="pf-k">Accounts</span><span class="pf-v" id="accountsCount"></span><span class="pf-chev" aria-hidden="true"></span></button>
         <button class="pf-row" id="pnBtn" type="button"><span class="pf-k">People's notes</span><span class="pf-v">View or download</span><span class="pf-chev" aria-hidden="true"></span></button>
         <button class="pf-row" id="guideBtn" type="button"><span class="pf-k">Install QR and bullpen passcode</span><span class="pf-v"></span><span class="pf-chev" aria-hidden="true"></span></button>
+        <button class="pf-row" id="upTestBtn" type="button"><span class="pf-k">Upload test</span><span class="pf-v">Videos and photos</span><span class="pf-chev" aria-hidden="true"></span></button>
       </div>
     </div>
 
     <button class="pf-signout" id="settingsSignOut" type="button">Sign out</button>
 
     <div class="pf-foot" id="settingsAbout">
-      <div class="pf-ver">NCM Events Guide · v248</div>
+      <div class="pf-ver">NCM Events Guide · v249</div>
       <p>Your schedule is visible to teammates on your show. Editorial/Digital and Events notes, schedules and video uploads are shared with the bullpen and admins automatically. Everyone's notes, including Sales, are also backed up for admins; the bullpen never sees Sales notes. Show data collected in this app belongs to North Coast Media.</p>
       <p>Questions or problems: <a href="mailto:nstoltman@northcoastmedia.net">Nate Stoltman</a></p>
     </div>
@@ -6642,7 +6644,9 @@ function setNotifyQ(q) { try { q.length ? localStorage.setItem(NOTIFY_Q_KEY, JSO
 // changes who gets them; an empty list turns them off. They never go to the
 // rest of the roster, in test mode or out of it.
 const PROBLEMS_TO = ["Test"];
-function notifyTargets(skipMember, isVideo, admin) {
+function notifyTargets(skipMember, isVideo, admin, only) {
+  // `only`: one roster name and nobody else (an admin's test upload goes to "Test", v249).
+  if (only) return Object.entries(notifyCfg.emails || {}).filter(([name, email]) => email && name === only);
   if (admin) {
     const to = Array.isArray(notifyCfg.problemsTo) ? notifyCfg.problemsTo : PROBLEMS_TO;
     return Object.entries(notifyCfg.emails || {}).filter(([name, email]) => email && to.some(m => name === m));
@@ -6662,7 +6666,7 @@ async function flushNotifyQ() {
   try {
     for (const a of notifyQ()) {
       if (Date.now() - a.at >= day) continue;
-      for (const [, email] of notifyTargets(a.skip, a.video, a.admin)) {
+      for (const [, email] of notifyTargets(a.skip, a.video, a.admin, a.only)) {
         if ((a.sent || []).includes(email)) continue;
         let done = false;
         try {
@@ -6682,17 +6686,17 @@ async function flushNotifyQ() {
     }
     // Done = every current recipient crossed off (or a day old).
     setNotifyQ(notifyQ().filter(a => Date.now() - a.at < day
-      && notifyTargets(a.skip, a.video, a.admin).some(([, email]) => !(a.sent || []).includes(email))));
+      && notifyTargets(a.skip, a.video, a.admin, a.only).some(([, email]) => !(a.sent || []).includes(email))));
   } finally { _notifyBusy = false; }
   if (notifyQ().length) _notifyTimer = setTimeout(flushNotifyQ, 30000);
 }
 window.addEventListener("online", () => flushNotifyQ());
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") flushNotifyQ(); });
-function notifyHome(text, skipMember, isVideo, admin) {
+function notifyHome(text, skipMember, isVideo, admin, only) {
   const q = notifyQ();
-  q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, skip: skipMember || "", video: !!isVideo, admin: !!admin, at: Date.now(), sent: [] });
+  q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, skip: skipMember || "", video: !!isVideo, admin: !!admin, only: only || "", at: Date.now(), sent: [] });
   setNotifyQ(q.slice(-50));
-  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, admin: !!admin, targets: notifyTargets(skipMember, isVideo, admin).map(t => t[0]) });
+  if (window.__ncmTestNotify) window.__ncmTestNotify({ text, admin: !!admin, targets: notifyTargets(skipMember, isVideo, admin, only).map(t => t[0]) });
   flushNotifyQ();
 }
 const APP_LINK = 'https://nsncm58-beep.github.io/lpgas-booth-guide/';
@@ -6752,7 +6756,8 @@ function subscribeUploadConfig() {
     const x = (d.exists && d.data()) || {};
     uploadCfg = (x.clientId && x.tenantId && !x.disabled)
       ? { clientId: String(x.clientId).trim(), tenantId: String(x.tenantId).trim(),
-          folderUrl: String(x.folderUrl || "").trim() }   // optional global override
+          folderUrl: String(x.folderUrl || "").trim(),   // optional global override
+          testFolderUrl: String(x.testFolderUrl || "").trim() }   // the admins' test folder (Upload test, v249)
       : null;
     try { uploadCfg ? localStorage.setItem(UPCFG_KEY, JSON.stringify(uploadCfg)) : localStorage.removeItem(UPCFG_KEY); } catch (e) {}
     msBootstrap();
@@ -6765,6 +6770,7 @@ function subscribeUploadConfig() {
 // entry exists. config/uploads.folderUrl, when present, overrides all shows
 // (escape hatch); normally the config doc is just { clientId, tenantId }.
 function msUploadFolderUrl() {
+  if (msTestFolder) return msTestFolder;   // an admin's Upload test is running: everything goes to the test folder
   if (uploadCfg && uploadCfg.folderUrl) return uploadCfg.folderUrl;
   const m = eventMedia(currentEventCode());
   return (m && m.folder) || "";
@@ -7416,7 +7422,7 @@ async function msUploadNamed(name, file, onPct, segs, resumeKey) {
 // lock and stop the upload (newer iPhones allow this), and show a banner
 // saying to keep the app open. Both end when the last upload finishes.
 let _wakeLock = null;
-function uploadsRunning() { return Object.keys(upProg).length + (photoUploading ? 1 : 0); }
+function uploadsRunning() { return Object.keys(upProg).length + (photoUploading ? 1 : 0) + (nxTestBusy ? 1 : 0); }
 async function holdWake() {
   try {
     if (!_wakeLock && navigator.wakeLock && document.visibilityState === "visible") {
@@ -7469,6 +7475,7 @@ function upText(i, p, wait) {
 }
 async function startVideoUploads(i, files) {
   const c = CO[i]; if (!c) return;
+  if (msTestFolder) { toast("A test upload is running. Wait for it to finish"); return; }
   if (files.length === 1) { startVideoUpload(i, files[0]); return; }
   // An unfinished upload for this booth: its video goes first, so it carries
   // on from where it stopped instead of being started over.
@@ -7667,7 +7674,7 @@ function alertUploadProblem(step, e, x) {
     (x.where ? " (" + esc(x.where) + ")" : "") + ". Uploads from that phone may fail or land one folder up until this is fixed." + said + ver;
   else text = "<strong>Upload problem</strong>. " + show + ": an upload from " + who + " didn't go through" +
     (/stalled/.test(what) ? " (no progress for 30 minutes, most likely the signal)" : "") + "." + file + said + ver;
-  notifyHome(text, null, false, true);
+  notifyHome(text, null, false, true, msTestFolder ? "Test" : "");   // a problem during an admin's own test goes to Nate alone
 }
 // v238: the upload folder is checked quietly when the app opens or comes back
 // to the front, so folder trouble shows up at the hotel and not at the first
@@ -7689,7 +7696,7 @@ function showWindowOpen(code) {
 }
 async function msPreflight() {
   const code = currentEventCode();
-  if (_upChkBusy || !code || _upChkPass === code || _upChkTries >= 3 || !navigator.onLine) return;
+  if (_upChkBusy || !code || _upChkPass === code || _upChkTries >= 3 || !navigator.onLine || msTestFolder) return;
   if (!msPhotosActive() || !msalApp || !msAccount() || uploadsRunning()) return;
   _upChkBusy = true;
   const make = showWindowOpen(code);
@@ -7982,10 +7989,14 @@ function renderHomeNav() {
     : wrapped(bk) ? '<span class="hb-dot wrap" title="Recently wrapped"></span>' : "";
   const label = t => `<span class="hb-nav-t" data-t="${esc(t)}">${esc(t)}</span>`;
   // The "Bullpen" label lives next to the logo, in the header markup.
-  nav.innerHTML = `<button class="hb-nav-btn${!homeBrandFilter ? " on" : ""}" type="button" data-home-brand="">${label("All brands")}</button>` +
-    HOME_FILTER_BRANDS.map(bk => `<button class="hb-nav-btn${homeBrandFilter === bk ? " on" : ""}" type="button" data-home-brand="${bk}">${dot(bk)}${label(BRANDS[bk].name)}</button>`).join("");
+  const test = homeTestView && homeMember() === "Test";
+  nav.innerHTML = `<button class="hb-nav-btn${!homeBrandFilter && !test ? " on" : ""}" type="button" data-home-brand="">${label("All brands")}</button>` +
+    HOME_FILTER_BRANDS.map(bk => `<button class="hb-nav-btn${homeBrandFilter === bk && !test ? " on" : ""}" type="button" data-home-brand="${bk}">${dot(bk)}${label(BRANDS[bk].name)}</button>`).join("") +
+    // Upload tests (v249): only the desk name "Test" (Nate) gets this tab.
+    (homeMember() === "Test" ? `<button class="hb-nav-btn${test ? " on" : ""}" type="button" data-home-test>${label("Test")}</button>` : "");
 }
 function homePickBrand(bk, view) {
+  homeTestView = false;
   homeBrandFilter = bk || null;
   homeSearchQ = ""; homeSchedQ = "";
   if (view) { homeView = view; try { localStorage.setItem("home_view", homeView); } catch (err) {} }
@@ -8324,7 +8335,7 @@ function subscribeHomeSchedules() {
 function renderHomeDashboard() {
   const el = document.getElementById("content");
   updateHomeMemberChip();
-  viewTransition("h:" + homeView + ":" + homeBrandFilter + ":" + (homeBrandFilter ? homeEventCode() : "") + ":" + (homeSchedRep || "") + ":" + schedDay);
+  viewTransition("h:" + (homeTestView ? "test" : homeView) + ":" + homeBrandFilter + ":" + (homeBrandFilter ? homeEventCode() : "") + ":" + (homeSchedRep || "") + ":" + schedDay);
   // Shared login, individual people: each device picks a name once before
   // anything else, so "Working on" claims are attributable.
   if (!homeMember()) {
@@ -8343,6 +8354,7 @@ function renderHomeDashboard() {
   // Redesign: brand tabs sit in the top bar and one toolbar carries the show,
   // the view tabs, search and the shared folder.
   renderHomeNav();
+  if (homeTestView && homeMember() === "Test") { el.innerHTML = buildHomeTestView(); syncHbNote(); return; }
   let html = "";
   if (homeBrandFilter) {
     html += buildHomeToolbar();
@@ -9794,6 +9806,217 @@ function nxAdd(kind) {
   if (kind === "booth") document.querySelector(".sched-search-input")?.focus();
 }
 
+// ── Upload test (v249) ──
+// Admins only. Sends real files through the same upload code reps use
+// (msUploadNamed and everything under it), but into the test folder
+// (config/uploads.testFolderUrl): while a test runs, msUploadFolderUrl()
+// answers with that folder, so no show's folder, booth or Bullpen list is
+// touched. Each result is saved as homeFlags/test__<id> (kind "test"), which
+// the Bullpen shows in a Test view that only the desk name "Test" gets, and
+// one Teams alert goes to the roster name "Test" alone.
+var nxTestOpen = false, nxTestBusy = false, msTestFolder = "", nxTestRows = [], nxTestCheck = null, homeTestView = false;
+function nxTestFolderUrl() { return (uploadCfg && uploadCfg.testFolderUrl) || ""; }
+function nxTestCan() { return !!currentUser && !isHome() && isMaster(); }
+function nxOpenTest() {
+  if (!nxTestCan()) return;
+  nxStop = null; nxTestOpen = true; nxTestCheck = null;
+  render(); scrollAppTo(0);
+  nxTestLoad();
+}
+function nxSize(b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+function nxTestName(kind, file, k) {
+  const d = new Date(), two = n => String(n).padStart(2, "0");
+  const rep = String((currentUser && currentUser.name) || "Admin").trim().split(/\s+/)[0].replace(/[^\w-]+/g, "") || "Admin";
+  let ext = (file.name && (file.name.match(/\.[A-Za-z0-9]{2,5}$/) || [])[0] || "").toLowerCase();
+  if (!ext) ext = kind === "video" ? ".mov" : ".jpg";
+  return "TEST_" + kind + "_" + rep + "_" + two(d.getMonth() + 1) + two(d.getDate()) + "-" + two(d.getHours()) + two(d.getMinutes()) + two(d.getSeconds()) + (k ? "_" + (k + 1) : "") + ext;
+}
+function nxTestLine(r) {
+  if (r.state === "up") return "Uploading " + (r.pct || 0) + "%";
+  if (r.state === "err") return r.err || "Did not go through";
+  const secs = r.ms ? Math.max(1, Math.round(r.ms / 1000)) : 0;
+  return [nxSize(r.size || 0), secs ? "in " + secs + " s" : "", r.ts ? nxClock(r.ts) : ""].filter(Boolean).join(" · ");
+}
+function nxRenderTest() {
+  const el = document.getElementById("content");
+  const url = nxTestFolderUrl(), signed = msHasLogin(), chk = nxTestCheck;
+  const off = url && !nxTestBusy ? "" : " disabled";
+  const rows = nxTestRows.map(r => `<div class="nx-row plain"><span class="nx-ic ${r.state === "ok" ? "ok" : r.state === "err" ? "g" : ""}">${nxi(r.state === "ok" ? "check" : r.state === "err" ? "x" : "up")}</span>
+      <div class="nx-mn wrap"><b style="overflow-wrap:anywhere">${esc(r.name || "Test file")}</b><span style="white-space:normal"${r.state === "up" ? ` data-test-pct="${esc(r.id)}"` : ""}${r.state === "err" ? ' class="nx-bad"' : ""}>${esc(nxTestLine(r))}</span></div>
+      ${r.url ? `<a class="nx-btn sec sm" href="${esc(r.url)}" target="_blank" rel="noopener">Open</a>` : ""}</div>`).join("");
+  el.innerHTML = `<div class="nx"><div class="nx-body nx-stop">
+    <button class="nx-back" type="button" data-nx-test-back>${nxi("back")}Back</button>
+    <div class="nx-shtop"><span class="nx-k">Admin</span></div>
+    <div class="nx-shname">Upload test</div>
+    <p class="nx-hsub" style="margin:6px 0 2px">Sends real files through the same upload steps reps use, into the test folder. No show is touched, and only you get the Teams alert.</p>
+    <div class="nx-grp">
+      <div class="nx-row plain"><div class="nx-mn"><b>Microsoft account</b><span style="white-space:normal">${signed ? "Connected on this phone" : "Not connected yet. The first test asks you to sign in."}</span></div><span class="nx-chip ${signed ? "ok" : "warn"}">${signed ? "Ready" : "Sign in"}</span></div>
+      <div class="nx-row plain"><div class="nx-mn"><b>Test folder</b><span style="white-space:normal"${chk && chk.ok === false ? ' class="nx-bad"' : ""}>${url ? (chk ? esc(chk.text) : "Set. Check confirms this phone can reach it.") : "Not set up yet. Tests are off until its link is added."}</span></div>
+        ${url ? `<button class="nx-btn sec sm" type="button" data-nx-test-check${nxTestBusy ? " disabled" : ""}>Check</button>` : `<span class="nx-chip warn">Needed</span>`}</div>
+    </div>
+    <div class="nx-acts"><button class="nx-btn pri" type="button" data-nx-test-pick="video"${off}>${nxi("vid")}Test videos</button>
+      <button class="nx-btn out" type="button" data-nx-test-pick="photo"${off}>${nxi("up")}Test photos</button></div>
+    <div class="nx-st" style="text-align:center;margin-top:10px">You can pick more than one. Files are named TEST_ and stay in the test folder until you delete them there.</div>
+    ${rows ? `<div class="nx-sech"><b>Results<i>${nxTestRows.length}</i></b><button type="button" data-nx-test-clear>Clear</button></div><div class="nx-card list">${rows}</div>`
+      : `<div class="nx-empty"><b>No tests yet</b>Results show up here and in the Bullpen's Test view.</div>`}
+  </div></div>`;
+}
+// Same rule as every other picker: it only opens with a fresh Microsoft token
+// in hand, so a sign-in round trip can never eat the picked files.
+function nxTestPick(kind) {
+  if (nxTestBusy || !nxTestCan()) return;
+  if (!nxTestFolderUrl()) { toast("The test folder isn't set up yet"); return; }
+  if (uploadsRunning()) { toast("Wait for the upload that is running to finish"); return; }
+  const inp = document.getElementById("testFileInput");
+  inp.accept = kind === "video" ? "video/*" : "image/*"; inp.dataset.kind = kind;
+  if (msalApp && msAccount() && msTokenFresh()) { inp.click(); return; }
+  if (msalApp && msAccount()) {
+    toast("Checking Microsoft…");
+    msSilentToken(true).then(() => toast("Ready. Tap the button again"))
+      .catch(() => { toast("Quick Microsoft check. You'll be right back"); msToken(true).catch(() => {}); });
+    return;
+  }
+  toast("One-time Microsoft sign-in: you'll come right back here");
+  msToken(true).then(() => { updateMsSection(); if (nxTestOpen) render(); toast("Connected. Tap the button again"); }).catch(() => {});
+}
+async function nxTestCheckFolder() {
+  const url = nxTestFolderUrl();
+  if (!url || nxTestBusy || (nxTestCheck && nxTestCheck.busy)) return;
+  nxTestCheck = { busy: true, text: "Checking…" }; render();
+  msTestFolder = url;
+  try {
+    const token = await msSilentToken(true);
+    const ping = f => msGraph("/drives/" + f.driveId + "/items/" + f.itemId + "?$select=id", null, token);
+    let base = await msResolveFolder(token);
+    try { await ping(base); }
+    catch (e) { if (!MS_DENIED(e.status)) throw e; base = await msResolveFolder(token, true); await ping(base); }
+    nxTestCheck = { ok: true, text: "This phone can reach it (checked " + nxClock(Date.now()) + ")." };
+  } catch (e) {
+    nxTestCheck = { ok: false, text: e && e.status ? "Microsoft would not open it (error " + e.status + ")." : "Could not check. Sign in to Microsoft by tapping a Test button, then try again." };
+  } finally { msTestFolder = ""; }
+  if (nxTestOpen) render();
+}
+function nxTestSave(r, thumb) {
+  if (!fbReady) return;
+  try {
+    fbDb.collection("homeFlags").doc("test__" + r.id).set({ kind: "test", type: r.kind, ok: r.state === "ok", name: r.name || "", url: r.url || "",
+      size: r.size || 0, ms: r.ms || 0, err: r.err || "", by: (currentUser && currentUser.name) || "", uid: (currentUser && currentUser.uid) || "",
+      ver: appVer(), thumb: thumb || "", ts: r.ts || Date.now() }).catch(() => {});
+  } catch (e) {}
+}
+async function nxRunTest(kind, files) {
+  const url = nxTestFolderUrl();
+  if (nxTestBusy || !files.length || !url || !nxTestCan()) return;
+  nxTestBusy = true; msTestFolder = url; uploadBanner();
+  const done = [];
+  try {
+    for (let k = 0; k < files.length; k++) {
+      const file = files[k], id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const row = { id, kind, name: nxTestName(kind, file, k), size: file.size, state: "up", pct: 0, ts: Date.now() };
+      nxTestRows.unshift(row);
+      if (nxTestOpen) render();
+      const t0 = Date.now();
+      try {
+        const item = await msUploadNamed(row.name, file, (p, wait) => {
+          row.pct = p;
+          const s = document.querySelector('[data-test-pct="' + id + '"]');
+          if (s) s.textContent = wait === "offline" ? "No signal · " + p + "%, will resume" : wait === "retry" ? "Weak signal · retrying " + p + "%" : "Uploading " + p + "%";
+        }, [], "");
+        row.state = "ok"; row.url = (item && item.webUrl) || ""; row.name = (item && item.name) || row.name;
+        done.push(row);
+      } catch (e) {
+        const m = String(e && e.message);
+        row.state = "err";
+        row.err = m === "token" ? "The Microsoft sign-in needs a refresh. Tap the button again."
+          : m === "no-access" ? "Microsoft says this account cannot add files to the test folder." : upFailText(e);
+      }
+      row.ms = Date.now() - t0; row.ts = Date.now();
+      let thumb = "";
+      if (row.state === "ok" && kind === "photo") { try { thumb = await photoThumb(file); } catch (e) {} }
+      nxTestSave(row, thumb);
+      if (nxTestOpen) render();
+      if (row.state === "err") break;   // the rest would fail the same way
+    }
+  } finally { msTestFolder = ""; nxTestBusy = false; uploadBanner(); if (nxTestOpen) render(); }
+  if (done.length) {
+    const who = esc((currentUser && currentUser.name) || "An admin");
+    const total = done.reduce((n, r) => n + (r.size || 0), 0), secs = Math.max(1, Math.round(done.reduce((n, r) => n + (r.ms || 0), 0) / 1000));
+    notifyHome("<strong>Test upload</strong> by " + who + ": " + done.length + " " + kind + (done.length === 1 ? "" : "s") + " (" + nxSize(total) + " in " + secs +
+      " s) reached the test folder. No show was touched." + (done[0].url ? ' <a href="' + esc(done[0].url) + '">Open the first one</a>.' : "") +
+      (appVer() ? " App " + appVer() + "." : ""), null, false, false, "Test");
+    toast(done.length === files.length ? "Test passed: " + done.length + " " + kind + (done.length === 1 ? "" : "s") + " uploaded ✓" : done.length + " of " + files.length + " uploaded");
+  }
+}
+// Earlier results (from any phone) come back when the page opens.
+function nxTestLoad() {
+  if (!fbReady || !nxTestCan()) return;
+  fbDb.collection("homeFlags").where("kind", "==", "test").get().then(snap => {
+    const have = new Set(nxTestRows.map(r => r.id));
+    snap.forEach(d => {
+      const x = d.data() || {}, id = d.id.replace(/^test__/, "");
+      if (!have.has(id)) nxTestRows.push({ id, kind: x.type, name: x.name, size: x.size, state: x.ok ? "ok" : "err", err: x.err, ms: x.ms, url: x.url, ts: x.ts });
+    });
+    nxTestRows.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if (nxTestOpen) render();
+  }).catch(() => {});
+}
+function nxTestClear() {
+  if (nxTestBusy) return;
+  confirmRemove("Clear the test results?", "This empties the list here and in the Bullpen's Test view. Files already in the test folder stay there.", () => {
+    nxTestRows = [];
+    if (nxTestOpen) render();
+    if (!fbReady) return;
+    fbDb.collection("homeFlags").where("kind", "==", "test").get()
+      .then(snap => snap.forEach(d => d.ref.delete().catch(() => {}))).catch(() => {});
+    toast("Test results cleared");
+  });
+}
+document.getElementById("testFileInput").addEventListener("change", e => {
+  const files = [].slice.call(e.target.files || []), kind = e.target.dataset.kind || "video";
+  e.target.value = "";
+  nxRunTest(kind, files);
+});
+document.getElementById("upTestBtn").addEventListener("click", nxOpenTest);
+// The Bullpen's side: every test result, newest first. Only the desk name
+// "Test" has the tab that opens this.
+function buildHomeTestView() {
+  const rows = Object.entries(homeFlags).filter(([, x]) => x && x.kind === "test").map(([id, x]) => ({ id, ...x })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const ok = rows.filter(r => r.ok).length;
+  let html = `<div class="home-wrap hb"><div class="home-main">
+    <div class="home-head"><h2>Upload tests</h2><p>Test uploads from an admin's phone land here, not in any show's Videos or Photos. Only the desk name Test sees this tab.</p></div>`;
+  if (!rows.length) return html + `<div class="empty-wrap"><h3>No tests yet</h3><p>In the phone app, an admin opens Tools (or Profile), then Upload test.</p></div></div></div>`;
+  html += `<div class="home-vids-summary">${rows.length} test${rows.length === 1 ? "" : "s"} · ${ok} arrived${rows.length - ok ? " · " + (rows.length - ok) + " failed" : ""}
+      <button class="home-rem-btn" type="button" data-test-clear style="margin-left:10px">Clear all</button></div>
+    <div class="hp-grid">${rows.map(r => {
+      const open = r.url ? `href="${esc(r.url)}" target="_blank" rel="noopener"` : "";
+      const secs = r.ms ? Math.max(1, Math.round(r.ms / 1000)) : 0;
+      return `<div class="hp-card">
+        <a class="hp-thumb" ${open}>${r.thumb ? `<img src="${esc(r.thumb)}" alt="">` : r.type === "video" ? `<span class="hp-noimg hp-vid">&#9654;</span>` : `<span class="hp-noimg">${PH_CAMERA}</span>`}</a>
+        <div class="hp-body">
+          <div class="hp-cap-row"><div class="hp-cap" style="overflow-wrap:anywhere">${esc(r.name || "Test file")}</div></div>
+          <div class="hp-meta"${r.ok ? "" : ' style="color:#B3261E"'}>${r.ok ? "Arrived" : "Failed: " + esc(r.err || "no reason given")}</div>
+          <div class="hp-meta">${esc([r.by || "Admin", r.ts ? fmtExact(r.ts) : "", r.size ? nxSize(r.size) + (secs ? " in " + secs + " s" : "") : "", r.ver || ""].filter(Boolean).join(" · "))}</div>
+          <div class="hp-actions">${r.url ? `<a class="home-rem-btn watch" ${open}>Open</a>` : ""}
+            <button class="home-rem-btn hide" type="button" data-test-del="${esc(r.id)}" title="Remove this result. The file stays in the test folder.">Remove</button></div>
+        </div>
+      </div>`;
+    }).join("")}</div>`;
+  return html + `</div></div>`;
+}
+document.getElementById("homeNav").addEventListener("click", e => {
+  if (!e.target.closest("[data-home-test]") || homeMember() !== "Test") return;
+  homeTestView = true;
+  applyBrand("ncm"); updateHeaderBrand("ncm", "Bullpen");
+  renderHomeDashboard();
+});
+document.getElementById("content").addEventListener("click", e => {
+  if (!isHome()) return;
+  const del = e.target.closest("[data-test-del]");
+  if (del) { fbDb.collection("homeFlags").doc(del.dataset.testDel).delete().catch(() => toast("Couldn't remove it")); return; }
+  if (e.target.closest("[data-test-clear]") && confirm("Remove every test result from this list? Files already in the test folder stay there."))
+    Object.keys(homeFlags).filter(id => homeFlags[id] && homeFlags[id].kind === "test").forEach(id => fbDb.collection("homeFlags").doc(id).delete().catch(() => {}));
+});
+
 // ── One-time release notes for the field app ──
 // Shown once per person, like the Bullpen's: remembered on the profile
 // (users/<uid>.seenNotes.<id>) so it follows them to every device, with a
@@ -9902,6 +10125,11 @@ document.getElementById("content").addEventListener("click", e => {
 document.getElementById("content").addEventListener("click", e => {
   if (isHome()) return;
   const t = e.target;
+  if (t.closest("[data-nx-test-back]")) { nxTestOpen = false; render(); scrollAppTo(0); return; }
+  const tp = t.closest("[data-nx-test-pick]");
+  if (tp) { nxTestPick(tp.dataset.nxTestPick); return; }
+  if (t.closest("[data-nx-test-check]")) { nxTestCheckFolder(); return; }
+  if (t.closest("[data-nx-test-clear]")) { nxTestClear(); return; }
   if (t.closest("[data-nx-back]")) { nxCloseStop(); return; }
   const sv = t.closest("[data-nx-sv]");
   if (sv) {
@@ -10011,7 +10239,7 @@ function render() {
   nxSyncChrome();
   viewTransition("f:" + currentEventCode() + ":" + activeView + ":" + activeFilter
     + (activeView === "schedule" ? ":" + schedDay + ":" + (viewedScheduleUid || "") + ":" + (schedAllView ? "all" : "") : "")
-    + (nxStop ? ":stop:" + nxStop.k + (nxStop.k === "b" ? nxStop.i : nxStop.id) : ""));
+    + (nxStop ? ":stop:" + nxStop.k + (nxStop.k === "b" ? nxStop.i : nxStop.id) : "") + (nxTestOpen ? ":test" : ""));
   const state = load();
   const q = document.getElementById("searchInput").value.trim().toLowerCase();
 
@@ -10051,6 +10279,12 @@ function render() {
   const filterBar = document.querySelector(".filter-bar");
 
   const boothsSearch = document.querySelector(".booths-search");
+  if (nxTestOpen && nxTestCan()) {
+    filterBar?.classList.add("hidden");
+    boothsSearch?.classList.add("hidden");
+    nxRenderTest();
+    return;
+  }
   if (nxStop && activeView !== "settings" && activeView !== "admin" && activeView !== "adminTools") {
     filterBar?.classList.add("hidden");
     boothsSearch?.classList.add("hidden");
@@ -11324,7 +11558,7 @@ document.getElementById("bottomNav").addEventListener("click", e => {
   const tab = e.target.closest("[data-v]");
   if (tab) {
     const v = tab.dataset.v;
-    if (v === activeView && !nxStop) { scrollAppTo(0, true); return; }
+    if (v === activeView && !nxStop && !nxTestOpen) { scrollAppTo(0, true); return; }
     tabScroll[activeView] = nxStop ? nxStopY : window.scrollY;
     setBottomTab(v);
     render();
@@ -11334,7 +11568,7 @@ document.getElementById("bottomNav").addEventListener("click", e => {
 });
 function setBottomTab(v) {
   if (v === "booths" && (resolveEvent(currentEventCode()) || {}).noBooths) v = "schedule";   // v221
-  nxStop = null;
+  nxStop = null; nxTestOpen = false;
   activeView = v;
   document.querySelectorAll("#bottomNav [data-v]").forEach(t => t.classList.toggle("active", t.dataset.v === v));
   // Admin Home stands apart from every show (v208): NCM colors and logo, no
@@ -11654,6 +11888,7 @@ function pickPhotos() {
 }
 async function sendPhotos() {
   if (photoUploading) return;
+  if (msTestFolder) { toast("A test upload is running. Wait for it to finish"); return; }
   // Silent refresh only: a redirect now would drop the picked files.
   try { await msSilentToken(); }
   catch (e) { toast("Microsoft sign-in expired. Reconnect under Profile, then pick the photos again"); return; }
@@ -13631,7 +13866,7 @@ function showSignedOut() {
   document.getElementById("adminTag").style.display = "none";
   document.body.classList.remove("home-mode", "has-nav");
   parkSettingsCard();
-  nxNoteClosed = false; nxProfLoaded = false; nxStop = null;
+  nxNoteClosed = false; nxProfLoaded = false; nxStop = null; nxTestOpen = false;
   document.getElementById("nxNoteSheet").style.display = "none";
   notesOpen.clear();
   _notified.clear();
@@ -13816,6 +14051,7 @@ function renderAdminHome() {
       <div class="nx-card list">
         ${tool("accounts", "users", "Accounts", "Everyone's team and brands")}
         ${tool("guide", "qr", "Install QR and bullpen passcode", "Sign-up QR codes and the bullpen login")}
+        ${tool("uptest", "up", "Upload test", "Send test videos and photos to the test folder")}
       </div>
       <div class="nx-sech"><b>Show tools</b></div>
       <div class="nx-card list">
@@ -13839,6 +14075,7 @@ document.getElementById("content").addEventListener("click", e => {
   else if (k === "notes") openPeoplesNotes(_ahToolShow);
   else if (k === "videos") openVideoProgress(_ahToolShow);
   else if (k === "guide") openGuideSheet();
+  else if (k === "uptest") nxOpenTest();
 });
 document.getElementById("content").addEventListener("change", e => {
   const f = e.target.closest("[data-ah-for]");
